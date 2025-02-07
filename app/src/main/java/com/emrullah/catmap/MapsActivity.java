@@ -48,5 +48,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(37.911979, 32.499834);
         mMap.addMarker(new MarkerOptions().position(sydney).title("BEBEGİMM"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        System.out.println("EMRULLAH BİR COPCUDUR");
+
     }
 }
