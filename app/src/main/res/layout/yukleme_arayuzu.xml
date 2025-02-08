@@ -97,6 +97,7 @@
             android:layout_marginStart="10dp"
             android:layout_marginEnd="5dp"
             android:background="@null"
+            android:onClick="kameraacma"
             android:scaleType="fitCenter"
             app:srcCompat="@drawable/kamera" />
     </LinearLayout>

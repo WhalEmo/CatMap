@@ -1,19 +1,23 @@
 package com.emrullah.catmap;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-
+import android.Manifest;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -54,4 +58,41 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             galleryLauncher.launch(intent);  // Intent'i ActivityResultLauncher ile başlatıyoruz
         }
+
+    // 📌 Kamera sonucu yakalama
+    ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Bundle extras = result.getData().getExtras();
+                        Bitmap imageBitmap = (Bitmap) extras.get("data");
+
+                        // Çekilen fotoğrafı önizlemede göster
+                        ImageView gecicifoto = findViewById(R.id.gecicifoto);
+                        gecicifoto.setImageBitmap(imageBitmap);
+                    }
+                }
+            });
+    private void openCamera() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            cameraLauncher.launch(takePictureIntent);
+        }
+    }
+
+    public void kameraacma(View view){
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, 101);
+        }
+
+        openCamera();
+        }
+
+
 }
+
