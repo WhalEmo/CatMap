@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -19,9 +20,14 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class YuklemeArayuzuActivity extends AppCompatActivity {
 
@@ -36,6 +42,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             return insets;
         });
     }
+
+
     // Galeriye gitmek için ActivityResultContracts kullanalım
     ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -62,6 +70,28 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
 
 
+
+
+
+    private File photoFile; // Fotoğrafın kaydedileceği dosya
+    private Uri photoUri; // Fotoğrafın URI'si
+
+    private Uri getPhotoFileUri() {
+        // Benzersiz bir dosya adı oluştur
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String fileName = "JPEG_" + timeStamp + ".jpg";
+
+        // Dosyanın saklanacağı dizini belirle
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+
+        // Fotoğrafın saklanacağı dosyayı oluştur
+        photoFile = new File(storageDir, fileName);
+
+        // FileProvider ile güvenli bir URI oluştur
+        return FileProvider.getUriForFile(this, "com.emrullah.catmap.fileprovider", photoFile);
+    }
+
+
     // 📌 Kamera sonucu yakalama
     ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -72,14 +102,6 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                         Bundle extras = result.getData().getExtras();
                         Bitmap imageBitmap = (Bitmap) extras.get("data");
 
-                        // Fotoğrafın çözünürlüğünü artırmak için yeniden boyutlandırabiliriz
-                        int width = imageBitmap.getWidth();
-                        int height = imageBitmap.getHeight();
-                        int newWidth = width * 2; // Örnek olarak çözünürlüğü iki katına çıkaralım
-                        int newHeight = height * 2;
-
-                        Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, newWidth, newHeight, false);
-
                         // Çekilen fotoğrafı önizlemede göster
                         ImageView gecicifoto = findViewById(R.id.gecicifoto);
                         gecicifoto.setImageBitmap(imageBitmap);
@@ -88,9 +110,12 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             });
     private void openCamera() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Loglama yaparak Intent'in doğru şekilde oluşturulduğunu kontrol et
+
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            Log.d("CameraIntent", "Kamera açılıyor...");
+            // Fotoğrafı kaydedeceğimiz dosyanın URI'sini alalım
+            photoUri = getPhotoFileUri();
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+
             cameraLauncher.launch(takePictureIntent);
         } else {
             Log.e("CameraIntent", "Kamera uygulaması bulunamadı!");
