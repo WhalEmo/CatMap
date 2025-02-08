@@ -61,6 +61,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:backgroundTint="#E287AB"
+        android:onClick="kaydet"
         android:text="Kaydet"
         android:textColor="#020202"
         android:textSize="15dp"

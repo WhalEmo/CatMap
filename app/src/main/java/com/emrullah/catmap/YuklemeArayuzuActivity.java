@@ -9,8 +9,11 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.Manifest;
+import android.widget.Toast;
+
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -30,13 +33,42 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private Uri photoUri;
     private File photoFile;
     private ImageView gecicifoto;
+    private EditText kedininismi;
+    private EditText kedininhakkindasi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.yukleme_arayuzu);
         gecicifoto = findViewById(R.id.gecicifoto);
+        kedininismi=findViewById(R.id.isimText);
+        kedininhakkindasi=findViewById(R.id.hakkındaText);
     }
+
+    // Galeriye gitmek için ActivityResultContracts kullanalım
+    ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri selectedImageUri = result.getData().getData();  // Seçilen fotoğrafın URI'si
+
+                        // ImageView'da fotoğrafı göstermek
+                        ImageView gecicifoto = findViewById(R.id.gecicifoto);
+                        gecicifoto.setImageURI(selectedImageUri);  // Fotoğrafı önizleme alanında gösteriyoruz
+                    }
+                }
+            });
+
+    // Galeriye gitmek için buton
+
+    public void yuklemebasma(View view) {
+        // Galeriye gitmek için Intent başlatıyoruz
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        galleryLauncher.launch(intent);  // Intent'i ActivityResultLauncher ile başlatıyoruz
+    }
+
 
     // 📌 Kamera sonucu yakalama
     ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
@@ -101,6 +133,20 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 101 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             openCamera();
+        }
+    }
+
+    //butona basınca kaydetme
+    public void kaydet(View view){
+        String kediadi=kedininismi.getText().toString().trim();
+        String kedihakkinda=kedininhakkindasi.getText().toString().trim();
+        if(kediadi.isEmpty()){
+            Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+        if(kedihakkinda.isEmpty()){
+            Toast toast = Toast.makeText(this, "Lütfen kedi hakkindasi giriniz!", Toast.LENGTH_SHORT);
+            toast.show();
         }
     }
 }
