@@ -60,6 +60,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             galleryLauncher.launch(intent);  // Intent'i ActivityResultLauncher ile başlatıyoruz
         }
 
+
+
     // 📌 Kamera sonucu yakalama
     ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -69,6 +71,14 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         Bundle extras = result.getData().getExtras();
                         Bitmap imageBitmap = (Bitmap) extras.get("data");
+
+                        // Fotoğrafın çözünürlüğünü artırmak için yeniden boyutlandırabiliriz
+                        int width = imageBitmap.getWidth();
+                        int height = imageBitmap.getHeight();
+                        int newWidth = width * 2; // Örnek olarak çözünürlüğü iki katına çıkaralım
+                        int newHeight = height * 2;
+
+                        Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, newWidth, newHeight, false);
 
                         // Çekilen fotoğrafı önizlemede göster
                         ImageView gecicifoto = findViewById(R.id.gecicifoto);
