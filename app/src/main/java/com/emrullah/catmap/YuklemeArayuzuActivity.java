@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -77,22 +78,41 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             });
     private void openCamera() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Loglama yaparak Intent'in doğru şekilde oluşturulduğunu kontrol et
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            Log.d("CameraIntent", "Kamera açılıyor...");
             cameraLauncher.launch(takePictureIntent);
+        } else {
+            Log.e("CameraIntent", "Kamera uygulaması bulunamadı!");
         }
     }
 
     public void kameraacma(View view){
+        // Kamera iznini kontrol et
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
 
+            // Eğer izin verilmemişse, izin iste
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, 101);
+        } else {
+            // İzin verilmişse, kamerayı aç
+            openCamera();
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Eğer izin verildiyse kamerayı aç
+        if (requestCode == 101) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera();  // Kamerayı aç
+            } else {
+                System.out.println("izin verilmedi");
+            }
         }
 
-        openCamera();
-        }
-
-
+    }
 }
 
