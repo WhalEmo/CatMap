@@ -13,7 +13,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.Manifest;
 import android.widget.Toast;
-
+import android.location.Location;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -35,6 +38,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private ImageView gecicifoto;
     private EditText kedininismi;
     private EditText kedininhakkindasi;
+    private FusedLocationProviderClient konumsaglayici;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,20 +47,21 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         gecicifoto = findViewById(R.id.gecicifoto);
         kedininismi=findViewById(R.id.isimText);
         kedininhakkindasi=findViewById(R.id.hakkındaText);
+        // FusedLocationProviderClient başlat
+        konumsaglayici = LocationServices.getFusedLocationProviderClient(this);
     }
 
-    // Galeriye gitmek için ActivityResultContracts kullanalım
+    // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
     ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri selectedImageUri = result.getData().getData();  // Seçilen fotoğrafın URI'si
-
+                        photoUri  = result.getData().getData();  // Seçilen fotoğrafın URI'si
                         // ImageView'da fotoğrafı göstermek
                         ImageView gecicifoto = findViewById(R.id.gecicifoto);
-                        gecicifoto.setImageURI(selectedImageUri);  // Fotoğrafı önizleme alanında gösteriyoruz
+                        gecicifoto.setImageURI(photoUri );  // Fotoğrafı önizleme alanında gösteriyoruz
                     }
                 }
             });
@@ -70,7 +75,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     }
 
 
-    // 📌 Kamera sonucu yakalama
+    // 📌 Kameraya gotur ve sonucu bas
     ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
@@ -87,12 +92,13 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     // 📌 Fotoğraf dosyası oluşturma
     private Uri getPhotoFileUri() {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());//cekilen footgrafın ne zaman cekildigini gosterir
         String fileName = "JPEG_" + timeStamp + ".jpg";
 
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);//klasor yolunu tutuyor. klasore gitme yolunu bilen bi nesne
+        //filepaths xml otomatik klasor olusturdu
         try {
-            photoFile = File.createTempFile(fileName, ".jpg", storageDir);
+            photoFile = File.createTempFile(fileName, ".jpg", storageDir);// dosya olustu
             return FileProvider.getUriForFile(this, "com.emrullah.catmap.fileprovider", photoFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -106,7 +112,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             photoUri = getPhotoFileUri();
             if (photoUri != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);//put extra kamera aktivitesinde cektigimiz fotoyu
+                //yukleme aktivitisine gonderir
                 cameraLauncher.launch(takePictureIntent);
             } else {
                 Log.e("CameraError", "Dosya oluşturulamadı!");
@@ -136,17 +143,51 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         }
     }
 
+    // 📌 Kullanıcının konumunu al
+    private void getUserLocation() {
+        // Eğer konum izni verilmemişse, kullanıcıdan izin iste
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 102);
+            return;
+        }
+
+        // 📍 Son bilinen konumu al
+        konumsaglayici.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    double latitude = location.getLatitude();  // Enlem
+                    double longitude = location.getLongitude(); // Boylam
+
+                    // 📌 Kullanıcıya Toast mesajı göster
+                    System.out.println( "Konum: " + latitude + ", " + longitude);
+
+
+                    // 🔥 BURADA Konumu Firebase'e veya bir değişkene kaydedebilirsin
+
+
+
+                } else {
+                    System.out.println( "Konum alınamadı!");
+                }
+            }
+        });
+    }
+
     //butona basınca kaydetme
     public void kaydet(View view){
+        //anlık cekilmedityse yani dosyadan secildiyse adres girsin
         String kediadi=kedininismi.getText().toString().trim();
         String kedihakkinda=kedininhakkindasi.getText().toString().trim();
         if(kediadi.isEmpty()){
             Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
             toast.show();
         }
-        if(kedihakkinda.isEmpty()){
-            Toast toast = Toast.makeText(this, "Lütfen kedi hakkindasi giriniz!", Toast.LENGTH_SHORT);
+        if(photoUri==null){
+            Toast toast=Toast.makeText(this,"Lütfen kedinin fotoğrafını yükleyiniz!",Toast.LENGTH_SHORT);
             toast.show();
+        }else {
+            getUserLocation();
         }
     }
 }
