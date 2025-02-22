@@ -179,41 +179,44 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     }
 
     //butona basınca kaydetme
-    public void kaydet(View view){
-        getUserLocation();
+    public void kaydet(View view) {
         //anlık cekilmedityse yani dosyadan secildiyse adres girsin
-        String kediadi=kedininismi.getText().toString().trim();
-        String kedihakkinda=kedininhakkindasi.getText().toString().trim();
-        if(kediadi.isEmpty()){
+        String kediadi = kedininismi.getText().toString().trim();
+        String kedihakkinda = kedininhakkindasi.getText().toString().trim();
+        if (kediadi.isEmpty()) {
             Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
             toast.show();
         }
-        if(photoUri==null){
-            Toast toast=Toast.makeText(this,"Lütfen kedinin fotoğrafını yükleyiniz!",Toast.LENGTH_SHORT);
+        if (photoUri == null) {
+            Toast toast = Toast.makeText(this, "Lütfen kedinin fotoğrafını yükleyiniz!", Toast.LENGTH_SHORT);
             toast.show();
         }
-        if(latitude==0&&longitude==0){
-            Toast toast=Toast.makeText(this,"Lütfen kedinin konumunu giriniz!",Toast.LENGTH_SHORT);
-            toast.show();
+        if (!kediadi.isEmpty() && photoUri != null) {
+            getUserLocation();
         }
+        if (latitude == 0 && longitude == 0) {
+            Toast toast = Toast.makeText(this, "Lütfen kedinin konumunu giriniz!", Toast.LENGTH_SHORT);
+            toast.show();
+        } else {
 
-        // Firestore'a kaydedilecek veri yapısı
-        Map<String, Object> catData = new HashMap<>();
-        catData.put("kediAdi", kediadi);
-        catData.put("kediHakkinda", kedihakkinda);
-        catData.put("latitude", latitude);
-        catData.put("longitude", longitude);
-        catData.put("photoUri", photoUri.toString());
+            // Firestore'a kaydedilecek veri yapısı
+            Map<String, Object> catData = new HashMap<>();
+            catData.put("kediAdi", kediadi);
+            catData.put("kediHakkinda", kedihakkinda);
+            catData.put("latitude", latitude);
+            catData.put("longitude", longitude);
+            catData.put("photoUri", photoUri.toString());
 
-        // Firestore'a veri gönder
-        db.collection("cats")
-                .add(catData)
-                .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+            // Firestore'a veri gönder
+            db.collection("cats")
+                    .add(catData)
+                    .addOnSuccessListener(documentReference -> {
+                        Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+        }
     }
 
 }
