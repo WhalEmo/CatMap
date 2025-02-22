@@ -7,6 +7,7 @@ appcompat = "1.7.0"
 material = "1.12.0"
 activity = "1.9.3"
 constraintlayout = "2.2.0"
+firebase-firestore = "24.11.0"
 
 gms-maps = "18.1.0"
 gms-location = "21.0.1"
@@ -21,6 +22,7 @@ play-core = "1.10.3"
 googleAndroidLibrariesMapsplatformSecretsGradlePlugin = "2.0.1"
 
 [libraries]
+
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -29,6 +31,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
+firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebase-firestore" }
 google-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "gms-maps" }
 google-location = { module = "com.google.android.gms:play-services-location", version.ref = "gms-location" }
 google-basement = { module = "com.google.android.gms:play-services-basement", version.ref = "gms-basement" }

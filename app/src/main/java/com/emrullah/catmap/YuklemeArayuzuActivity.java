@@ -30,6 +30,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.HashMap;
+import java.util.Map;
 
 public class YuklemeArayuzuActivity extends AppCompatActivity {
 
@@ -39,6 +42,10 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private EditText kedininismi;
     private EditText kedininhakkindasi;
     private FusedLocationProviderClient konumsaglayici;
+    private FirebaseFirestore db;
+    double latitude=0;
+    double longitude=0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +56,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         kedininhakkindasi=findViewById(R.id.hakkındaText);
         // FusedLocationProviderClient başlat
         konumsaglayici = LocationServices.getFusedLocationProviderClient(this);
+        // Firestore Başlat
+        db = FirebaseFirestore.getInstance();
     }
 
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
@@ -151,22 +160,17 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             return;
         }
 
+
         // 📍 Son bilinen konumu al
         konumsaglayici.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
                 if (location != null) {
-                    double latitude = location.getLatitude();  // Enlem
-                    double longitude = location.getLongitude(); // Boylam
+                     latitude = location.getLatitude();  // Enlem
+                     longitude = location.getLongitude(); // Boylam
 
                     // 📌 Kullanıcıya Toast mesajı göster
                     System.out.println( "Konum: " + latitude + ", " + longitude);
-
-
-                    // 🔥 BURADA Konumu Firebase'e veya bir değişkene kaydedebilirsin
-
-
-
                 } else {
                     System.out.println( "Konum alınamadı!");
                 }
@@ -176,6 +180,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     //butona basınca kaydetme
     public void kaydet(View view){
+        getUserLocation();
         //anlık cekilmedityse yani dosyadan secildiyse adres girsin
         String kediadi=kedininismi.getText().toString().trim();
         String kedihakkinda=kedininhakkindasi.getText().toString().trim();
@@ -186,8 +191,29 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         if(photoUri==null){
             Toast toast=Toast.makeText(this,"Lütfen kedinin fotoğrafını yükleyiniz!",Toast.LENGTH_SHORT);
             toast.show();
-        }else {
-            getUserLocation();
         }
+        if(latitude==0&&longitude==0){
+            Toast toast=Toast.makeText(this,"Lütfen kedinin konumunu giriniz!",Toast.LENGTH_SHORT);
+            toast.show();
+        }
+
+        // Firestore'a kaydedilecek veri yapısı
+        Map<String, Object> catData = new HashMap<>();
+        catData.put("kediAdi", kediadi);
+        catData.put("kediHakkinda", kedihakkinda);
+        catData.put("latitude", latitude);
+        catData.put("longitude", longitude);
+        catData.put("photoUri", photoUri.toString());
+
+        // Firestore'a veri gönder
+        db.collection("cats")
+                .add(catData)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
+
 }
