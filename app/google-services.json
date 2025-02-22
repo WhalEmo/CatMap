@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "742973265077",
-    "project_id": "catmap-c727d",
-    "storage_bucket": "catmap-c727d.firebasestorage.app"
+    "project_number": "138771325418",
+    "project_id": "catmap-c219d",
+    "storage_bucket": "catmap-c219d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:742973265077:android:9f7779b5676a2f04325afc",
+        "mobilesdk_app_id": "1:138771325418:android:3f71d0991887130ad35293",
         "android_client_info": {
-          "package_name": "com.emrullah.catmap"
+          "package_name": "com.emrullah.CatMap"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAar1UGmKKGc1cLYn3vv5OG1Am9EFADCgw"
+          "current_key": "AIzaSyAYFb4TL4UkePhmclts-NpKU5Vuz1kAAVg"
         }
       ],
       "services": {
