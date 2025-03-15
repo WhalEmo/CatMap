@@ -210,6 +210,12 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                     .add(catData)
                     .addOnSuccessListener(documentReference -> {
                         Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
+                        kediadi=null;
+                        kedininismi.getText().clear();
+                        kedihakkinda=null;
+                        kedininhakkindasi.getText().clear();
+                        photoUri=null;
+                        gecicifoto.setImageResource(R.drawable.yuklemefotosu);
                     })
                     .addOnFailureListener(e -> {
                         Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
