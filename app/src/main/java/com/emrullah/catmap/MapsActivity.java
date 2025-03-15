@@ -30,6 +30,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ActivityMapsBinding binding;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FusedLocationProviderClient fusedLocationClient;
+    double latitude;
+    double longitude;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +42,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // İzin kontrolü ve isteme
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Konum al
-            getLocation();
-        } else {
-            // İzin istemek için
+            getLocation();//Eğer izin daha önce verilmişse, konum alınır
+        } else {//Eğer izin verilmemişse, kullanıcıdan izin istenir.
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
 
@@ -73,11 +73,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         fusedLocationClient.getLastLocation()
@@ -86,12 +81,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onSuccess(Location location) {
                         if (location != null) {
                             // Konum bilgilerini aldık
-                            double latitude = location.getLatitude();
-                            double longitude = location.getLongitude();
+                             // latitude = location.getLatitude();
+                             //longitude = location.getLongitude();
+                            LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15)); // 15: Zoom seviyesi
+                            mMap.addMarker(new MarkerOptions().position(userLocation).title("Mevcut Konum"));
                             Log.d("Maps", "Mevcut Konum: Enlem = " + latitude + ", Boylam = " + longitude);
                         }
                     }
                 });
+        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+            @Override
+            public void onCameraIdle() {
+                LatLng cameraPosition = mMap.getCameraPosition().target;  // Enlem ve boylam
+                double latitude = cameraPosition.latitude;
+                double longitude = cameraPosition.longitude;
+                Log.d("Maps", "Yeni Konum: Enlem = " + latitude + ", Boylam = " + longitude);
+            }
+        });
+
     }
 
 
