@@ -45,6 +45,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     double latitude=0;
     double longitude=0;
+    String kediadi;
+    String kedihakkinda;
 
 
     @Override
@@ -134,6 +136,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     // 📌 Kamera butonuna tıklanınca çalışacak
     public void kameraacma(View view) {
+       // Uygulamanın kamera iznine sahip olup olmadığını kontrol eder.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -150,16 +153,22 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         if (requestCode == 101 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             openCamera();
         }
+        System.out.println("İFİN USTUNE GİRDİİİİİ");
+        if(requestCode == 102&&grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+            getUserLocation();
+            System.out.println("İFİN İCİNEE GİRDİİİİİ");
+        }
     }
 
     // 📌 Kullanıcının konumunu al
     private void getUserLocation() {
-        // Eğer konum izni verilmemişse, kullanıcıdan izin iste
+        //  kullanıcıdan izin iste
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 102);
+           // System.out.println("1 kere yazması lazımm ifffinn iciii");
             return;
         }
-
+        System.out.println("1 kere yazması lazımm");
 
         // 📍 Son bilinen konumu al
         konumsaglayici.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -168,6 +177,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                 if (location != null) {
                      latitude = location.getLatitude();  // Enlem
                      longitude = location.getLongitude(); // Boylam
+                    veritabanikaydi();
 
                     // 📌 Kullanıcıya Toast mesajı göster
                     System.out.println( "Konum: " + latitude + ", " + longitude);
@@ -176,27 +186,15 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 
-    //butona basınca kaydetme
-    public void kaydet(View view) {
-        //anlık cekilmedityse yani dosyadan secildiyse adres girsin
-        String kediadi = kedininismi.getText().toString().trim();
-        String kedihakkinda = kedininhakkindasi.getText().toString().trim();
-        if (kediadi.isEmpty()) {
-            Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
-            toast.show();
-        }
-        if (photoUri == null) {
-            Toast toast = Toast.makeText(this, "Lütfen kedinin fotoğrafını yükleyiniz!", Toast.LENGTH_SHORT);
-            toast.show();
-        }
-        if (!kediadi.isEmpty() && photoUri != null) {
-            getUserLocation();
-        }
+
+    public void veritabanikaydi(){
         if (latitude == 0 && longitude == 0) {
             Toast toast = Toast.makeText(this, "Lütfen kedinin konumunu giriniz!", Toast.LENGTH_SHORT);
             toast.show();
+            //System.out.println("konum ifi ici");
         } else {
 
             // Firestore'a kaydedilecek veri yapısı
@@ -217,6 +215,26 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                         Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         }
+
+    }
+
+    //butona basınca kaydetme
+    public void kaydet(View view) {
+        //anlık cekilmedityse yani dosyadan secildiyse adres girsin
+         kediadi = kedininismi.getText().toString().trim();
+         kedihakkinda = kedininhakkindasi.getText().toString().trim();
+        if (kediadi.isEmpty()) {
+            Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+        if (photoUri == null) {
+            Toast toast = Toast.makeText(this, "Lütfen kedinin fotoğrafını yükleyiniz!", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+        if ( !kediadi.isEmpty() && photoUri != null) {
+            getUserLocation();
+        }
+       // System.out.println("konum ifi ici");
     }
 
 }
