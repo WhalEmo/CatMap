@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 
@@ -166,6 +167,23 @@ public void konumbasma(){
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
 
+   public void vericekme(){
+    db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
+        for(DocumentSnapshot satir:queryDocumentSnapshots){
+            double latude=satir.getDouble("latitude");
+            double longtude=satir.getDouble("longitude");
+            if(Math.abs(latitude-latude)<=0.045&&Math.abs(longitude-longtude)<=0.045){
+                String kedism=satir.getString("kediAdi");
+                LatLng kedy = new LatLng(latude, longtude);
+                mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+            }
+        }
+    }).addOnFailureListener(e -> {
+        Log.e("FIREBASE", "Hata oluştu: ", e);
+    });
+
+   }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -182,6 +200,15 @@ public void konumbasma(){
                 konumbasma();
             });
             t2.start();
+            new Thread(()->{
+                try {
+                    Thread.sleep(6000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                vericekme();
+            }).start();
         });
+
       }
 }
