@@ -168,20 +168,42 @@ public void konumbasma(){
    }
 
    public void vericekme(){
-    db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
-        for(DocumentSnapshot satir:queryDocumentSnapshots){
-            double latude=satir.getDouble("latitude");
-            double longtude=satir.getDouble("longitude");
-            if(Math.abs(latitude-latude)<=0.045&&Math.abs(longitude-longtude)<=0.045){
-                String kedism=satir.getString("kediAdi");
-                LatLng kedy = new LatLng(latude, longtude);
-                mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
-            }
+       double lat1=latitude;
+       double long2=longitude;
+       if(lat1==latitude&&long2==longitude){
+           db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
+               for (DocumentSnapshot satir : queryDocumentSnapshots) {
+                   double latude = satir.getDouble("latitude");
+                   double longtude = satir.getDouble("longitude");
+                   if (Math.abs(latitude - latude) <= 0.001 && Math.abs(longitude - longtude) <= 0.001) {
+                       String kedism = satir.getString("kediAdi");
+                       LatLng kedy = new LatLng(latude, longtude);
+                       mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                   }
+               }
+           }).addOnFailureListener(e -> {
+               Log.e("FIREBASE", "Hata oluştu: ", e);
+           });
+       }
+    while(bittimi) {
+        if(Math.abs(lat1-latitude)>=0.001&&Math.abs(long2-longitude)>=0.001) {
+            db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
+                for (DocumentSnapshot satir : queryDocumentSnapshots) {
+                    double latude = satir.getDouble("latitude");
+                    double longtude = satir.getDouble("longitude");
+                    if (Math.abs(latitude - latude) <= 0.001 && Math.abs(longitude - longtude) <= 0.001) {
+                        String kedism = satir.getString("kediAdi");
+                        LatLng kedy = new LatLng(latude, longtude);
+                        mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                    }
+                }
+            }).addOnFailureListener(e -> {
+                Log.e("FIREBASE", "Hata oluştu: ", e);
+            });
+            lat1=latitude;
+            long2=longitude;
         }
-    }).addOnFailureListener(e -> {
-        Log.e("FIREBASE", "Hata oluştu: ", e);
-    });
-
+    }
    }
 
     @Override
