@@ -210,6 +210,17 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             catData.put("longitude", longitude);
             catData.put("photoUri", photoUri.toString());
 
+            //firestroragea veri gonder
+            StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+            StorageReference photoRef = storageRef.child("fotoklasöru/" + System.currentTimeMillis() + ".jpg");
+            photoRef.putFile(photoUri)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        Log.d("Storage", "Fotoğraf başarıyla Storage'a yüklendi!");
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Storage", "Fotoğraf yüklenirken hata oluştu", e);
+                    });
+
             // Firestore'a veri gönder
             db.collection("cats")
                     .add(catData)
