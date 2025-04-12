@@ -42,7 +42,6 @@ android {
 dependencies {
 // Firebase Core ve Firestore bağımlılıklarını ekle
     implementation(libs.firebase.firestore)
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

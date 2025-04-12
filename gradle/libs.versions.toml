@@ -9,6 +9,7 @@ activity = "1.9.3"
 constraintlayout = "2.2.0"
 firebase-firestore = "24.11.0"
 
+
 gms-maps = "18.1.0"
 gms-location = "21.0.1"
 gms-basement = "18.1.0"

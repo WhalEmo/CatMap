@@ -221,8 +221,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                                     catData.put("photoUri", downloadUrl);
 
                                     // Firestore'a veri kaydetme
-                                    FirebaseFirestore.getInstance()
-                                            .collection("cats")
+                                          db .collection("cats")
                                             .add(catData)
                                             .addOnSuccessListener(documentReference -> {
                                                 Log.d("Firestore", "Kedi bilgisi başarıyla kaydedildi: " + documentReference.getId());

@@ -10,6 +10,8 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +30,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -36,6 +39,8 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -177,8 +182,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 double longtude = satir.getDouble("longitude");
                 if (Math.abs(latitude - latude) <= 0.009 && Math.abs(longitude - longtude) <= 0.0113) {
                     String kedism = satir.getString("kediAdi");
+                    String markerUrl=satir.getString("photoUri");
                     LatLng kedy = new LatLng(latude, longtude);
-                    mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                    //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+
+                    Picasso.get()
+                            .load(markerUrl)  // Burada imageUrl Firestore'dan aldığın URL
+                            .resize(100, 100) // Fotoğrafı 100x100 boyutuna indir
+                            .into(new Target() {
+                                @Override
+                                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                    // Marker üzerine resmi ekle
+                                    // Marker'ı haritaya ekle
+                                    mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(bitmap)).position(kedy).title(kedism));
+                                }
+
+                                @Override
+                                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                                    Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
+                                }
+
+                                @Override
+                                public void onPrepareLoad(Drawable placeHolderDrawable) {
+                                    // Placeholder yüklenirken yapılacak işlemler
+                                }
+                            });
+
                 }
             }
         }).addOnFailureListener(e -> {
@@ -202,9 +231,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             double latude = satir.getDouble("latitude");
                             double longtude = satir.getDouble("longitude");
                             if (Math.abs(latitudee - latude) <= 0.009 && Math.abs(longitudee - longtude) <= 0.0113) {
+                                String markerUrl=satir.getString("photoUri");
                                 String kedism = satir.getString("kediAdi");
                                 LatLng kedy = new LatLng(latude, longtude);
-                                mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                               // mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+
+                                Picasso.get()
+                                        .load(markerUrl)  // Burada imageUrl Firestore'dan aldığın URL
+                                        .resize(100, 100) // Fotoğrafı 100x100 boyutuna indir
+                                        .into(new Target() {
+                                            @Override
+                                            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                                // Marker üzerine resmi ekle
+                                                // Marker'ı haritaya ekle
+                                                mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(bitmap)).position(kedy).title(kedism));
+                                            }
+
+                                            @Override
+                                            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                                                Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
+                                            }
+
+                                            @Override
+                                            public void onPrepareLoad(Drawable placeHolderDrawable) {
+                                                // Placeholder yüklenirken yapılacak işlemler
+                                            }
+                                        });
                             }
                         }
                     }).addOnFailureListener(e -> {
