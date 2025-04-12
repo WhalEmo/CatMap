@@ -96,114 +96,128 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-    boolean bittimi=true;
+
+    boolean bittimi = true;
+
     @Override
-    protected void onDestroy(){
+    protected void onDestroy() {
         super.onDestroy();
-       bittimi=false;
+        bittimi = false;
     }
+
     Marker kullanici;
     LatLng sydney;
-    double latitude ;
+    double latitude;
     double longitude;
 
-public void konumbasma(){
-    runOnUiThread(()-> {
-        sydney = new LatLng(37.911979, 32.499834);
-        kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konumm"));
+    public void konumbasma() {
+        runOnUiThread(() -> {
+            sydney = new LatLng(37.911979, 32.499834);
+            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konumm"));
 
-        Handler handler = new Handler(Looper.getMainLooper());
-        Runnable updateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // Güncel konumu al ve marker'ı güncelle
-                if (latitude != 0 && longitude != 0) {
-                    sydney = new LatLng(latitude, longitude);
-                    kullanici.setPosition(sydney);
-                   // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+            Handler handler = new Handler(Looper.getMainLooper());
+            Runnable updateRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    // Güncel konumu al ve marker'ı güncelle
+                    if (latitude != 0 && longitude != 0) {
+                        sydney = new LatLng(latitude, longitude);
+                        kullanici.setPosition(sydney);
+                        // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+                    }
+
+                    // Tekrar 5 saniye sonra çalıştırmak için tekrar çağır
+                    handler.postDelayed(this, 500);  // 5000 ms = 5 saniye
                 }
+            };
 
-                // Tekrar 5 saniye sonra çalıştırmak için tekrar çağır
-                handler.postDelayed(this, 500);  // 5000 ms = 5 saniye
-            }
-        };
-
-        // İlk başlatma
-        handler.post(updateRunnable);
-    });
-}
+            // İlk başlatma
+            handler.post(updateRunnable);
+        });
+    }
 
     public void konumalma() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setInterval(5000);  // 10 saniyede bir güncelleme almak
-            locationRequest.setFastestInterval(1000); // En hızlı güncelleme 5 saniye
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Yüksek doğruluk
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(5000);  // 10 saniyede bir güncelleme almak
+        locationRequest.setFastestInterval(1000); // En hızlı güncelleme 5 saniye
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Yüksek doğruluk
 
-            // Konum güncellemeleri alacak callback
-            locationCallback = new LocationCallback() {
-                @Override
-                public void onLocationResult(@NonNull LocationResult locationResult) {
-                    super.onLocationResult(locationResult);
-                    if (locationResult != null) {
-                        for (Location location : locationResult.getLocations()) {
-                            if (location != null) {
-                                // Yeni konumu işliyoruz
-                                latitude = location.getLatitude();
-                                longitude = location.getLongitude();
-                              //  Toast.makeText(MapsActivity.this,
-                                 //       "Latitude: " + latitude + "\nLongitude: " + longitude,
-                                 //       Toast.LENGTH_LONG).show();
-                                // Burada marker'ı taşıyabilirsiniz veya diğer işlemleri yapabilirsiniz
-                            }
+        // Konum güncellemeleri alacak callback
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+                if (locationResult != null) {
+                    for (Location location : locationResult.getLocations()) {
+                        if (location != null) {
+                            // Yeni konumu işliyoruz
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
+                            //  Toast.makeText(MapsActivity.this,
+                            //       "Latitude: " + latitude + "\nLongitude: " + longitude,
+                            //       Toast.LENGTH_LONG).show();
+                            // Burada marker'ı taşıyabilirsiniz veya diğer işlemleri yapabilirsiniz
                         }
                     }
                 }
-            };
+            }
+        };
 
-            // Konum güncellemelerini başlatıyoruz
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
-   }
-
-   public void vericekme(){
-       double lat1=latitude;
-       double long2=longitude;
-       if(lat1==latitude&&long2==longitude){
-           db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
-               for (DocumentSnapshot satir : queryDocumentSnapshots) {
-                   double latude = satir.getDouble("latitude");
-                   double longtude = satir.getDouble("longitude");
-                   if (Math.abs(latitude - latude) <= 0.001 && Math.abs(longitude - longtude) <= 0.001) {
-                       String kedism = satir.getString("kediAdi");
-                       LatLng kedy = new LatLng(latude, longtude);
-                       mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
-                   }
-               }
-           }).addOnFailureListener(e -> {
-               Log.e("FIREBASE", "Hata oluştu: ", e);
-           });
-       }
-    while(bittimi) {
-        if(Math.abs(lat1-latitude)>=0.001&&Math.abs(long2-longitude)>=0.001) {
-            db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
-                for (DocumentSnapshot satir : queryDocumentSnapshots) {
-                    double latude = satir.getDouble("latitude");
-                    double longtude = satir.getDouble("longitude");
-                    if (Math.abs(latitude - latude) <= 0.001 && Math.abs(longitude - longtude) <= 0.001) {
-                        String kedism = satir.getString("kediAdi");
-                        LatLng kedy = new LatLng(latude, longtude);
-                        mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
-                    }
-                }
-            }).addOnFailureListener(e -> {
-                Log.e("FIREBASE", "Hata oluştu: ", e);
-            });
-            lat1=latitude;
-            long2=longitude;
-        }
+        // Konum güncellemelerini başlatıyoruz
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
     }
+
+    public void vericekme() {
+        db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
+            for (DocumentSnapshot satir : queryDocumentSnapshots) {
+                double latude = satir.getDouble("latitude");
+                double longtude = satir.getDouble("longitude");
+                if (Math.abs(latitude - latude) <= 0.009 && Math.abs(longitude - longtude) <= 0.0113) {
+                    String kedism = satir.getString("kediAdi");
+                    LatLng kedy = new LatLng(latude, longtude);
+                    mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("FIREBASE", "Hata oluştu: ", e);
+        });
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setSmallestDisplacement(1000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationCallback locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    double latitudee = location.getLatitude();
+                    double longitudee = location.getLongitude();
+                    db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
+                        for (DocumentSnapshot satir : queryDocumentSnapshots) {
+                            double latude = satir.getDouble("latitude");
+                            double longtude = satir.getDouble("longitude");
+                            if (Math.abs(latitudee - latude) <= 0.009 && Math.abs(longitudee - longtude) <= 0.0113) {
+                                String kedism = satir.getString("kediAdi");
+                                LatLng kedy = new LatLng(latude, longtude);
+                                mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
+                            }
+                        }
+                    }).addOnFailureListener(e -> {
+                        Log.e("FIREBASE", "Hata oluştu: ", e);
+                    });
+                }
+            }
+        };
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
 
     @Override
