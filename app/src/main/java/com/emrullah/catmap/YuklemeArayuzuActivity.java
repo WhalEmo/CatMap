@@ -31,6 +31,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,6 +51,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     String kediadi;
     String kedihakkinda;
 
+    FirebaseStorage storage = FirebaseStorage.getInstance();
+    StorageReference storageRef = storage.getReference();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -189,40 +194,62 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     }
 
-
-    public void veritabanikaydi(){
+    public void veritabanikaydi() {
         if (latitude == 0 && longitude == 0) {
-            Toast toast = Toast.makeText(this, "Lütfen kedinin konumunu giriniz!", Toast.LENGTH_SHORT);
-            toast.show();
-            //System.out.println("konum ifi ici");
+            Toast.makeText(this, "Lütfen kedinin konumunu giriniz!", Toast.LENGTH_SHORT).show();
         } else {
-
             // Firestore'a kaydedilecek veri yapısı
             Map<String, Object> catData = new HashMap<>();
             catData.put("kediAdi", kediadi);
             catData.put("kediHakkinda", kedihakkinda);
             catData.put("latitude", latitude);
             catData.put("longitude", longitude);
-            catData.put("photoUri", photoUri.toString());
 
-            // Firestore'a veri gönder
-            db.collection("cats")
-                    .add(catData)
-                    .addOnSuccessListener(documentReference -> {
-                        Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
-                        kediadi=null;
-                        kedininismi.getText().clear();
-                        kedihakkinda=null;
-                        kedininhakkindasi.getText().clear();
-                        photoUri=null;
-                        gecicifoto.setImageResource(R.drawable.yuklemefotosu);
+            // Firestorage'a fotoğraf gönderme
+            StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+            StorageReference photoRef = storageRef.child("fotoklasöru/" + System.currentTimeMillis() + ".jpg");
+
+            photoRef.putFile(photoUri)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        Log.d("Storage", "Fotoğraf başarıyla Storage'a yüklendi!");
+
+                        // Fotoğraf yükleme başarılı, URL'yi al
+                        photoRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                                    String downloadUrl = uri.toString();
+
+                                    // URL'yi Firestore'a kaydet
+                                    catData.put("photoUri", downloadUrl);
+
+                                    // Firestore'a veri kaydetme
+                                          db .collection("cats")
+                                            .add(catData)
+                                            .addOnSuccessListener(documentReference -> {
+                                                Log.d("Firestore", "Kedi bilgisi başarıyla kaydedildi: " + documentReference.getId());
+                                                Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
+
+                                                kediadi = null;
+                                                kedininismi.getText().clear();
+                                                kedihakkinda = null;
+                                                kedininhakkindasi.getText().clear();
+                                                photoUri = null;
+                                                gecicifoto.setImageResource(R.drawable.yuklemefotosu);
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e("Firestore", "Kedi bilgisi kaydedilemedi", e);
+                                                Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                            });
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("Storage", "Fotoğrafın URL'si alınırken hata oluştu", e);
+                                });
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e("Storage", "Fotoğraf yüklenirken hata oluştu", e);
+                        Toast.makeText(this, "Fotoğraf yüklenirken hata oluştu", Toast.LENGTH_SHORT).show();
                     });
         }
-
     }
+
 
     //butona basınca kaydetme
     public void kaydet(View view) {
