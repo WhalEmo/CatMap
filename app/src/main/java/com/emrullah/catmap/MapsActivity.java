@@ -43,6 +43,7 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -192,7 +193,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }
             }
-            resimlimarker();
+            Thread t2 = new Thread(() -> {
+                resimlimarker();
+            });
+            t2.start();
         }).addOnFailureListener(e -> {
             Log.e("FIREBASE", "Hata oluştu: ", e);
         });
@@ -223,7 +227,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
                             }
                         }
-                        resimlimarker();
+                        Thread t = new Thread(() -> {
+                            resimlimarker();
+                        });
+                        t.start();
 
                     }).addOnFailureListener(e -> {
                         Log.e("FIREBASE", "Hata oluştu: ", e);
@@ -239,33 +246,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
    }
 
    ArrayList<Kediler>kediler=new ArrayList<>();
-   public void resimlimarker(){
-     for(Kediler kedi:kediler){
-         Picasso.get()
-                 .load(kedi.getURL())  // Burada imageUrl Firestore'dan aldığın URL
-                 .resize(100, 100) // Fotoğrafı 100x100 boyutuna indir
-                 .into(new Target() {
-                     @Override
-                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                         // Marker üzerine resmi ekle
-                         // Marker'ı haritaya ekle
-                         LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
-                         mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(bitmap)).position(kedy).title(kedi.getIsim()));
-                     }
+    List<Target> targets = new ArrayList<>(); // Target'ları burada saklıyoruz
+    public void resimlimarker() {
+        runOnUiThread(() -> {
+        for (Kediler kedi : kediler) {
+            Target target = new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
+                        mMap.addMarker(new MarkerOptions()
+                                .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+                                .position(kedy)
+                                .title(kedi.getIsim()));
+                }
 
-                     @Override
-                     public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                         Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
-                     }
+                @Override
+                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                    Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
+                }
 
-                     @Override
-                     public void onPrepareLoad(Drawable placeHolderDrawable) {
-                         // Placeholder yüklenirken yapılacak işlemler
-                     }
-                 });
-     }
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+                    // Placeholder yükleniyor
+                }
+            };
 
-   }
+            targets.add(target); // Target'ı kaybetmiyoruz!
+            Picasso.get()
+                    .load(kedi.getURL())
+                    .resize(100, 100)
+                    .into(target);
+           }
+        });
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
