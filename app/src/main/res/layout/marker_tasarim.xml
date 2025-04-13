@@ -10,12 +10,12 @@
         android:id="@+id/marker_image"
         android:layout_width="80dp"
         android:layout_height="80dp"
-        android:src="@drawable/placeholder"
+        android:src="@drawable/arkaplan"
         android:scaleType="centerCrop"
         android:layout_marginBottom="4dp"/>
 
     <ImageView
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:src="@drawable/ic_marker_pin" />
+        android:src="@drawable/markerkedy" />
 </LinearLayout>
