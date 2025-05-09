@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Build;
@@ -18,6 +19,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.Manifest;
 
@@ -45,6 +49,8 @@ import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import de.hdodenhof.circleimageview.CircleImageView;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -245,6 +251,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
+   // View'ı Bitmap'e Çeviren Yardımcı Fonksiyon
+   private Bitmap fotoduzenle(Bitmap imageBitmap){
+       View markerView = LayoutInflater.from(this).inflate(R.layout.marker_tasarim, null);
+
+       CircleImageView markerImage = markerView.findViewById(R.id.marker_image); // Eğer yuvarlak istiyorsan
+       markerImage.setImageBitmap(imageBitmap);
+
+       markerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+       markerView.layout(0, 0, markerView.getMeasuredWidth(), markerView.getMeasuredHeight());
+
+       Bitmap returnedBitmap = Bitmap.createBitmap(markerView.getMeasuredWidth(), markerView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+       Canvas canvas = new Canvas(returnedBitmap);
+       markerView.draw(canvas);
+       return returnedBitmap;
+   }
 
    ArrayList<Kediler>kediler=new ArrayList<>();
     List<Target> targets = new ArrayList<>(); // Target'ları burada saklıyoruz
@@ -255,8 +276,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
+                        Bitmap customMarkerBitmap = fotoduzenle(bitmap);
                         mMap.addMarker(new MarkerOptions()
-                                .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+                                .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
                                 .position(kedy)
                                 .title(kedi.getIsim()));
                 }
