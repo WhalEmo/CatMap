@@ -21,7 +21,9 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 
@@ -41,14 +43,20 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -59,7 +67,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ActivityMapsBinding binding;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FusedLocationProviderClient fusedLocationClient;
-
+    private BottomSheetDialog bottomSheetDialog;
+    private View bottomSheetView;
+    private TextView isim, hakkinda;
+    private ImageView imageView;
     private LocationCallback locationCallback;
 
 
@@ -75,6 +86,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         konumizni();
+
+        bottomSheetView = getLayoutInflater().inflate(R.layout.markerdaki_kediyi_gosterme, null);
+        bottomSheetDialog = new BottomSheetDialog(this);
+        bottomSheetDialog.setContentView(bottomSheetView);
+
+        isim = bottomSheetView.findViewById(R.id.isimgosterme);
+        hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
+        imageView = bottomSheetView.findViewById(R.id.kedigosterme);
+
 
     }
 
@@ -128,7 +148,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void konumbasma() {
         runOnUiThread(() -> {
             sydney = new LatLng(37.911979, 32.499834);
-            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konumm"));
+            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum"));
 
             Handler handler = new Handler(Looper.getMainLooper());
             Runnable updateRunnable = new Runnable() {
@@ -290,11 +310,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 @Override
                 public void onPrepareLoad(Drawable placeHolderDrawable) {
-                    // Placeholder yükleniyor
+
                 }
             };
 
-            targets.add(target); // Target'ı kaybetmiyoruz!
+            targets.add(target);
             Picasso.get()
                     .load(kedi.getURL())
                     .resize(100, 100)
@@ -303,6 +323,55 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .into(target);
            }
         });
+    }
+
+
+    Map<String, Bitmap> fotoCache = new HashMap<>();
+    List<Target> targetListesi = new ArrayList<>();
+    public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, String Url) {
+        isim.setText(ad);
+        hakkinda.setText(hakkindasi);
+
+        // Önbellekten kontrol et
+        if (fotoCache.containsKey(Url)) {
+            imageView.setImageBitmap(fotoCache.get(Url));
+            if (!bottomSheetDialog.isShowing()) {
+                bottomSheetDialog.show();
+            }
+            return;
+        }
+
+        // Yoksa yükle ve önbelleğe kaydet
+        Target t = new Target() {
+            @Override
+            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                fotoCache.put(Url, bitmap); // Önbelleğe ekle
+                imageView.setImageBitmap(bitmap);
+                if (!bottomSheetDialog.isShowing()) {
+                    bottomSheetDialog.show();
+                }
+            }
+
+            @Override
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
+            }
+
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {}
+        };
+
+        // Çöp toplayıcıya kaptırmamak için Target'ı listeye ekle
+        targetListesi.add(t);
+        Picasso.get().load(Url).into(t);
+    }
+
+    public void kedibilgisigetirme(LatLng markerPosition){
+        for(Kediler kedi:kediler){
+            if(kedi.getLatitude()==markerPosition.latitude&&kedi.getLongitude()==markerPosition.longitude) {
+                tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), kedi.getURL());
+            }
+        }
     }
 
     @Override
@@ -329,6 +398,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 vericekme();
             }).start();
+
+        });
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (!marker.getTitle().equals("konum")) {
+                    kedibilgisigetirme(marker.getPosition());
+                }
+                return true;
+            }
         });
 
       }
