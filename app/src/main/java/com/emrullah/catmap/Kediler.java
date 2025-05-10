@@ -6,8 +6,10 @@ public class Kediler {
     private double latitude;
     private double longitude;
     private String URL;
+    private String ID;
 
-    public Kediler(String isim ,String hakkindasi,double latitude,double longitude,String URL){
+    public Kediler(String ID,String isim ,String hakkindasi,double latitude,double longitude,String URL){
+        this.ID=ID;
         this.isim=isim;
         this.hakkindasi=hakkindasi;
         this.latitude=latitude;
@@ -53,5 +55,13 @@ public class Kediler {
 
     public void setURL(String URL) {
         this.URL = URL;
+    }
+
+    public String getID() {
+        return ID;
+    }
+
+    public void setID(String ID) {
+        this.ID = ID;
     }
 }

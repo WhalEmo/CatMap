@@ -31,11 +31,29 @@
     <TextView
         android:id="@+id/hakkindagosterme"
         android:layout_width="252dp"
-        android:layout_height="175dp"
+        android:layout_height="130dp"
         android:text="TextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/isimgosterme" />
+        app:layout_constraintTop_toBottomOf="@+id/isimgosterme"
+        app:layout_constraintVertical_bias="0.132" />
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:background="@android:color/transparent"
+        android:onClick="patiyorumyap"
+        android:scaleType="fitCenter"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/hakkindagosterme"
+        app:layout_constraintVertical_bias="0.985"
+        app:srcCompat="@drawable/patiliyorum" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

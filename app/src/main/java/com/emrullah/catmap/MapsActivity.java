@@ -44,7 +44,9 @@ import com.emrullah.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -72,6 +74,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private TextView isim, hakkinda;
     private ImageView imageView;
     private LocationCallback locationCallback;
+    private TextView yorummetni;
 
 
     @Override
@@ -210,11 +213,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 double latude = satir.getDouble("latitude");
                 double longtude = satir.getDouble("longitude");
                 if (Math.abs(latitude - latude) <= 0.009 && Math.abs(longitude - longtude) <= 0.0113) {
+                    String kediId = satir.getId();
                     String kedism = satir.getString("kediAdi");
                     String markerUrl=satir.getString("photoUri");
                     String hakkindaa=satir.getString("kediHakkinda");
                    // LatLng kedy = new LatLng(latude, longtude);
-                    Kediler kedi=new Kediler(kedism,hakkindaa,latude,longtude,markerUrl);
+                    Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
                     kediler.add(kedi);
                     //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
 
@@ -245,11 +249,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             double latude = satir.getDouble("latitude");
                             double longtude = satir.getDouble("longitude");
                             if (Math.abs(latitudee - latude) <= 0.009 && Math.abs(longitudee - longtude) <= 0.0113) {
+                                String kediId = satir.getId();
                                 String markerUrl=satir.getString("photoUri");
                                 String kedism = satir.getString("kediAdi");
                                 String hakkindaa=satir.getString("kediHakkinda");
                                // LatLng kedy = new LatLng(latude, longtude);
-                                Kediler kedi=new Kediler(kedism,hakkindaa,latude,longtude,markerUrl);
+                                Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
                                 kediler.add(kedi);
                                 //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
                             }
@@ -365,15 +370,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         targetListesi.add(t);
         Picasso.get().load(Url).into(t);
     }
-
+    String ID;
     public void kedibilgisigetirme(LatLng markerPosition){
         for(Kediler kedi:kediler){
             if(kedi.getLatitude()==markerPosition.latitude&&kedi.getLongitude()==markerPosition.longitude) {
+                ID=kedi.getID();
                 tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), kedi.getURL());
             }
         }
     }
+    public void patiyorumyap(View view){
 
+    }
+    public void yorumgonder(View view,String yorum){
+                    // Şimdi, kedinin yorumlar alt koleksiyonuna yorum ekleyelim
+                   yorummetni=findViewById(R.id.yorum_yaz);// BURADA KALDIM
+                    Map<String, Object> yorumData = new HashMap<>();
+                    yorumData.put("icerik", yorum);
+                    yorumData.put("zaman", FieldValue.serverTimestamp()); // Sunucu zaman damgası
+                    yorumData.put("kullanici_id", FirebaseAuth.getInstance().getCurrentUser().getUid());
+
+                    // Yorumlar alt koleksiyonuna veri ekleyelim
+                    db.collection("kediler")
+                            .document(ID)  // Kedinin ID'sine göre dokümanı seçiyoruz
+                            .collection("yorumlar")  // Alt koleksiyon: yorumlar
+                            .add(yorumData)
+                            .addOnSuccessListener(yorumRef -> {
+                                Log.d("Firestore", "Yorum eklendi: " + yorumRef.getId());
+                            })
+                            .addOnFailureListener(e -> Log.e("Firestore", "Yorum eklenemedi", e));
+    }
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
