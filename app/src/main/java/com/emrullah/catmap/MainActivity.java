@@ -3,6 +3,7 @@ package com.emrullah.catmap;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -25,13 +26,19 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
 
     private EditText KullanicAdi;
     private EditText sifre;
-    private LayoutInflater inf;
-    private View pencere;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
+    BottomSheetDialog diyalog;
+    private EditText AdEditT;
+    private EditText SoyadEditT;
+    private EditText EmailEditT;
+    public Kullanici kullanici;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        kullanici = new Kullanici();
     }
 
     public void yuklemeSayfasi(View view){
@@ -56,21 +64,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void girisMetodu(View view){
-        inf = LayoutInflater.from(this);
-        pencere = inf.inflate(R.layout.girispencere, null);
+        if(diyalog!=null && diyalog.isShowing()){
+            diyalog.dismiss();
+        }
+        View pencere = LayoutInflater.from(this).inflate(R.layout.girispencere,null);
         KullanicAdi = pencere.findViewById(R.id.usernameEditText);
         sifre = pencere.findViewById(R.id.passwordEditText);
-        BottomSheetDialog diyalog = new BottomSheetDialog(this);
+        diyalog = new BottomSheetDialog(this);
         diyalog.setContentView(pencere);
         diyalog.show();
     }
 
     public void girisYap(View view){
-        String kullaniciAdi = String.valueOf(KullanicAdi.getText());
-        String ksifre = String.valueOf(sifre.getText());
-        System.out.println(kullaniciAdi+" : "+ ksifre);
+        kullanici.setKullaniciAdi(donusum(KullanicAdi));
+        kullanici.setSifre(donusum(sifre));
+        System.out.println(kullanici.getKullaniciAdi()+" : "+ kullanici.getSifre());
 
-        if (kullaniciAdi.isEmpty() || ksifre.isEmpty()) {
+        if (kullanici.getKullaniciAdi().isEmpty() || kullanici.getSifre().isEmpty()) {
             Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -79,9 +89,9 @@ public class MainActivity extends AppCompatActivity {
                 boolean girisBasarili = false;
 
             for (DocumentSnapshot satir : queryDocumentSnapshots) {
-                    if (satir.getString("kullaniciAdi").equals(kullaniciAdi) && satir.getString("kullaniciSifre").equals(ksifre)) {
+                    if (satir.getString("kullaniciAdi").equals(kullanici.getKullaniciAdi()) && satir.getString("kullaniciSifre").equals(kullanici.getSifre())) {
                         girisBasarili = true;
-                        Toast.makeText(MainActivity.this, "Hoş geldin " + kullaniciAdi, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "Hoş geldin " + kullanici.getKullaniciAdi(), Toast.LENGTH_SHORT).show();
                         break;
                     }
                 }
@@ -91,4 +101,67 @@ public class MainActivity extends AppCompatActivity {
             });
 
     }
+    public void kaydol(View view){
+        kullanici.setAd(donusum(AdEditT));
+        kullanici.setSoyad(donusum(SoyadEditT));
+        kullanici.setEmail(donusum(EmailEditT));
+        kullanici.setKullaniciAdi(donusum(KullanicAdi));
+        kullanici.setSifre(donusum(sifre));
+
+        if(!kullanici.KullaniciIs()){
+            Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(kullanici.getSifre().length()<5){
+            Toast.makeText(this, "Lütfen şifreyi en az 5 haneli giriniz!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        System.out.println(kullanici.getAd());
+        VeriTabaninaKayit();
+
+    }
+
+    public void kayitMetodu(View view){
+        if(diyalog!=null && diyalog.isShowing()){
+            diyalog.dismiss();
+        }
+        View pencere = LayoutInflater.from(this).inflate(R.layout.kaydolpencere,null);
+        KullanicAdi = pencere.findViewById(R.id.usernameEditText);
+        sifre = pencere.findViewById(R.id.passwordEditText);
+        EmailEditT = pencere.findViewById(R.id.emailEditText);
+        AdEditT = pencere.findViewById(R.id.adEditText);
+        SoyadEditT = pencere.findViewById(R.id.soyadEditText);
+        diyalog = new BottomSheetDialog(this);
+        diyalog.setContentView(pencere);
+        diyalog.show();
+    }
+
+    private void VeriTabaninaKayit(){
+        db.collection("users")
+                .whereEqualTo("Email",kullanici.getEmail())
+                .get()
+                .addOnSuccessListener(sonuc->{
+                    if(!sonuc.isEmpty()){
+                        Toast.makeText(this, "Email ile daha önce kayıt yapılmış.", Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        db.collection("users")
+                                .whereEqualTo("KullaniciAdi",kullanici.getKullaniciAdi())
+                                .get()
+                                .addOnSuccessListener(cevap->{
+                                    if(!cevap.isEmpty()){
+                                        Toast.makeText(this, "Bu  ile d.", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e->{
+
+                });
+    }
+
+    private String donusum(EditText text){
+        return String.valueOf(text.getText());
+    }
+
 }
