@@ -384,7 +384,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     public void yorumgonder(View view,String yorum){
                     // Şimdi, kedinin yorumlar alt koleksiyonuna yorum ekleyelim
-                   yorummetni=findViewById(R.id.yorum_yaz);// BURADA KALDIM
+                   yorummetni=findViewById(R.id.yorumEditText);
                     Map<String, Object> yorumData = new HashMap<>();
                     yorumData.put("icerik", yorum);
                     yorumData.put("zaman", FieldValue.serverTimestamp()); // Sunucu zaman damgası

@@ -4,14 +4,23 @@ import java.sql.Timestamp;
 
 public class Yorumlar {
     private String yorum;
-    private Timestamp zaman;
+    private com.google.firebase.Timestamp zaman;
     private String kullanici_isim;
 
     public Yorumlar(){};
-    public Yorumlar(String yorum, Timestamp zaman,String kullanici_isim) {
+    public Yorumlar(String yorum, com.google.firebase.Timestamp zaman, String kullanici_isim) {
         this.yorum = yorum;
         this.zaman = zaman;
-        this.kullanici_isim=kullanici_isim;
+        this.kullanici_isim= kullanici_isim;
+    }
+
+    // Getter ve Setter'lar
+    public com.google.firebase.Timestamp getTarih() {
+        return zaman;
+    }
+
+    public void setTarih(com.google.firebase.Timestamp tarih) {
+        this.zaman = tarih;
     }
 
     public String getYorum() {
@@ -22,13 +31,6 @@ public class Yorumlar {
         this.yorum = yorum;
     }
 
-    public Timestamp getZaman() {
-        return zaman;
-    }
-
-    public void setZaman(Timestamp zaman) {
-        this.zaman = zaman;
-    }
 
     public String getKullanici_isim() {
         return kullanici_isim;
