@@ -1,9 +1,11 @@
 package com.emrullah.catmap;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -39,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText SoyadEditT;
     private EditText EmailEditT;
     public Kullanici kullanici;
+    private boolean GirisYapildi;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +55,15 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
         kullanici = new Kullanici();
+        SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        GirisYapildi = kayit.getBoolean("GirisYapildi",false);
+        if(GirisYapildi){
+            kullanici.GetYerelKullanici(this);
+            System.out.println(kullanici.getAd());
+        }
+        else{
+            System.out.println("giris yok");
+        }
     }
 
     public void yuklemeSayfasi(View view){
@@ -89,14 +102,21 @@ public class MainActivity extends AppCompatActivity {
                 boolean girisBasarili = false;
 
             for (DocumentSnapshot satir : queryDocumentSnapshots) {
-                    if (satir.getString("kullaniciAdi").equals(kullanici.getKullaniciAdi()) && satir.getString("kullaniciSifre").equals(kullanici.getSifre())) {
+
+                if(satir.getString("KullaniciAdi")==null || satir.getString("Sifre")==null){ continue; }
+
+                    if (satir.getString("KullaniciAdi").equals(kullanici.getKullaniciAdi()) && satir.getString("Sifre").equals(kullanici.getSifre())) {
                         girisBasarili = true;
+                        kullanici.setAd(satir.getString("Ad"));
+                        kullanici.setSoyad(satir.getString("Soyad"));
+                        kullanici.setEmail(satir.getString("Email"));
+                        YerelKayit();
                         Toast.makeText(MainActivity.this, "Hoş geldin " + kullanici.getKullaniciAdi(), Toast.LENGTH_SHORT).show();
                         break;
                     }
                 }
                 if (!girisBasarili) {
-                    Toast.makeText(MainActivity.this, "Geçersiz e-posta veya şifre", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Geçersiz kullanıcı adı veya şifre", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -110,6 +130,10 @@ public class MainActivity extends AppCompatActivity {
 
         if(!kullanici.KullaniciIs()){
             Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(!EmailKontrol(kullanici.getEmail())){
+            Toast.makeText(this, "Lütfen geçerli bir email adresi giriniz!", Toast.LENGTH_SHORT).show();
             return;
         }
         if(kullanici.getSifre().length()<5){
@@ -150,18 +174,45 @@ public class MainActivity extends AppCompatActivity {
                                 .get()
                                 .addOnSuccessListener(cevap->{
                                     if(!cevap.isEmpty()){
-                                        Toast.makeText(this, "Bu  ile d.", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(this, "Bu kullanıcı adı ile daha önce kayıt yapılmış.", Toast.LENGTH_SHORT).show();
+                                    }
+                                    else{
+                                        db.collection("users")
+                                                .add(kullanici.KullaniciData())
+                                                .addOnSuccessListener(documentReference -> {
+                                                    YerelKayit();
+                                                    Toast.makeText(this, "Kayıt Başarılı", Toast.LENGTH_SHORT).show();
+                                                })
+                                                .addOnSuccessListener(e ->{
+                                                    Toast.makeText(this, "Kayıt Başarısız", Toast.LENGTH_SHORT).show();
+                                                });
+
                                     }
                                 });
                     }
                 })
                 .addOnFailureListener(e->{
-
                 });
     }
 
     private String donusum(EditText text){
         return String.valueOf(text.getText());
+    }
+
+    private boolean EmailKontrol(String Email){
+        return Email!=null && Patterns.EMAIL_ADDRESS.matcher(Email).matches();
+    }
+
+    private void YerelKayit(){
+        SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        SharedPreferences.Editor editor = kayit.edit();
+        editor.putString("Ad",kullanici.getAd());
+        editor.putString("Soyad",kullanici.getSoyad());
+        editor.putString("Email",kullanici.getEmail());
+        editor.putString("KullaniciAdi",kullanici.getKullaniciAdi());
+        editor.putString("Sifre",kullanici.getSifre());
+        editor.putBoolean("GirisYapildi",true);
+        editor.apply();
     }
 
 }

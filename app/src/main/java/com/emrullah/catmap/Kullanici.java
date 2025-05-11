@@ -1,5 +1,10 @@
 package com.emrullah.catmap;
 
+import static android.content.Context.MODE_PRIVATE;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,6 +93,15 @@ public class Kullanici {
         kullaniciData.put("KullaniciAdi",this.KullaniciAdi);
         kullaniciData.put("Sifre",this.Sifre);
         return kullaniciData;
+    }
+
+    public void GetYerelKullanici(Context baglanti){
+        SharedPreferences kayit = baglanti.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        this.Ad = kayit.getString("Ad","");
+        this.Soyad = kayit.getString("Soyad","");
+        this.Email = kayit.getString("Email","");
+        this.KullaniciAdi = kayit.getString("KullaniciAdi","");
+        this.Sifre = kayit.getString("Sifre","");
     }
 
 }
