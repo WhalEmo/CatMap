@@ -5,37 +5,73 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#00BCD4"
     tools:context=".MainActivity">
 
-    <ImageButton
-        android:id="@+id/yukleid"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="-40dp"
-        android:background="@null"
-        android:onClick="yuklemeSayfasi"
-        android:scaleType="fitCenter"
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/haritaid"
-        app:srcCompat="@drawable/yukleme" />
-
-    <ImageButton
-        android:id="@+id/haritaid"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="200dp"
-        android:background="@null"
-        android:backgroundTint="#404040"
-        android:onClick="haritaSayfasi"
-        android:scaleType="fitCenter"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/harita" />
+        app:srcCompat="@drawable/arkaplan" />
+
+
+    <ImageView
+        android:id="@+id/girisid"
+        android:layout_width="250dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="320dp"
+        android:onClick="girisMetodu"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/giris" />
+
+    <ImageView
+        android:id="@+id/kaydolid"
+        android:layout_width="250dp"
+        android:layout_height="70dp"
+        android:onClick="kayitMetodu"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/girisid"
+        app:layout_constraintVertical_bias="0.13"
+        app:srcCompat="@drawable/kaydol" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/girisid"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/yukleid"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginRight="16dp"
+            android:background="@null"
+            android:onClick="yuklemeSayfasi"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/yukleme" />
+
+        <ImageButton
+            android:id="@+id/haritaid"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginLeft="16dp"
+            android:background="@null"
+            android:backgroundTint="#404040"
+            android:onClick="haritaSayfasi"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/harita" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
