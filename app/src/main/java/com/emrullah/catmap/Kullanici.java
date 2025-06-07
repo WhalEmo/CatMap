@@ -97,6 +97,7 @@ public class Kullanici {
 
     public void GetYerelKullanici(Context baglanti){
         SharedPreferences kayit = baglanti.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        this.ID = kayit.getString("ID","");
         this.Ad = kayit.getString("Ad","");
         this.Soyad = kayit.getString("Soyad","");
         this.Email = kayit.getString("Email","");
