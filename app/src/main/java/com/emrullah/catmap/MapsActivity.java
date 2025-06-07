@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -44,10 +46,15 @@ import com.emrullah.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.MemoryPolicy;
@@ -56,6 +63,7 @@ import com.squareup.picasso.Target;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,9 +82,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private TextView isim, hakkinda;
     private ImageView imageView;
     private LocationCallback locationCallback;
-    private TextView yorummetni;
-
-
+    private View ikinci;
+    private  BottomSheetDialog ikincibottom;
+    private RecyclerView yorumlarRecyclerView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,7 +106,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         imageView = bottomSheetView.findViewById(R.id.kedigosterme);
 
+        ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
+        ikincibottom=new BottomSheetDialog(this);
+        ikincibottom.setContentView(ikinci);
 
+        yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
     }
 
     private void konumizni() {
@@ -134,7 +146,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-
     boolean bittimi = true;
 
     @Override
@@ -379,27 +390,81 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
+    ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
+    Yorum_Adapter yorumAdapter;
+
+    private ListenerRegistration yorumListener;
     public void patiyorumyap(View view){
+        if (yorumListener != null) {
+            yorumListener.remove();  // Önceki listener varsa kaldır
+        }
+        yorumlar.clear();
+        yorumAdapter = new Yorum_Adapter(yorumlar, this);
+        yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        yorumlarRecyclerView.setAdapter(yorumAdapter);
 
-    }
-    public void yorumgonder(View view,String yorum){
-                    // Şimdi, kedinin yorumlar alt koleksiyonuna yorum ekleyelim
-                   yorummetni=findViewById(R.id.yorumEditText);
-                    Map<String, Object> yorumData = new HashMap<>();
-                    yorumData.put("icerik", yorum);
-                    yorumData.put("zaman", FieldValue.serverTimestamp()); // Sunucu zaman damgası
-                    yorumData.put("kullanici_id", FirebaseAuth.getInstance().getCurrentUser().getUid());
+        CollectionReference yorumlarRef=db.collection("cats")
+                .document(ID)
+                .collection("yorumlar");
+        yorumListener = yorumlarRef.orderBy("zaman", Query.Direction.DESCENDING)
+                .addSnapshotListener((snapshots,e)->{
+                    if (e != null) {
+                        Log.e("Yorumlar", "Dinleyici hatası: ", e);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            DocumentSnapshot doc=dc.getDocument();
+                            String IDsi=doc.getId();
+                            String kAdi=doc.getString("kullanici_adi");
+                            String icerik=doc.getString("icerik");
+                            Date zaman=doc.getDate("zaman");
+                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null);
+                            switch (dc.getType()){
+                                case ADDED:
+                                    yorumlar.add(0,yorum);
+                                    yorumAdapter.notifyItemInserted(0);
+                                    break;
+                                case REMOVED:
+                                    for(int i=0;i<yorumlar.size();i++){
+                                        if(yorumlar.get(i).getYorumID().equals(IDsi)){
+                                            yorumlar.remove(i);
+                                            yorumAdapter.notifyItemRemoved(i);
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                    }
 
-                    // Yorumlar alt koleksiyonuna veri ekleyelim
-                    db.collection("kediler")
-                            .document(ID)  // Kedinin ID'sine göre dokümanı seçiyoruz
-                            .collection("yorumlar")  // Alt koleksiyon: yorumlar
-                            .add(yorumData)
-                            .addOnSuccessListener(yorumRef -> {
-                                Log.d("Firestore", "Yorum eklendi: " + yorumRef.getId());
-                            })
-                            .addOnFailureListener(e -> Log.e("Firestore", "Yorum eklenemedi", e));
+                });
+      if(!ikincibottom.isShowing()){
+          ikincibottom.show();
+      }
     }
+    EditText TEXT;
+    public void yorumgonder(View view){
+        TEXT=ikinci.findViewById(R.id.yorumEditText);
+        DBekle(ID,TEXT.getText().toString());
+        TEXT.setText("");
+    }
+    public void DBekle(String kediId,String yorumIcerik) {
+        Map<String, Object> yanitData = new HashMap<>();
+        yanitData.put("icerik", yorumIcerik);
+        yanitData.put("zaman", FieldValue.serverTimestamp());
+        yanitData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
+
+        FirebaseFirestore.getInstance()
+                .collection("cats")
+                .document(kediId)
+                .collection("yorumlar")
+                .add(yanitData)
+                .addOnSuccessListener(yanitRef -> Log.d("Firestore", "Yanıt eklendi: " + yanitRef.getId()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
+    }
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
