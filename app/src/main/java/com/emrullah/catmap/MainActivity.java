@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText AdEditT;
     private EditText SoyadEditT;
     private EditText EmailEditT;
-    public Kullanici kullanici;
+    public static Kullanici kullanici;
     private boolean GirisYapildi;
 
 
