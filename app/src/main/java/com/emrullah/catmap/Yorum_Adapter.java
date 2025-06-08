@@ -8,10 +8,15 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Locale;
+
 
 public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
     private ArrayList<Yorum_Model>yorumList;
@@ -29,31 +34,52 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         return new YorumViewHolder(view);
     }
 
+   LinearLayout eskisi=null;
+    int pozisyon=-1;
+
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
         Yorum_Model yorum=yorumList.get(position);
 
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
-        holder.yorumTarihiText.setText(yorum.getTarih().toString());
+
+
+        holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
+
 
         holder.yanitlariGor.setOnClickListener(yant->{
           if(holder.recyclerView.getVisibility()==View.GONE){
               holder.recyclerView.setVisibility(View.VISIBLE);
           }
         });
-        holder.yanitlamayiGetir.setOnClickListener(cvp->{
-            if(holder.yanitlaricinLayout.getVisibility()==View.GONE){
-                holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
 
-            }
-        });
+
+        if(pozisyon==position){
+            holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
+            MapsActivity.yorumicin.setVisibility(View.GONE);
+        }else{
+            holder.yanitlaricinLayout.setVisibility(View.GONE);
+        }
+
+       holder.yanitlamayiGetir.setOnClickListener(cvp->{
+           if(pozisyon==position){
+               MapsActivity.yorumicin.setVisibility(View.VISIBLE);
+               pozisyon=-1;
+           }else {
+               pozisyon=position;
+           }
+           notifyDataSetChanged();
+       });
+
 
     }
 
     @Override
     public int getItemCount() {
-        return 0;
+
+        return yorumList.size();
+
     }
 
     public static class YorumViewHolder extends RecyclerView.ViewHolder{

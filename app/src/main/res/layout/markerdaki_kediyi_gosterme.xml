@@ -47,13 +47,12 @@
         android:background="@android:color/transparent"
         android:onClick="patiyorumyap"
         android:scaleType="fitCenter"
-
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/hakkindagosterme"
-        app:layout_constraintVertical_bias="0.985"
-        app:srcCompat="@drawable/patiliyorum" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp"
+        android:src="@drawable/patiliyorum"
+        />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

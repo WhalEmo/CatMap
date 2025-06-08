@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -22,8 +24,11 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
@@ -45,11 +50,17 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.MemoryPolicy;
@@ -58,6 +69,7 @@ import com.squareup.picasso.Target;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +91,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private View ikinci;
     private  BottomSheetDialog ikincibottom;
 
+    private RecyclerView yorumlarRecyclerView;
+    public static LinearLayout yorumicin;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,14 +111,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bottomSheetDialog = new BottomSheetDialog(this);
         bottomSheetDialog.setContentView(bottomSheetView);
 
+        bottomSheetDialog.setOnShowListener(dialog -> {
+            BottomSheetDialog d = (BottomSheetDialog) dialog;
+            FrameLayout bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                // 1. Behavior al
+                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+
+                // 2. Yüksekliği tam ekran yap
+                ViewGroup.LayoutParams layoutParams = bottomSheet.getLayoutParams();
+                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                bottomSheet.setLayoutParams(layoutParams);
+
+                // 3. BottomSheet'i expanded moda al (tam ekran gibi)
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                behavior.setSkipCollapsed(true); // İsteğe bağlı
+            }
+        });
+
+
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         imageView = bottomSheetView.findViewById(R.id.kedigosterme);
 
-
         ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
         ikincibottom=new BottomSheetDialog(this);
         ikincibottom.setContentView(ikinci);
+
+
+        yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
+        yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
+
     }
 
     private void konumizni() {
@@ -139,7 +177,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-
     boolean bittimi = true;
 
     @Override
@@ -392,19 +429,138 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-    public void patiyorumyap(View view){
+    ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
+    Yorum_Adapter yorumAdapter;
 
+    private ListenerRegistration yorumListener;
+    private boolean isLoading = false;
+    private boolean isLastPage = false;
+    private DocumentSnapshot lastVisible = null;
+    private static final int PAGE_SIZE = 10;
+
+    private void loadMoreYorumlar() {
+        if (isLoading || isLastPage || lastVisible == null)
+            return;
+
+        isLoading = true;
+
+        CollectionReference yorumlarRef = db.collection("cats")
+                .document(ID)
+                .collection("yorumlar");
+
+        yorumlarRef
+                .orderBy("zaman", Query.Direction.DESCENDING)
+                .startAfter(lastVisible)
+                .limit(PAGE_SIZE)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                            String IDsi=doc.getId();
+                            String kAdi=doc.getString("kullanici_adi");
+                            String icerik=doc.getString("icerik");
+                            Date zaman=doc.getDate("zaman");
+                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null);
+                            yorumlar.add(yorum);
+                        }
+                        yorumAdapter.notifyDataSetChanged();
+
+                        lastVisible = queryDocumentSnapshots.getDocuments()
+                                .get(queryDocumentSnapshots.size() - 1);
+                        if (queryDocumentSnapshots.size() < PAGE_SIZE) {
+                            isLastPage = true;
+                        }
+                    } else {
+                        isLastPage = true;
+                    }
+                    isLoading = false;
+                });
+    }
+
+    public void patiyorumyap(View view){
+        if (yorumListener != null) {
+            yorumListener.remove();  // Önceki listener varsa kaldır
+        }
+        yorumlar.clear();
+        yorumAdapter = new Yorum_Adapter(yorumlar, this);
+        yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        yorumlarRecyclerView.setAdapter(yorumAdapter);
+        isLastPage = false;
+        isLoading = false;
+        lastVisible = null;
+
+        CollectionReference yorumlarRef=db.collection("cats")
+                .document(ID)
+                .collection("yorumlar");
+        yorumListener = yorumlarRef
+                .orderBy("zaman", Query.Direction.DESCENDING)
+                .limit(PAGE_SIZE)
+                .addSnapshotListener((snapshots,e)->{
+                    if (e != null) {
+                        Log.e("Yorumlar", "Dinleyici hatası: ", e);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            DocumentSnapshot doc=dc.getDocument();
+                            String IDsi=doc.getId();
+                            String kAdi=doc.getString("kullanici_adi");
+                            String icerik=doc.getString("icerik");
+                            Date zaman=doc.getDate("zaman");
+                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null);
+                            switch (dc.getType()){
+                                case ADDED:
+                                    yorumlar.add(0,yorum);
+                                    yorumAdapter.notifyItemInserted(0);
+                                    break;
+                                case REMOVED:
+                                    for(int i=0;i<yorumlar.size();i++){
+                                        if(yorumlar.get(i).getYorumID().equals(IDsi)){
+                                            yorumlar.remove(i);
+                                            yorumAdapter.notifyItemRemoved(i);
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
+
+
+                        // Eğer gelen veri PAGE_SIZE'dan küçükse son sayfa olabilir
+                        if (snapshots.size() < PAGE_SIZE) {
+                            isLastPage = true;
+                        }
+                    }
+                });
+        yorumlarRecyclerView.clearOnScrollListeners(); // önceki scrollListener'ı temizle
+        yorumlarRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {// Bu listener, RecyclerView kaydırıldıkça tetiklenir.
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+
+                int visibleItemCount = layoutManager.getChildCount();
+                int totalItemCount = layoutManager.getItemCount();
+                int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+
+                if (!isLoading && !isLastPage) {
+                    if ((visibleItemCount + firstVisibleItem) >= totalItemCount
+                            && firstVisibleItem >= 0) {
+                        loadMoreYorumlar(); // scroll'da daha fazla veri getir
+                    }
+                }
+            }
+        });
       if(!ikincibottom.isShowing()){
-          ikincibottom.isShowing();
+          ikincibottom.show();
       }
     }
     EditText TEXT;
-    ArrayList<Yorum_Model>yorumlar;
     public void yorumgonder(View view){
-        TEXT=findViewById(R.id.yorumEditText);
-        DBekle(ID,TEXT.toString());
-        Yorum_Model yorum=new Yorum_Model(null,MainActivity.kullanici.getKullaniciAdi(),TEXT.toString(),null,null);
-        yorumlar.add(yorum);
+        TEXT=ikinci.findViewById(R.id.yorumEditText);
+        DBekle(ID,TEXT.getText().toString());
+        TEXT.setText("");
     }
     public void DBekle(String kediId,String yorumIcerik) {
         Map<String, Object> yanitData = new HashMap<>();
@@ -413,7 +569,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yanitData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
 
         FirebaseFirestore.getInstance()
-                .collection("kediler")
+                .collection("cats")
                 .document(kediId)
                 .collection("yorumlar")
                 .add(yanitData)

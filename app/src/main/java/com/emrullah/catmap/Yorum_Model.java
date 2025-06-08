@@ -1,7 +1,12 @@
 package com.emrullah.catmap;
 
+import com.google.firebase.Timestamp;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
+
 
 public class Yorum_Model {
     private String yorumID;
@@ -45,8 +50,20 @@ public class Yorum_Model {
     }
 
     public Date getTarih() {
+
+
         return Tarih;
     }
+    public String duzenlenmisTarih(){
+        if (Tarih != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+            String formattedDate = sdf.format(Tarih);
+            return formattedDate;
+        }else {
+            return "Şimdi";
+        }
+    }
+
 
     public void setTarih(Date tarih) {
         Tarih = tarih;
