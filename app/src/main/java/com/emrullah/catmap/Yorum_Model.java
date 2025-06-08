@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+
 public class Yorum_Model {
     private String yorumID;
     private String KullaniciAdi;
@@ -50,6 +51,7 @@ public class Yorum_Model {
 
     public Date getTarih() {
 
+
         return Tarih;
     }
     public String duzenlenmisTarih(){
@@ -61,6 +63,7 @@ public class Yorum_Model {
             return "Şimdi";
         }
     }
+
 
     public void setTarih(Date tarih) {
         Tarih = tarih;
