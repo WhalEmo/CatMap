@@ -76,8 +76,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private TextView isim, hakkinda;
     private ImageView imageView;
     private LocationCallback locationCallback;
-    private TextView yorummetni;
-
+    private View ikinci;
+    private  BottomSheetDialog ikincibottom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +100,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         imageView = bottomSheetView.findViewById(R.id.kedigosterme);
 
+
+        ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
+        ikincibottom=new BottomSheetDialog(this);
+        ikincibottom.setContentView(ikinci);
     }
 
     private void konumizni() {
@@ -390,25 +394,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     public void patiyorumyap(View view){
 
+      if(!ikincibottom.isShowing()){
+          ikincibottom.isShowing();
+      }
     }
-    public void yorumgonder(View view,String yorum){
-                    // Şimdi, kedinin yorumlar alt koleksiyonuna yorum ekleyelim
-                   yorummetni=findViewById(R.id.yorum_yaz);// BURADA KALDIM
-                    Map<String, Object> yorumData = new HashMap<>();
-                    yorumData.put("icerik", yorum);
-                    yorumData.put("zaman", FieldValue.serverTimestamp()); // Sunucu zaman damgası
-                    yorumData.put("kullanici_id", FirebaseAuth.getInstance().getCurrentUser().getUid());
+    EditText TEXT;
+    ArrayList<Yorum_Model>yorumlar;
+    public void yorumgonder(View view){
+        TEXT=findViewById(R.id.yorumEditText);
+        DBekle(ID,TEXT.toString());
+        Yorum_Model yorum=new Yorum_Model(null,MainActivity.kullanici.getKullaniciAdi(),TEXT.toString(),null,null);
+        yorumlar.add(yorum);
+    }
+    public void DBekle(String kediId,String yorumIcerik) {
+        Map<String, Object> yanitData = new HashMap<>();
+        yanitData.put("icerik", yorumIcerik);
+        yanitData.put("zaman", FieldValue.serverTimestamp());
+        yanitData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
 
-                    // Yorumlar alt koleksiyonuna veri ekleyelim
-                    db.collection("kediler")
-                            .document(ID)  // Kedinin ID'sine göre dokümanı seçiyoruz
-                            .collection("yorumlar")  // Alt koleksiyon: yorumlar
-                            .add(yorumData)
-                            .addOnSuccessListener(yorumRef -> {
-                                Log.d("Firestore", "Yorum eklendi: " + yorumRef.getId());
-                            })
-                            .addOnFailureListener(e -> Log.e("Firestore", "Yorum eklenemedi", e));
+        FirebaseFirestore.getInstance()
+                .collection("kediler")
+                .document(kediId)
+                .collection("yorumlar")
+                .add(yanitData)
+                .addOnSuccessListener(yanitRef -> Log.d("Firestore", "Yanıt eklendi: " + yanitRef.getId()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;

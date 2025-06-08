@@ -1,117 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <!-- Arka Plan -->
+    <!-- Yorumlar listesi -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/yorumlarRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
-    <!-- Yorum Metni -->
-    <ImageView
-        android:id="@+id/arkaplanmavi"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="centerCrop"
-        android:src="@drawable/maviiarkaplan"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <TextView
-        android:id="@+id/yorum_text"
+    <!-- Yeni yorum ekleme alanı -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:autoLink="all"
-        android:lineSpacingExtra="2dp"
-        android:text="Yorum metni"
-        android:textColor="#000000"
-        android:textIsSelectable="false"
-        android:textSize="16sp"
-        android:textStyle="normal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
 
-    <!-- Yorum Zamanı -->
-    <TextView
-        android:id="@+id/zaman_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Zaman"
-        android:textColor="#888888"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/yorum_text" />
 
-    <!-- Yanıtla (Solda) -->
-    <TextView
-        android:id="@+id/yanitla_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
-        android:layout_marginTop="10dp"
-        android:text="Yanıtla"
-        android:textColor="#888888"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@+id/yanit_recycler_view"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/zaman_text" />
+        <EditText
+            android:id="@+id/yorumEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Yorum ekle..."
+            android:maxLines="3"
+            android:padding="8dp"/>
+        <Button
+            android:id="@+id/yorumgonder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gönder"
+            android:onClick="yorumgonder"/>
+    </LinearLayout>
 
-    <!-- Yanıtları Gör (Sağda) -->
-    <TextView
-        android:id="@+id/yanitlari_gor_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="50dp"
-        android:text="Yanıtları Gör"
-        android:textColor="#888888"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/zaman_text" />
+</LinearLayout>
 
-    <!-- Yanıtlar Listesi (başlangıçta gizli) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/yanit_recycler_view"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/yanitla_text" />
-
-    <!-- Yorum Yazma Alanı -->
-    <EditText
-        android:id="@+id/yorum_yaz"
-        android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/beyaz"
-        android:hint="Yorum yaz..."
-        android:padding="8dp"
-        android:textColor="#000"
-        android:textSize="14sp"
-        android:lineSpacingExtra="0dp"
-        app:layout_constraintEnd_toStartOf="@+id/gonder_buton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/yanit_recycler_view" />
-
-    <Button
-        android:id="@+id/gonder_buton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#03A9F4"
-        android:onClick="yorumgonder"
-        android:text="Gönder"
-        android:typeface="normal"
-        app:layout_constraintBottom_toBottomOf="@+id/yorum_yaz"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/yorum_yaz"
-        app:layout_constraintTop_toTopOf="@+id/yorum_yaz" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
