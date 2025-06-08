@@ -31,7 +31,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         View view = LayoutInflater.from(context).inflate(R.layout.herbi_yorum_icin,parent,false);
         return new YorumViewHolder(view);
     }
-
+   LinearLayout eskisi=null;
+    int pozisyon=-1;
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
         Yorum_Model yorum=yorumList.get(position);
@@ -46,12 +47,23 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
               holder.recyclerView.setVisibility(View.VISIBLE);
           }
         });
-        holder.yanitlamayiGetir.setOnClickListener(cvp->{
-            if(holder.yanitlaricinLayout.getVisibility()==View.GONE){
-                holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
 
-            }
-        });
+        if(pozisyon==position){
+            holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
+            MapsActivity.yorumicin.setVisibility(View.GONE);
+        }else{
+            holder.yanitlaricinLayout.setVisibility(View.GONE);
+        }
+
+       holder.yanitlamayiGetir.setOnClickListener(cvp->{
+           if(pozisyon==position){
+               MapsActivity.yorumicin.setVisibility(View.VISIBLE);
+               pozisyon=-1;
+           }else {
+               pozisyon=position;
+           }
+           notifyDataSetChanged();
+       });
 
     }
 

@@ -44,15 +44,15 @@
         android:id="@+id/imageButton"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:layout_marginTop="128dp"
         android:background="@android:color/transparent"
         android:onClick="patiyorumyap"
-
         android:scaleType="fitCenter"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/hakkindagosterme"
-        app:srcCompat="@drawable/patiliyorum" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp"
+        android:src="@drawable/patiliyorum"
+        />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
