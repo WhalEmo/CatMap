@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -38,6 +39,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
@@ -98,6 +100,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         imageView = bottomSheetView.findViewById(R.id.kedigosterme);
 
+
         ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
         ikincibottom=new BottomSheetDialog(this);
         ikincibottom.setContentView(ikinci);
@@ -143,16 +146,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         bittimi = false;
+        MainActivity.kullanici.setLatitude(latitude);
+        MainActivity.kullanici.setLongitude(longitude);
     }
 
     Marker kullanici;
     LatLng sydney;
     double latitude;
     double longitude;
+    private boolean konumAlindi = false;
 
     public void konumbasma() {
         runOnUiThread(() -> {
-            sydney = new LatLng(37.911979, 32.499834);
+            sydney = new LatLng(MainActivity.kullanici.getLatitude(), MainActivity.kullanici.getLongitude());
             kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum"));
 
             Handler handler = new Handler(Looper.getMainLooper());
@@ -163,6 +169,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (latitude != 0 && longitude != 0) {
                         sydney = new LatLng(latitude, longitude);
                         kullanici.setPosition(sydney);
+                        if(konumAlindi){
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,16f));
+                            konumAlindi=false;
+                        }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }
 
@@ -207,6 +217,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Konum güncellemelerini başlatıyoruz
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        konumAlindi = true;
     }
 
     public void vericekme() {
@@ -414,10 +425,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        // Başlangıç marker'ı ekleniyor
-        LatLng sydney = new LatLng(37.911979, 32.499834);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("BEBEGİMM"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+
+
         mMap.setOnMapLoadedCallback(() -> {
             Thread t = new Thread(() -> {
                 konumalma();
