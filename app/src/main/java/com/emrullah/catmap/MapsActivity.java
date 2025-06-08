@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -43,6 +44,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
@@ -136,6 +138,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
+       
+       
     }
 
     private void konumizni() {
@@ -171,22 +175,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
+
     boolean bittimi = true;
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         bittimi = false;
+        MainActivity.kullanici.setLatitude(latitude);
+        MainActivity.kullanici.setLongitude(longitude);
     }
 
     Marker kullanici;
     LatLng sydney;
     double latitude;
     double longitude;
+    private boolean konumAlindi = false;
 
     public void konumbasma() {
         runOnUiThread(() -> {
-            sydney = new LatLng(37.911979, 32.499834);
+            sydney = new LatLng(MainActivity.kullanici.getLatitude(), MainActivity.kullanici.getLongitude());
             kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum"));
 
             Handler handler = new Handler(Looper.getMainLooper());
@@ -197,6 +205,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (latitude != 0 && longitude != 0) {
                         sydney = new LatLng(latitude, longitude);
                         kullanici.setPosition(sydney);
+                        if(konumAlindi){
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,16f));
+                            konumAlindi=false;
+                        }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }
 
@@ -241,6 +253,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Konum güncellemelerini başlatıyoruz
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        konumAlindi = true;
     }
 
     public void vericekme() {
@@ -541,6 +554,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
           ikincibottom.show();
       }
     }
+
     EditText TEXT;
     public void yorumgonder(View view){
         TEXT=ikinci.findViewById(R.id.yorumEditText);
@@ -560,16 +574,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .add(yanitData)
                 .addOnSuccessListener(yanitRef -> Log.d("Firestore", "Yanıt eklendi: " + yanitRef.getId()))
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
-    }
+       }
 
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        // Başlangıç marker'ı ekleniyor
-        LatLng sydney = new LatLng(37.911979, 32.499834);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("BEBEGİMM"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+
+
         mMap.setOnMapLoadedCallback(() -> {
             Thread t = new Thread(() -> {
                 konumalma();

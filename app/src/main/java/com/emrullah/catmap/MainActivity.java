@@ -8,7 +8,11 @@ import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -42,6 +46,11 @@ public class MainActivity extends AppCompatActivity {
     private EditText EmailEditT;
     public static Kullanici kullanici;
     private boolean GirisYapildi;
+    private ImageView GirisYapButon;
+    private ImageView KayitOlButon;
+    private ImageView KediKaydetButon;
+    private ImageView KediHaritaButon;
+
 
 
     @Override
@@ -55,14 +64,21 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
         kullanici = new Kullanici();
+        KayitOlButon = findViewById(R.id.kaydolid);
+        GirisYapButon = findViewById(R.id.girisid);
+        KediHaritaButon = findViewById(R.id.haritaid);
+        KediKaydetButon = findViewById(R.id.yukleid);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
         if(GirisYapildi){
             kullanici.GetYerelKullanici(this);
             System.out.println(kullanici.getAd());
+            KayitOlButon.setVisibility(View.INVISIBLE);
+            GirisYapButon.setVisibility(View.INVISIBLE);
         }
         else{
-            System.out.println("giris yok");
+            KediKaydetButon.setVisibility(View.INVISIBLE);
+            KediHaritaButon.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -206,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
     private void YerelKayit(){
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         SharedPreferences.Editor editor = kayit.edit();
+        editor.putString("ID",kullanici.getID());
         editor.putString("Ad",kullanici.getAd());
         editor.putString("Soyad",kullanici.getSoyad());
         editor.putString("Email",kullanici.getEmail());
@@ -213,6 +230,42 @@ public class MainActivity extends AppCompatActivity {
         editor.putString("Sifre",kullanici.getSifre());
         editor.putBoolean("GirisYapildi",true);
         editor.apply();
+        diyalog.dismiss();
+        ButonlariKaybet();
+    }
+
+
+
+    public void ButonlariKaybet(){
+        KediHaritaButon.setTranslationY(-2000f);
+        KediKaydetButon.setTranslationY(-2000f);
+        GirisYapButon.setEnabled(true);
+        GirisYapButon.setClickable(true);
+        GirisYapButon.animate()
+                .translationX(GirisYapButon.getWidth()+ 2000f)
+                .setDuration(1000)
+                .setInterpolator(new AccelerateInterpolator())
+                .start();
+        KayitOlButon.setEnabled(true);
+        KayitOlButon.setClickable(true);
+        KayitOlButon.animate()
+                .translationX(KayitOlButon.getWidth()-2000f)
+                .setDuration(1000)
+                .setInterpolator(new AccelerateInterpolator())
+                .start();
+        KediHaritaButon.setVisibility(View.VISIBLE);
+        KediHaritaButon.animate()
+                .translationY(0f)
+                .setDuration(1000)
+                .setInterpolator(new AccelerateInterpolator())
+                .start();
+        KediKaydetButon.setVisibility(View.VISIBLE);
+        KediKaydetButon.animate()
+                .translationY(0f)
+                .setDuration(1000)
+                .setInterpolator(new AccelerateInterpolator())
+                .start();
+
     }
 
 }

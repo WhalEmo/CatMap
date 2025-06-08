@@ -15,6 +15,25 @@ public class Kullanici {
     private String Email;
     private String KullaniciAdi;
     private String Sifre;
+    private double latitude;
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    private double longitude;
 
     public String getID() {
         return ID;
@@ -97,6 +116,7 @@ public class Kullanici {
 
     public void GetYerelKullanici(Context baglanti){
         SharedPreferences kayit = baglanti.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        this.ID = kayit.getString("ID","");
         this.Ad = kayit.getString("Ad","");
         this.Soyad = kayit.getString("Soyad","");
         this.Email = kayit.getString("Email","");
