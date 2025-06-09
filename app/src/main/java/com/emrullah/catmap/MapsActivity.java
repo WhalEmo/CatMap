@@ -77,7 +77,7 @@ import java.util.Map;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -138,6 +138,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
+
+
        
        
     }
@@ -420,16 +422,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Picasso.get().load(Url).into(t);
     }
     String ID;
+    public static String kediID;
+    String yorumID;
     public void kedibilgisigetirme(LatLng markerPosition){
         for(Kediler kedi:kediler){
             if(kedi.getLatitude()==markerPosition.latitude&&kedi.getLongitude()==markerPosition.longitude) {
                 ID=kedi.getID();
+                kediID=ID;
                 tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), kedi.getURL());
             }
         }
     }
     ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
     Yorum_Adapter yorumAdapter;
+
 
     private ListenerRegistration yorumListener;
     private boolean isLoading = false;
@@ -561,6 +567,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         DBekle(ID,TEXT.getText().toString());
         TEXT.setText("");
     }
+    EditText textt;
+
+    public void yanitgonder(View view){
+        Yorum_Model yorumm=yorumlar.get(Yorum_Adapter.yorumindeks);
+        RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
+        if (holder != null) {
+             textt = holder.itemView.findViewById(R.id.yanitEditText);
+            String yanitMetni = textt.getText().toString().trim();
+            if (!yanitMetni.isEmpty()) {
+                yorumID=yorumm.getYorumID();
+                DBekleYanit(ID, yorumID, yanitMetni);
+                textt.setText(""); // Yalnızca görünür olan EditText temizlenir
+            }
+        }
+    }
     public void DBekle(String kediId,String yorumIcerik) {
         Map<String, Object> yanitData = new HashMap<>();
         yanitData.put("icerik", yorumIcerik);
@@ -574,14 +595,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .add(yanitData)
                 .addOnSuccessListener(yanitRef -> Log.d("Firestore", "Yanıt eklendi: " + yanitRef.getId()))
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
-       }
+    }
+    public void DBekleYanit(String kediId,String yorumId,String yorumIcerik){
+        Map<String, Object> yanittData = new HashMap<>();
+        yanittData.put("yaniticerik", yorumIcerik);
+        yanittData.put("yanitzaman", FieldValue.serverTimestamp());
+        yanittData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi());
+
+        FirebaseFirestore.getInstance()
+                .collection("cats")
+                .document(kediId)
+                .collection("yorumlar")
+                .document(yorumId)
+                .collection("yanitlar")
+                .add(yanittData)
+                .addOnSuccessListener(yanit -> Log.d("Firestore", "Yanıt eklendi: " + yanit.getId()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
+    }
 
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
-
 
         mMap.setOnMapLoadedCallback(() -> {
             Thread t = new Thread(() -> {
