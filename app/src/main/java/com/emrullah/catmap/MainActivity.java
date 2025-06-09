@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
                                                     YerelKayit();
                                                     Toast.makeText(this, "Kayıt Başarılı", Toast.LENGTH_SHORT).show();
                                                 })
-                                                .addOnSuccessListener(e ->{
+                                                .addOnFailureListener(e ->{
                                                     Toast.makeText(this, "Kayıt Başarısız", Toast.LENGTH_SHORT).show();
                                                 });
 
