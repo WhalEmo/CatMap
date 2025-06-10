@@ -36,10 +36,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         return new YorumViewHolder(view);
     }
     int pozisyon=-1;
-    int gosterilenYanitSayisi;
-
-   LinearLayout eskisi=null;
-    int pozisyon=-1;
 
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
@@ -106,7 +102,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     @Override
     public int getItemCount() {
         return yorumList.size();
-
+    }
     public static class YorumViewHolder extends RecyclerView.ViewHolder{
         TextView kullaniciAditext;
         TextView yorumText;
