@@ -21,7 +21,6 @@ import java.util.Map;
 public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
     private ArrayList<Yorum_Model>yorumList;
     private Context context;
-
     public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context) {
         this.yorumList = yorumList;
         this.context = context;
@@ -45,8 +44,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
 
         holder.yanitlariGor.setOnClickListener(v -> {
-            if (holder.recyclerViewyanitlar.getVisibility() == View.GONE) {
-                holder.recyclerViewyanitlar.setVisibility(View.VISIBLE);
+            if (holder.container.getVisibility() == View.GONE) {
+                holder.container.setVisibility(View.VISIBLE);
                 holder.yanitlariGor.setText("Yanıtları Gizle");
 
 
@@ -54,39 +53,26 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 if (yanitlar == null) {
                     yanitlar = new ArrayList<>();
                 }
-                // Veritabanından yeni yanıtları çek (opsiyonel)
-                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum,yanitlar);
 
                 Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context);
                 holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
                 holder.recyclerViewyanitlar.setAdapter(yntadapter);
 
-
-
-/*
-
-
-                // "Daha Fazla" butonu ayarı
-                if (gosterilenYanitSayisi < toplamyanitsayisi) {
-                    holder.dahafazla.setVisibility(View.VISIBLE);
-                } else {
-                    holder.dahafazla.setVisibility(View.GONE);
-                }
+                // Veritabanından yeni yanıtları çek (opsiyonel)
+                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
+                yanitcek.yanitlariCek(yorum,yanitlar,yntadapter);
+                holder.dahafazla.setVisibility(View.VISIBLE);
 
                 holder.dahafazla.setOnClickListener(dahafz -> {
-                    int yenigosterilen = gosterilenYanitSayisi + 5;
-                    if (yenigosterilen > toplamyanitsayisi) {
-                        yenigosterilen = toplamyanitsayisi;
-                    }
-                    gosterilenYanitSayilari.put(position, yenigosterilen);
-                    notifyItemChanged(position);
+
+
                 });
 
-*/
+
             } else {
-                holder.recyclerViewyanitlar.setVisibility(View.GONE);
+                holder.container.setVisibility(View.GONE);
                 holder.yanitlariGor.setText("Yanıtları Gör");
+                holder.dahafazla.setVisibility(View.GONE);
             }
         });
 
@@ -123,9 +109,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         LinearLayout yanitlaricinLayout;
         TextView yanitlamayiGetir;
         EditText yazdigimyanit;
-        RecyclerView recyclerView;
         RecyclerView recyclerViewyanitlar;
         TextView dahafazla;
+        LinearLayout container;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -136,9 +122,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             yanitlaricinLayout=itemView.findViewById(R.id.yanitEkleLayout);
             yanitlamayiGetir=itemView.findViewById(R.id.yanitGosterTextView);
             yazdigimyanit=itemView.findViewById(R.id.yanitEditText);
-            recyclerView=itemView.findViewById(R.id.yanitlarRecyclerView);
             recyclerViewyanitlar=itemView.findViewById(R.id.yanitlarRecyclerView);
             dahafazla=itemView.findViewById(R.id.dahaFazlaYanitText);
+            container=itemView.findViewById(R.id.yanitlarContainer);
         }
     }
 

@@ -15,11 +15,12 @@ import java.util.Date;
 public class Yanitlari_Cekme {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration yanitListener;
-    private int cekileceksayac;
-    public void yanitlariCek(Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar) {
+    public void yanitlariCek(Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar,Yanit_Adapter yorumAdapter) {
+        yanitlar.clear();
         if (yanitListener != null) {
             yanitListener.remove();  // Önceki listener varsa kaldır
         }
+
         CollectionReference yanitlarRef = db.collection("cats")
                 .document(MapsActivity.kediID)
                 .collection("yorumlar")
@@ -29,7 +30,6 @@ public class Yanitlari_Cekme {
         yanitListener = yanitlarRef
                 .orderBy("yanitzaman", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, e) -> {
-                    cekileceksayac=0;
                     if (e != null) {
                         Log.e("Yanıtlar", "Dinleyici hatası: ", e);
                         return;
@@ -47,19 +47,12 @@ public class Yanitlari_Cekme {
                             switch (dc.getType()) {
                                 case ADDED:
                                     yanitlar.add(0, yanit);
-                                    cekileceksayac++;
-                                    if(cekileceksayac>5){
-                                        break;
-                                    }
+                                    yorumAdapter.notifyItemInserted(0);
                                     break;
                                 case REMOVED:
                                     for (int i = 0; i < yanitlar.size(); i++) {
                                         if (yanitlar.get(i).getYanitId().equals(yanitID)) {
-                                            cekileceksayac--;
                                             yanitlar.remove(i);
-                                            if(cekileceksayac>5){
-                                                break;
-                                            }
                                             break;
                                         }
                                     }
@@ -68,9 +61,6 @@ public class Yanitlari_Cekme {
                                     for (int i = 0; i < yanitlar.size(); i++) {
                                         if (yanitlar.get(i).getYanitId().equals(yanitID)) {
                                             yanitlar.set(i, yanit);
-                                            if(cekileceksayac>5){
-                                                break;
-                                            }
                                             break;
                                         }
                                     }
