@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -29,6 +30,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
@@ -42,6 +44,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
@@ -92,6 +95,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private  BottomSheetDialog ikincibottom;
     private RecyclerView yorumlarRecyclerView;
     public static LinearLayout yorumicin;
+    private RelativeLayout yuklemeEkrani;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +103,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        yuklemeEkrani = findViewById(R.id.yuklemeekran);
         // Map Fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -184,6 +189,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MainActivity.kullanici.setLongitude(longitude);
     }
 
+    private int dpDenPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+    private BitmapDescriptor Duzenleme(int dp, Bitmap foto){
+        int genislik = dpDenPx(dp);
+        int yukseklik = dpDenPx(dp);
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(foto, genislik, yukseklik, false);
+        return BitmapDescriptorFactory.fromBitmap(resizedBitmap);
+    }
+
     Marker kullanici;
     LatLng sydney;
     double latitude;
@@ -193,7 +208,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void konumbasma() {
         runOnUiThread(() -> {
             sydney = new LatLng(MainActivity.kullanici.getLatitude(), MainActivity.kullanici.getLongitude());
-            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum"));
+            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum").icon(Duzenleme(70, BitmapFactory.decodeResource(getResources(), R.drawable.kullanimarker))));
 
             Handler handler = new Handler(Looper.getMainLooper());
             Runnable updateRunnable = new Runnable() {
@@ -204,7 +219,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         sydney = new LatLng(latitude, longitude);
                         kullanici.setPosition(sydney);
                         if(konumAlindi){
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,16f));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,8f));
+                            new Handler().postDelayed(() -> {
+                                yuklemeEkrani.setVisibility(View.GONE);
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 16f), 2000, null);
+                            }, 1000);
                             konumAlindi=false;
                         }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
