@@ -10,7 +10,7 @@ public class Yanit_Model {
 
     public Yanit_Model(){}
 
-    public Yanit_Model(String yanitId, String adi, String soyadi, String yaniticerik, Date tarih) {
+    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih) {
         this.yanitId = yanitId;
         Adi = adi;
         this.yaniticerik = yaniticerik;

@@ -21,12 +21,11 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         this.yanitListe = yanitListe;
         this.context = context;
     }
-
     @NonNull
     @Override
     public Yanit_Adapter.YanitViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view= LayoutInflater.from(context).inflate(R.layout.herbi_yorum_icin,parent,false);
-        return new YanitViewHolder(view);
+        View view = LayoutInflater.from(context).inflate(R.layout.herbi_yanit_icin,parent,false);
+        return new Yanit_Adapter.YanitViewHolder(view);
     }
 
     String sbt="@beyzoo ";
@@ -37,25 +36,11 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         holder.yanitText.setText(yanit.getYaniticerik());
         holder.yanitTarihiText.setText(yanit.getTarih().toString());
 
-        holder.yanitlamayiGetir.setOnClickListener(yntgtr->{
-            if(holder.yanitlaricinLayout.getVisibility()==View.GONE){
-                holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
-                holder.yazdigimyanit.setText(sbt);
-            }else if(holder.yanitlaricinLayout.getVisibility()==View.VISIBLE){
-                holder.yanitlaricinLayout.setVisibility(View.GONE);
-            }
-           holder.gonderbuton.setOnClickListener(yntgndr->{
-
-           });
-
-        });
-
-
     }
 
     @Override
     public int getItemCount() {
-        return 0;
+        return yanitListe.size();
     }
     public static class YanitViewHolder extends RecyclerView.ViewHolder{
         TextView kullaniciAditext;
@@ -67,8 +52,8 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         Button gonderbuton;
         public YanitViewHolder(@NonNull View itemView) {
             super(itemView);
-            kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextView);
-            yanitText=itemView.findViewById(R.id.yorumTextView);
+            kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextViewynt);
+            yanitText=itemView.findViewById(R.id.yanittTextView);
             yanitTarihiText=itemView.findViewById(R.id.tarihTextView);
             yanitlaricinLayout=itemView.findViewById(R.id.yanitEkleLayout);
             yanitlamayiGetir=itemView.findViewById(R.id.yanitGosterTextView);
