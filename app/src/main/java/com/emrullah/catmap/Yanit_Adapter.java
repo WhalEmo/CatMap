@@ -40,7 +40,6 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
 
     @Override
     public int getItemCount() {
-
         return yanitListe.size();
     }
     public static class YanitViewHolder extends RecyclerView.ViewHolder{
@@ -53,8 +52,8 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         Button gonderbuton;
         public YanitViewHolder(@NonNull View itemView) {
             super(itemView);
-            kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextView);
-            yanitText=itemView.findViewById(R.id.yorumTextView);
+            kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextViewynt);
+            yanitText=itemView.findViewById(R.id.yanittTextView);
             yanitTarihiText=itemView.findViewById(R.id.tarihTextView);
             yanitlaricinLayout=itemView.findViewById(R.id.yanitEkleLayout);
             yanitlamayiGetir=itemView.findViewById(R.id.yanitGosterTextView);
