@@ -8,6 +8,8 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
 
 public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
     private ArrayList<Yorum_Model>yorumList;
@@ -34,6 +37,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     }
     int pozisyon=-1;
     int gosterilenYanitSayisi;
+
+   LinearLayout eskisi=null;
+    int pozisyon=-1;
 
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
@@ -76,6 +82,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             }
         });
 
+
         if(pozisyon==position){
             holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
             MapsActivity.yorumicin.setVisibility(View.GONE);
@@ -99,7 +106,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     @Override
     public int getItemCount() {
         return yorumList.size();
-    }
 
     public static class YorumViewHolder extends RecyclerView.ViewHolder{
         TextView kullaniciAditext;

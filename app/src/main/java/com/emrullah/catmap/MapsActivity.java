@@ -92,6 +92,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private  BottomSheetDialog ikincibottom;
     private RecyclerView yorumlarRecyclerView;
     public static LinearLayout yorumicin;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -138,10 +139,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
-
-
-       
-       
     }
 
     private void konumizni() {
@@ -177,7 +174,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-
     boolean bittimi = true;
 
     @Override
@@ -581,6 +577,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 textt.setText(""); // Yalnızca görünür olan EditText temizlenir
             }
         }
+
     }
     public void DBekle(String kediId,String yorumIcerik) {
         Map<String, Object> yanitData = new HashMap<>();
