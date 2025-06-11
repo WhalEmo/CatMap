@@ -95,7 +95,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private  BottomSheetDialog ikincibottom;
     private RecyclerView yorumlarRecyclerView;
     public static LinearLayout yorumicin;
+    public static LinearLayout ynticin;
     private RelativeLayout yuklemeEkrani;
+    private TextView bosyorum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,6 +146,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
+        ynticin=ikinci.findViewById(R.id.yntgndrLayout);
+
+        bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
     }
 
     private void konumizni() {
@@ -492,6 +497,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     } else {
                         isLastPage = true;
+                        return;
                     }
                     isLoading = false;
                 });
@@ -501,6 +507,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (yorumListener != null) {
             yorumListener.remove();  // Önceki listener varsa kaldır
         }
+
         yorumlar.clear();
         yorumAdapter = new Yorum_Adapter(yorumlar, this);
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -551,6 +558,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             isLastPage = true;
                         }
                     }
+                    if (yorumlar.isEmpty()) {
+                        bosyorum.setVisibility(View.VISIBLE);
+                        yorumlarRecyclerView.setVisibility(View.GONE);
+                        isLastPage = true;
+                    }
+
                 });
         yorumlarRecyclerView.clearOnScrollListeners(); // önceki scrollListener'ı temizle
         yorumlarRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {// Bu listener, RecyclerView kaydırıldıkça tetiklenir.
@@ -584,11 +597,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     EditText textt;
 
-    public void yanitgonder(View view){
+    public void yntgonder(View view){
         Yorum_Model yorumm=yorumlar.get(Yorum_Adapter.yorumindeks);
         RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
         if (holder != null) {
-             textt = holder.itemView.findViewById(R.id.yanitEditText);
+             textt =ikinci.findViewById(R.id.yntEditText);
             String yanitMetni = textt.getText().toString().trim();
             if (!yanitMetni.isEmpty()) {
                 yorumID=yorumm.getYorumID();

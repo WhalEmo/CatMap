@@ -1,6 +1,8 @@
 package com.emrullah.catmap;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class Yanit_Model {
     private String yanitId;
@@ -47,5 +49,14 @@ public class Yanit_Model {
 
     public void setTarih(Date tarih) {
         this.tarih = tarih;
+    }
+    public String duzenlenmisTarih(){
+        if (tarih != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+            String formattedDate = sdf.format(tarih);
+            return formattedDate;
+        }else {
+            return "Şimdi";
+        }
     }
 }

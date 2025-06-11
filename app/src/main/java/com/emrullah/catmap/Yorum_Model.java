@@ -1,6 +1,7 @@
 package com.emrullah.catmap;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -13,6 +14,8 @@ public class Yorum_Model {
     private String Yorumicerik;
     private Date Tarih;
     private ArrayList<Yanit_Model>yanitlar;
+    private DocumentSnapshot sonYanit;
+    private boolean yanitlarGorunuyor = false;
 
     public Yorum_Model(){}
 
@@ -73,4 +76,21 @@ public class Yorum_Model {
     public void setYanitlar(ArrayList<Yanit_Model> yanitlar) {
         this.yanitlar = yanitlar;
     }
+
+    public DocumentSnapshot getSonYanit() {
+        return sonYanit;
+    }
+
+    public void setSonYanit(DocumentSnapshot sonYanit) {
+        this.sonYanit = sonYanit;
+    }
+
+    public boolean isYanitlarGorunuyor() {
+        return yanitlarGorunuyor;
+    }
+
+    public void setYanitlarGorunuyor(boolean yanitlarGorunuyor) {
+        this.yanitlarGorunuyor = yanitlarGorunuyor;
+    }
+
 }

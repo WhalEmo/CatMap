@@ -16,10 +16,12 @@ import java.util.ArrayList;
 public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewHolder> {
     private ArrayList<Yanit_Model>yanitListe;
     private Context context;
+    private String sahipAdi;
 
-    public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context) {
+    public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context,String sahipAdi) {
         this.yanitListe = yanitListe;
         this.context = context;
+        this.sahipAdi=sahipAdi;
     }
     @NonNull
     @Override
@@ -28,18 +30,18 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         return new Yanit_Adapter.YanitViewHolder(view);
     }
 
-    String sbt="@beyzoo ";
+
     @Override
     public void onBindViewHolder(@NonNull Yanit_Adapter.YanitViewHolder holder, int position) {
         Yanit_Model yanit=yanitListe.get(position);
         holder.kullaniciAditext.setText(yanit.getAdi());
-        holder.yanitText.setText(yanit.getYaniticerik());
-        holder.yanitTarihiText.setText(yanit.getTarih().toString());
-
+        holder.yanitText.setText("@"+sahipAdi+" "+yanit.getYaniticerik());
+        holder.yanitTarihiText.setText(yanit.duzenlenmisTarih());
     }
 
     @Override
     public int getItemCount() {
+
         return yanitListe.size();
     }
     public static class YanitViewHolder extends RecyclerView.ViewHolder{

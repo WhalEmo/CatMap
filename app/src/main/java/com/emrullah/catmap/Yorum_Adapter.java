@@ -45,8 +45,17 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
 
+        if (yorum.isYanitlarGorunuyor()) {
+            holder.container.setVisibility(View.VISIBLE);
+            holder.yanitlariGor.setText("Yanıtları Gizle");
+        } else {
+            holder.container.setVisibility(View.GONE);
+            holder.yanitlariGor.setText("Yanıtları Gör");
+        }
+
         holder.yanitlariGor.setOnClickListener(v -> {
-            if (holder.container.getVisibility() == View.GONE) {
+            if (!yorum.isYanitlarGorunuyor()) {
+                yorum.setYanitlarGorunuyor(true);
                 holder.container.setVisibility(View.VISIBLE);
                 holder.yanitlariGor.setText("Yanıtları Gizle");
 
@@ -54,24 +63,26 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
                 if (yanitlar == null) {
                     yanitlar = new ArrayList<>();
+                    yorum.setYanitlar(yanitlar);
                 }
 
-                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context);
+                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,yorum.getKullaniciAdi());
                 holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
                 holder.recyclerViewyanitlar.setAdapter(yntadapter);
 
                 // Veritabanından yeni yanıtları çek (opsiyonel)
                 Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum,yanitlar,yntadapter);
+                yanitcek.yanitlariCek(yorum,yanitlar,yntadapter,5,true);
                 holder.dahafazla.setVisibility(View.VISIBLE);
 
+                ArrayList<Yanit_Model> finalYanitlar = yanitlar;
                 holder.dahafazla.setOnClickListener(dahafz -> {
-
-
+                    yanitcek.yanitlariCek(yorum, finalYanitlar,yntadapter,5,false);
                 });
 
 
             } else {
+                yorum.setYanitlarGorunuyor(false);
                 holder.container.setVisibility(View.GONE);
                 holder.yanitlariGor.setText("Yanıtları Gör");
                 holder.dahafazla.setVisibility(View.GONE);
@@ -79,23 +90,35 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         });
 
 
-        if(pozisyon==position){
-            holder.yanitlaricinLayout.setVisibility(View.VISIBLE);
-            MapsActivity.yorumicin.setVisibility(View.GONE);
-        }else{
-            holder.yanitlaricinLayout.setVisibility(View.GONE);
-        }
 
-       holder.yanitlamayiGetir.setOnClickListener(cvp->{
-           if(pozisyon==position){
-               MapsActivity.yorumicin.setVisibility(View.VISIBLE);
-               pozisyon=-1;
-           }else {
-               pozisyon=position;
-               yorumindeks=position;
-           }
-           notifyDataSetChanged();
-       });
+        holder.yanitlamayiGetir.setOnClickListener(cvp -> {
+            int eskiPozisyon = pozisyon;
+
+            if (pozisyon == position) {
+                // Aynı butona tıklandıysa: kapat
+                pozisyon = -1;
+                if(MapsActivity.yorumicin.getVisibility()==View.GONE) {
+                    MapsActivity.yorumicin.setVisibility(View.VISIBLE);
+                }
+                MapsActivity.ynticin.setVisibility(View.GONE);
+            } else {
+                // Yeni yorum seçildi: göster
+                pozisyon = position;
+                yorumindeks = position;
+                if(MapsActivity.yorumicin.getVisibility()==View.VISIBLE) {
+                    MapsActivity.yorumicin.setVisibility(View.GONE);
+                }
+                MapsActivity.ynticin.setVisibility(View.VISIBLE);
+            }
+
+            // notifyItemChanged pozisyonları güncelle
+            if (eskiPozisyon != -1) {
+                notifyItemChanged(eskiPozisyon);
+            }
+            notifyItemChanged(position);
+        });
+
+
 
     }
 
@@ -108,9 +131,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         TextView yorumText;
         TextView yorumTarihiText;
         TextView yanitlariGor;
-        LinearLayout yanitlaricinLayout;
         TextView yanitlamayiGetir;
-        EditText yazdigimyanit;
         RecyclerView recyclerViewyanitlar;
         TextView dahafazla;
         LinearLayout container;
@@ -121,9 +142,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             yorumText=itemView.findViewById(R.id.yorumTextView);
             yorumTarihiText=itemView.findViewById(R.id.tarihTextView);
             yanitlariGor=itemView.findViewById(R.id.yanitlariGorTextView);
-            yanitlaricinLayout=itemView.findViewById(R.id.yanitEkleLayout);
             yanitlamayiGetir=itemView.findViewById(R.id.yanitGosterTextView);
-            yazdigimyanit=itemView.findViewById(R.id.yanitEditText);
             recyclerViewyanitlar=itemView.findViewById(R.id.yanitlarRecyclerView);
             dahafazla=itemView.findViewById(R.id.dahaFazlaYanitText);
             container=itemView.findViewById(R.id.yanitlarContainer);

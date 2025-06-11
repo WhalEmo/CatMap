@@ -12,6 +12,16 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
+    <TextView
+        android:id="@+id/bosYorumTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Henüz yorum yok. İlk yorumu sen yap!"
+        android:textColor="#888888"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone"/>
 
     <!-- Yeni yorum ekleme alanı -->
     <LinearLayout
@@ -29,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Yorum ekle..."
-            android:maxLines="3"
+            android:maxLines="6"
             android:padding="8dp"/>
         <Button
             android:id="@+id/yorumgonder"
@@ -37,6 +47,30 @@
             android:layout_height="wrap_content"
             android:text="Gönder"
             android:onClick="yorumgonder"/>
+    </LinearLayout>
+    <!-- Yeni yorum ekleme alanı -->
+    <LinearLayout
+        android:id="@+id/yntgndrLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:paddingTop="8dp">
+
+        <EditText
+            android:id="@+id/yntEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Yanıt ekle..."
+            android:maxLines="6"
+            android:padding="8dp"/>
+        <Button
+            android:id="@+id/yntgonder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gönder"
+            android:onClick="yntgonder"/>
     </LinearLayout>
 
 </LinearLayout>
