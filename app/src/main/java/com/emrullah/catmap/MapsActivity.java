@@ -551,10 +551,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     break;
                             }
                         }
-                        lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
 
-                        // Eğer gelen veri PAGE_SIZE'dan küçükse son sayfa olabilir
-                        if (snapshots.size() < PAGE_SIZE) {
+                        if (!snapshots.isEmpty()) {
+                            lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
+
+                            if (snapshots.size() < PAGE_SIZE) {
+                                isLastPage = true;
+                            }
+                        } else {
                             isLastPage = true;
                         }
                     }

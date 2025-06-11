@@ -48,47 +48,44 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         if (yorum.isYanitlarGorunuyor()) {
             holder.container.setVisibility(View.VISIBLE);
             holder.yanitlariGor.setText("Yanıtları Gizle");
+            holder.dahafazla.setVisibility(View.VISIBLE);
+
+            ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
+            if (yanitlar == null) {
+                yanitlar = new ArrayList<>();
+                yorum.setYanitlar(yanitlar);
+            }
+
+            // 🔁 ADAPTERI YENİDEN BAĞLA
+            Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context, yorum.getKullaniciAdi());
+            holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
+            holder.recyclerViewyanitlar.setAdapter(yntadapter);
+
+            // 🔄 SADECE 1 KERE VERİ ÇEK
+            if (!yorum.isYanitlarYuklendi()) {
+                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
+                yanitcek.yanitlariCek(yorum, yanitlar, yntadapter, 5, true);
+                yorum.setYanitlarYuklendi(true);
+            }
+
+
+            ArrayList<Yanit_Model> finalYanitlar = yanitlar;
+            holder.dahafazla.setOnClickListener(dahafz -> {
+                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
+                yanitcek.yanitlariCek(yorum, finalYanitlar, yntadapter, 5, false);
+            });
+
         } else {
             holder.container.setVisibility(View.GONE);
             holder.yanitlariGor.setText("Yanıtları Gör");
+            holder.dahafazla.setVisibility(View.GONE);
         }
 
         holder.yanitlariGor.setOnClickListener(v -> {
-            if (!yorum.isYanitlarGorunuyor()) {
-                yorum.setYanitlarGorunuyor(true);
-                holder.container.setVisibility(View.VISIBLE);
-                holder.yanitlariGor.setText("Yanıtları Gizle");
-
-
-                ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
-                if (yanitlar == null) {
-                    yanitlar = new ArrayList<>();
-                    yorum.setYanitlar(yanitlar);
-                }
-
-                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,yorum.getKullaniciAdi());
-                holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
-                holder.recyclerViewyanitlar.setAdapter(yntadapter);
-
-                // Veritabanından yeni yanıtları çek (opsiyonel)
-                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum,yanitlar,yntadapter,5,true);
-                holder.dahafazla.setVisibility(View.VISIBLE);
-
-                ArrayList<Yanit_Model> finalYanitlar = yanitlar;
-                holder.dahafazla.setOnClickListener(dahafz -> {
-                    yanitcek.yanitlariCek(yorum, finalYanitlar,yntadapter,5,false);
-                });
-
-
-            } else {
-                yorum.setYanitlarGorunuyor(false);
-                holder.container.setVisibility(View.GONE);
-                holder.yanitlariGor.setText("Yanıtları Gör");
-                holder.dahafazla.setVisibility(View.GONE);
-            }
+            boolean gorunuyorMu = yorum.isYanitlarGorunuyor();
+            yorum.setYanitlarGorunuyor(!gorunuyorMu);
+            notifyItemChanged(position); // 🔄 Bu onBindViewHolder'ı tetikler
         });
-
 
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
@@ -97,17 +94,15 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             if (pozisyon == position) {
                 // Aynı butona tıklandıysa: kapat
                 pozisyon = -1;
-                if(MapsActivity.yorumicin.getVisibility()==View.GONE) {
-                    MapsActivity.yorumicin.setVisibility(View.VISIBLE);
-                }
-                MapsActivity.ynticin.setVisibility(View.GONE);
+                   MapsActivity.ynticin.setVisibility(View.GONE);
+                   MapsActivity.yorumicin.setVisibility(View.VISIBLE);
+
             } else {
                 // Yeni yorum seçildi: göster
                 pozisyon = position;
                 yorumindeks = position;
-                if(MapsActivity.yorumicin.getVisibility()==View.VISIBLE) {
-                    MapsActivity.yorumicin.setVisibility(View.GONE);
-                }
+
+                MapsActivity.yorumicin.setVisibility(View.GONE);
                 MapsActivity.ynticin.setVisibility(View.VISIBLE);
             }
 
@@ -116,10 +111,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 notifyItemChanged(eskiPozisyon);
             }
             notifyItemChanged(position);
+            yorumList.get(position).setYanitlarGorunuyor(true);
+
         });
-
-
-
     }
 
     @Override

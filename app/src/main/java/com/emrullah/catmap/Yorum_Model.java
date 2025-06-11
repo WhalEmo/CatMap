@@ -16,6 +16,7 @@ public class Yorum_Model {
     private ArrayList<Yanit_Model>yanitlar;
     private DocumentSnapshot sonYanit;
     private boolean yanitlarGorunuyor = false;
+    private boolean yanitlarYuklendi = false;
 
     public Yorum_Model(){}
 
@@ -93,4 +94,11 @@ public class Yorum_Model {
         this.yanitlarGorunuyor = yanitlarGorunuyor;
     }
 
+    public boolean isYanitlarYuklendi() {
+        return yanitlarYuklendi;
+    }
+
+    public void setYanitlarYuklendi(boolean yanitlarYuklendi) {
+        this.yanitlarYuklendi = yanitlarYuklendi;
+    }
 }
