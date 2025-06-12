@@ -55,7 +55,7 @@ public class Kullanici {
     }
 
     public void setKullaniciAdi(String kullaniciAdi) {
-        KullaniciAdi = kullaniciAdi;
+        KullaniciAdi = kullaniciAdi.trim();
     }
 
     public String getSifre() {
@@ -87,7 +87,7 @@ public class Kullanici {
     }
 
     public void setEmail(String email) {
-        Email = email.toLowerCase();
+        Email = email.toLowerCase().trim();
     }
 
     public boolean KullaniciIs(){
@@ -98,6 +98,7 @@ public class Kullanici {
     }
 
     private String StDuzenle(String yazi){
+        yazi = yazi.trim();
         if(yazi==null || yazi.isEmpty()){
             return yazi;
         }

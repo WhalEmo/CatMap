@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.text.InputType;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -50,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private ImageView KayitOlButon;
     private ImageView KediKaydetButon;
     private ImageView KediHaritaButon;
+    private ImageView Goz;
+    boolean AcikMi;
 
 
 
@@ -99,9 +102,28 @@ public class MainActivity extends AppCompatActivity {
         View pencere = LayoutInflater.from(this).inflate(R.layout.girispencere,null);
         KullanicAdi = pencere.findViewById(R.id.usernameEditText);
         sifre = pencere.findViewById(R.id.passwordEditText);
+        Goz = pencere.findViewById(R.id.eyeIcon);
         diyalog = new BottomSheetDialog(this);
         diyalog.setContentView(pencere);
         diyalog.show();
+        AcikMi = false;
+        Goz.setOnClickListener( btn ->{
+            GozAcKapa(sifre,Goz);
+        });
+    }
+
+    private void GozAcKapa(EditText sifre, ImageView Goz){
+        int imlecKonum = sifre.getSelectionStart();
+        if(!AcikMi){
+            sifre.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            Goz.setImageResource(R.drawable.acik_goz);
+        }
+        else{
+            sifre.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            Goz.setImageResource(R.drawable.kapali_goz);
+        }
+        sifre.setSelection(imlecKonum);
+        AcikMi = !AcikMi;
     }
 
     public void girisYap(View view){
@@ -168,12 +190,17 @@ public class MainActivity extends AppCompatActivity {
         View pencere = LayoutInflater.from(this).inflate(R.layout.kaydolpencere,null);
         KullanicAdi = pencere.findViewById(R.id.usernameEditText);
         sifre = pencere.findViewById(R.id.passwordEditText);
+        Goz = pencere.findViewById(R.id.eyeIcon);
         EmailEditT = pencere.findViewById(R.id.emailEditText);
         AdEditT = pencere.findViewById(R.id.adEditText);
         SoyadEditT = pencere.findViewById(R.id.soyadEditText);
         diyalog = new BottomSheetDialog(this);
         diyalog.setContentView(pencere);
         diyalog.show();
+        AcikMi = false;
+        Goz.setOnClickListener( btn ->{
+            GozAcKapa(sifre,Goz);
+        });
     }
 
     private void VeriTabaninaKayit(){
@@ -212,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String donusum(EditText text){
-        return String.valueOf(text.getText());
+        return String.valueOf(text.getText()).trim();
     }
 
     private boolean EmailKontrol(String Email){

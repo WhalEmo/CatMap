@@ -36,10 +36,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         return new YorumViewHolder(view);
     }
     int pozisyon=-1;
-    int gosterilenYanitSayisi;
-
-   LinearLayout eskisi=null;
-    int pozisyon=-1;
 
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
@@ -90,23 +86,23 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             holder.yanitlaricinLayout.setVisibility(View.GONE);
         }
 
-       holder.yanitlamayiGetir.setOnClickListener(cvp->{
-           if(pozisyon==position){
-               MapsActivity.yorumicin.setVisibility(View.VISIBLE);
-               pozisyon=-1;
-           }else {
-               pozisyon=position;
-               yorumindeks=position;
-           }
-           notifyDataSetChanged();
-       });
+        holder.yanitlamayiGetir.setOnClickListener(cvp->{
+            if(pozisyon==position){
+                MapsActivity.yorumicin.setVisibility(View.VISIBLE);
+                pozisyon=-1;
+            }else {
+                pozisyon=position;
+                yorumindeks=position;
+            }
+            notifyDataSetChanged();
+        });
 
     }
 
     @Override
     public int getItemCount() {
         return yorumList.size();
-
+    }
     public static class YorumViewHolder extends RecyclerView.ViewHolder{
         TextView kullaniciAditext;
         TextView yorumText;
