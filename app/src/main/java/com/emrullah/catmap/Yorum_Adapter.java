@@ -1,6 +1,8 @@
 package com.emrullah.catmap;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,7 +50,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         if (yorum.isYanitlarGorunuyor()) {
             holder.container.setVisibility(View.VISIBLE);
             holder.yanitlariGor.setText("Yanıtları Gizle");
-            holder.dahafazla.setVisibility(View.VISIBLE);
+
 
             ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
             if (yanitlar == null) {
@@ -56,23 +58,54 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 yorum.setYanitlar(yanitlar);
             }
 
-            // 🔁 ADAPTERI YENİDEN BAĞLA
-            Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context, yorum.getKullaniciAdi());
+            // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
+            if (yorum.getYanitAdapter() == null) {
+                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context);
+                yorum.setYanitAdapter(yntadapter);
+            }
+
+            // Adapter'i bağla
             holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
-            holder.recyclerViewyanitlar.setAdapter(yntadapter);
+            holder.recyclerViewyanitlar.setAdapter(yorum.getYanitAdapter());
+
 
             // 🔄 SADECE 1 KERE VERİ ÇEK
             if (!yorum.isYanitlarYuklendi()) {
                 Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum, yanitlar, yntadapter, 5, true);
-                yorum.setYanitlarYuklendi(true);
+                yanitcek.yanitlariCek(yorum, yanitlar, yorum.getYanitAdapter(), 5, true, new Yanitlari_Cekme.YanitlarCallback() {
+                            @Override
+                            public void onComplete() {
+                                yorum.setYanitlarYuklendi(true);
+                                if (yorum.isYanitYokMu()) {
+                                    holder.dahafazla.setVisibility(View.GONE);
+                                    holder.yanityoksa.setVisibility(View.VISIBLE);
+                                } else {
+                                    holder.yanityoksa.setVisibility(View.GONE);
+                                    if (yorum.isDahafazlaGozukuyorMu()) {
+                                        holder.dahafazla.setVisibility(View.VISIBLE);
+                                    } else {
+                                        holder.dahafazla.setVisibility(View.GONE);
+                                    }
+                                }
+                                notifyDataSetChanged();
+                            }
+                        });
             }
-
 
             ArrayList<Yanit_Model> finalYanitlar = yanitlar;
             holder.dahafazla.setOnClickListener(dahafz -> {
                 Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum, finalYanitlar, yntadapter, 5, false);
+                yanitcek.yanitlariCek(yorum, finalYanitlar, yorum.getYanitAdapter(), 5, false, new Yanitlari_Cekme.YanitlarCallback() {
+                    @Override
+                    public void onComplete() {
+                        if (yorum.isDahafazlaGozukuyorMu()) {
+                            holder.dahafazla.setVisibility(View.VISIBLE);
+                        } else {
+                            holder.dahafazla.setVisibility(View.GONE);
+                        }
+                        yorum.getYanitAdapter().notifyDataSetChanged(); // yeni gelen veriler için
+                    }
+                });
             });
 
         } else {
@@ -89,21 +122,27 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
+            MapsActivity.textt.setText("@"+yorum.getKullaniciAdi());
+            MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
+            MapsActivity.kimeyanit.setHint(yorum.getKullaniciAdi() + " 'e yanıt veriyorsun");
+            Klavye klavye=new Klavye(context);
             int eskiPozisyon = pozisyon;
-
             if (pozisyon == position) {
                 // Aynı butona tıklandıysa: kapat
                 pozisyon = -1;
-                   MapsActivity.ynticin.setVisibility(View.GONE);
-                   MapsActivity.yorumicin.setVisibility(View.VISIBLE);
-
+                MapsActivity.yorumicin.setVisibility(View.GONE);
+                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
+                MapsActivity.ynticin.setVisibility(View.VISIBLE);
             } else {
                 // Yeni yorum seçildi: göster
                 pozisyon = position;
                 yorumindeks = position;
-
                 MapsActivity.yorumicin.setVisibility(View.GONE);
+                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
                 MapsActivity.ynticin.setVisibility(View.VISIBLE);
+                new Handler().postDelayed(() -> {
+                    klavye.klavyeAc(MapsActivity.textt);
+                }, 250);
             }
 
             // notifyItemChanged pozisyonları güncelle
@@ -129,6 +168,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         RecyclerView recyclerViewyanitlar;
         TextView dahafazla;
         LinearLayout container;
+        TextView yanityoksa;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -140,6 +180,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             recyclerViewyanitlar=itemView.findViewById(R.id.yanitlarRecyclerView);
             dahafazla=itemView.findViewById(R.id.dahaFazlaYanitText);
             container=itemView.findViewById(R.id.yanitlarContainer);
+            yanityoksa=itemView.findViewById(R.id.yanityok);
         }
     }
 

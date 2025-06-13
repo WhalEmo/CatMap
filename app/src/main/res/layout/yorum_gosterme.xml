@@ -39,7 +39,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Yorum ekle..."
-            android:maxLines="6"
+            android:background="@null"
+            android:maxLines="10"
             android:padding="8dp"/>
         <Button
             android:id="@+id/yorumgonder"
@@ -50,27 +51,76 @@
     </LinearLayout>
     <!-- Yeni yorum ekleme alanı -->
     <LinearLayout
+
         android:id="@+id/yntgndrLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:visibility="gone"
         android:paddingTop="8dp">
+        <!-- Bu görünmesini istediğiniz üst kısım -->
+        <LinearLayout
+            android:id="@+id/carpilayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:background="#DADADA"
+            >
 
-        <EditText
-            android:id="@+id/yntEditText"
-            android:layout_width="0dp"
+            <EditText
+                android:id="@+id/kimeyanit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Yanıt veriyorsun..."
+                android:maxLines="6"
+                android:minLines="1"
+                android:background="@android:color/transparent"
+                android:textColor="@android:color/black"
+                android:textSize="14sp"
+                android:inputType="textMultiLine"
+                android:padding="8dp" />
+
+            <ImageButton
+                android:id="@+id/iptalButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Yanıtlamayı iptal et"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Yanıt ekle..."
-            android:maxLines="6"
-            android:padding="8dp"/>
-        <Button
-            android:id="@+id/yntgonder"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Gönder"
-            android:onClick="yntgonder"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/yntEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Yanıt ekle..."
+                android:maxLines="10"
+                android:minLines="1"
+                android:padding="8dp"
+                android:background="@null"/>
+
+            <Button
+                android:id="@+id/yntgonder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gönder"
+                android:onClick="yntgonder"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+
     </LinearLayout>
 
 </LinearLayout>

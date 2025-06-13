@@ -17,6 +17,9 @@ public class Yorum_Model {
     private DocumentSnapshot sonYanit;
     private boolean yanitlarGorunuyor = false;
     private boolean yanitlarYuklendi = false;
+    private boolean yanitYokMu = false;
+    private boolean dahafazlaGozukuyorMu=true;
+    private Yanit_Adapter yanitAdapter;
 
     public Yorum_Model(){}
 
@@ -101,4 +104,30 @@ public class Yorum_Model {
     public void setYanitlarYuklendi(boolean yanitlarYuklendi) {
         this.yanitlarYuklendi = yanitlarYuklendi;
     }
+
+    public boolean isYanitYokMu() {
+        return yanitYokMu;
+    }
+
+    public void setYanitYokMu(boolean yanitYokMu) {
+        this.yanitYokMu = yanitYokMu;
+    }
+
+    public boolean isDahafazlaGozukuyorMu() {
+        return dahafazlaGozukuyorMu;
+    }
+
+    public void setDahafazlaGozukuyorMu(boolean dahafazlaGozukuyorMu) {
+        this.dahafazlaGozukuyorMu = dahafazlaGozukuyorMu;
+    }
+
+    public Yanit_Adapter getYanitAdapter() {
+        return yanitAdapter;
+    }
+
+    public void setYanitAdapter(Yanit_Adapter yanitAdapter) {
+        this.yanitAdapter = yanitAdapter;
+    }
+
+
 }

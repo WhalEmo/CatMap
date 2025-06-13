@@ -59,6 +59,7 @@
             android:clickable="true"
             android:focusable="true"
             android:onClick="onYanıtlaonclick"/>
+        
 
     </LinearLayout>
 
@@ -91,6 +92,17 @@
             android:clickable="true"
             android:focusable="true"
             android:onClick="dahafazlagoster"/>
+        <TextView
+            android:id="@+id/yanityok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Henüz yanit yok. İlk yaniti sen ver!"
+            android:textColor="#888888"
+            android:textStyle="italic"
+            android:paddingTop="4dp"
+            android:visibility="gone"
+            android:focusable="true"
+           />
     </LinearLayout>
 
 </LinearLayout>

@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -96,8 +97,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private RecyclerView yorumlarRecyclerView;
     public static LinearLayout yorumicin;
     public static LinearLayout ynticin;
+    public static LinearLayout carpiicin;
     private RelativeLayout yuklemeEkrani;
     private TextView bosyorum;
+    private ImageButton iptalButton;
+    public  static EditText kimeyanit;
+    public static EditText textt;
+    private  EditText TEXT;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,9 +154,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
         ynticin=ikinci.findViewById(R.id.yntgndrLayout);
+        carpiicin=ikinci.findViewById(R.id.carpilayout);
+        iptalButton=ikinci.findViewById(R.id.iptalButton);
+        kimeyanit=ikinci.findViewById(R.id.kimeyanit);
+        textt =ikinci.findViewById(R.id.yntEditText);
+        TEXT=ikinci.findViewById(R.id.yorumEditText);
 
         bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
+
+        Klavye klavye=new Klavye(this);
+        iptalButton.setOnClickListener(v -> {
+            View currentFocus = this.getCurrentFocus();
+            if (currentFocus != null) {
+                klavye.klavyeKapat(currentFocus);
+            }
+            carpiicin.setVisibility(View.GONE);
+            ynticin.setVisibility(View.GONE);
+            yorumicin.setVisibility(View.VISIBLE);
+            new Handler().postDelayed(() -> {
+                klavye.klavyeAc(TEXT);
+            }, 250);
+        });
     }
+
 
     private void konumizni() {
         // Eğer izin verilmemişse
@@ -566,6 +593,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         bosyorum.setVisibility(View.VISIBLE);
                         yorumlarRecyclerView.setVisibility(View.GONE);
                         isLastPage = true;
+                    }else{
+                        bosyorum.setVisibility(View.GONE);
+                        yorumlarRecyclerView.setVisibility(View.VISIBLE);
                     }
 
                 });
@@ -593,19 +623,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
       }
     }
 
-    EditText TEXT;
     public void yorumgonder(View view){
-        TEXT=ikinci.findViewById(R.id.yorumEditText);
         DBekle(ID,TEXT.getText().toString());
         TEXT.setText("");
     }
-    EditText textt;
 
     public void yntgonder(View view){
         Yorum_Model yorumm=yorumlar.get(Yorum_Adapter.yorumindeks);
         RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
         if (holder != null) {
-             textt =ikinci.findViewById(R.id.yntEditText);
             String yanitMetni = textt.getText().toString().trim();
             if (!yanitMetni.isEmpty()) {
                 yorumID=yorumm.getYorumID();
