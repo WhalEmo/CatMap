@@ -198,14 +198,16 @@ public class MainActivity extends AppCompatActivity {
         diyalog.show();
     }
     public void sifreSifirla(View view){
+        view.setClickable(false);
+        uyariMesaji.YuklemeDurum("Mail Gönderiliyor...");
         DogrulamaKodYonetici ynt = new DogrulamaKodYonetici();
         ynt.sifreSifirla(donusum(EmailEditT),basariliMi->{
             if(basariliMi){
-                System.out.println("basarisiz");
+                uyariMesaji.BasariliDurum("Mail Gönderildi.",1000);
             }
             else {
-                System.out.println("basarisiz");
-
+                uyariMesaji.BasarisizDurum("Mail Gönderilemedi.",1000);
+                view.setClickable(true);
             }
         });
     }
