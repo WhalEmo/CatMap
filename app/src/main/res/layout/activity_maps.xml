@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MapsActivity">
 
     <fragment
@@ -12,6 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Yükleme ekranı -->
     <RelativeLayout
         android:id="@+id/yuklemeekran"
         android:layout_width="match_parent"
@@ -34,11 +35,11 @@
 
         <TextView
             android:id="@+id/loadingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_below="@id/progressBar"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="16dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="Harita Yükleniyor..."
             android:textColor="#13216E"
             android:textSize="20sp"
@@ -49,7 +50,27 @@
             android:shadowDx="2"
             android:shadowDy="2"
             android:shadowRadius="3" />
-
     </RelativeLayout>
+
+    <!-- Extended FAB tam ortalanmış -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/btnScanArea"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="24dp"
+        android:text="Bu Alanı Tara"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:icon="@drawable/dalga_efekti"
+        app:iconTint="@android:color/white"
+        app:backgroundTint="#13216E"
+        app:elevation="8dp"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:letterSpacing="0.03"
+        app:rippleColor="#332B5EA3" />
 
 </FrameLayout>

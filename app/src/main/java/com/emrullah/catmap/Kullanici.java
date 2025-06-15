@@ -16,6 +16,15 @@ public class Kullanici {
     private String KullaniciAdi;
     private String Sifre;
     private double latitude;
+    private boolean girisBasarili;
+
+    public boolean isGirisBasarili() {
+        return girisBasarili;
+    }
+
+    public void setGirisBasarili(boolean girisBasarili) {
+        this.girisBasarili = girisBasarili;
+    }
 
     public double getLongitude() {
         return longitude;
@@ -55,7 +64,7 @@ public class Kullanici {
     }
 
     public void setKullaniciAdi(String kullaniciAdi) {
-        KullaniciAdi = kullaniciAdi;
+        KullaniciAdi = kullaniciAdi.trim();
     }
 
     public String getSifre() {
@@ -87,7 +96,7 @@ public class Kullanici {
     }
 
     public void setEmail(String email) {
-        Email = email.toLowerCase();
+        Email = email.toLowerCase().trim();
     }
 
     public boolean KullaniciIs(){
@@ -98,6 +107,7 @@ public class Kullanici {
     }
 
     private String StDuzenle(String yazi){
+        yazi = yazi.trim();
         if(yazi==null || yazi.isEmpty()){
             return yazi;
         }
@@ -110,7 +120,6 @@ public class Kullanici {
         kullaniciData.put("Soyad",this.Soyad);
         kullaniciData.put("Email",this.Email);
         kullaniciData.put("KullaniciAdi",this.KullaniciAdi);
-        kullaniciData.put("Sifre",this.Sifre);
         return kullaniciData;
     }
 
