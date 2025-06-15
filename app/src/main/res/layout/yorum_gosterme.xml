@@ -12,6 +12,16 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
+    <TextView
+        android:id="@+id/bosYorumTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Henüz yorum yok. İlk yorumu sen yap!"
+        android:textColor="#888888"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone"/>
 
     <!-- Yeni yorum ekleme alanı -->
     <LinearLayout
@@ -28,15 +38,98 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@null"
             android:hint="Yorum ekle..."
-            android:maxLines="3"
-            android:padding="8dp"/>
-        <Button
+            android:maxLines="10"
+            android:padding="8dp" />
+
+        <ImageButton
             android:id="@+id/yorumgonder"
-            android:layout_width="wrap_content"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@android:color/transparent"
+            android:onClick="yorumgonder"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="32dp"
+            android:src="@drawable/mavipati"
+            />
+    </LinearLayout>
+    <!-- Yeni yorum ekleme alanı -->
+    <LinearLayout
+
+        android:id="@+id/yntgndrLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingTop="8dp">
+        <!-- Bu görünmesini istediğiniz üst kısım -->
+        <LinearLayout
+            android:id="@+id/carpilayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Gönder"
-            android:onClick="yorumgonder"/>
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:background="#DADADA"
+            >
+
+            <EditText
+                android:id="@+id/kimeyanit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Yanıt veriyorsun..."
+                android:maxLines="6"
+                android:minLines="1"
+                android:background="@android:color/transparent"
+                android:textColor="@android:color/black"
+                android:textSize="14sp"
+                android:inputType="textMultiLine"
+                android:padding="8dp" />
+
+            <ImageButton
+                android:id="@+id/iptalButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Yanıtlamayı iptal et"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/yntEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Yanıt ekle..."
+                android:maxLines="10"
+                android:minLines="1"
+                android:padding="8dp"
+                android:background="@null"/>
+
+
+            <ImageButton
+                android:id="@+id/yntgonder"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="@android:color/transparent"
+                android:onClick="yntgonder"
+                android:scaleType="fitCenter"
+                android:src="@drawable/mavipati"
+
+                />
+        </LinearLayout>
+
+
     </LinearLayout>
 
 </LinearLayout>

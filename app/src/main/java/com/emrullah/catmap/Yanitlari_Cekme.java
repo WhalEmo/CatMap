@@ -3,22 +3,22 @@ package com.emrullah.catmap;
 import android.util.Log;
 
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-
 import java.util.ArrayList;
-import java.util.Date;
 
 public class Yanitlari_Cekme {
+    public interface YanitlarCallback {
+        void onComplete();
+    }
+
     FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private ListenerRegistration yanitListener;
-    public void yanitlariCek(Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar,Yanit_Adapter yorumAdapter) {
-        yanitlar.clear();
-        if (yanitListener != null) {
-            yanitListener.remove();  // Önceki listener varsa kaldır
+    public void yanitlariCek(Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar, Yanit_Adapter yorumAdapter, int limit, boolean clearList, YanitlarCallback callback) {
+        if (clearList) {
+            yanitlar.clear();
+            yorumAdapter.notifyDataSetChanged();
+            yorum.setSonYanit(null);
         }
 
         CollectionReference yanitlarRef = db.collection("cats")
@@ -27,51 +27,59 @@ public class Yanitlari_Cekme {
                 .document(yorum.getYorumID())
                 .collection("yanitlar");
 
-        yanitListener = yanitlarRef
-                .orderBy("yanitzaman", Query.Direction.DESCENDING)
-                .addSnapshotListener((snapshots, e) -> {
-                    if (e != null) {
-                        Log.e("Yanıtlar", "Dinleyici hatası: ", e);
-                        return;
-                    }
-                    if (snapshots != null) {
-                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                            DocumentSnapshot doc = dc.getDocument();
-                            String yanitID = doc.getId();
-                            String kAdi = doc.getString("kullanici_adi");
-                            String yanitIcerik = doc.getString("yaniticerik");
-                            Date yanitZaman = doc.getDate("yanitzaman");
+        Query query = yanitlarRef
+                .orderBy("yanitzaman", Query.Direction.ASCENDING)
+                .limit(limit);
 
-                            Yanit_Model yanit = new Yanit_Model(yanitID, kAdi, yanitIcerik, yanitZaman);
+        DocumentSnapshot lastVisibleDoc = yorum.getSonYanit();
+        if (lastVisibleDoc != null) {
+            query = query.startAfter(lastVisibleDoc);
+        }
 
-                            switch (dc.getType()) {
-                                case ADDED:
-                                    yanitlar.add(0, yanit);
-                                    yorumAdapter.notifyItemInserted(0);
-                                    break;
-                                case REMOVED:
-                                    for (int i = 0; i < yanitlar.size(); i++) {
-                                        if (yanitlar.get(i).getYanitId().equals(yanitID)) {
-                                            yanitlar.remove(i);
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case MODIFIED:
-                                    for (int i = 0; i < yanitlar.size(); i++) {
-                                        if (yanitlar.get(i).getYanitId().equals(yanitID)) {
-                                            yanitlar.set(i, yanit);
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
+        query.get()
+                .addOnSuccessListener(snapshots -> {
+                    if (snapshots != null && !snapshots.isEmpty()) {
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                            Yanit_Model yanit = new Yanit_Model(
+                                    doc.getId(),
+                                    doc.getString("kullanici_adi"),
+                                    doc.getString("yaniticerik"),
+                                    doc.getDate("yanitzaman")
+                            );
+                            yanitlar.add(yanit);
                         }
-                    }
-                    yorum.setYanitlar(yanitlar);
 
+                        yorum.setSonYanit(snapshots.getDocuments().get(snapshots.size() - 1));
+
+                        // Daha fazla göster butonunu güncelle
+                        if (snapshots.size() < limit) {
+                            yorum.setDahafazlaGozukuyorMu(false);
+                        } else {
+                            yorum.setDahafazlaGozukuyorMu(true);
+                        }
+                    } else {
+                        // Eğer hiç veri yoksa
+                        yorum.setDahafazlaGozukuyorMu(false);
+                    }
+
+                    if (yanitlar.isEmpty()) {
+                        yorum.setYanitYokMu(true);
+                    } else {
+                        yorum.setYanitYokMu(false);
+                    }
+
+                    yorum.setYanitlar(yanitlar);
+                    yorumAdapter.notifyDataSetChanged();
+
+                    callback.onComplete();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Yanitlari_Cekme", "Yanıtlar çekilemedi", e);
+                    callback.onComplete();
                 });
     }
 
 
+
 }
+

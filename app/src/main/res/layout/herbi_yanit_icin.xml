@@ -47,31 +47,4 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/yanitEkleLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        android:paddingTop="4dp">
-
-        <EditText
-            android:id="@+id/yanitEditText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Yanıtla..."
-            android:padding="4dp" />
-        <Button
-            android:id="@+id/yntyorumgonder"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="Gönder"
-            android:textSize="10dp"
-            android:onClick="yanitgonder"
-            />
-
-
-    </LinearLayout>
-
 </LinearLayout>

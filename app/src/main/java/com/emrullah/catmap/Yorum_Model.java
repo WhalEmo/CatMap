@@ -1,6 +1,7 @@
 package com.emrullah.catmap;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -13,6 +14,12 @@ public class Yorum_Model {
     private String Yorumicerik;
     private Date Tarih;
     private ArrayList<Yanit_Model>yanitlar;
+    private DocumentSnapshot sonYanit;
+    private boolean yanitlarGorunuyor = false;
+    private boolean yanitlarYuklendi = false;
+    private boolean yanitYokMu = false;
+    private boolean dahafazlaGozukuyorMu=true;
+    private Yanit_Adapter yanitAdapter;
 
     public Yorum_Model(){}
 
@@ -52,13 +59,21 @@ public class Yorum_Model {
 
         return Tarih;
     }
-    public String duzenlenmisTarih(){
-        if (Tarih != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
-            String formattedDate = sdf.format(Tarih);
-            return formattedDate;
+    public String duzenlenmisTarih() {
+        if (Tarih == null) {
+            return "şimdi";  // Ya da "Bilinmiyor"
+        }
+
+        long simdi = System.currentTimeMillis();
+        long fark = simdi - Tarih.getTime();
+
+        if (fark < 60000) {  // 1 dakika
+            return "şimdi";
+        } else if (fark < 3600000) {  // 1 saat
+            return (fark / 60000) + " dakika önce";
         }else {
-            return "Şimdi";
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+            return sdf.format(Tarih);
         }
     }
 
@@ -73,4 +88,54 @@ public class Yorum_Model {
     public void setYanitlar(ArrayList<Yanit_Model> yanitlar) {
         this.yanitlar = yanitlar;
     }
+
+    public DocumentSnapshot getSonYanit() {
+        return sonYanit;
+    }
+
+    public void setSonYanit(DocumentSnapshot sonYanit) {
+        this.sonYanit = sonYanit;
+    }
+
+    public boolean isYanitlarGorunuyor() {
+        return yanitlarGorunuyor;
+    }
+
+    public void setYanitlarGorunuyor(boolean yanitlarGorunuyor) {
+        this.yanitlarGorunuyor = yanitlarGorunuyor;
+    }
+
+    public boolean isYanitlarYuklendi() {
+        return yanitlarYuklendi;
+    }
+
+    public void setYanitlarYuklendi(boolean yanitlarYuklendi) {
+        this.yanitlarYuklendi = yanitlarYuklendi;
+    }
+
+    public boolean isYanitYokMu() {
+        return yanitYokMu;
+    }
+
+    public void setYanitYokMu(boolean yanitYokMu) {
+        this.yanitYokMu = yanitYokMu;
+    }
+
+    public boolean isDahafazlaGozukuyorMu() {
+        return dahafazlaGozukuyorMu;
+    }
+
+    public void setDahafazlaGozukuyorMu(boolean dahafazlaGozukuyorMu) {
+        this.dahafazlaGozukuyorMu = dahafazlaGozukuyorMu;
+    }
+
+    public Yanit_Adapter getYanitAdapter() {
+        return yanitAdapter;
+    }
+
+    public void setYanitAdapter(Yanit_Adapter yanitAdapter) {
+        this.yanitAdapter = yanitAdapter;
+    }
+
+
 }

@@ -22,12 +22,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -95,7 +98,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private  BottomSheetDialog ikincibottom;
     private RecyclerView yorumlarRecyclerView;
     public static LinearLayout yorumicin;
+    public static LinearLayout ynticin;
+    public static LinearLayout carpiicin;
     private RelativeLayout yuklemeEkrani;
+    private TextView bosyorum;
+    private ImageButton iptalButton;
+    public  static EditText kimeyanit;
+    public static EditText textt;
+    private  EditText TEXT;
+    private ImageButton yorumbutton;
+    private ImageButton yanıtbutton;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,7 +157,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
+        ynticin=ikinci.findViewById(R.id.yntgndrLayout);
+        carpiicin=ikinci.findViewById(R.id.carpilayout);
+        iptalButton=ikinci.findViewById(R.id.iptalButton);
+        kimeyanit=ikinci.findViewById(R.id.kimeyanit);
+        textt =ikinci.findViewById(R.id.yntEditText);
+        TEXT=ikinci.findViewById(R.id.yorumEditText);
+        yorumbutton=ikinci.findViewById(R.id.yorumgonder);
+        yanıtbutton=ikinci.findViewById(R.id.yntgonder);
+        yorumbutton.setEnabled(false);
+        yorumbutton.setAlpha(0.5f);
+        yanıtbutton.setEnabled(false);
+        yanıtbutton.setAlpha(0.5f);
+        bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
+
+        textt.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                boolean dolumu = !s.toString().trim().isEmpty();
+                yanıtbutton.setEnabled(dolumu);
+                yanıtbutton.setAlpha(dolumu ? 1f : 0.5f);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        TEXT.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                boolean dolumu = !s.toString().trim().isEmpty();
+                yorumbutton.setEnabled(dolumu);
+                yorumbutton.setAlpha(dolumu ? 1f : 0.5f);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        Klavye klavye=new Klavye(this);
+        iptalButton.setOnClickListener(v -> {
+            View currentFocus = this.getCurrentFocus();
+            if (currentFocus != null) {
+                klavye.klavyeKapat(currentFocus);
+            }
+            carpiicin.setVisibility(View.GONE);
+            ynticin.setVisibility(View.GONE);
+            yorumicin.setVisibility(View.VISIBLE);
+            new Handler().postDelayed(() -> {
+                klavye.klavyeAc(TEXT);
+            }, 250);
+        });
     }
+
 
     private void konumizni() {
         // Eğer izin verilmemişse
@@ -187,6 +262,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bittimi = false;
         MainActivity.kullanici.setLatitude(latitude);
         MainActivity.kullanici.setLongitude(longitude);
+            if (yorumAdapter != null) {
+                yorumAdapter.durdurZamanlayici();
+            }
+        ArrayList<Yorum_Model> yorumlar = yorumAdapter.getYorumList();
+        for (Yorum_Model yorum : yorumlar) {
+            Yanit_Adapter yntadapter = yorum.getYanitAdapter();
+            if (yntadapter != null) {
+                yntadapter.durdurZamanlayici();
+            }
+        }
+
     }
 
     private int dpDenPx(int dp) {
@@ -492,6 +578,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     } else {
                         isLastPage = true;
+                        return;
                     }
                     isLoading = false;
                 });
@@ -501,10 +588,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (yorumListener != null) {
             yorumListener.remove();  // Önceki listener varsa kaldır
         }
+        carpiicin.setVisibility(View.GONE);
+        ynticin.setVisibility(View.GONE);
+        yorumicin.setVisibility(View.VISIBLE);
+        textt.setText("");
+        Yorum_Adapter.yorumindeks = -1;
+
+
         yorumlar.clear();
         yorumAdapter = new Yorum_Adapter(yorumlar, this);
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
+        yorumAdapter.baslatZamanlayici();
         isLastPage = false;
         isLoading = false;
         lastVisible = null;
@@ -533,24 +628,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     yorumlar.add(0,yorum);
                                     yorumAdapter.notifyItemInserted(0);
                                     break;
-                                case REMOVED:
-                                    for(int i=0;i<yorumlar.size();i++){
-                                        if(yorumlar.get(i).getYorumID().equals(IDsi)){
-                                            yorumlar.remove(i);
-                                            yorumAdapter.notifyItemRemoved(i);
-                                            break;
-                                        }
-                                    }
-                                    break;
                             }
                         }
-                        lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
 
-                        // Eğer gelen veri PAGE_SIZE'dan küçükse son sayfa olabilir
-                        if (snapshots.size() < PAGE_SIZE) {
+                        if (!snapshots.isEmpty()) {
+                            lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
+
+                            if (snapshots.size() < PAGE_SIZE) {
+                                isLastPage = true;
+                            }
+                        } else {
                             isLastPage = true;
                         }
                     }
+                    if (yorumlar.isEmpty()) {
+                        bosyorum.setVisibility(View.VISIBLE);
+                        yorumlarRecyclerView.setVisibility(View.GONE);
+                        isLastPage = true;
+                    }else{
+                        bosyorum.setVisibility(View.GONE);
+                        yorumlarRecyclerView.setVisibility(View.VISIBLE);
+                    }
+
                 });
         yorumlarRecyclerView.clearOnScrollListeners(); // önceki scrollListener'ı temizle
         yorumlarRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {// Bu listener, RecyclerView kaydırıldıkça tetiklenir.
@@ -576,20 +675,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
       }
     }
 
-    EditText TEXT;
+
     public void yorumgonder(View view){
-        TEXT=ikinci.findViewById(R.id.yorumEditText);
         DBekle(ID,TEXT.getText().toString());
         TEXT.setText("");
     }
-    EditText textt;
 
-    public void yanitgonder(View view){
+    public void yntgonder(View view){
+        if (Yorum_Adapter.yorumindeks < 0 || Yorum_Adapter.yorumindeks >= yorumlar.size()) return;
         Yorum_Model yorumm=yorumlar.get(Yorum_Adapter.yorumindeks);
         RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
         if (holder != null) {
-             textt = holder.itemView.findViewById(R.id.yanitEditText);
             String yanitMetni = textt.getText().toString().trim();
+            Yanit_Model yanit=new Yanit_Model("geciciid",MainActivity.kullanici.getKullaniciAdi(),yanitMetni,null);
+           yorumm.getYanitlar().add(0,yanit);
+            yorumm.setYanitYokMu(false);
+            yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks); // görünüm güncelle
             if (!yanitMetni.isEmpty()) {
                 yorumID=yorumm.getYorumID();
                 DBekleYanit(ID, yorumID, yanitMetni);

@@ -1,6 +1,8 @@
 package com.emrullah.catmap;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class Yanit_Model {
     private String yanitId;
@@ -48,4 +50,22 @@ public class Yanit_Model {
     public void setTarih(Date tarih) {
         this.tarih = tarih;
     }
+    public String duzenlenmisTarih() {
+        if (tarih == null) {
+            return "şimdi";  // Ya da "Bilinmiyor"
+        }
+
+        long simdi = System.currentTimeMillis();
+        long fark = simdi - tarih.getTime();
+
+        if (fark < 60000) {  // 1 dakika
+            return "şimdi";
+        } else if (fark < 3600000) {  // 1 saat
+            return (fark / 60000) + " dakika önce";
+        }  else {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+            return sdf.format(tarih);
+        }
+    }
+
 }
