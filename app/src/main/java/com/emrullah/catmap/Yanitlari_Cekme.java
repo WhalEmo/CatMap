@@ -28,7 +28,7 @@ public class Yanitlari_Cekme {
                 .collection("yanitlar");
 
         Query query = yanitlarRef
-                .orderBy("yanitzaman", Query.Direction.DESCENDING)
+                .orderBy("yanitzaman", Query.Direction.ASCENDING)
                 .limit(limit);
 
         DocumentSnapshot lastVisibleDoc = yorum.getSonYanit();

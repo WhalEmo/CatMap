@@ -59,13 +59,21 @@ public class Yorum_Model {
 
         return Tarih;
     }
-    public String duzenlenmisTarih(){
-        if (Tarih != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
-            String formattedDate = sdf.format(Tarih);
-            return formattedDate;
+    public String duzenlenmisTarih() {
+        if (Tarih == null) {
+            return "şimdi";  // Ya da "Bilinmiyor"
+        }
+
+        long simdi = System.currentTimeMillis();
+        long fark = simdi - Tarih.getTime();
+
+        if (fark < 60000) {  // 1 dakika
+            return "şimdi";
+        } else if (fark < 3600000) {  // 1 saat
+            return (fark / 60000) + " dakika önce";
         }else {
-            return "Şimdi";
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+            return sdf.format(Tarih);
         }
     }
 
