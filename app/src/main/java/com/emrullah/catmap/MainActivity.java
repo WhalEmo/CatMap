@@ -1,41 +1,29 @@
 package com.emrullah.catmap;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.text.InputType;
-import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.Animation;
-import android.view.animation.TranslateAnimation;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.bottomsheet.BottomSheetDragHandleView;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,7 +42,13 @@ public class MainActivity extends AppCompatActivity {
     private ImageView KediHaritaButon;
     private ImageView Goz;
     boolean AcikMi;
-
+    private FrameLayout YuklemeEkrani;
+    private TextView Durum;
+    private ImageView BasariliTik;
+    private ImageView BasarisizCarpi;
+    private ProgressBar YuklemeBar;
+    private Dialog yuklemeDialog;
+    private UyariMesaji uyariMesaji;
 
 
     @Override
@@ -83,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         else{
             KediKaydetButon.setVisibility(View.INVISIBLE);
             KediHaritaButon.setVisibility(View.INVISIBLE);
+            uyariMesaji = new UyariMesaji(this,false);
         }
     }
 
@@ -96,10 +91,11 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+
     public void girisMetodu(View view){
         if(diyalog!=null && diyalog.isShowing()){
             diyalog.dismiss();
-        }
+        } //
         View pencere = LayoutInflater.from(this).inflate(R.layout.girispencere,null);
         KullanicAdi = pencere.findViewById(R.id.usernameEditText);
         sifre = pencere.findViewById(R.id.passwordEditText);
@@ -127,14 +123,17 @@ public class MainActivity extends AppCompatActivity {
         AcikMi = !AcikMi;
     }
 
+
     public void girisYap(View view){
+        //yukleme durumu
+        uyariMesaji.YuklemeDurum("Giriş Yapılıyor...");
         kullanici.setKullaniciAdi(donusum(KullanicAdi));
         kullanici.setSifre(donusum(sifre));
         kullanici.setGirisBasarili(false);
         System.out.println(kullanici.getKullaniciAdi()+" : "+ kullanici.getSifre());
 
         if (kullanici.getKullaniciAdi().isEmpty() || kullanici.getSifre().isEmpty()) {
-            Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
+            uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun",1000);
             return;
         }
         db.collection("users")
@@ -142,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (queryDocumentSnapshots.isEmpty()) {
-                        Toast.makeText(this, "Kullanıcı adı bulunamadı", Toast.LENGTH_SHORT).show();
+                        uyariMesaji.BasarisizDurum("Kullanıcı adı bulunamadı!",1000);
                         return;
                     }
                     DocumentSnapshot satir = queryDocumentSnapshots.getDocuments().get(0);
@@ -154,17 +153,17 @@ public class MainActivity extends AppCompatActivity {
                     ynt.girisYap(kullanici.getEmail(), kullanici.getSifre(), basarili -> {
                         if (basarili) {
                             YerelKayit();
-                            Toast.makeText(this, "Giriş başarılı", Toast.LENGTH_SHORT).show();
+                            uyariMesaji.BasariliDurum("Giriş Başarılı...",1000);
                         } else {
-                            Toast.makeText(this, "Şifre yanlış veya giriş başarısız", Toast.LENGTH_SHORT).show();
+                            uyariMesaji.BasarisizDurum("Giriş Başarısız...",1000);
                         }
                     });
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Veri alınırken hata oluştu", Toast.LENGTH_SHORT).show();
                 });
     }
     public void kaydol(View view){
+        uyariMesaji.YuklemeDurum("Kayıt Yapılıyor...");
         kullanici.setAd(donusum(AdEditT));
         kullanici.setSoyad(donusum(SoyadEditT));
         kullanici.setEmail(donusum(EmailEditT));
@@ -172,20 +171,19 @@ public class MainActivity extends AppCompatActivity {
         kullanici.setSifre(donusum(sifre));
 
         if(!kullanici.KullaniciIs()){
-            Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
+            uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun",1000);
             return;
         }
         if(!EmailKontrol(kullanici.getEmail())){
-            Toast.makeText(this, "Lütfen geçerli bir email adresi giriniz!", Toast.LENGTH_SHORT).show();
+            uyariMesaji.BasarisizDurum("Lütfen geçerli bir email adresi giriniz!",1000);
             return;
         }
         if(kullanici.getSifre().length()<5){
-            Toast.makeText(this, "Lütfen şifreyi en az 5 haneli giriniz!", Toast.LENGTH_SHORT).show();
+            uyariMesaji.BasarisizDurum("Lütfen şifreyi en az 5 haneli giriniz!",1000);
             return;
         }
         System.out.println(kullanici.getAd());
         VeriTabaninaKayit();
-
     }
 
     public void SifremiUnuttum(View view){
@@ -196,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
         EmailEditT = pencere.findViewById(R.id.emailEditText);
         diyalog = new BottomSheetDialog(this);
         diyalog.setContentView(pencere);
+        pencere.setVisibility(View.VISIBLE);
         diyalog.show();
     }
     public void sifreSifirla(View view){
@@ -224,6 +223,7 @@ public class MainActivity extends AppCompatActivity {
         SoyadEditT = pencere.findViewById(R.id.soyadEditText);
         diyalog = new BottomSheetDialog(this);
         diyalog.setContentView(pencere);
+        pencere.setVisibility(View.VISIBLE);
         diyalog.show();
         AcikMi = false;
         Goz.setOnClickListener( btn ->{
@@ -237,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(sonuc->{
                     if(!sonuc.isEmpty()){
-                        Toast.makeText(this, "Email ile daha önce kayıt yapılmış.", Toast.LENGTH_SHORT).show();
+                        uyariMesaji.BasarisizDurum("Email ile daha önce kayıt yapılmış.",1000);
                     }
                     else{
                         db.collection("users")
@@ -245,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
                                 .get()
                                 .addOnSuccessListener(cevap->{
                                     if(!cevap.isEmpty()){
-                                        Toast.makeText(this, "Bu kullanıcı adı ile daha önce kayıt yapılmış.", Toast.LENGTH_SHORT).show();
+                                        uyariMesaji.BasarisizDurum("Bu kullanıcı adı ile daha önce kayıt yapılmış.",1000);
                                     }
                                     else{
                                         DogrulamaKodYonetici ynt = new DogrulamaKodYonetici();
@@ -255,10 +255,10 @@ public class MainActivity extends AppCompatActivity {
                                                         .add(kullanici.KullaniciData())
                                                         .addOnSuccessListener(documentReference -> {
                                                             YerelKayit();
-                                                            Toast.makeText(this, "Kayıt Başarılı", Toast.LENGTH_SHORT).show();
+                                                            uyariMesaji.BasariliDurum("Kayıt Başarılı...",1000);
                                                         })
                                                         .addOnFailureListener(e ->{
-                                                            Toast.makeText(this, "Kayıt Başarısız", Toast.LENGTH_SHORT).show();
+                                                            uyariMesaji.BasarisizDurum("Kayıt Başarısız!",1000);
                                                         });
                                             }
                                             else {
