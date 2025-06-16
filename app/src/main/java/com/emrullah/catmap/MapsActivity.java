@@ -311,6 +311,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 16f), 2000, null);
                             }, 1000);
                             konumAlindi=false;
+                            TarananKediler tarama =  new TarananKediler();
+                            tarama.ButonGosterim(mMap,findViewById(android.R.id.content));
+                            tarama.Basildi(kediler,mMap,()->{
+                                resimlimarker();
+                            });
                         }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }
@@ -449,6 +454,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void resimlimarker() {
         runOnUiThread(() -> {
         for (Kediler kedi : kediler) {
+            if(kedi.isMarkerOlustuMu()){
+                continue;
+            }else{
+                kedi.setMarkerOlustuMu(true);
+            }
             Target target = new Target() {
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
@@ -734,7 +744,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
         mMap.setOnMapLoadedCallback(() -> {
             Thread t = new Thread(() -> {
                 konumalma();
