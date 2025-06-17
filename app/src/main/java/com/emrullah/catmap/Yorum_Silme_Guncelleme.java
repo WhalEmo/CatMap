@@ -139,6 +139,38 @@ public class Yorum_Silme_Guncelleme {
 
     }
 
+    public void yorumGuncelleme(Yorum_Model yorum,Context context,ArrayList<Yorum_Model>yorumList,Yorum_Adapter adapter){
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Yorumu Güncelle");
+
+        final EditText input = new EditText(context);
+        input.setText(yorum.getYorumicerik());
+        builder.setView(input);
+
+        builder.setPositiveButton("Güncelle", (dialog, which) -> {
+            String yeniYorum = input.getText().toString().trim();
+            db.collection("cats")
+                    .document(MapsActivity.kediID)
+                    .collection("yorumlar")
+                    .document(yorum.getYorumID())
+                    .update("icerik", yeniYorum)
+                    .addOnSuccessListener(aVoid -> {
+                        for (int i = 0; i < yorumList.size(); i++) {
+                            if (yorumList.get(i).getYorumID().equals(yorum.getYorumID())) {
+                                yorum.setYorumicerik(yeniYorum);
+                                yorumList.set(i, yorum);
+                                adapter.notifyItemChanged(i);
+                                break;
+                            }
+                        }
+                        Toast.makeText(context, "Yorum güncellendi", Toast.LENGTH_SHORT).show();
+                    });
+        });
+
+        builder.setNegativeButton("İptal", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
 
 
 }
