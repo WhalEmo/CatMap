@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -26,8 +28,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 
 public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
@@ -36,6 +40,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         return yorumList;
     }
     public boolean yorumMuGeldi=false;
+    private Set<String> begenilenYorumIDSeti = new HashSet<>();
 
     private Context context;
     private final Handler zamanHandler = new Handler();
@@ -56,6 +61,24 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         }
 
     };
+    private void kalpAnimasyonuYap(ImageView kalpView) {
+        ScaleAnimation büyütKücült = new ScaleAnimation(
+                0.7f, 1.2f,  // X ekseni
+                0.7f, 1.2f,  // Y ekseni
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+        );
+        büyütKücült.setDuration(200);  // milisaniye
+        büyütKücült.setRepeatCount(1);
+        büyütKücült.setRepeatMode(Animation.REVERSE); // tersine oynat
+
+        kalpView.startAnimation(büyütKücült);
+    }
+
+    public void setBegenilenYorumIDSeti(Set<String> set) {
+        this.begenilenYorumIDSeti = set;
+        notifyDataSetChanged(); // listeyi güncelle
+    }
     public void baslatZamanlayici() {
         zamanHandler.post(zamanRunnable);
     }
@@ -84,6 +107,34 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
+
+
+        holder.begeniSayisiTextView.setText(String.valueOf(yorum.getBegeniSayisi()));
+        if (begenilenYorumIDSeti.contains(yorum.getYorumID())) {
+            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24); // dolu kalp
+            holder.kalpImageView.setTag("begenildi");
+        } else {
+            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24); // boş kalp
+            holder.kalpImageView.setTag("begeniYok");
+        }
+        Begeni_Kod_Yoneticisi begeniKodYoneticisi=new Begeni_Kod_Yoneticisi();
+        holder.kalpImageView.setOnClickListener(v->{
+            if ("begeniYok".equals(holder.kalpImageView.getTag())) {
+                begeniKodYoneticisi.YorumBegenme(yorum,MainActivity.kullanici.getID(),context,this);
+                holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
+                kalpAnimasyonuYap(holder.kalpImageView);
+                holder.kalpImageView.setTag("begenildi");
+                begenilenYorumIDSeti.add(yorum.getYorumID());
+
+            }else{
+                begeniKodYoneticisi.YorumBegeniKladirma(yorum,MainActivity.kullanici.getID(),context,this);
+                holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
+                holder.kalpImageView.setTag("begeniYok");
+                begenilenYorumIDSeti.remove(yorum.getYorumID());
+            }
+        });
+
+
 
         if (MainActivity.kullanici.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
             if(yorumMuGeldi==true){
@@ -260,6 +311,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         LinearLayout yanitlarYukleniyorLayout;
         ImageView menuButonu;
         LinearLayout getYanitlarYukleniyorLayout2;
+        ImageView kalpImageView;
+        TextView begeniSayisiTextView;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -275,6 +328,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             yanitlarYukleniyorLayout = itemView.findViewById(R.id.yanitlarYukleniyorLayout);
             menuButonu=itemView.findViewById(R.id.menuButton);
             getYanitlarYukleniyorLayout2=itemView.findViewById(R.id.yanitlarYukleniyorLayout2);
+            kalpImageView=itemView.findViewById(R.id.kalpImageView);
+            begeniSayisiTextView=itemView.findViewById(R.id.begeniSayisiTextView);
 
         }
     }

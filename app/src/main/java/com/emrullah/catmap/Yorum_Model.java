@@ -20,6 +20,7 @@ public class Yorum_Model {
     private boolean yanitYokMu = false;
     private boolean dahafazlaGozukuyorMu=true;
     private Yanit_Adapter yanitAdapter;
+    private int begeniSayisi;
 
     public Yorum_Model(){}
 
@@ -137,4 +138,11 @@ public class Yorum_Model {
         this.yanitAdapter = yanitAdapter;
     }
 
+    public int getBegeniSayisi() {
+        return begeniSayisi;
+    }
+
+    public void setBegeniSayisi(int begeniSayisi) {
+        this.begeniSayisi = begeniSayisi;
+    }
 }
