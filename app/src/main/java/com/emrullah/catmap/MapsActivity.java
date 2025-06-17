@@ -315,7 +315,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             tarama.ButonGosterim(mMap,findViewById(android.R.id.content));
                             tarama.Basildi(kediler,mMap,()->{
                                 resimlimarker();
-                            });
+                            },MapsActivity.this);
                         }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }

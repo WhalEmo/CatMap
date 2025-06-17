@@ -1,8 +1,10 @@
 package com.emrullah.catmap;
 
+import android.content.Context;
 import android.location.Location;
 import android.view.View;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
@@ -49,13 +51,18 @@ public class TarananKediler {
         });
     }
 
-    public void Basildi(ArrayList<Kediler> kediler, GoogleMap map, TarananKediCallback callback){
+    public void Basildi(ArrayList<Kediler> kediler, GoogleMap map, TarananKediCallback callback, Context context){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         CollectionReference kedilerKoleksiyonu = db.collection("cats");
         final double YAKINLIK_METRE = 1000.0;
         taramaButon.setOnClickListener(buton ->{
             LatLng ekranMerkezi = map.getCameraPosition().target;
             taramaButon.hide();
+
+            UyariMesaji uyarimesa = new UyariMesaji(context,true);
+            uyarimesa.YuklemeDurum("Taranıyor..");
+            int boyut = kediler.size();
+
             kedilerKoleksiyonu.get().addOnSuccessListener(Tablo->{
                 for (QueryDocumentSnapshot veri: Tablo){
                     double latude = veri.getDouble("latitude");
@@ -76,6 +83,13 @@ public class TarananKediler {
                         Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
                         kediler.add(kedi);
                     }
+                }
+                if (boyut == kediler.size()){
+                    uyarimesa.BasarisizDurum("Kedi Bulunamadı",1000);
+                }
+                else{
+                    uyarimesa.BasariliDurum("Kediler Bulundu",500);
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(ekranMerkezi,16f),2000,null);
                 }
                 new Thread(()->{
                     callback.onKedilerAlindi();
