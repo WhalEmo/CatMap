@@ -7,8 +7,17 @@ public class Kediler {
     private double longitude;
     private String URL;
     private String ID;
+    private boolean MarkerOlustuMu = false;
 
-    public Kediler(String ID,String isim ,String hakkindasi,double latitude,double longitude,String URL){
+    public boolean isMarkerOlustuMu() {
+        return MarkerOlustuMu;
+    }
+
+    public void setMarkerOlustuMu(boolean markerOlustuMu) {
+        MarkerOlustuMu = markerOlustuMu;
+    }
+
+    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL){
         this.ID=ID;
         this.isim=isim;
         this.hakkindasi=hakkindasi;

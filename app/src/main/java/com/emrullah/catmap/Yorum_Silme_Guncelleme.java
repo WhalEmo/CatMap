@@ -139,6 +139,4 @@ public class Yorum_Silme_Guncelleme {
 
     }
 
-
-
 }
