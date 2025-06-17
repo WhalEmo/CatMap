@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="ModernAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:background">#FAFAFA</item>
+        <item name="android:windowMinWidthMajor">90%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:textColor">#212121</item>
+    </style>
+</resources>

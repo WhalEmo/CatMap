@@ -2,9 +2,15 @@ package com.emrullah.catmap;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -52,12 +58,18 @@ public class Yorum_Silme_Guncelleme {
                 });
     }
     public void yorumGuncelleme(Yorum_Model yorum,Context context,ArrayList<Yorum_Model>yorumList,Yorum_Adapter adapter){
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            AlertDialog.Builder builder = new AlertDialog.Builder(context,R.style.ModernAlertDialog);
             builder.setTitle("Yorumu Güncelle");
 
             final EditText input = new EditText(context);
             input.setText(yorum.getYorumicerik());
             builder.setView(input);
+            input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            input.setMinLines(3);
+            input.setMaxLines(6);
+            input.setGravity(Gravity.TOP | Gravity.START);
+            input.setBackground(ContextCompat.getDrawable(context, R.drawable.edittext_oval_bg));
+            input.setPadding(30, 30, 30, 30);
 
             builder.setPositiveButton("Güncelle", (dialog, which) -> {
                 String yeniYorum = input.getText().toString().trim();
@@ -80,8 +92,19 @@ public class Yorum_Silme_Guncelleme {
             });
 
             builder.setNegativeButton("İptal", (dialog, which) -> dialog.cancel());
-            builder.show();
 
+            AlertDialog dialog = builder.create();
+            dialog.setOnShowListener(dlg -> {
+                Window window = dialog.getWindow();
+                if (window != null) {
+                    window.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.modern_dialog_bg));
+                }
+
+                // Buton stilleri
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#13216E"));
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#BF6A33"));
+            });
+            dialog.show();
     }
     public void yorumSilynt(String yanitID,String yorumID,ArrayList<Yanit_Model>yanitlar,Yanit_Adapter adapter) {
         db.collection("cats")
@@ -111,6 +134,12 @@ public class Yorum_Silme_Guncelleme {
         final EditText input = new EditText(context);
         input.setText(yanit.getYaniticerik());
         builder.setView(input);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        input.setMinLines(3);
+        input.setMaxLines(6);
+        input.setGravity(Gravity.TOP | Gravity.START);
+        input.setBackground(ContextCompat.getDrawable(context, R.drawable.edittext_oval_bg));
+        input.setPadding(30, 30, 30, 30);
 
         builder.setPositiveButton("Güncelle", (dialog, which) -> {
             String yeniYanit = input.getText().toString().trim();
@@ -135,42 +164,18 @@ public class Yorum_Silme_Guncelleme {
         });
 
         builder.setNegativeButton("İptal", (dialog, which) -> dialog.cancel());
-        builder.show();
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dlg -> {
+            Window window = dialog.getWindow();
+            if (window != null) {
+                window.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.modern_dialog_bg));
+            }
 
-    }
-
-    public void yorumGuncelleme(Yorum_Model yorum,Context context,ArrayList<Yorum_Model>yorumList,Yorum_Adapter adapter){
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Yorumu Güncelle");
-
-        final EditText input = new EditText(context);
-        input.setText(yorum.getYorumicerik());
-        builder.setView(input);
-
-        builder.setPositiveButton("Güncelle", (dialog, which) -> {
-            String yeniYorum = input.getText().toString().trim();
-            db.collection("cats")
-                    .document(MapsActivity.kediID)
-                    .collection("yorumlar")
-                    .document(yorum.getYorumID())
-                    .update("icerik", yeniYorum)
-                    .addOnSuccessListener(aVoid -> {
-                        for (int i = 0; i < yorumList.size(); i++) {
-                            if (yorumList.get(i).getYorumID().equals(yorum.getYorumID())) {
-                                yorum.setYorumicerik(yeniYorum);
-                                yorumList.set(i, yorum);
-                                adapter.notifyItemChanged(i);
-                                break;
-                            }
-                        }
-                        Toast.makeText(context, "Yorum güncellendi", Toast.LENGTH_SHORT).show();
-                    });
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#13216E"));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#BF6A33"));
         });
-
-        builder.setNegativeButton("İptal", (dialog, which) -> dialog.cancel());
-        builder.show();
+        dialog.show();
     }
-
 
 
 }

@@ -5,5 +5,8 @@
     <color name="teal_700">#00796B</color>
     <color name="cool_blue">#2196F3</color>
     <color name="cool_purple">#9C27B0</color>
+    <color name="dialog_yesil">#2E7D32</color>
+    <color name="dialog_kirmizi">#C62828</color>
+
 
 </resources>

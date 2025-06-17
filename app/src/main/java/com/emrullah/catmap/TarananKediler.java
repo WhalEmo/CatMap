@@ -62,6 +62,7 @@ public class TarananKediler {
             UyariMesaji uyarimesa = new UyariMesaji(context,true);
             uyarimesa.YuklemeDurum("Taranıyor..");
             int boyut = kediler.size();
+            ArrayList<Kediler> bulunanKediler = new ArrayList<>();
 
             kedilerKoleksiyonu.get().addOnSuccessListener(Tablo->{
                 for (QueryDocumentSnapshot veri: Tablo){
@@ -82,14 +83,32 @@ public class TarananKediler {
                         String hakkindaa=veri.getString("kediHakkinda");
                         Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
                         kediler.add(kedi);
+                        bulunanKediler.add(kedi);
                     }
                 }
                 if (boyut == kediler.size()){
                     uyarimesa.BasarisizDurum("Kedi Bulunamadı",1000);
                 }
                 else{
+                    float[] araMesafe = new float[1];
+                    float enkucukMesafe = Float.MAX_VALUE;
+                    Kediler enkucukKedi = null;
+                    for (Kediler kedi: bulunanKediler){
+                        Location.distanceBetween(
+                                ekranMerkezi.latitude,
+                                ekranMerkezi.longitude,
+                                kedi.getLatitude(),
+                                kedi.getLongitude(),
+                                araMesafe
+                        );
+                        if(araMesafe[0] < enkucukMesafe){
+                            enkucukMesafe = araMesafe[0];
+                            enkucukKedi = kedi;
+                        }
+                    }
                     uyarimesa.BasariliDurum("Kediler Bulundu",500);
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(ekranMerkezi,16f),2000,null);
+
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(enkucukKedi.getLatitude(),enkucukKedi.getLongitude()),19f),2000,null);
                 }
                 new Thread(()->{
                     callback.onKedilerAlindi();
