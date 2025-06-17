@@ -65,6 +65,7 @@ import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -79,6 +80,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -113,6 +115,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Firestore cache ayarını yap
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build();
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.setFirestoreSettings(settings);
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -204,6 +213,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
+
 
         Klavye klavye=new Klavye(this);
         iptalButton.setOnClickListener(v -> {
@@ -593,7 +603,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     isLoading = false;
                 });
     }
-
+    Begeni_Kod_Yoneticisi begeniKodYoneticisi=new Begeni_Kod_Yoneticisi();
     public void patiyorumyap(View view){
         if (yorumListener != null) {
             yorumListener.remove();  // Önceki listener varsa kaldır
@@ -609,6 +619,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yorumAdapter = new Yorum_Adapter(yorumlar, this);
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
+
+        Set<String> cachedSet = CacheHelper.loadBegenilenSet(this);
+        yorumAdapter.setBegenilenYorumIDSeti(cachedSet);
+        yorumAdapter.notifyDataSetChanged();
+
+// Sonra Firestore’dan güncel veriyi çek ve cache ile adapter’ı güncelle
+        begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, MainActivity.kullanici.getID(), yorumAdapter);
+
         yorumAdapter.baslatZamanlayici();
         isLastPage = false;
         isLoading = false;

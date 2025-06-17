@@ -114,36 +114,38 @@
             android:layout_height="0dp"
             android:layout_weight="1"/>
 
-        <!-- Kalp ve beğeni sayısı grubu -->
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:layout_marginEnd="8dp">
+            android:orientation="horizontal"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical">
 
+            <!-- Kalp simgesi -->
             <ImageView
                 android:id="@+id/kalpImageView"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:src="@drawable/baseline_favorite_24"
+                android:src="@drawable/baseline_favorite_border_24"
                 android:contentDescription="Beğen"
                 android:padding="2dp"
                 android:clickable="true"
-                android:focusable="true"/>
+                android:focusable="true"
+                android:layout_gravity="center_vertical"/>
 
+            <!-- Sabit genişlikli sayı -->
             <TextView
                 android:id="@+id/begeniSayisiTextView"
-                android:layout_width="wrap_content"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textSize="12sp"
-                android:layout_marginTop="2dp"
+                android:gravity="center_vertical|start"
+                android:layout_marginStart="6dp"
                 android:textColor="@android:color/black"
-                android:gravity="center_horizontal"/>
+                android:maxLines="1"
+                android:ellipsize="end"/>
         </LinearLayout>
-
-        
 
     </LinearLayout>
 
