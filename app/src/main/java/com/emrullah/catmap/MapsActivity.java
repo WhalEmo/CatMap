@@ -679,6 +679,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void yorumgonder(View view){
         DBekle(ID,TEXT.getText().toString());
         TEXT.setText("");
+        yorumAdapter.yorumMuGeldi=true;
     }
 
     public void yntgonder(View view){
@@ -693,8 +694,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks); // görünüm güncelle
             if (!yanitMetni.isEmpty()) {
                 yorumID=yorumm.getYorumID();
-                DBekleYanit(ID, yorumID, yanitMetni);
+                DBekleYanit(ID, yorumID, yanitMetni,yanit);
                 textt.setText(""); // Yalnızca görünür olan EditText temizlenir
+                yanit.yanitMiGeldi=true;
+                Yorum_Adapter.yorumindeks = -1;
             }
         }
 
@@ -710,10 +713,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .document(kediId)
                 .collection("yorumlar")
                 .add(yanitData)
-                .addOnSuccessListener(yanitRef -> Log.d("Firestore", "Yanıt eklendi: " + yanitRef.getId()))
+                .addOnSuccessListener(yanitRef ->{
+                })
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
-    public void DBekleYanit(String kediId,String yorumId,String yorumIcerik){
+    public void DBekleYanit(String kediId,String yorumId,String yorumIcerik,Yanit_Model yanit){
         Map<String, Object> yanittData = new HashMap<>();
         yanittData.put("yaniticerik", yorumIcerik);
         yanittData.put("yanitzaman", FieldValue.serverTimestamp());
@@ -726,7 +730,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .document(yorumId)
                 .collection("yanitlar")
                 .add(yanittData)
-                .addOnSuccessListener(yanit -> Log.d("Firestore", "Yanıt eklendi: " + yanit.getId()))
+                .addOnSuccessListener(documentReference  ->{
+                    String yanitID = documentReference.getId();
+                    yanit.setYanitId(yanitID);
+                })
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
 

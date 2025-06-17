@@ -3,6 +3,7 @@ package com.emrullah.catmap;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,8 +14,9 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.emrullah.catmap.R;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import android.os.Handler;
+import android.os.Looper;
+
 
 
 import androidx.annotation.NonNull;
@@ -33,6 +35,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     public ArrayList<Yorum_Model> getYorumList() {
         return yorumList;
     }
+    public boolean yorumMuGeldi=false;
 
     private Context context;
     private final Handler zamanHandler = new Handler();
@@ -61,7 +64,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         zamanHandler.removeCallbacks(zamanRunnable);
     }
 
-
     public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context) {
         this.yorumList = yorumList;
         this.context = context;
@@ -83,14 +85,27 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        String aktifKullaniciId = currentUser.getUid();
-
-        if (MainActivity.kullanici.getID().equals(aktifKullaniciId)) {
-            holder.menuButonu.setVisibility(View.VISIBLE);
+        if (MainActivity.kullanici.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
+            if(yorumMuGeldi==true){
+                holder.menuButonu.setVisibility(View.GONE);
+                holder.getYanitlarYukleniyorLayout2.setVisibility(View.VISIBLE);
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
+                        holder.menuButonu.setVisibility(View.VISIBLE);
+                        yorumMuGeldi = false;
+                    }
+                }, 3000);
+            }else {
+                holder.menuButonu.setVisibility(View.VISIBLE);
+                holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
+            }
         } else {
             holder.menuButonu.setVisibility(View.GONE);
         }
+
+
 
         if (yorum.isYanitlarGorunuyor()) {
             holder.container.setVisibility(View.VISIBLE);
@@ -105,7 +120,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
             // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
             if (yorum.getYanitAdapter() == null) {
-                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context);
+                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,position,yorum.getYorumID());
                 yorum.setYanitAdapter(yntadapter);
                 yntadapter.baslatZamanlayici();
             }
@@ -129,8 +144,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                     holder.dahafazla.setVisibility(View.GONE);
                 }
             }
-
-
 
 
             // 🔄 SADECE 1 KERE VERİ ÇEK
@@ -218,16 +231,15 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             popupmenu.setOnMenuItemClickListener(item->{
                 int id = item.getItemId();
                 if (id == R.id.menu_guncelle) {
-                    islem.yorumGuncelleme(yorum, context);
-                    notifyItemChanged(position);
+                    islem.yorumGuncelleme(yorum,context,yorumList,this);
                     return true;
                 } else if (id == R.id.menu_sil) {
-                    islem.yorumSil(yorum.getYorumID(), position, yorumList);
-                    notifyItemRemoved(position);
+                    islem.yorumSil(yorum.getYorumID(),yorumList,this);
                     return true;
                 }
                 return false;
             });
+            popupmenu.show();
         });
     }
 
@@ -247,6 +259,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         TextView yanityoksa;
         LinearLayout yanitlarYukleniyorLayout;
         ImageView menuButonu;
+        LinearLayout getYanitlarYukleniyorLayout2;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -261,6 +274,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             yanityoksa=itemView.findViewById(R.id.yanityok);
             yanitlarYukleniyorLayout = itemView.findViewById(R.id.yanitlarYukleniyorLayout);
             menuButonu=itemView.findViewById(R.id.menuButton);
+            getYanitlarYukleniyorLayout2=itemView.findViewById(R.id.yanitlarYukleniyorLayout2);
 
         }
     }

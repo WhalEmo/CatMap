@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -11,11 +12,59 @@
         android:text="Kullanıcı Adı"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/yanittTextView"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Yanıt içeriği" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/yanittTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Yanıt içeriği" />
+        <!-- 👇 Buraya ekle -->
+        <LinearLayout
+            android:id="@+id/yanitlarYukleniyorLayout2ynt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp">
+
+            <ProgressBar
+                android:id="@+id/yanitlarProgress2ynt"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/yanitlarProgressText2ynt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yükleniyor..."
+                android:textColor="#888888"
+                android:textStyle="italic"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/menuButtonynt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/baseline_more_vert_24"
+            android:contentDescription="Menü"
+            android:visibility="gone"
+            android:padding="8dp"
+            android:layout_gravity="end"
+            android:background="?selectableItemBackgroundBorderless"
+            app:tint="#888888" />
+    </LinearLayout>
+
+
     <TextView
         android:id="@+id/tarihTextView"
         android:layout_width="wrap_content"

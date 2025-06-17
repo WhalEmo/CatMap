@@ -27,6 +27,31 @@
             android:layout_weight="1"
             android:text="Yorum içeriği"
             android:textColor="#000000" />
+        <!-- 👇 Buraya ekle -->
+        <LinearLayout
+            android:id="@+id/yanitlarYukleniyorLayout2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp">
+
+            <ProgressBar
+                android:id="@+id/yanitlarProgress2"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/yanitlarProgressText2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yükleniyor..."
+                android:textColor="#888888"
+                android:textStyle="italic"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/menuButton"
@@ -40,6 +65,7 @@
             app:tint="#888888"
             android:background="?selectableItemBackgroundBorderless"/>
     </LinearLayout>
+
 
     <TextView
         android:id="@+id/tarihTextView"
@@ -83,6 +109,40 @@
             android:clickable="true"
             android:focusable="true"
             android:onClick="onYanıtlaonclick"/>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <!-- Kalp ve beğeni sayısı grubu -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:layout_marginEnd="8dp">
+
+            <ImageView
+                android:id="@+id/kalpImageView"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/baseline_favorite_24"
+                android:contentDescription="Beğen"
+                android:padding="2dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/begeniSayisiTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp"
+                android:textColor="@android:color/black"
+                android:gravity="center_horizontal"/>
+        </LinearLayout>
+
         
 
     </LinearLayout>

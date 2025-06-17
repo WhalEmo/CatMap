@@ -9,6 +9,7 @@ public class Yanit_Model {
     private String Adi;
     private String yaniticerik;
     private Date tarih;
+    public boolean yanitMiGeldi=false;
 
     public Yanit_Model(){}
 
@@ -68,4 +69,11 @@ public class Yanit_Model {
         }
     }
 
+    public boolean isYanitMiGeldi() {
+        return yanitMiGeldi;
+    }
+
+    public void setYanitMiGeldi(boolean yanitMiGeldi) {
+        this.yanitMiGeldi = yanitMiGeldi;
+    }
 }

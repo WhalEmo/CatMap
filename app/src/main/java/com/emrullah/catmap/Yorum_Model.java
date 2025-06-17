@@ -137,5 +137,4 @@ public class Yorum_Model {
         this.yanitAdapter = yanitAdapter;
     }
 
-
 }
