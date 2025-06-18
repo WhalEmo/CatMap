@@ -8,6 +8,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -16,18 +18,36 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewHolder> {
     private ArrayList<Yanit_Model>yanitListe;
+    public ArrayList<Yanit_Model> getYanitList() {
+        return yanitListe;
+    }
     private Context context;
     private int aitOlduguYorumIndeks;
     private String yorumID;
+    private Set<String>begenilenYanitIdSeti=new HashSet<>();
+    private Map<String, Integer> begeniSayisiYanitMap = new HashMap<>();
     public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context, int yorumIndeks,String yorumID) {
         this.yanitListe = yanitListe;
         this.context = context;
         this.aitOlduguYorumIndeks = yorumIndeks;
         this.yorumID=yorumID;
     }
+
+    public void setBegenilenYanitIdSeti(Set<String> begenilenYanitIdSeti) {
+        this.begenilenYanitIdSeti = begenilenYanitIdSeti;
+    }
+
+    public void setBegeniSayisiYanitMap(Map<String, Integer> begeniSayisiYanitMap) {
+        this.begeniSayisiYanitMap = begeniSayisiYanitMap;
+    }
+
     private final Handler zamanHandler = new Handler();
     private final Runnable zamanRunnable = new Runnable() {
         @Override
@@ -46,6 +66,32 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         }
 
     };
+    private void kalpAnimasyonuYap(ImageView kalpView) {
+        ScaleAnimation büyütKücült = new ScaleAnimation(
+                0.7f, 1.2f,  // X ekseni
+                0.7f, 1.2f,  // Y ekseni
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+        );
+        büyütKücült.setDuration(200);  // milisaniye
+        büyütKücült.setRepeatCount(1);
+        büyütKücült.setRepeatMode(Animation.REVERSE); // tersine oynat
+
+        kalpView.startAnimation(büyütKücült);
+    }
+
+    public void hazirliklariYapBegenme(Context context, String kullaniciId, Yorum_Model yorum) {
+        Set<String> cachedSet = CacheHelperYanit.loadBegenilenSet(context);
+        this.setBegenilenYanitIdSeti(cachedSet);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            notifyDataSetChanged();
+        }, 100); // 100ms gecikme: UI'ın hazır olmasına zaman verir
+        Begeni_Kod_Yoneticisi_Yanit bgynt = new Begeni_Kod_Yoneticisi_Yanit();
+        bgynt.KullanicininBegendigiYanitlar(context, kullaniciId, this, yorum);
+    }
+
+
+
     public void baslatZamanlayici() {
         zamanHandler.post(zamanRunnable);
     }
@@ -69,6 +115,34 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         holder.kullaniciAditext.setText(yanit.getAdi());
         holder.yanitText.setText(yanit.getYaniticerik());
         holder.yanitTarihiText.setText(yanit.duzenlenmisTarih());
+
+        int begeniSayisi = begeniSayisiYanitMap.getOrDefault(yanit.getYanitId(), 0);
+        holder.begeniSayisiTextViewYnt.setText(String.valueOf(begeniSayisi));
+
+        if (begenilenYanitIdSeti.contains(yanit.getYanitId())) {
+            holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_24);
+            holder.kalpImageViewYnt.setTag("begenildi");
+        } else {
+            holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_border_24);
+            holder.kalpImageViewYnt.setTag("begeniYok");
+        }
+        Begeni_Kod_Yoneticisi_Yanit begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yanit();
+        holder.kalpImageViewYnt.setOnClickListener(v->{
+            if ("begeniYok".equals(holder.kalpImageViewYnt.getTag())) {
+                begeniKodYoneticisi.YanitBegenme(yorumID,yanit,MainActivity.kullanici.getID(),context,this);
+                holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_24);
+                kalpAnimasyonuYap(holder.kalpImageViewYnt);
+                holder.kalpImageViewYnt.setTag("begenildi");
+                begenilenYanitIdSeti.add(yanit.getYanitId());
+
+            }else{
+                begeniKodYoneticisi.YanitBegeniKaldirma(yorumID,yanit,MainActivity.kullanici.getID(),context,this);
+                holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_border_24);
+                holder.kalpImageViewYnt.setTag("begeniYok");
+                begenilenYanitIdSeti.remove(yanit.getYanitId());
+            }
+        });
+
 
         if (MainActivity.kullanici.getKullaniciAdi().equals(yanit.getAdi())) {
             if(yanit.yanitMiGeldi==true){
@@ -157,6 +231,8 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         TextView yanitlabutonu;
         ImageView menuButonu;
         LinearLayout getYanitlarYukleniyorLayout2ynt;
+        TextView begeniSayisiTextViewYnt;
+        ImageView kalpImageViewYnt;
         public YanitViewHolder(@NonNull View itemView) {
             super(itemView);
             kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextViewynt);
@@ -166,6 +242,8 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
             yanitlabutonu=itemView.findViewById(R.id.yanitlayazisiynt);
             menuButonu=itemView.findViewById(R.id.menuButtonynt);
             getYanitlarYukleniyorLayout2ynt=itemView.findViewById(R.id.yanitlarYukleniyorLayout2ynt);
+            begeniSayisiTextViewYnt=itemView.findViewById(R.id.begeniSayisiTextViewYnt);
+            kalpImageViewYnt=itemView.findViewById(R.id.kalpImageViewYnt);
         }
     }
 }

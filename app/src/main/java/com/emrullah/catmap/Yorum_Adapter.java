@@ -1,7 +1,6 @@
 package com.emrullah.catmap;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -9,27 +8,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import com.emrullah.catmap.R;
-import android.os.Handler;
-import android.os.Looper;
-
 
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +32,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     }
     public boolean yorumMuGeldi=false;
     private Set<String> begenilenYorumIDSeti = new HashSet<>();
+    private Map<String, Integer> begeniSayisiMap = new HashMap<>();
 
     private Context context;
     private final Handler zamanHandler = new Handler();
@@ -77,7 +69,10 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
     public void setBegenilenYorumIDSeti(Set<String> set) {
         this.begenilenYorumIDSeti = set;
-        notifyDataSetChanged(); // listeyi güncelle
+    }
+
+    public void setBegeniSayisiMap(Map<String, Integer> begeniMap) {
+        this.begeniSayisiMap = begeniMap;
     }
     public void baslatZamanlayici() {
         zamanHandler.post(zamanRunnable);
@@ -109,7 +104,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
 
 
-        holder.begeniSayisiTextView.setText(String.valueOf(yorum.getBegeniSayisi()));
+        int begeniSayisi = begeniSayisiMap.getOrDefault(yorum.getYorumID(), 0);
+        holder.begeniSayisiTextView.setText(String.valueOf(begeniSayisi));
+
         if (begenilenYorumIDSeti.contains(yorum.getYorumID())) {
             holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24); // dolu kalp
             holder.kalpImageView.setTag("begenildi");
@@ -117,7 +114,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24); // boş kalp
             holder.kalpImageView.setTag("begeniYok");
         }
-        Begeni_Kod_Yoneticisi begeniKodYoneticisi=new Begeni_Kod_Yoneticisi();
+        Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         holder.kalpImageView.setOnClickListener(v->{
             if ("begeniYok".equals(holder.kalpImageView.getTag())) {
                 begeniKodYoneticisi.YorumBegenme(yorum,MainActivity.kullanici.getID(),context,this);
@@ -169,16 +166,20 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 yorum.setYanitlar(yanitlar);
             }
 
+
             // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
             if (yorum.getYanitAdapter() == null) {
                 Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,position,yorum.getYorumID());
                 yorum.setYanitAdapter(yntadapter);
                 yntadapter.baslatZamanlayici();
+                yntadapter.hazirliklariYapBegenme(context, MainActivity.kullanici.getID(), yorum);
             }
 
             // Adapter'i bağla
             holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
             holder.recyclerViewyanitlar.setAdapter(yorum.getYanitAdapter());
+
+
 
             if (yorum.isYanitYokMu()) {
                 holder.dahafazla.setVisibility(View.GONE);

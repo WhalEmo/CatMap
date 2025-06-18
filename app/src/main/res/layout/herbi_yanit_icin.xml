@@ -92,7 +92,45 @@
             android:onClick="yanitlayazisi"
             android:text="Yanıtla"
             android:textColor="@android:color/holo_blue_dark"
-            android:textStyle="italic" />
+            android:textStyle="italic"
+            />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Kalp simgesi -->
+            <ImageView
+                android:id="@+id/kalpImageViewYnt"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/baseline_favorite_border_24"
+                android:contentDescription="Beğen"
+                android:padding="2dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_gravity="center_vertical"/>
+
+            <!-- Sabit genişlikli sayı -->
+            <TextView
+                android:id="@+id/begeniSayisiTextViewYnt"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="12sp"
+                android:gravity="center_vertical|start"
+                android:layout_marginStart="6dp"
+                android:textColor="@android:color/black"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+        </LinearLayout>
 
     </LinearLayout>
 

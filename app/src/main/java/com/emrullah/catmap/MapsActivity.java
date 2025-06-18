@@ -1,9 +1,5 @@
 package com.emrullah.catmap;
 
-import static androidx.constraintlayout.motion.widget.Debug.getLocation;
-
-import static com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY;
-
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -12,13 +8,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -50,16 +44,11 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.emrullah.catmap.databinding.ActivityMapsBinding;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.firebase.Timestamp;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -68,13 +57,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -110,6 +96,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private  EditText TEXT;
     private ImageButton yorumbutton;
     private ImageButton yanıtbutton;
+    private TextView yorumSayisiTextView;
+    private Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi;
 
 
     @Override
@@ -151,14 +139,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 // 3. BottomSheet'i expanded moda al (tam ekran gibi)
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-                behavior.setSkipCollapsed(true); // İsteğe bağlı
+                behavior.setSkipCollapsed(true);
             }
         });
 
-
+         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         imageView = bottomSheetView.findViewById(R.id.kedigosterme);
+        yorumSayisiTextView=bottomSheetView.findViewById(R.id.yorumSayisiTextView);
+
 
         ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
         ikincibottom=new BottomSheetDialog(this);
@@ -550,12 +540,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if(kedi.getLatitude()==markerPosition.latitude&&kedi.getLongitude()==markerPosition.longitude) {
                 ID=kedi.getID();
                 kediID=ID;
+                YorumSayisiToplam();
                 tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), kedi.getURL());
             }
         }
     }
     ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
     Yorum_Adapter yorumAdapter;
+
+    public void YorumSayisiToplam(){
+        begeniKodYoneticisi.yorumSayisiniGetir(sayi -> {
+            yorumSayisiTextView.setText(String.valueOf(sayi+" Yorum"));
+        });
+    }
 
 
     private ListenerRegistration yorumListener;
@@ -603,7 +600,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     isLoading = false;
                 });
     }
-    Begeni_Kod_Yoneticisi begeniKodYoneticisi=new Begeni_Kod_Yoneticisi();
+
     public void patiyorumyap(View view){
         if (yorumListener != null) {
             yorumListener.remove();  // Önceki listener varsa kaldır
@@ -620,11 +617,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
 
-        Set<String> cachedSet = CacheHelper.loadBegenilenSet(this);
+        Set<String> cachedSet = CacheHelperYorum.loadBegenilenSet(this);
+        Map<String, Integer> begeniMap = CacheHelperYorum.loadBegeniSayilariMap(this);
         yorumAdapter.setBegenilenYorumIDSeti(cachedSet);
-        yorumAdapter.notifyDataSetChanged();
+        yorumAdapter.setBegeniSayisiMap(begeniMap);
 
-// Sonra Firestore’dan güncel veriyi çek ve cache ile adapter’ı güncelle
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            yorumAdapter.notifyDataSetChanged();
+        }, 100);
         begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, MainActivity.kullanici.getID(), yorumAdapter);
 
         yorumAdapter.baslatZamanlayici();
