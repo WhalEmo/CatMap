@@ -50,6 +50,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     double longitude=0;
     String kediadi;
     String kedihakkinda;
+    private UyariMesaji mesaji;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReference();
@@ -65,6 +66,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         konumsaglayici = LocationServices.getFusedLocationProviderClient(this);
         // Firestore Başlat
         db = FirebaseFirestore.getInstance();
+        mesaji = new UyariMesaji(this,false);
     }
 
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
@@ -158,10 +160,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         if (requestCode == 101 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             openCamera();
         }
-        System.out.println("İFİN USTUNE GİRDİİİİİ");
         if(requestCode == 102&&grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
             getUserLocation();
-            System.out.println("İFİN İCİNEE GİRDİİİİİ");
         }
     }
 
@@ -170,10 +170,8 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         //  kullanıcıdan izin iste
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 102);
-           // System.out.println("1 kere yazması lazımm ifffinn iciii");
             return;
         }
-        System.out.println("1 kere yazması lazımm");
 
         // 📍 Son bilinen konumu al
         konumsaglayici.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -196,7 +194,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     public void veritabanikaydi() {
         if (latitude == 0 && longitude == 0) {
-            Toast.makeText(this, "Lütfen kedinin konumunu giriniz!", Toast.LENGTH_SHORT).show();
+            mesaji.BasarisizDurum("Lütfen kedinin konumunu giriniz!",1000);
         } else {
             // Firestore'a kaydedilecek veri yapısı
             Map<String, Object> catData = new HashMap<>();
@@ -224,8 +222,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                                           db .collection("cats")
                                             .add(catData)
                                             .addOnSuccessListener(documentReference -> {
-                                                Log.d("Firestore", "Kedi bilgisi başarıyla kaydedildi: " + documentReference.getId());
-                                                Toast.makeText(this, "Kedi bilgileri başarıyla kaydedildi!", Toast.LENGTH_SHORT).show();
+                                                mesaji.BasariliDurum("Kedi bilgileri başarıyla kaydedildi!",1000);
 
                                                 kediadi = null;
                                                 kedininismi.getText().clear();
@@ -235,8 +232,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                                                 gecicifoto.setImageResource(R.drawable.yuklemefotosu);
                                             })
                                             .addOnFailureListener(e -> {
-                                                Log.e("Firestore", "Kedi bilgisi kaydedilemedi", e);
-                                                Toast.makeText(this, "Veri kaydedilirken hata oluştu: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                                mesaji.BasarisizDurum("Kedi kaydedilirken hata oluştu.",1000);
                                             });
                                 })
                                 .addOnFailureListener(e -> {
@@ -244,8 +240,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                                 });
                     })
                     .addOnFailureListener(e -> {
-                        Log.e("Storage", "Fotoğraf yüklenirken hata oluştu", e);
-                        Toast.makeText(this, "Fotoğraf yüklenirken hata oluştu", Toast.LENGTH_SHORT).show();
+                        mesaji.BasarisizDurum("Fotoğraf yüklenirken hata oluştu",1000);
                     });
         }
     }
@@ -256,18 +251,16 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         //anlık cekilmedityse yani dosyadan secildiyse adres girsin
          kediadi = kedininismi.getText().toString().trim();
          kedihakkinda = kedininhakkindasi.getText().toString().trim();
+         mesaji.YuklemeDurum("Kaydediliyor...");
         if (kediadi.isEmpty()) {
-            Toast toast = Toast.makeText(this, "Lütfen kedi ismini giriniz!", Toast.LENGTH_SHORT);
-            toast.show();
+            mesaji.BasarisizDurum("Lütfen kedi ismini giriniz!",1000);
         }
         if (photoUri == null) {
-            Toast toast = Toast.makeText(this, "Lütfen kedinin fotoğrafını yükleyiniz!", Toast.LENGTH_SHORT);
-            toast.show();
+            mesaji.BasarisizDurum("Lütfen kedinin fotoğrafını yükleyiniz!",1000);
         }
         if ( !kediadi.isEmpty() && photoUri != null) {
             getUserLocation();
         }
-       // System.out.println("konum ifi ici");
     }
 
 }

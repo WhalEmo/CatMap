@@ -74,4 +74,42 @@
         android:letterSpacing="0.03"
         app:rippleColor="#332B5EA3" />
 
+
+    <RelativeLayout
+        android:id="@+id/arrowContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageButton
+            android:id="@+id/btnLeftArrow"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/ok_buton_ap"
+            android:src="@drawable/sol_ok"
+            android:contentDescription="Sola Giden Ok"
+            android:visibility="invisible"
+            android:elevation="6dp"
+            map:tint="#FFFFFF" />
+
+        <ImageButton
+            android:id="@+id/btnRightArrow"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/ok_buton_ap"
+            android:src="@drawable/sag_ok"
+            android:contentDescription="Sağa Giden Ok"
+            android:visibility="invisible"
+            android:elevation="6dp"
+            map:tint="#FFFFFF" />
+
+    </RelativeLayout>
+
+
+
 </FrameLayout>
