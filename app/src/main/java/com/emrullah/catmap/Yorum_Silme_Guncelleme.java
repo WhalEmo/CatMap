@@ -129,7 +129,7 @@ public class Yorum_Silme_Guncelleme {
 
     public void yorumGuncellemeynt(Yanit_Model yanit,String yorumID,Context context,ArrayList<Yanit_Model>yanitlar,Yanit_Adapter adapter){
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Yorumu Güncelle");
+        builder.setTitle("Yanıtı Güncelle");
 
         final EditText input = new EditText(context);
         input.setText(yanit.getYaniticerik());

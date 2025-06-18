@@ -264,14 +264,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MainActivity.kullanici.setLongitude(longitude);
             if (yorumAdapter != null) {
                 yorumAdapter.durdurZamanlayici();
+                ArrayList<Yorum_Model> yorumlar = yorumAdapter.getYorumList();
+                for (Yorum_Model yorum : yorumlar) {
+                    Yanit_Adapter yntadapter = yorum.getYanitAdapter();
+                    if (yntadapter != null) {
+                        yntadapter.durdurZamanlayici();
+                    }
+                }
             }
-        ArrayList<Yorum_Model> yorumlar = yorumAdapter.getYorumList();
-        for (Yorum_Model yorum : yorumlar) {
-            Yanit_Adapter yntadapter = yorum.getYanitAdapter();
-            if (yntadapter != null) {
-                yntadapter.durdurZamanlayici();
-            }
-        }
 
     }
 
@@ -316,6 +316,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             tarama.Basildi(kediler,mMap,()->{
                                 resimlimarker();
                             },MapsActivity.this);
+                            tarama.SagOkBas(mMap);
+                            tarama.SolOkBas(mMap);
                         }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }

@@ -3,6 +3,8 @@ package com.emrullah.catmap;
 import android.content.Context;
 import android.location.Location;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageButton;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -21,13 +23,21 @@ public class TarananKediler {
         void onKedilerAlindi();
     }
 
-    ExtendedFloatingActionButton taramaButon;
+    private ExtendedFloatingActionButton taramaButon;
+    private ImageButton solOk;
+    private ImageButton sagOk;
+    private LatLng BasilmaEkranMerkezi;
+    private int indeks = 0;
+    private ArrayList<Kediler> bulunanKediler;
+    private boolean goster = false;
 
     public TarananKediler() {
     }
 
     public void ButonGosterim(GoogleMap map, View view){
         taramaButon = view.findViewById(R.id.btnScanArea);
+        solOk = view.findViewById(R.id.btnLeftArrow);
+        sagOk = view.findViewById(R.id.btnRightArrow);
 
         LatLng[] ekranMerkezi = {map.getCameraPosition().target};
         map.setOnCameraIdleListener(()->{
@@ -48,6 +58,22 @@ public class TarananKediler {
                 }
                 ekranMerkezi[0] = gecerliMerkez;
             }
+            float[] results2 = new float[1];
+            if(BasilmaEkranMerkezi!=null){
+                Location.distanceBetween(
+                        BasilmaEkranMerkezi.latitude,
+                        BasilmaEkranMerkezi.longitude,
+                        gecerliMerkez.latitude,
+                        gecerliMerkez.longitude,
+                        results2
+                );
+                if (results2[0] > 1000){
+                    oklariGizle();
+                }
+                else{
+                    oklariGoster();
+                }
+            }
         });
     }
 
@@ -56,22 +82,26 @@ public class TarananKediler {
         CollectionReference kedilerKoleksiyonu = db.collection("cats");
         final double YAKINLIK_METRE = 1000.0;
         taramaButon.setOnClickListener(buton ->{
-            LatLng ekranMerkezi = map.getCameraPosition().target;
+            BasilmaEkranMerkezi = map.getCameraPosition().target;
             taramaButon.hide();
 
             UyariMesaji uyarimesa = new UyariMesaji(context,true);
             uyarimesa.YuklemeDurum("Taranıyor..");
             int boyut = kediler.size();
-            ArrayList<Kediler> bulunanKediler = new ArrayList<>();
-
+            if(bulunanKediler == null){
+                bulunanKediler = new ArrayList<>();
+            }
+            else{
+                bulunanKediler.clear();
+            }
             kedilerKoleksiyonu.get().addOnSuccessListener(Tablo->{
                 for (QueryDocumentSnapshot veri: Tablo){
                     double latude = veri.getDouble("latitude");
                     double longtude = veri.getDouble("longitude");
                     float[] araMesafe = new float[1];
                     Location.distanceBetween(
-                            ekranMerkezi.latitude,
-                            ekranMerkezi.longitude,
+                            BasilmaEkranMerkezi.latitude,
+                            BasilmaEkranMerkezi.longitude,
                             latude,
                             longtude,
                             araMesafe
@@ -88,6 +118,9 @@ public class TarananKediler {
                 }
                 if (boyut == kediler.size()){
                     uyarimesa.BasarisizDurum("Kedi Bulunamadı",1000);
+                    BasilmaEkranMerkezi = null;
+                    oklariGizle();
+                    return;
                 }
                 else{
                     float[] araMesafe = new float[1];
@@ -95,8 +128,8 @@ public class TarananKediler {
                     Kediler enkucukKedi = null;
                     for (Kediler kedi: bulunanKediler){
                         Location.distanceBetween(
-                                ekranMerkezi.latitude,
-                                ekranMerkezi.longitude,
+                                BasilmaEkranMerkezi.latitude,
+                                BasilmaEkranMerkezi.longitude,
                                 kedi.getLatitude(),
                                 kedi.getLongitude(),
                                 araMesafe
@@ -107,8 +140,9 @@ public class TarananKediler {
                         }
                     }
                     uyarimesa.BasariliDurum("Kediler Bulundu",500);
-
                     map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(enkucukKedi.getLatitude(),enkucukKedi.getLongitude()),19f),2000,null);
+                    oklariGoster();
+                    indeks = kediler.indexOf(enkucukKedi);
                 }
                 new Thread(()->{
                     callback.onKedilerAlindi();
@@ -116,6 +150,78 @@ public class TarananKediler {
             });
         });
     }
+
+
+    private void oklariGoster() {
+        if(!goster){
+            return;
+        }
+        goster = false;
+        solOk.setVisibility(View.VISIBLE);
+        sagOk.setVisibility(View.VISIBLE);
+
+        solOk.post(() -> {
+            float offset = solOk.getWidth() + 40;
+            solOk.setTranslationX(-offset);
+            solOk.animate()
+                    .translationX(0)
+                    .setDuration(500)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
+        });
+
+        sagOk.post(() -> {
+            float offset = sagOk.getWidth() + 40;
+            sagOk.setTranslationX(offset);
+            sagOk.animate()
+                    .translationX(0)
+                    .setDuration(500)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
+        });
+    }
+
+
+    private void oklariGizle() {
+        if (goster) {
+            return;
+        }
+        goster = true;
+        solOk.post(() -> {
+            float offset = solOk.getWidth() + 40;
+            solOk.animate()
+                    .translationX(-offset)
+                    .setDuration(400)
+                    .withEndAction(() -> solOk.setVisibility(View.INVISIBLE))
+                    .start();
+        });
+
+        sagOk.post(() -> {
+            float offset = sagOk.getWidth() + 40;
+            sagOk.animate()
+                    .translationX(offset)
+                    .setDuration(400)
+                    .withEndAction(() -> sagOk.setVisibility(View.INVISIBLE))
+                    .start();
+        });
+    }
+
+
+
+    public void SagOkBas(GoogleMap map){
+        sagOk.setOnClickListener(v->{
+           indeks = (indeks+1)%bulunanKediler.size();
+           map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(bulunanKediler.get(indeks).getLatitude(),bulunanKediler.get(indeks).getLongitude()),19f),2000,null);
+        });
+    }
+
+    public void SolOkBas(GoogleMap map){
+        solOk.setOnClickListener(v->{
+            indeks = (indeks-1+bulunanKediler.size())%bulunanKediler.size();
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(bulunanKediler.get(indeks).getLatitude(),bulunanKediler.get(indeks).getLongitude()),19f),2000,null);
+        });
+    }
+
 }
 
 
