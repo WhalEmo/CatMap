@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Profil Fotoğrafı -->
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/profilFotoImageView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="40dp"
+        app:civ_border_width="2dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:src="@drawable/kullanici"
+        app:civ_border_color="#B0B0B0"
+        />
+
+    <!-- Ad Soyad -->
+    <TextView
+        android:id="@+id/KullaniciAdi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Beyza Nur Takca"
+        android:textColor="#000"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
+        app:layout_constraintTop_toTopOf="@id/profilFotoImageView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0" />
+
+    <!-- Biyografi -->
+
+    <LinearLayout
+        android:id="@+id/sayilarLinearLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/bioTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
+        app:layout_constraintTop_toBottomOf="@+id/KullaniciAdi"
+        app:layout_constraintVertical_bias="0.529">
+
+        <!-- Gönderi -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/gonderiSayisiTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gönderi"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Takipçi -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/takipciSayisiTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Takipçi"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Takip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/takipEdilenSayisiTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Takip"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/bioTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Hakkinda..."
+        android:textColor="#262626 "
+        android:textSize="14sp"
+        android:gravity="start"
+        app:layout_constraintTop_toBottomOf="@id/profilFotoImageView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0"
+        android:layout_marginTop="16dp" />
+    <!-- Takip Et Butonu -->
+    <Button
+        android:id="@+id/takipEtButonu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#FF9800"
+        android:text="Takip Et"
+        android:visibility="gone"
+        android:textAllCaps="false"
+        android:textColor="#fff"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
+    <LinearLayout
+        android:id="@+id/ProfilDuzenleme"
+        android:layout_width="169dp"
+        android:layout_height="88dp"
+        android:paddingBottom="0dp"
+        android:visibility="visible"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView">
+
+        <ImageView
+            android:id="@+id/patiImage"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Pati ikonu"
+            android:src="@drawable/pati"
+            android:translationY="20dp" />
+
+        <Button
+            android:id="@+id/duzenle"
+            android:layout_width="158dp"
+            android:layout_height="42dp"
+            android:backgroundTint="#FFE0B2"
+            android:text="Profili düzenle"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            app:cornerRadius="8dp"
+            app:strokeColor="#FF9800"
+            app:strokeWidth="2dp" />
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

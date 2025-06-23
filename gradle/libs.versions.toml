@@ -24,6 +24,8 @@ picasso = "2.71828"
 
 play-core = "1.10.3"
 googleAndroidLibrariesMapsplatformSecretsGradlePlugin = "2.0.1"
+lifecycleLivedataKtx = "2.6.1"
+lifecycleViewmodelKtx = "2.6.1"
 
 [libraries]
 
@@ -51,6 +53,8 @@ firebase-storage = { module = "com.google.firebase:firebase-storage", version.re
 picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
 google-play-core = { module = "com.google.android.play:core", version.ref = "play-core" }
+lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

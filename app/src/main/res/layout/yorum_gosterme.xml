@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleX="1.5"
+        android:scaleY="1.8"
+        android:alpha="0.59"
+        android:src="@drawable/kediiiiler"
+        android:contentDescription="@null"/>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
@@ -30,8 +43,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="visible"
-        android:paddingTop="8dp">
-
+        android:paddingTop="8dp"
+        android:background="@drawable/gonder_kutusu"
+        android:elevation="2dp"
+        >
 
         <EditText
             android:id="@+id/yorumEditText"
@@ -56,13 +71,13 @@
     </LinearLayout>
     <!-- Yeni yorum ekleme alanı -->
     <LinearLayout
-
         android:id="@+id/yntgndrLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:visibility="gone"
-        android:paddingTop="8dp">
+        android:paddingTop="8dp"
+        android:background="@drawable/gonder_kutusu">
         <!-- Bu görünmesini istediğiniz üst kısım -->
         <LinearLayout
             android:id="@+id/carpilayout"
@@ -134,3 +149,4 @@
 
 </LinearLayout>
 
+</FrameLayout>

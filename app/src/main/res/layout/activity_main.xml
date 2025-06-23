@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -7,70 +8,130 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
-    <ImageView
-        android:id="@+id/imageView"
+    <!-- İçerikleri saran alt ConstraintLayout -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/icerik_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/arkaplan" />
+        android:visibility="visible"
+        android:layout_height="match_parent">
 
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/arkaplan" />
 
-    <ImageView
-        android:id="@+id/girisid"
-        android:layout_width="250dp"
-        android:layout_height="70dp"
-        android:layout_marginTop="320dp"
-        android:onClick="girisMetodu"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/giris" />
+        <ImageView
+            android:id="@+id/girisid"
+            android:layout_width="250dp"
+            android:layout_height="70dp"
+            android:layout_marginTop="320dp"
+            android:onClick="girisMetodu"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/giris" />
 
-    <ImageView
-        android:id="@+id/kaydolid"
-        android:layout_width="250dp"
-        android:layout_height="70dp"
-        android:onClick="kayitMetodu"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/girisid"
-        app:layout_constraintVertical_bias="0.13"
-        app:srcCompat="@drawable/kaydol" />
+        <ImageView
+            android:id="@+id/kaydolid"
+            android:layout_width="250dp"
+            android:layout_height="70dp"
+            android:onClick="kayitMetodu"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/girisid"
+            app:layout_constraintVertical_bias="0.13"
+            app:srcCompat="@drawable/kaydol" />
+
+        <LinearLayout
+            android:id="@+id/butonlarLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@+id/girisid"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/yukleid"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginRight="16dp"
+                android:background="@null"
+                android:onClick="yuklemeSayfasi"
+                android:scaleType="fitCenter"
+                app:srcCompat="@drawable/yukleme" />
+
+            <ImageButton
+                android:id="@+id/haritaid"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginLeft="16dp"
+                android:background="@null"
+                android:onClick="haritaSayfasi"
+                android:scaleType="fitCenter"
+                app:srcCompat="@drawable/harita" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
+        android:id="@+id/profilAlani"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/girisid"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_margin="20dp"
+        android:onClick="profilSayfasinaGit"
+        android:visibility="visible"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-        <ImageButton
-            android:id="@+id/yukleid"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginRight="16dp"
-            android:background="@null"
-            android:onClick="yuklemeSayfasi"
-            android:scaleType="fitCenter"
-            app:srcCompat="@drawable/yukleme" />
+        <!-- Yuvarlak animasyonlu pati -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            app:cardCornerRadius="100dp"
+            app:cardElevation="4dp"
+            app:cardPreventCornerOverlap="true">
 
-        <ImageButton
-            android:id="@+id/haritaid"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginLeft="16dp"
-            android:background="@null"
-            android:backgroundTint="#404040"
-            android:onClick="haritaSayfasi"
-            android:scaleType="fitCenter"
-            app:srcCompat="@drawable/harita" />
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/patiAnimasyon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:translationY="-15dp"
+                app:lottie_autoPlay="true"
+                app:lottie_loop="true"
+                app:lottie_fileName="paw.json" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Altına yazı -->
+        <TextView
+            android:id="@+id/profilimText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Profilim"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:fontFamily="sans-serif-medium" />
     </LinearLayout>
+
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        tools:context=".Profil_Sayfasi"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
