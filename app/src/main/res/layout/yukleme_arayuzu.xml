@@ -1,105 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp"
     tools:context=".YuklemeArayuzuActivity">
 
-    <ImageView
-        android:id="@+id/gecicifoto"
-        android:layout_width="285dp"
-        android:layout_height="259dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="28dp"
-        android:layout_marginEnd="10dp"
-        android:contentDescription="Preview"
-        app:layout_constraintBottom_toTopOf="@+id/isimText"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/fotoPager"
+        android:layout_width="0dp"
+        android:layout_height="250dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.051"
-        app:srcCompat="@drawable/yuklemefotosu" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/isimText"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="40dp"/>
+    <ImageView
+        android:id="@+id/geciciFoto"
+        android:layout_width="0dp"
+        android:layout_height="250dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/yuklemefotosu"
+        android:contentDescription="Geçici Fotoğraf"
+        app:layout_constraintTop_toTopOf="@+id/fotoPager"
+        app:layout_constraintBottom_toBottomOf="@+id/fotoPager"
+        app:layout_constraintStart_toStartOf="@+id/fotoPager"
+        app:layout_constraintEnd_toEndOf="@+id/fotoPager" />
 
+
+    <!-- 🐾 KEDİ İSMİ -->
     <EditText
         android:id="@+id/isimText"
-        android:layout_width="266dp"
-        android:layout_height="52dp"
-        android:background="@android:color/transparent"
-        android:ems="10"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:hint="Kediye bir isim giriniz"
         android:inputType="text"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.415"
+        android:background="@drawable/edittext_arkaplan"
+        android:padding="12dp"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@+id/fotoPager"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.553" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp"/>
 
     <EditText
-        android:id="@+id/hakkındaText"
-        android:layout_width="269dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="8dp"
-        android:background="@android:color/transparent"
-        android:ems="10"
+        android:id="@+id/hakkindaText"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
         android:hint="Kedinin hakkında"
         android:inputType="textMultiLine"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.427"
-        app:layout_constraintStart_toStartOf="parent"
+        android:background="@drawable/edittext_arkaplan"
+        android:padding="12dp"
+        android:textColor="@android:color/black"
+        android:textSize="15sp"
+        android:gravity="top|start"
         app:layout_constraintTop_toBottomOf="@+id/isimText"
-        app:layout_constraintVertical_bias="0.005" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp"/>
 
+    <!-- 💾 KAYDETME BUTONU -->
     <Button
         android:id="@+id/kaydetmeButonu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:backgroundTint="#E287AB"
-        android:onClick="kaydet"
         android:text="Kaydet"
-        android:textColor="#020202"
-        android:textSize="15dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:onClick="kaydet"
+        android:backgroundTint="#E287AB"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/hakkindaText"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/hakkındaText"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
 
+    <!-- 📷 + 📁 FOTOĞRAF SEÇME/KAMERA -->
     <LinearLayout
-        android:layout_width="363dp"
-        android:layout_height="100dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@+id/kaydetmeButonu"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.992">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <ImageButton
             android:id="@+id/dosya_id"
-            android:layout_width="162dp"
+            android:layout_width="0dp"
             android:layout_height="90dp"
-            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
             android:background="@null"
-            android:onClick="yuklemebasma"
             android:scaleType="fitCenter"
+            android:contentDescription="Dosyadan Seç"
+            android:onClick="yuklemebasma"
             app:srcCompat="@drawable/dosya" />
 
         <ImageButton
             android:id="@+id/kamera_id"
-            android:layout_width="145dp"
-            android:layout_height="107dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="5dp"
+            android:layout_width="0dp"
+            android:layout_height="90dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
             android:background="@null"
-            android:onClick="kameraacma"
             android:scaleType="fitCenter"
+            android:contentDescription="Kameradan Çek"
+            android:onClick="kameraacma"
             app:srcCompat="@drawable/kamera" />
     </LinearLayout>
 
