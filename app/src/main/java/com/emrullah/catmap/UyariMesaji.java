@@ -20,6 +20,7 @@ public class UyariMesaji {
     private TextView Durum;
     private ImageView BasariliTik, BasarisizCarpi;
     private ProgressBar YuklemeBar;
+    public Boolean DahaOnceAlinmisMi=false;
 
     public UyariMesaji(Context context, boolean SefafMi){
         AyarlarıYap(context, SefafMi);

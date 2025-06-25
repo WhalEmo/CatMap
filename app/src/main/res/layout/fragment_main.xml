@@ -169,7 +169,7 @@
             android:translationY="20dp" />
 
         <Button
-            android:id="@+id/duzenle"
+            android:id="@+id/profiliDuzenleTiklandi"
             android:layout_width="158dp"
             android:layout_height="42dp"
             android:backgroundTint="#FFE0B2"

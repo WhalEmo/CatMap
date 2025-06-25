@@ -1,5 +1,7 @@
 package com.emrullah.catmap.ui.main;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -11,6 +13,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.UyariMesaji;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -27,23 +30,20 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-    private Long takipEdilenSayisi;
-    private Long takipciSayisi;
-    private String hakkindaMetniId;
-
-    private MutableLiveData<String> profilFotoUrl = new MutableLiveData<>();
-    public MutableLiveData<String> getProfilFotoUrl() {
-        return profilFotoUrl;
-    }
 
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
     public LiveData<Long>takipEdilenSayisiLiveData(){
         return _takipEdilenSayisi;
     }
     public MutableLiveData<Long>_takipciSayisi=new MutableLiveData<>();
-    public LiveData<Long>_takipciSayisiLiveData(){
+    public LiveData<Long>takipciSayisiLiveData(){
         return _takipciSayisi;
     }
+    private MutableLiveData<String> _hakkinda = new MutableLiveData<>();
+    public LiveData<String>hakkinda = _hakkinda;
+
+    private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
+    public LiveData<String>kullaniciAdi=_kullaniciAdi;
 
     public MainViewModel() {
         db = FirebaseFirestore.getInstance();
@@ -56,7 +56,6 @@ public class MainViewModel extends ViewModel {
                 .addSnapshotListener((documentSnapshot, error) -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         String url = documentSnapshot.getString("profilFotoUrl");
-                        profilFotoUrl.postValue(url);
 
                         SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
                         sp.edit().putString("profil_url", url).apply();
@@ -80,7 +79,6 @@ public class MainViewModel extends ViewModel {
                             .update("profilFotoUrl", url)
                             .addOnSuccessListener(aVoid -> {
                                 Log.d("FirestoreUpdate", "Profil fotoğrafı URL'si başarıyla güncellendi.");
-
                                 // SharedPreferences'e kaydet
                                 SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
                                 sp.edit().putString("profil_url", url).apply();
@@ -213,21 +211,38 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-    public void HakkindaDBEkle(String hakkindasi){
+    public void HakkindaDBEkle(String hakkindasi,Context context){
         Map<String, Object> veri = new HashMap<>();
         veri.put("Hakkinda", hakkindasi);
         FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(MainActivity.kullanici.getID())
-                .collection("Hakkinda")
-                .add(veri)
+                .update(veri)
                 .addOnSuccessListener(documentReference  ->{
-                     hakkindaMetniId = documentReference.getId();
+                    // SharedPreferences'e kaydet
+                    SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+                    sp.edit().putString("Hakkinda", hakkindasi).apply();
+                    _hakkinda.postValue(hakkindasi);
                 })
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
-
     }
-    public void TakipTakipciSayisi(String Id){
+    public void HakkindaGetir(String KullaniciId){
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(KullaniciId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    //if gereksiz olabilir bida bak
+                    if (documentSnapshot.exists()) {
+                        String hakkindaMetni = documentSnapshot.getString("Hakkinda");
+                        if (hakkindaMetni != null) {
+                            _hakkinda.postValue(hakkindaMetni);
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("Firestore", "Hakkında metni alınamadı", e));
+    }
+    public void TakipTakipciSayisi(String Id,Context context){
         DocumentReference kullaniciRef=db.collection("users")
                 .document(Id);
         kullaniciRef.get().addOnSuccessListener(documentSnapshot->{
@@ -235,16 +250,46 @@ public class MainViewModel extends ViewModel {
                 Long TakipEdilenSayisi=documentSnapshot.getLong("TakipEdilenSayisi");
                 Long TakipciSayisi=documentSnapshot.getLong("takipciSayisi");
 
-                if (takipEdilenSayisi == null) takipEdilenSayisi = 0L;
-                if (takipciSayisi == null) takipciSayisi = 0L;
+                if (TakipEdilenSayisi == null) TakipEdilenSayisi = 0L;
+                if (TakipciSayisi == null) TakipciSayisi = 0L;
 
-                _takipEdilenSayisi.postValue(takipEdilenSayisi);
-                _takipciSayisi.postValue(takipciSayisi);
+                _takipEdilenSayisi.postValue(TakipEdilenSayisi);
+                _takipciSayisi.postValue(TakipciSayisi);
+                SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+                sp.edit()
+                        .putLong("cache_takip", TakipEdilenSayisi)
+                        .putLong("cache_takipci", TakipciSayisi)
+                        .apply();
             }
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takip sayıları alınamadı", e);
         });
 
+    }
+    public void KAdiDBekle(String kullaniciAdi,Context context,UyariMesaji uyari){
+        uyari.YuklemeDurum("Kaydediliyor...");
+        db.collection("users")
+                .whereEqualTo("KullaniciAdi",kullaniciAdi)
+                .get()
+                .addOnSuccessListener(c->{
+                    if(c.isEmpty()){
+                        db.collection("users")
+                                .document(MainActivity.kullanici.getID())
+                                .update("KullaniciAdi",kullaniciAdi)
+                                .addOnSuccessListener(b->{
+                                    MainActivity.kullanici.setKullaniciAdi(kullaniciAdi);
+
+                                    SharedPreferences sp = context.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+                                    sp.edit().putString("KullaniciAdi",kullaniciAdi).apply();
+                                    _kullaniciAdi.postValue(kullaniciAdi);
+                                    uyari.BasariliDurum("Güncelleme başarılı.",1000);
+                                    uyari.DahaOnceAlinmisMi=false;
+                                });
+                    }else{
+                        uyari.BasarisizDurum("Bu kullanıcı adı daha önce alınmış",1000);
+                        uyari.DahaOnceAlinmisMi=true;
+                    }
+                });
     }
 
 }
