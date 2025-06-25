@@ -11,9 +11,8 @@ public class Mesaj {
     private long zaman;
     private String mesajID;
 
-    public Mesaj(String gonderici, String alici, String mesaj, long zaman, String mesajID) {
+    public Mesaj(String gonderici, String mesaj, long zaman, String mesajID) {
         this.gonderici = gonderici;
-        this.alici = alici;
         this.mesaj = mesaj;
         this.zaman = zaman;
         this.mesajID = mesajID;
@@ -52,6 +51,9 @@ public class Mesaj {
         return sdf.format(tarih);
     }
 
+    public Long getLongZaman(){
+        return zaman;
+    }
     public void setZaman(long zaman) {
         this.zaman = zaman;
     }

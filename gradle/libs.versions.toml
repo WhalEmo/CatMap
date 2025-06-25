@@ -52,6 +52,8 @@ picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
 google-play-core = { module = "com.google.android.play:core", version.ref = "play-core" }
 
+lottie = { group = "com.airbnb.android", name = "lottie", version = "6.1.0" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-android-libraries-mapsplatform-secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "googleAndroidLibrariesMapsplatformSecretsGradlePlugin" }

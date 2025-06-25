@@ -1,5 +1,11 @@
 package com.emrullah.catmap;
 
+import android.view.View;
+import android.widget.ProgressBar;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -19,25 +25,34 @@ public class MesajlasmaYonetici {
     private String gonderen;
     private String alici;
 
-    public MesajlasmaYonetici(String gonderen, String alici) {
+    public MesajlasmaYonetici(String gonderen, String alici,Runnable mesajlaricek) {
         this.gonderen = gonderen;
         this.alici = alici;
-        this.sohbetID = alici+"_"+gonderen;
+        sohbetIDOlustur(gonderen,alici,sohbetID1->{
+            this.sohbetID = sohbetID1;
+            System.out.println("çektim");
+            mesajlaricek.run();
+        });
     }
 
-    public void MesajGonder(String gonderen, String mesaj,MesajAdapter adapter){
+
+    public void MesajGonder(String gonderen, String mesaj, MesajAdapter adapter){
         String mesajID = mesajlar.push().getKey();
         Map<String, Object> veri = new HashMap<>();
         veri.put("gonderen",gonderen);
         veri.put("mesaj",mesaj);
         veri.put("zaman",System.currentTimeMillis());
         mesajlar.child(sohbetID).child(mesajID).setValue(veri);
-        Mesaj yeniMesaj = new Mesaj(gonderen,alici,mesaj,System.currentTimeMillis(),mesajID);
+        mesajMap.put(mesajID,null);
+        Mesaj yeniMesaj = new Mesaj(gonderen,mesaj,System.currentTimeMillis(),mesajID);
         adapter.getMesajArrayList().add(yeniMesaj);
         adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
     }
 
-    private void MesajlariCek(ArrayList<Mesaj> mesajArrayList,int adet){
+    public void MesajlariCek(MesajAdapter adapter,int adet, ProgressBar yukleniyor, RecyclerView mesajkutucuklari, Runnable dinleme){
+        mesajkutucuklari.setVisibility(View.GONE);
+        yukleniyor.setVisibility(View.VISIBLE);
+        System.out.println("ilk cekme");
         Query sonMesajlar = mesajlar.child(sohbetID)
                 .orderByChild("zaman")
                 .limitToLast(adet);
@@ -48,11 +63,16 @@ public class MesajlasmaYonetici {
                     String mesajID = msgSnap.getKey();
                     String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
                     Long zaman = msgSnap.child("zaman").getValue(Long.class);
-
-                    Mesaj mesaj = new Mesaj(gonderen, alici, mesajicerik, zaman, mesajID);
-                    mesajArrayList.add(mesaj);
+                    String gonderen = msgSnap.child("gonderen").getValue(String.class);
+                    Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID);
+                    adapter.getMesajArrayList().add(mesaj);
+                    mesajMap.put(mesajID,null);
                 }
-                // RecyclerView ya da adapter'e bildir
+                adapter.notifyDataSetChanged();
+                yukleniyor.setVisibility(View.GONE);
+                mesajkutucuklari.setVisibility(View.VISIBLE);
+                System.out.println("ilkçekme bitti");
+                dinleme.run();
             }
 
             @Override
@@ -61,7 +81,9 @@ public class MesajlasmaYonetici {
             }
         });
     }
-    private void MesajlariCek(long enEskiZaman, ArrayList<Mesaj> mesajArrayList, int adet){
+    public void MesajlariCek(long enEskiZaman, MesajAdapter adapter, int adet, Runnable tamamdir){
+        if(adapter.getMesajArrayList().size()<adet) return;
+        System.out.println("aktif cekme");
         Query eskiMesajlar = mesajlar.child(sohbetID)
                 .orderByChild("zaman")
                 .endAt(enEskiZaman - 1)
@@ -74,29 +96,47 @@ public class MesajlasmaYonetici {
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     String mesajID = msgSnap.getKey();
                     String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
+                    String gonderen = msgSnap.child("gonderen").getValue(String.class);
                     Long zaman = msgSnap.child("zaman").getValue(Long.class);
 
-                    Mesaj mesaj = new Mesaj(gonderen, alici, mesajicerik, zaman, mesajID);
+                    Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID);
                     yeniMesajlar.add(mesaj);
                 }
-                mesajArrayList.addAll(0, yeniMesajlar);
+                adapter.getMesajArrayList().addAll(0, yeniMesajlar);
+                adapter.notifyItemRangeInserted(0, yeniMesajlar.size()-1);
+                tamamdir.run();
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {}
+            public void onCancelled(DatabaseError error) {
+                tamamdir.run();
+            }
         });
     }
 
-    private void MesajlariDinle(ArrayList<Mesaj> mesajArrayList){
-        mesajlar.child(sohbetID).addChildEventListener(new ChildEventListener() {
+    private HashMap<String, Object> mesajMap = new HashMap<>();
+    public void MesajlariDinle(MesajAdapter adapter, Runnable tamamdir){
+        mesajlar.child(sohbetID)
+                .orderByChild("zaman")
+                .limitToLast(1)
+                .addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
                 String mesajID = snapshot.getKey();
                 String mesajicerik = snapshot.child("mesaj").getValue(String.class);
                 Long zaman = snapshot.child("zaman").getValue(Long.class);
+                String gonderen = snapshot.child("gonderen").getValue(String.class);
+                System.out.println("dinleme");
+                if (mesajMap.containsKey(mesajID)){
+                    mesajMap.remove(mesajID);
+                    return;
+                }
 
-                Mesaj mesaj = new Mesaj(gonderen, alici, mesajicerik, zaman, mesajID);
-                mesajArrayList.add(mesaj);
+                Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID);
+                adapter.getMesajArrayList().add(mesaj);
+                adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
+                System.out.println("tammadir");
+                tamamdir.run();
                 // Yeni mesajı listeye ekle ve ekranda göster
             }
 
@@ -116,6 +156,48 @@ public class MesajlasmaYonetici {
             @Override
             public void onCancelled(DatabaseError error) {
                 // Hata yönetimi
+            }
+        });
+    }
+
+    private interface SohbetIDCallback {
+        void onResult(String sohbetID);
+    }
+
+    private void sohbetIDOlustur(String gonderen, String alici, SohbetIDCallback callback){
+        String sohbetID = alici+"_"+gonderen;
+        String sohbetID2 = gonderen+"_"+alici;
+
+        DatabaseReference ref1 = mesajlar.child(sohbetID);
+        DatabaseReference ref2 = mesajlar.child(sohbetID2);
+
+        ref1.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    callback.onResult(sohbetID);
+                } else {
+                    ref2.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if (dataSnapshot.exists()) {
+                                callback.onResult(sohbetID2);
+                            } else {
+                                callback.onResult(sohbetID);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
             }
         });
     }

@@ -46,6 +46,7 @@ public class MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHol
             holder.solMesajLayout.setVisibility(View.VISIBLE);
             holder.sagMesajLayout.setVisibility(View.GONE);
             holder.solMesajText.setText(mesaj.getMesaj().trim());
+            holder.solZaman.setText(mesaj.getZaman());
         }
     }
 
