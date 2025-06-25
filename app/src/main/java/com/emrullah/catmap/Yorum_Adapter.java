@@ -105,7 +105,15 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
 
         int begeniSayisi = begeniSayisiMap.getOrDefault(yorum.getYorumID(), 0);
-        holder.begeniSayisiTextView.setText(String.valueOf(begeniSayisi));
+        if (begeniSayisi >= 1_000_000) {
+            double milyon = begeniSayisi / 1_000_000.0;
+            holder.begeniSayisiTextView.setText(String.format("%.1f m", milyon));
+        } else if (begeniSayisi >= 1_000) {
+            double bin = begeniSayisi / 1_000.0;
+            holder.begeniSayisiTextView.setText(String.format("%.1f bin", bin).replace('.', ','));
+        } else {
+            holder.begeniSayisiTextView.setText(String.valueOf(begeniSayisi));
+        }
 
         if (begenilenYorumIDSeti.contains(yorum.getYorumID())) {
             holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24); // dolu kalp

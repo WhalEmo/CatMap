@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
@@ -19,11 +20,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -34,6 +39,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 
+import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -179,6 +185,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yanıtbutton.setAlpha(0.5f);
         bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
 
+
+
         textt.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -228,7 +236,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }, 250);
         });
     }
-
 
     private void konumizni() {
         // Eğer izin verilmemişse
@@ -561,8 +568,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Yorum_Adapter yorumAdapter;
 
     public void YorumSayisiToplam(){
+        yorumSayisiTextView.setText("Yükleniyor...");
+        yorumSayisiTextView.setTextColor(Color.parseColor("#333333"));
+
+        Animation fadeAnim = AnimationUtils.loadAnimation(this, R.anim.animasyonlu_yukleniyor);
+        yorumSayisiTextView.startAnimation(fadeAnim);
         begeniKodYoneticisi.yorumSayisiniGetir(sayi -> {
-            yorumSayisiTextView.setText(String.valueOf(sayi+" Yorum"));
+            yorumSayisiTextView.clearAnimation();
+            yorumSayisiTextView.setTextColor(Color.BLACK);
+            yorumSayisiTextView.setText(sayi + " Yorum");
         });
     }
 
@@ -612,6 +626,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     isLoading = false;
                 });
     }
+
 
     public void patiyorumyap(View view){
         if (yorumListener != null) {

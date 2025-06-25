@@ -45,6 +45,10 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.circleimageview)
+    implementation(libs.lifecycle.livedata.ktx)
+    implementation(libs.lifecycle.viewmodel.ktx)
+
+    implementation("com.airbnb.android:lottie:6.3.0")
 
 
     testImplementation(libs.junit)

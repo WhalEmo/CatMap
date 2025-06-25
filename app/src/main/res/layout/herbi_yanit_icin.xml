@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@drawable/yanit_background"
     android:padding="8dp">
 
     <TextView
@@ -17,7 +18,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginTop="4dp">
+        >
 
         <TextView
             android:id="@+id/yanittTextView"
@@ -58,7 +59,7 @@
             android:src="@drawable/baseline_more_vert_24"
             android:contentDescription="Menü"
             android:visibility="gone"
-            android:padding="8dp"
+            android:padding="3dp"
             android:layout_gravity="end"
             android:background="?selectableItemBackgroundBorderless"
             app:tint="#888888" />

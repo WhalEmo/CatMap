@@ -10,20 +10,29 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
+
+import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -50,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar YuklemeBar;
     private Dialog yuklemeDialog;
     private UyariMesaji uyariMesaji;
+    private LinearLayout Profil;
+    private ConstraintLayout GirisKayit;
 
 
     @Override
@@ -60,6 +71,18 @@ public class MainActivity extends AppCompatActivity {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Profil=findViewById(R.id.profilAlani);
+            GirisKayit=findViewById(R.id.icerik_layout);
+            getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+                Fragment profilFragment = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (profilFragment instanceof ProfilSayfasiFragment) {
+                    Profil.setVisibility(View.GONE);
+                    GirisKayit.setVisibility(View.GONE);
+                } else {
+                    Profil.setVisibility(View.VISIBLE);
+                    GirisKayit.setVisibility(View.VISIBLE);
+                }
+            });
             return insets;
         });
         kullanici = new Kullanici();
@@ -80,6 +103,16 @@ public class MainActivity extends AppCompatActivity {
             KediHaritaButon.setVisibility(View.INVISIBLE);
             uyariMesaji = new UyariMesaji(this,false);
         }
+    }
+
+    public void profilSayfasinaGit(View view){
+        Profil.setVisibility(View.GONE);
+        GirisKayit.setVisibility(View.GONE);
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, new ProfilSayfasiFragment())
+                    .addToBackStack(null) // geri tuşuyla geri gelmek için
+                    .commit();
     }
 
     public void yuklemeSayfasi(View view){
