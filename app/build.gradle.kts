@@ -64,8 +64,11 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.analytics)
 
+    implementation(libs.lottie)
+
     implementation(libs.firebase.storage)
     implementation(libs.picasso)
+
 
     implementation(libs.google.play.core)
 

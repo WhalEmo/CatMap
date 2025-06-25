@@ -56,6 +56,8 @@ google-play-core = { module = "com.google.android.play:core", version.ref = "pla
 lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 
+lottie = { group = "com.airbnb.android", name = "lottie", version = "6.1.0" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-android-libraries-mapsplatform-secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "googleAndroidLibrariesMapsplatformSecretsGradlePlugin" }

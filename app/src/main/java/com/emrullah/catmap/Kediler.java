@@ -1,5 +1,7 @@
 package com.emrullah.catmap;
 
+import java.util.ArrayList;
+
 public class Kediler {
     private String isim;
     private String hakkindasi;
@@ -8,6 +10,15 @@ public class Kediler {
     private String URL;
     private String ID;
     private boolean MarkerOlustuMu = false;
+    private ArrayList<String> URLler;
+
+    public ArrayList<String> getURLler() {
+        return URLler;
+    }
+
+    public void setURLler(ArrayList<String> URLler) {
+        this.URLler = URLler;
+    }
 
     public boolean isMarkerOlustuMu() {
         return MarkerOlustuMu;
@@ -17,13 +28,14 @@ public class Kediler {
         MarkerOlustuMu = markerOlustuMu;
     }
 
-    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL){
+    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler){
         this.ID=ID;
         this.isim=isim;
         this.hakkindasi=hakkindasi;
         this.latitude=latitude;
         this.longitude=longitude;
         this.URL=URL;
+        this.URLler=URLler;
     }
 
     public String getIsim() {

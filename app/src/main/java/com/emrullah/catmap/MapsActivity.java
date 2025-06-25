@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -14,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -86,7 +88,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private BottomSheetDialog bottomSheetDialog;
     private View bottomSheetView;
     private TextView isim, hakkinda;
-    private ImageView imageView;
+    private ViewPager2 fotoPager;
     private LocationCallback locationCallback;
     private View ikinci;
     private  BottomSheetDialog ikincibottom;
@@ -104,6 +106,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ImageButton yanıtbutton;
     private TextView yorumSayisiTextView;
     private Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi;
+    Map<String, Bitmap> fotoCache = new HashMap<>();
+    List<Target> targetListesi = new ArrayList<>();
+    private FotografYukleyiciYonetici fotografYukleyiciYonetici = new FotografYukleyiciYonetici(fotoCache, targetListesi);
+    private FotoGeciciAdapter fotoAdapter;
+    private ArrayList<Uri> fotolar = new ArrayList<>();
 
 
     @Override
@@ -152,8 +159,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
          begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
-        imageView = bottomSheetView.findViewById(R.id.kedigosterme);
+        fotoPager = bottomSheetView.findViewById(R.id.fotoPager);
         yorumSayisiTextView=bottomSheetView.findViewById(R.id.yorumSayisiTextView);
+        fotoAdapter = new FotoGeciciAdapter(this,fotolar,fotografYukleyiciYonetici);
+        fotoPager.setAdapter(fotoAdapter);
 
 
         ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
@@ -381,13 +390,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (Math.abs(latitude - latude) <= 0.009 && Math.abs(longitude - longtude) <= 0.0113) {
                     String kediId = satir.getId();
                     String kedism = satir.getString("kediAdi");
-                    String markerUrl=satir.getString("photoUri");
+                    ArrayList<String> URLler = (ArrayList<String>) satir.get("photoUri");
+                    String markerUrl= URLler.get(0);
                     String hakkindaa=satir.getString("kediHakkinda");
-                   // LatLng kedy = new LatLng(latude, longtude);
-                    Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
+                    Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler);
                     kediler.add(kedi);
-                    //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
-
                 }
             }
             Thread t2 = new Thread(() -> {
@@ -416,13 +423,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             double longtude = satir.getDouble("longitude");
                             if (Math.abs(latitudee - latude) <= 0.009 && Math.abs(longitudee - longtude) <= 0.0113) {
                                 String kediId = satir.getId();
-                                String markerUrl=satir.getString("photoUri");
                                 String kedism = satir.getString("kediAdi");
+                                ArrayList<String> URLler = (ArrayList<String>) satir.get("photoUri");
+                                String markerUrl= URLler.get(0);
                                 String hakkindaa=satir.getString("kediHakkinda");
-                               // LatLng kedy = new LatLng(latude, longtude);
-                                Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
+                                Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler);
                                 kediler.add(kedi);
-                                //mMap.addMarker(new MarkerOptions().position(kedy).title(kedism));
                             }
                         }
                         Thread t = new Thread(() -> {
@@ -501,28 +507,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-
-    Map<String, Bitmap> fotoCache = new HashMap<>();
-    List<Target> targetListesi = new ArrayList<>();
-    public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, String Url) {
+    public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi) {
         isim.setText(ad);
         hakkinda.setText(hakkindasi);
-
-        // Önbellekten kontrol et
-        if (fotoCache.containsKey(Url)) {
-            imageView.setImageBitmap(fotoCache.get(Url));
+        fotolar.clear();
+        fotoAdapter.notifyDataSetChanged();
+        for(String url: kedi.getURLler()){
+            fotolar.add(Uri.parse(url));
+        }
+        fotoAdapter.notifyDataSetChanged();
+        if (!bottomSheetDialog.isShowing()) {
+            bottomSheetDialog.show();
+        }
+        /*
+       +
+       ymn // Önbellekten kontrol et"gt
+        if (fotoCache.containsKey(Url.toString())) {
             if (!bottomSheetDialog.isShowing()) {
                 bottomSheetDialog.show();
             }
-            return;
+            return;bv
         }
-
         // Yoksa yükle ve önbelleğe kaydet
         Target t = new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                fotoCache.put(Url, bitmap); // Önbelleğe ekle
-                imageView.setImageBitmap(bitmap);
+                fotoCache.put(Url.toString(), bitmap); // Önbelleğe ekle
                 if (!bottomSheetDialog.isShowing()) {
                     bottomSheetDialog.show();
                 }
@@ -539,7 +549,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Çöp toplayıcıya kaptırmamak için Target'ı listeye ekle
         targetListesi.add(t);
-        Picasso.get().load(Url).into(t);
+        Picasso.get().load(Url).into(t);*/
     }
     String ID;
     public static String kediID;
@@ -550,7 +560,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ID=kedi.getID();
                 kediID=ID;
                 YorumSayisiToplam();
-                tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), kedi.getURL());
+                tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), Uri.parse(kedi.getURL()),kedi);
             }
         }
     }

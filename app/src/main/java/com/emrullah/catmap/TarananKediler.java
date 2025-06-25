@@ -29,7 +29,7 @@ public class TarananKediler {
     private LatLng BasilmaEkranMerkezi;
     private int indeks = 0;
     private ArrayList<Kediler> bulunanKediler;
-    private boolean goster = false;
+    private boolean goster = true;
 
     public TarananKediler() {
     }
@@ -109,9 +109,10 @@ public class TarananKediler {
                     if (araMesafe[0] <= YAKINLIK_METRE){
                         String kediId = veri.getId();
                         String kedism = veri.getString("kediAdi");
-                        String markerUrl=veri.getString("photoUri");
+                        ArrayList<String> urller = (ArrayList<String>) veri.get("photoUri");
+                        String markerUrl = urller.get(0);
                         String hakkindaa=veri.getString("kediHakkinda");
-                        Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl);
+                        Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,urller);
                         kediler.add(kedi);
                         bulunanKediler.add(kedi);
                     }

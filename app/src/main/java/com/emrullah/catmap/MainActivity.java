@@ -1,6 +1,7 @@
 package com.emrullah.catmap;
 
 import android.app.Dialog;
+import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -366,6 +367,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
+    public void Sohbet(View view){
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container,new MesajFragment(this))
+                .addToBackStack(null)  // geri tuşuyla geri döner
+                .commit();
+    }
 }

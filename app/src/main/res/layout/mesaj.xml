@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mesaj_item_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="6dp">
+
+    <LinearLayout
+        android:id="@+id/solMesajLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/sol_mesaj_background"
+        android:padding="12dp"
+        android:visibility="gone"
+        android:layout_gravity="start"
+        android:elevation="2dp"
+        android:maxWidth="280dp">
+
+        <TextView
+            android:id="@+id/solMesajText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Merhaba"
+            android:textColor="#000"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/solZaman"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12:45"
+            android:textColor="#888"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:id="@+id/sagMesajLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/sag_mesaj_background"
+        android:padding="12dp"
+        android:visibility="gone"
+        android:gravity="end"
+        android:layout_gravity="end"
+        android:elevation="2dp"
+        android:maxWidth="280dp">
+
+        <TextView
+            android:id="@+id/sagMesajText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nasılsın?"
+            android:textColor="#fff"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/sagZaman"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12:46"
+            android:textColor="#ddd"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,65 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Kart Efekti ve Yuvarlak Köşeler -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="8dp"
+        app:cardUseCompatPadding="true"
+        app:cardPreventCornerOverlap="true">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/fotoView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Foto"
+                android:transitionName="foto_transition"
+                android:background="#DDD" />
+
+            <!-- Yükleniyor Efekti: Transparan koyu overlay + ProgressBar -->
+            <View
+                android:id="@+id/loadingOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#80000000"
+                android:visibility="gone" />
+
+            <ProgressBar
+                android:id="@+id/loadingProgressBar"
+                style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:visibility="gone" />
+        </FrameLayout>
+    </androidx.cardview.widget.CardView>
+
+    <Button
+        android:id="@+id/silButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="40dp"
+        android:layout_marginTop="40dp"
+        android:backgroundTint="#E53935"
+        android:text="X"
+        android:visibility="gone"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:fontFamily="sans-serif-medium"
+        android:elevation="8dp"
+        android:stateListAnimator="@null" />
+
+
+
+</FrameLayout>
