@@ -77,8 +77,10 @@ public class ProfilSayfasiFragment extends Fragment {
     private File photoFile;
     UyariMesaji uyariMesaji;
     Button profiliDuzenleTiklandi;
-    Drawable drawable;
     ImageView profilFotoDuzenle;
+    private Bitmap bitmap = null;
+    Button kaydetButonu;
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -110,23 +112,28 @@ public class ProfilSayfasiFragment extends Fragment {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        kaydetButonu.setEnabled(false);
+                        kaydetButonu.setAlpha(0.5f);
+                        kaydetButonu.setText("Yükleniyor");
                         photoUri  = result.getData().getData();  // Seçilen fotoğrafın URI'si
                         Picasso.get()
                                 .load(photoUri)
                                 .placeholder(R.drawable.kullanici)
-                                .into(profilResmiImageView,new Callback() {
+                                .fit()
+                                .centerCrop()
+                                .into(profilFotoDuzenle,new Callback() {
                                     @Override
                                     public void onSuccess() {
                                         // resim gerçekten yüklendiğinde çalışır
-                                        Bitmap bitmap = ((BitmapDrawable) profilResmiImageView.getDrawable()).getBitmap();
-                                        profilFotoDuzenle.setImageBitmap(bitmap);
+                                         bitmap = ((BitmapDrawable) profilFotoDuzenle.getDrawable()).getBitmap();
+                                         kaydetButonu.setEnabled(true);
+                                         kaydetButonu.setText("Kaydet");
+                                         kaydetButonu.setAlpha(1.f);
                                     }
 
                                     @Override
                                     public void onError(Exception e) { }
                                 });
-                        mViewModel.profilFotoUrlKaydetFirebaseVeCachele(photoUri,requireContext());
-
                     }
                 }
             });
@@ -139,19 +146,23 @@ public class ProfilSayfasiFragment extends Fragment {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK) {
+                        kaydetButonu.setEnabled(false);
+                        kaydetButonu.setAlpha(0.5f);
+                        kaydetButonu.setText("Yükleniyor");
                         if (photoUri != null) {
                             // 📸 Çekilen yüksek kaliteli fotoğrafı ImageView'da göster
-                            profilResmiImageView.setImageURI(photoUri);
+                            profilFotoDuzenle.setImageURI(photoUri);
                             // Resim yüklendikten sonra işlemi tetikle
-                            profilResmiImageView.post(() -> {
-                                Drawable drawable = profilResmiImageView.getDrawable();
+                            profilFotoDuzenle.post(() -> {
+                                Drawable drawable = profilFotoDuzenle.getDrawable();
                                 if (drawable != null) {
-                                    Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
-                                    profilFotoDuzenle.setImageBitmap(bitmap);
+                                    bitmap = ((BitmapDrawable) drawable).getBitmap();
+                                    kaydetButonu.setEnabled(true);
+                                    kaydetButonu.setAlpha(1.0f);
+                                    kaydetButonu.setText("Kaydet");
+
                                 }
                             });
-                            // Firebase'e kaydet + SharedPreferences'e yaz
-                            mViewModel.profilFotoUrlKaydetFirebaseVeCachele(photoUri, requireContext());
                         }
                     }
                 }
@@ -255,6 +266,8 @@ public class ProfilSayfasiFragment extends Fragment {
                             // Cache’den yüklenemezseinternetten yükle
                             Picasso.get()
                                     .load(cacheURL)
+                                    .fit()
+                                    .centerCrop()
                                     .placeholder(R.drawable.kullanici)
                                     .into(profilResmiImageView);
                         }
@@ -315,12 +328,11 @@ public class ProfilSayfasiFragment extends Fragment {
                 // 3. BottomSheet'i expanded moda al (tam ekran gibi)
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 behavior.setSkipCollapsed(true);
-                behavior.setDraggable(false);
             }
         });
         EditText KullaniciAdi = sheetView.findViewById(R.id.editKullaniciAdi);
         EditText Hakkinda = sheetView.findViewById(R.id.editBio);
-        Button kaydetButonu=sheetView.findViewById(R.id.kaydetButonu);
+         kaydetButonu=sheetView.findViewById(R.id.kaydetButonu);
         TextView duzenleYazisi=sheetView.findViewById(R.id.fotoDegistirText);
          profilFotoDuzenle=sheetView.findViewById(R.id.profilFotoImageViewDuzenle);
 
@@ -337,6 +349,8 @@ public class ProfilSayfasiFragment extends Fragment {
         if (cacheURL != null) {
             Picasso.get()
                     .load(cacheURL)
+                    .fit()
+                    .centerCrop()
                     .networkPolicy(NetworkPolicy.OFFLINE)
                     .placeholder(R.drawable.kullanici)
                     .into(profilFotoDuzenle, new com.squareup.picasso.Callback() {
@@ -350,6 +364,8 @@ public class ProfilSayfasiFragment extends Fragment {
                             // Cache’den yüklenemezseinternetten yükle
                             Picasso.get()
                                     .load(cacheURL)
+                                    .fit()
+                                    .centerCrop()
                                     .placeholder(R.drawable.kullanici)
                                     .into(profilFotoDuzenle);
                         }
@@ -364,6 +380,11 @@ public class ProfilSayfasiFragment extends Fragment {
             });
 
       kaydetButonu.setOnClickListener(k->{
+          if (bitmap != null) {
+              profilResmiImageView.setImageBitmap(bitmap);
+              mViewModel.profilFotoUrlKaydetFirebaseVeCachele(photoUri,requireContext());
+          }
+
           String kAdi=KullaniciAdi.getText().toString().trim();
           String hakkinda=Hakkinda.getText().toString().trim();
 
