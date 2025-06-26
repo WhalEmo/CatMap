@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.ktx)
 
     implementation("com.airbnb.android:lottie:6.3.0")
+    implementation("androidx.core:core-ktx:1.10.1")
 
 
     testImplementation(libs.junit)
@@ -64,11 +65,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.analytics)
 
-    implementation(libs.lottie)
-
     implementation(libs.firebase.storage)
     implementation(libs.picasso)
-
 
     implementation(libs.google.play.core)
 

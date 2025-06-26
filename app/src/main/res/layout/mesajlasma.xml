@@ -6,6 +6,57 @@
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
+    <LinearLayout
+        android:id="@+id/kisi_bilgi_layout"
+        android:layout_width="0dp"
+        android:layout_height="72dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/kisiProfilFoto"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="12dp"
+            app:civ_border_width="2dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/kullanici"
+            app:civ_border_color="#13216E"
+            />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/kisiAdiText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kullanıcı Adı"
+                android:textColor="#13216E"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/kisiDurumText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Çevrimiçi"
+                android:textColor="#BF6A33"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/mesajRecyclerView"
         android:layout_width="0dp"
@@ -14,10 +65,10 @@
         android:clipToPadding="false"
         android:scrollbars="none"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/kisi_bilgi_layout"
         app:layout_constraintBottom_toTopOf="@id/mesaj_gonder_layout"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <LinearLayout
         android:id="@+id/mesaj_gonder_layout"
