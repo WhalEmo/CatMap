@@ -1,7 +1,6 @@
 package com.emrullah.catmap;
 
 import android.app.Dialog;
-import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -108,9 +107,10 @@ public class MainActivity extends AppCompatActivity {
     public void profilSayfasinaGit(View view){
         Profil.setVisibility(View.GONE);
         GirisKayit.setVisibility(View.GONE);
+        ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.container, new ProfilSayfasiFragment())
+                    .replace(R.id.container, fragment)
                     .addToBackStack(null) // geri tuşuyla geri gelmek için
                     .commit();
     }

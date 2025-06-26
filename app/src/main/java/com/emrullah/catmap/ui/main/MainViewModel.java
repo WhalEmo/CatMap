@@ -31,6 +31,8 @@ import java.util.UUID;
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
 
+    public MutableLiveData<String>_Url=new MutableLiveData<>();
+    public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
     public LiveData<Long>takipEdilenSayisiLiveData(){
         return _takipEdilenSayisi;
@@ -39,8 +41,8 @@ public class MainViewModel extends ViewModel {
     public LiveData<Long>takipciSayisiLiveData(){
         return _takipciSayisi;
     }
-    private MutableLiveData<String> _hakkinda = new MutableLiveData<>();
-    public LiveData<String>hakkinda = _hakkinda;
+    public MutableLiveData<String>_hakkinda = new MutableLiveData<>();
+    public LiveData<String>hakkinda(){return _hakkinda;}
 
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi=_kullaniciAdi;
@@ -49,16 +51,18 @@ public class MainViewModel extends ViewModel {
         db = FirebaseFirestore.getInstance();
     }
 
-    public void profilFotoUrlGetirVeCachele(Context context) {
+    public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
         FirebaseFirestore.getInstance()
                 .collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(kullaniciId)
                 .addSnapshotListener((documentSnapshot, error) -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         String url = documentSnapshot.getString("profilFotoUrl");
-
-                        SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-                        sp.edit().putString("profil_url", url).apply();
+                        _Url.postValue(url);
+                        if(MainActivity.kullanici.getID()==kullaniciId) {
+                            SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+                            sp.edit().putString("profil_url", url).apply();
+                        }
                     }
                 });
     }

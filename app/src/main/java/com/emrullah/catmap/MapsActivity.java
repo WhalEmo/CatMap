@@ -1,9 +1,13 @@
 package com.emrullah.catmap;
 
+import static java.security.AccessController.getContext;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -13,6 +17,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
@@ -111,6 +116,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FotografYukleyiciYonetici fotografYukleyiciYonetici = new FotografYukleyiciYonetici(fotoCache, targetListesi);
     private FotoGeciciAdapter fotoAdapter;
     private ArrayList<Uri> fotolar = new ArrayList<>();
+    private TextView yukleyenAdiText;
+    private ImageView yukleyenPP;
+    private LinearLayout profilAlan;
 
 
     @Override
@@ -236,6 +244,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }, 250);
         });
     }
+
 
     private void konumizni() {
         // Eğer izin verilmemişse
@@ -390,10 +399,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (Math.abs(latitude - latude) <= 0.009 && Math.abs(longitude - longtude) <= 0.0113) {
                     String kediId = satir.getId();
                     String kedism = satir.getString("kediAdi");
+                    String YukleyenID=satir.getString("YukleyenKullaniciID");
                     ArrayList<String> URLler = (ArrayList<String>) satir.get("photoUri");
                     String markerUrl= URLler.get(0);
                     String hakkindaa=satir.getString("kediHakkinda");
-                    Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler);
+                    Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler,YukleyenID);
                     kediler.add(kedi);
                 }
             }
@@ -424,10 +434,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             if (Math.abs(latitudee - latude) <= 0.009 && Math.abs(longitudee - longtude) <= 0.0113) {
                                 String kediId = satir.getId();
                                 String kedism = satir.getString("kediAdi");
+                                String YukleyenID=satir.getString("YukleyenKullaniciID");
                                 ArrayList<String> URLler = (ArrayList<String>) satir.get("photoUri");
                                 String markerUrl= URLler.get(0);
                                 String hakkindaa=satir.getString("kediHakkinda");
-                                Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler);
+                                Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,URLler,YukleyenID);
                                 kediler.add(kedi);
                             }
                         }
@@ -448,6 +459,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
+
+
+
    // View'ı Bitmap'e Çeviren Yardımcı Fonksiyon
    private Bitmap fotoduzenle(Bitmap imageBitmap){
        View markerView = LayoutInflater.from(this).inflate(R.layout.marker_tasarim, null);
@@ -507,7 +521,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi) {
+    public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
+        profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
+        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (fragment instanceof ProfilSayfasiFragment) {
+                    profilAlan.setVisibility(View.GONE);
+                } else {
+                    profilAlan.setVisibility(View.VISIBLE);
+                    // Fragment kapanmış, listener’ı kaldır
+                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+                }
+            }
+        };
+        // Listener’ı ekle
+        getSupportFragmentManager().addOnBackStackChangedListener(listener);
+        YukleyenKullaniciDBgetir(YukleyenId);
         isim.setText(ad);
         hakkinda.setText(hakkindasi);
         fotolar.clear();
@@ -554,19 +585,54 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String ID;
     public static String kediID;
     String yorumID;
+    String kediYukleyenID;
     public void kedibilgisigetirme(LatLng markerPosition){
         for(Kediler kedi:kediler){
             if(kedi.getLatitude()==markerPosition.latitude&&kedi.getLongitude()==markerPosition.longitude) {
                 ID=kedi.getID();
                 kediID=ID;
+                kediYukleyenID=kedi.getYukleyenId();
                 YorumSayisiToplam();
-                tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), Uri.parse(kedi.getURL()),kedi);
+                tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), Uri.parse(kedi.getURL()),kedi,kedi.getYukleyenId());
             }
         }
     }
+    public void YukleyenKullaniciDBgetir(String YId){
+        yukleyenAdiText=bottomSheetView.findViewById(R.id.yukleyenAdiText);
+        yukleyenPP=bottomSheetView.findViewById(R.id.YukprofilFotoImageView);
+        db.collection("users")
+                .document(YId)
+                .get()
+                .addOnSuccessListener(documentSnapshot ->{
+                    if (documentSnapshot.exists()) {
+                        String kullaniciAdi = documentSnapshot.getString("KullaniciAdi");
+                        String ProfilUrl=documentSnapshot.getString("profilFotoUrl");
+                        yukleyenAdiText.setText("@"+kullaniciAdi);
+                        if(ProfilUrl!=null) {
+                            Picasso.get()
+                                    .load(ProfilUrl)
+                                    .fit()
+                                    .centerCrop()
+                                    .placeholder(R.drawable.kullanici)
+                                    .into(yukleyenPP);
+                        }
+                    }
+
+                }) .addOnFailureListener(e -> {
+                    Log.e("Firestore", "Kullanıcı alınamadı: " + e.getMessage());
+                });
+    }
+    public void yukleyenProfilineGit(View view) {
+        profilAlan.setVisibility(View.GONE);
+        ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kediYukleyenID);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
     ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
     Yorum_Adapter yorumAdapter;
-
     public void YorumSayisiToplam(){
         yorumSayisiTextView.setText("Yükleniyor...");
         yorumSayisiTextView.setTextColor(Color.parseColor("#333333"));

@@ -109,10 +109,11 @@ public class TarananKediler {
                     if (araMesafe[0] <= YAKINLIK_METRE){
                         String kediId = veri.getId();
                         String kedism = veri.getString("kediAdi");
+                        String YukleyenId=veri.getString("YukleyenKullaniciID");
                         ArrayList<String> urller = (ArrayList<String>) veri.get("photoUri");
                         String markerUrl = urller.get(0);
                         String hakkindaa=veri.getString("kediHakkinda");
-                        Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,urller);
+                        Kediler kedi=new Kediler(kediId,kedism,hakkindaa,latude,longtude,markerUrl,urller,YukleyenId);
                         kediler.add(kedi);
                         bulunanKediler.add(kedi);
                     }

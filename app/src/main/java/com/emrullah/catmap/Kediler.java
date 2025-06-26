@@ -11,6 +11,7 @@ public class Kediler {
     private String ID;
     private boolean MarkerOlustuMu = false;
     private ArrayList<String> URLler;
+    private String YukleyenId;
 
     public ArrayList<String> getURLler() {
         return URLler;
@@ -28,7 +29,7 @@ public class Kediler {
         MarkerOlustuMu = markerOlustuMu;
     }
 
-    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler){
+    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler,String YukleyenId){
         this.ID=ID;
         this.isim=isim;
         this.hakkindasi=hakkindasi;
@@ -36,6 +37,7 @@ public class Kediler {
         this.longitude=longitude;
         this.URL=URL;
         this.URLler=URLler;
+        this.YukleyenId=YukleyenId;
     }
 
     public String getIsim() {
@@ -84,5 +86,13 @@ public class Kediler {
 
     public void setID(String ID) {
         this.ID = ID;
+    }
+
+    public String getYukleyenId() {
+        return YukleyenId;
+    }
+
+    public void setYukleyenId(String yukleyenId) {
+        YukleyenId = yukleyenId;
     }
 }

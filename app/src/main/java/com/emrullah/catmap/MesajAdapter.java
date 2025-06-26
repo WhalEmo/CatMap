@@ -12,7 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-public class MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
+public class
+MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
     private ArrayList<Mesaj> mesajArrayList;
     private Context context;

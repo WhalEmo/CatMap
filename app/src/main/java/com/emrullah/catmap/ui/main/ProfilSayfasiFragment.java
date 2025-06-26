@@ -40,6 +40,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.emrullah.catmap.MainActivity;
@@ -75,12 +76,14 @@ public class ProfilSayfasiFragment extends Fragment {
     private TextView bioTextView;
     private Uri photoUri;
     private File photoFile;
-    UyariMesaji uyariMesaji;
-    Button profiliDuzenleTiklandi;
-    ImageView profilFotoDuzenle;
+    private UyariMesaji uyariMesaji;
+    private Button profiliDuzenleTiklandi;
+    private ImageView profilFotoDuzenle;
     private Bitmap bitmap = null;
-    Button kaydetButonu;
-
+    private Button kaydetButonu;
+    private String yukleyenID;;
+    private LinearLayout ProfilDuzenleme;
+    private Button takipEtButonu;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -211,26 +214,62 @@ public class ProfilSayfasiFragment extends Fragment {
         });
     }
     private void HakkindaUI(){
-        SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-        String cacheHakkinda = sp.getString("Hakkinda", null);
-        if (cacheHakkinda != null) {
-            bioTextView.setText(cacheHakkinda.trim());
+        if(yukleyenID==MainActivity.kullanici.getID()) {
+            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+            String cacheHakkinda = sp.getString("Hakkinda", null);
+            if (cacheHakkinda != null) {
+                bioTextView.setText(cacheHakkinda.trim());
+            } else {
+                mViewModel.HakkindaGetir(MainActivity.kullanici.getID());
+                ObserveDataSınıfı.observeOnce(mViewModel.hakkinda(), getViewLifecycleOwner(), guncel -> {
+                    bioTextView.setText(guncel);
+                });
+            }
+        }else{
+            mViewModel.HakkindaGetir(yukleyenID);
+            ObserveDataSınıfı.observeOnce(mViewModel.hakkinda(), getViewLifecycleOwner(), guncel -> {
+                bioTextView.setText(guncel);
+            });
         }
     }
     private void KullaniciAdiUI(){
-        SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
-        String cacheKAd=sp.getString("KullaniciAdi",null);
-        kullaniciadi.setText(cacheKAd.trim());
+      if(yukleyenID==MainActivity.kullanici.getID()) {
+          SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit", MODE_PRIVATE);
+          String cacheKAd = sp.getString("KullaniciAdi", null);
+          kullaniciadi.setText(cacheKAd.trim());
+      }else{
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      }
 
     }
-
-
-    public static ProfilSayfasiFragment newInstance() {
-        return new ProfilSayfasiFragment();
+    public static ProfilSayfasiFragment newInstance(String yukleyenID) {
+        ProfilSayfasiFragment fragment = new ProfilSayfasiFragment();
+        Bundle args = new Bundle();
+        args.putString("yukleyenID", yukleyenID);
+        fragment.setArguments(args);
+        return fragment;
     }
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            yukleyenID = getArguments().getString("yukleyenID");
+        }
         mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
     }
 
@@ -245,45 +284,81 @@ public class ProfilSayfasiFragment extends Fragment {
         takipciSayisiTextView=view.findViewById(R.id.takipciSayisiTextView);
         takipEdilenSayisiTextView=view.findViewById(R.id.takipEdilenSayisiTextView);
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
+        takipEtButonu=view.findViewById(R.id.takipEtButonu);
+        ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
 
-        SharedPreferences sp=requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-        String cacheURL=sp.getString("profil_url", null);
-        if (cacheURL != null) {
-            Picasso.get()
-                    .load(cacheURL)
-                    .networkPolicy(NetworkPolicy.OFFLINE)
-                    .placeholder(R.drawable.kullanici)
-                    .into(profilResmiImageView, new com.squareup.picasso.Callback() {
-                        @Override
-                        public void onSuccess() {
-                            // Cache’den başarıyla yüklendi, başka bir şey yapmaya gerek yok
-                        }
+       if(yukleyenID==MainActivity.kullanici.getID()) {
+           ProfilDuzenleme.setVisibility(View.VISIBLE);
+           takipEtButonu.setVisibility(View.GONE);
+           SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+           String cacheURL = sp.getString("profil_url", null);
+           if (cacheURL != null) {
+               Picasso.get()
+                       .load(cacheURL)
+                       .networkPolicy(NetworkPolicy.OFFLINE)
+                       .placeholder(R.drawable.kullanici)
+                       .into(profilResmiImageView, new com.squareup.picasso.Callback() {
+                           @Override
+                           public void onSuccess() {
+                               // Cache’den başarıyla yüklendi, başka bir şey yapmaya gerek yok
+                           }
 
-                        @Override
-                        public void onError(Exception e) {
-                            // Cache’den yüklenemezseinternetten yükle
-                            Picasso.get()
-                                    .load(cacheURL)
-                                    .fit()
-                                    .centerCrop()
-                                    .placeholder(R.drawable.kullanici)
-                                    .into(profilResmiImageView);
-                        }
-                    });
-        } else {
-            // Eğer cacheURL yoksa placeholder göster
-            profilResmiImageView.setImageResource(R.drawable.kullanici);
-        }
-        TakipTakipciSayilariUI();
-        HakkindaUI();
-        KullaniciAdiUI();
+                           @Override
+                           public void onError(Exception e) {
+                               // Cache’den yüklenemezseinternetten yükle
+                               Picasso.get()
+                                       .load(cacheURL)
+                                       .fit()
+                                       .centerCrop()
+                                       .placeholder(R.drawable.kullanici)
+                                       .into(profilResmiImageView);
+                           }
+                       });
+           } else {
+               mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());
+               ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+                   if (guncelPP != null) {
+                       Picasso.get()
+                               .load(guncelPP)
+                               .fit()
+                               .centerCrop()
+                               .placeholder(R.drawable.kullanici)
+                               .into(profilResmiImageView);
+                   } else {
+                       profilResmiImageView.setImageResource(R.drawable.kullanici);
+                   }
+               });
+           }
+           TakipTakipciSayilariUI();
+           HakkindaUI();
+           KullaniciAdiUI();
 
-        profiliDuzenleTiklandi.setOnClickListener(p->{
-            BottomSheetAc();
-        });
+           profiliDuzenleTiklandi.setOnClickListener(p -> {
+               BottomSheetAc();
+           });
+       }else if(yukleyenID!=MainActivity.kullanici.getID()){
+           ProfilDuzenleme.setVisibility(View.GONE);
+           takipEtButonu.setVisibility(View.VISIBLE);
 
+           mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);
+           ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+               if (guncelPP != null) {
+                   Picasso.get()
+                           .load(guncelPP)
+                           .fit()
+                           .centerCrop()
+                           .placeholder(R.drawable.kullanici)
+                           .into(profilResmiImageView);
+               } else {
+                   profilResmiImageView.setImageResource(R.drawable.kullanici);
+               }
+           });
+
+           HakkindaUI();
+
+       }
         return view;
     }
 
@@ -332,9 +407,9 @@ public class ProfilSayfasiFragment extends Fragment {
         });
         EditText KullaniciAdi = sheetView.findViewById(R.id.editKullaniciAdi);
         EditText Hakkinda = sheetView.findViewById(R.id.editBio);
-         kaydetButonu=sheetView.findViewById(R.id.kaydetButonu);
+        kaydetButonu=sheetView.findViewById(R.id.kaydetButonu);
         TextView duzenleYazisi=sheetView.findViewById(R.id.fotoDegistirText);
-         profilFotoDuzenle=sheetView.findViewById(R.id.profilFotoImageViewDuzenle);
+        profilFotoDuzenle=sheetView.findViewById(R.id.profilFotoImageViewDuzenle);
 
        String mevcutKullaniciAdi=kullaniciadi.getText().toString();
        String mevcutHakkinda=bioTextView.getText().toString();
@@ -390,7 +465,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
           if (!hakkinda.equals(mevcutHakkinda)) {
               mViewModel.HakkindaDBEkle(hakkinda, requireContext());
-              ObserveDataSınıfı.observeOnce(mViewModel.hakkinda, getViewLifecycleOwner(), guncelHakkinda -> {
+              ObserveDataSınıfı.observeOnce(mViewModel.hakkinda(), getViewLifecycleOwner(), guncelHakkinda -> {
                   if (guncelHakkinda != null) {
                       bioTextView.setText(guncelHakkinda);
                   }

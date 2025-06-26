@@ -266,6 +266,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
             catData.put("latitude", latitude);
             catData.put("longitude", longitude);
             catData.put("photoUri", fotoUrl);
+            catData.put("YukleyenKullaniciID",MainActivity.kullanici.getID());
             db.collection("cats")
                     .add(catData)
                     .addOnSuccessListener(documentReference -> {
