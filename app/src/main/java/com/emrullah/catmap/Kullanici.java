@@ -17,7 +17,14 @@ public class Kullanici {
     private String Sifre;
     private double latitude;
     private boolean girisBasarili;
+    private String FotoUrl;
 
+    public String getFotoUrl() {
+        return FotoUrl;
+    }
+    public void setFotoUrl(String fotoUrl) {
+        FotoUrl = fotoUrl;
+    }
     public boolean isGirisBasarili() {
         return girisBasarili;
     }

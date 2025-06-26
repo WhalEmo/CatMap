@@ -22,9 +22,10 @@
             android:id="@+id/solMesajText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Merhaba"
+            android:text="nlfanslkaskflnasklfnklsanflkasnlkangklansklgasnlkalfknklsasklanglasgl"
             android:textColor="#000"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:maxWidth="240dp"/>
 
         <TextView
             android:id="@+id/solZaman"
@@ -33,7 +34,8 @@
             android:text="12:45"
             android:textColor="#888"
             android:textSize="12sp"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:maxWidth="240dp"/>
     </LinearLayout>
 
     <Space
@@ -60,7 +62,8 @@
             android:layout_height="wrap_content"
             android:text="Nasılsın?"
             android:textColor="#fff"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:maxWidth="240dp"/>
 
         <TextView
             android:id="@+id/sagZaman"
@@ -69,7 +72,8 @@
             android:text="12:46"
             android:textColor="#ddd"
             android:textSize="12sp"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:maxWidth="240dp"/>
     </LinearLayout>
 
 </LinearLayout>

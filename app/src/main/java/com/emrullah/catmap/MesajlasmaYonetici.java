@@ -29,7 +29,7 @@ public class MesajlasmaYonetici {
         this.gonderen = gonderen;
         this.alici = alici;
         sohbetIDOlustur(gonderen,alici,sohbetID1->{
-            this.sohbetID = sohbetID1;
+            this.sohbetID = "A8mt0DjcK1oulvcZFWtU_CJl7rX5pUF2BzDUI9sLl";
             System.out.println("çektim");
             mesajlaricek.run();
         });

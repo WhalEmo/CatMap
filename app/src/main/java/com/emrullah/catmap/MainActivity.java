@@ -1,7 +1,6 @@
 package com.emrullah.catmap;
 
 import android.app.Dialog;
-import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
