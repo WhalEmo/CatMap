@@ -4,6 +4,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,14 @@ public class Kullanici {
     private double latitude;
     private boolean girisBasarili;
     private String FotoUrl;
+    private Bitmap fotoBitmap;
+
+    public Bitmap getFotoBitmap() {
+        return fotoBitmap;
+    }
+    public void setFotoBitmap(Bitmap fotoBitmap) {
+        this.fotoBitmap = fotoBitmap;
+    }
 
     public String getFotoUrl() {
         return FotoUrl;
