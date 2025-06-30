@@ -8,6 +8,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -188,9 +189,16 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
 
         holder.yanitlabutonu.setOnClickListener(cvp->{
             String kullaniciAdi=yanit.getAdi();
-            String metin="@"+kullaniciAdi;
+            String metin="@"+kullaniciAdi+ " ";
 
             SpannableString spannableString=new SpannableString(metin);
+            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
+            spannableString.setSpan(
+                    new ForegroundColorSpan(Color.BLUE),
+                    0,
+                    metin.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
             ClickableSpan clickableSpan=new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View view) {

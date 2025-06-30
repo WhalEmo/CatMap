@@ -124,6 +124,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private RelativeLayout anaGorunum;
     private ImageView YrmgndrFotoImageView;
     private ImageView YntgndrFotoImageView;
+    private URLye_Ulasma ulasma;
 
 
     @Override
@@ -151,11 +152,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bottomSheetView = getLayoutInflater().inflate(R.layout.markerdaki_kediyi_gosterme, null);
         bottomSheetDialog = new BottomSheetDialog(this);
         bottomSheetDialog.setContentView(bottomSheetView);
-
-        //klavye acıldıgında yorum yaz falan altta klamamsı icin
-        if (bottomSheetDialog.getWindow() != null) {
-            bottomSheetDialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        }
 
         bottomSheetDialog.setOnShowListener(dialog -> {
             BottomSheetDialog d = (BottomSheetDialog) dialog;
@@ -205,10 +201,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
         YrmgndrFotoImageView=ikinci.findViewById(R.id.YrmgndrFotoImageView);
         YntgndrFotoImageView=ikinci.findViewById(R.id.YntgndrFotoImageView);
-        String ID=MainActivity.kullanici.getID();
-        URLye_Ulasma ulasma=new URLye_Ulasma();
-        ulasma.IDdenUrlyeUlasma(ID,YrmgndrFotoImageView);
-        ulasma.IDdenUrlyeUlasma(ID,YntgndrFotoImageView);
+        ulasma=new URLye_Ulasma();
+        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YrmgndrFotoImageView);
+        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YntgndrFotoImageView);
 
 
         textt.addTextChangedListener(new TextWatcher() {
@@ -260,18 +255,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }, 250);
         });
 
-        yorumAdapter.setKullaniciAdiTiklamaListener(new KullaniciAdiTiklamaListener() {
-            @Override
-            public void onKullaniciAdiTiklandi(String kullaniciID) {
-                ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciID);
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.container, fragment)
-                        .addToBackStack(null)
-                        .commit();
-
-            }
-        });
 
     }
 
@@ -749,13 +732,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
 
+        yorumAdapter.setKullaniciAdiTiklamaListener(new KullaniciAdiTiklamaListener() {
+            @Override
+            public void onKullaniciAdiTiklandi(String kullaniciID) {
+                bottomSheetDialog.hide();
+                ikincibottom.hide();
+                ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciID);
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.container, fragment)
+                        .addToBackStack(null)
+                        .commit();
+
+            }
+        });
+        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (fragment instanceof ProfilSayfasiFragment) {
+                    profilAlan.setVisibility(View.GONE);
+                    anaGorunum.setVisibility(View.GONE);
+                } else {
+                    profilAlan.setVisibility(View.VISIBLE);
+                    anaGorunum.setVisibility(View.VISIBLE);
+
+                    if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
+                        bottomSheetDialog.show();
+                    }
+                    if (ikincibottom != null && !ikincibottom.isShowing()) {
+                        ikincibottom.show();
+                    }
+                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+                }
+            }
+        };
+        // Listener’ı ekle
+        getSupportFragmentManager().addOnBackStackChangedListener(listener);
+
         Set<String> cachedSet = CacheHelperYorum.loadBegenilenSet(this);
         Map<String, Integer> begeniMap = CacheHelperYorum.loadBegeniSayilariMap(this);
         yorumAdapter.setBegenilenYorumIDSeti(cachedSet);
         yorumAdapter.setBegeniSayisiMap(begeniMap);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            yorumAdapter.notifyDataSetChanged();
+            yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks);
+            //yorumAdapter.notifyDataSetChanged();
         }, 100);
         begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, MainActivity.kullanici.getID(), yorumAdapter);
 
@@ -833,6 +855,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
       if(!ikincibottom.isShowing()){
           ikincibottom.show();
+
       }
     }
 
@@ -842,6 +865,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         TEXT.setText("");
         yorumAdapter.yorumMuGeldi=true;
     }
+
 
     public void yntgonder(View view){
         if (Yorum_Adapter.yorumindeks < 0 || Yorum_Adapter.yorumindeks >= yorumlar.size()) return;

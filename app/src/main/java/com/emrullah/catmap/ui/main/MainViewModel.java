@@ -95,7 +95,7 @@ public class MainViewModel extends ViewModel {
                 });
     }
 
-    private void TakipEt(String TakipEttiginId){
+    public void TakipEt(String TakipEttiginId){
         DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakipEttiginId);
 

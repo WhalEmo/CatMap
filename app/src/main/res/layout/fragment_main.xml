@@ -148,6 +148,20 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+    <Button
+        android:id="@+id/takipEdiliyorButonu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#BFA58A  "
+        android:text="Takip Ediliyor"
+        android:visibility="gone"
+        android:textAllCaps="false"
+        android:textColor="#5C2D00"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
 
     <LinearLayout
         android:id="@+id/ProfilDuzenleme"
@@ -168,6 +182,7 @@
             android:src="@drawable/pati"
             android:translationY="20dp" />
 
+
         <Button
             android:id="@+id/profiliDuzenleTiklandi"
             android:layout_width="158dp"
@@ -181,6 +196,5 @@
             app:strokeWidth="2dp" />
 
     </LinearLayout>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

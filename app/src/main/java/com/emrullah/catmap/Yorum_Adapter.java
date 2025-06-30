@@ -9,6 +9,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -267,9 +268,16 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
             String kullaniciAdi=yorum.getKullaniciAdi();
-            String metin="@"+kullaniciAdi;
+            String metin="@"+kullaniciAdi + " ";
 
             SpannableString spannableString=new SpannableString(metin);
+            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
+            spannableString.setSpan(
+                    new ForegroundColorSpan(Color.BLUE),
+                    0,
+                    metin.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
             ClickableSpan clickableSpan=new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View view) {
@@ -289,7 +297,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             MapsActivity.textt.setText(spannableString);
             MapsActivity.textt.setMovementMethod(LinkMovementMethod.getInstance());
 
-            MapsActivity.textt.setSelection(MapsActivity.textt.getText().length()+1);
+            MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
             MapsActivity.kimeyanit.setHint(yorum.getKullaniciAdi() + " 'e yanıt veriyorsun");
             Klavye klavye=new Klavye(context);
             int eskiPozisyon = pozisyon;

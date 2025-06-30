@@ -84,6 +84,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private String yukleyenID;;
     private LinearLayout ProfilDuzenleme;
     private Button takipEtButonu;
+    private Button takipEdiliyorButonu;
 
 
     @Override
@@ -193,26 +194,40 @@ public class ProfilSayfasiFragment extends Fragment {
 
 
     private void TakipTakipciSayilariUI() {
-        SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-        Long cacheTakipedilen = sp.getLong("cache_takip", 0L);
-        Long cacheTakipci = sp.getLong("cache_takipci", 0L);
+        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
+            Long cacheTakipedilen = sp.getLong("cache_takip", 0L);
+            Long cacheTakipci = sp.getLong("cache_takipci", 0L);
 
-        takipEdilenSayisiTextView.setText(cacheTakipedilen.toString());
-        takipciSayisiTextView.setText(cacheTakipci.toString());
+            takipEdilenSayisiTextView.setText(cacheTakipedilen.toString());
+            takipciSayisiTextView.setText(cacheTakipci.toString());
 
-        mViewModel.TakipTakipciSayisi(MainActivity.kullanici.getID(), requireContext());
+            mViewModel.TakipTakipciSayisi(MainActivity.kullanici.getID(), requireContext());
 
-        mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
-            if (!takipEdilenSayisi.equals(cacheTakipedilen)) {
-                takipEdilenSayisiTextView.setText(takipEdilenSayisi.toString());
-            }
-        });
+            mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
+                if (!takipEdilenSayisi.equals(cacheTakipedilen)) {
+                    takipEdilenSayisiTextView.setText(takipEdilenSayisi.toString());
+                }
+            });
 
-        mViewModel.takipciSayisiLiveData().observe(getViewLifecycleOwner(), takipciSayisi -> {
-            if (!takipciSayisi.equals(cacheTakipci)) {
-                takipciSayisiTextView.setText(takipciSayisi.toString());
-            }
-        });
+            mViewModel.takipciSayisiLiveData().observe(getViewLifecycleOwner(), takipciSayisi -> {
+                if (!takipciSayisi.equals(cacheTakipci)) {
+                    takipciSayisiTextView.setText(takipciSayisi.toString());
+                }
+            });
+        }else{
+
+            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+
+            mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi2 -> {
+                    takipEdilenSayisiTextView.setText(takipEdilenSayisi2.toString());
+            });
+
+            mViewModel.takipciSayisiLiveData().observe(getViewLifecycleOwner(), takipciSayisi -> {
+                    takipciSayisiTextView.setText(takipciSayisi.toString());
+            });
+
+        }
     }
     private void HakkindaUI(){
         if(yukleyenID.equals(MainActivity.kullanici.getID())) {
@@ -275,8 +290,19 @@ public class ProfilSayfasiFragment extends Fragment {
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
+        takipEdiliyorButonu=view.findViewById(R.id.takipEdiliyorButonu);
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
+
+        mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
+            if (takipEdilenSayisi != null)
+                takipEdilenSayisiTextView.setText(String.valueOf(takipEdilenSayisi));
+        });
+
+        mViewModel.takipciSayisiLiveData().observe(getViewLifecycleOwner(), takipciSayisi -> {
+            if (takipciSayisi != null)
+                takipciSayisiTextView.setText(String.valueOf(takipciSayisi));
+        });
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
 
@@ -324,6 +350,7 @@ public class ProfilSayfasiFragment extends Fragment {
            TakipTakipciSayilariUI();
            HakkindaUI();
            KullaniciAdiUI();
+           TakipTakipciSayilariUI();
 
            profiliDuzenleTiklandi.setOnClickListener(p -> {
                BottomSheetAc();
@@ -348,10 +375,34 @@ public class ProfilSayfasiFragment extends Fragment {
 
            HakkindaUI();
            KullaniciAdiUI();
+           TakipTakipciSayilariUI();
+
+           takipEtme();
+           cikarma();
        }
+
         return view;
     }
 
+    public void takipEtme() {
+        takipEtButonu.setOnClickListener(t -> {
+            takipEdiliyorButonu.setVisibility(View.VISIBLE);
+            takipEtButonu.setVisibility(View.GONE);
+            mViewModel.TakipEt(yukleyenID);
+            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+        });
+
+    }
+
+   public void cikarma(){
+       takipEdiliyorButonu.setOnClickListener(c->{
+           takipEdiliyorButonu.setVisibility(View.GONE);
+           takipEtButonu.setVisibility(View.VISIBLE);
+           mViewModel.TakiptenCikarma(yukleyenID);
+           mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+       });
+
+   }
     private void fotoSecimDialoguGoster() {
         String[] secenekler = {"Galeriden Seç", "Kamerayla Çek"};
 
