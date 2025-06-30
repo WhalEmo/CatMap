@@ -25,12 +25,15 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.emrullah.catmap.sohbet.SohbetFragment;
+import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 
@@ -51,12 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private ImageView KediHaritaButon;
     private ImageView Goz;
     boolean AcikMi;
-    private FrameLayout YuklemeEkrani;
-    private TextView Durum;
-    private ImageView BasariliTik;
-    private ImageView BasarisizCarpi;
-    private ProgressBar YuklemeBar;
-    private Dialog yuklemeDialog;
     private UyariMesaji uyariMesaji;
     private LinearLayout Profil;
     private ConstraintLayout GirisKayit;
@@ -102,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
             KediHaritaButon.setVisibility(View.INVISIBLE);
             uyariMesaji = new UyariMesaji(this,false);
         }
+
+        SohbetMesajAyarlari();
     }
 
     public void profilSayfasinaGit(View view){
@@ -370,8 +369,21 @@ public class MainActivity extends AppCompatActivity {
     public void Sohbet(View view){
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container,new MesajFragment(this))
+                .replace(R.id.fragment_container,new SohbetFragment(()->{
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container,new MesajFragment(this))
+                            .addToBackStack(null)
+                            .commit();
+                }))
                 .addToBackStack(null)  // geri tuşuyla geri döner
                 .commit();
+    }
+
+    /// bu metodda mesajlaşma ve sohbetteki başlatılmadan önce temel ayarlar yapılır
+    private void SohbetMesajAyarlari(){
+        SohbetYonetici.getInstance().setKullanicilar(new HashMap<>());
+        SohbetYonetici.getInstance().setSonMesajlar(new HashMap<>());
+        SohbetYonetici.getInstance().setProfilFotolari(new HashMap<>());
     }
 }

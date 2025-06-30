@@ -64,16 +64,32 @@
             android:textColor="#fff"
             android:textSize="16sp"
             android:maxWidth="240dp"/>
-
-        <TextView
-            android:id="@+id/sagZaman"
+        <LinearLayout
+            android:id="@+id/sagAltLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="12:46"
-            android:textColor="#ddd"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp"
-            android:maxWidth="240dp"/>
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/sagZaman"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12:46"
+                android:textColor="#ddd"
+                android:textSize="12sp"
+                android:maxWidth="240dp"/>
+
+            <ImageView
+                android:id="@+id/gorulmeIkon"
+                android:layout_width="15dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/patibos"
+                android:contentDescription="Görüldü durumu"/>
+        </LinearLayout>
+
+        <!-- alternatif: "✓✓", "✔", "👁️", "Görüldü", vs. -->
     </LinearLayout>
 
 </LinearLayout>

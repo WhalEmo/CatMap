@@ -4,6 +4,8 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -48,6 +50,12 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             holder.sagMesajLayout.setVisibility(View.GONE);
             holder.solMesajText.setText(mesaj.getMesaj().trim());
             holder.solZaman.setText(mesaj.getZaman());
+            if(mesaj.isGoruldu()){
+                holder.gorulmeIkon.setImageResource(R.drawable.patidolu);
+            }
+            else{
+                holder.gorulmeIkon.setImageResource(R.drawable.patibos);
+            }
         }
     }
 
@@ -61,6 +69,8 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         TextView solMesajText;
         TextView solZaman;
 
+        ImageView gorulmeIkon;
+
         LinearLayout sagMesajLayout;
         TextView sagMesajText;
         TextView sagZaman;
@@ -70,6 +80,8 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             solMesajLayout = itemView.findViewById(R.id.solMesajLayout);
             solMesajText = itemView.findViewById(R.id.solMesajText);
             solZaman = itemView.findViewById(R.id.solZaman);
+
+            gorulmeIkon = itemView.findViewById(R.id.gorulmeIkon);
 
             sagMesajLayout = itemView.findViewById(R.id.sagMesajLayout);
             sagMesajText = itemView.findViewById(R.id.sagMesajText);
