@@ -9,16 +9,18 @@ public class Yanit_Model {
     private String Adi;
     private String yaniticerik;
     private Date tarih;
+    private String YanitiYukleyen;
     public boolean yanitMiGeldi=false;
     private int begeniSayisiYanit;
 
     public Yanit_Model(){}
 
-    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih) {
+    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih,String YanitiYukleyen) {
         this.yanitId = yanitId;
         Adi = adi;
         this.yaniticerik = yaniticerik;
         this.tarih = tarih;
+        this.YanitiYukleyen=YanitiYukleyen;
     }
 
     public String getYanitId() {
@@ -84,5 +86,13 @@ public class Yanit_Model {
 
     public void setBegeniSayisiYanit(int begeniSayisiYanit) {
         this.begeniSayisiYanit = begeniSayisiYanit;
+    }
+
+    public String getYanitiYukleyen() {
+        return YanitiYukleyen;
+    }
+
+    public void setYanitiYukleyen(String yanitiYukleyen) {
+        YanitiYukleyen = yanitiYukleyen;
     }
 }

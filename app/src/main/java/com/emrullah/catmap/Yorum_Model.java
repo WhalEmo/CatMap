@@ -13,6 +13,7 @@ public class Yorum_Model {
     private String KullaniciAdi;
     private String Yorumicerik;
     private Date Tarih;
+    private String YukleyenId;
     private ArrayList<Yanit_Model>yanitlar;
     private DocumentSnapshot sonYanit;
     private boolean yanitlarGorunuyor = false;
@@ -24,12 +25,13 @@ public class Yorum_Model {
 
     public Yorum_Model(){}
 
-    public Yorum_Model(String yorumID, String kullaniciAdi,String yorumicerik, Date tarih, ArrayList<Yanit_Model> yanitlar) {
+    public Yorum_Model(String yorumID, String kullaniciAdi,String yorumicerik, Date tarih, ArrayList<Yanit_Model> yanitlar,String yukleyenId) {
         this.yorumID = yorumID;
         KullaniciAdi = kullaniciAdi;
         Yorumicerik = yorumicerik;
         Tarih = tarih;
         this.yanitlar = yanitlar;
+        this.YukleyenId=yukleyenId;
     }
 
     public String getYorumID() {
@@ -144,5 +146,13 @@ public class Yorum_Model {
 
     public void setBegeniSayisi(int begeniSayisi) {
         this.begeniSayisi = begeniSayisi;
+    }
+
+    public String getYukleyenId() {
+        return YukleyenId;
+    }
+
+    public void setYukleyenId(String yukleyenId) {
+        YukleyenId = yukleyenId;
     }
 }

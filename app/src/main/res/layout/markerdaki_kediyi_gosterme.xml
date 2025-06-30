@@ -8,6 +8,7 @@
         android:id="@+id/profilAlani"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@drawable/yorum_background"
         android:layout_margin="20dp"
         android:onClick="profilSayfasinaGit"
         android:visibility="visible"
@@ -50,16 +51,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="0dp"
-            android:fontFamily="sans-serif-medium"
-            android:onClick="yukleyenProfilineGit"
-            android:text="Kullanici adi"
-            android:textColor="#E65100"
-            android:translationY="19dp"
+            android:background="#00404040"
             android:clickable="true"
             android:focusable="true"
-            android:textSize="16sp"
+            android:fontFamily="sans-serif-medium"
+            android:onClick="yukleyenProfilineGit"
             android:paddingStart="4dp"
-            android:textStyle="bold" />
+            android:text="Kullanici adi"
+            android:textColor="#EC9017"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:translationX="-10dp"
+            android:translationY="19dp" />
     </LinearLayout>
 
     <androidx.viewpager2.widget.ViewPager2
@@ -78,6 +81,7 @@
         android:layout_height="52dp"
         android:text="TextView"
         app:layout_constraintBottom_toBottomOf="parent"
+        android:background="@drawable/duzenle_background"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
@@ -87,11 +91,12 @@
     <TextView
         android:id="@+id/hakkindagosterme"
         android:layout_width="252dp"
-        android:layout_height="130dp"
+        android:layout_height="90dp"
         android:text="TextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.496"
+        android:background="@drawable/duzenle_background"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/isimgosterme"
         app:layout_constraintVertical_bias="0.132" />
@@ -103,6 +108,7 @@
         android:layout_height="wrap_content"
         android:textSize="16sp"
         android:textColor="#000000"
+        android:translationY="10dp"
         app:layout_constraintBottom_toTopOf="@id/imageButton"
         app:layout_constraintStart_toStartOf="@id/imageButton"
         app:layout_constraintEnd_toEndOf="@id/imageButton"
@@ -115,16 +121,15 @@
         android:id="@+id/imageButton"
         android:layout_width="100dp"
         android:layout_height="100dp"
+        android:layout_marginBottom="16dp"
         android:background="@android:color/transparent"
         android:onClick="patiyorumyap"
         android:scaleType="fitCenter"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="32dp"
         android:src="@drawable/patiliyorum"
-        />
-
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

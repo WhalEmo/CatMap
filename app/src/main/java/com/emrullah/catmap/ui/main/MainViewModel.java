@@ -45,15 +45,14 @@ public class MainViewModel extends ViewModel {
     public LiveData<String>hakkinda(){return _hakkinda;}
 
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
-    public LiveData<String>kullaniciAdi=_kullaniciAdi;
+    public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
 
     public MainViewModel() {
         db = FirebaseFirestore.getInstance();
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
-        FirebaseFirestore.getInstance()
-                .collection("users")
+                db.collection("users")
                 .document(kullaniciId)
                 .addSnapshotListener((documentSnapshot, error) -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
@@ -292,6 +291,17 @@ public class MainViewModel extends ViewModel {
                     }else{
                         uyari.BasarisizDurum("Bu kullanıcı adı daha önce alınmış",1000);
                         uyari.DahaOnceAlinmisMi=true;
+                    }
+                });
+    }
+    public void KullaniciAdiGetirDB(String KullaniciId){
+        db.collection("users")
+                .document(KullaniciId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String isim=documentSnapshot.getString("KullaniciAdi");
+                         _kullaniciAdi.postValue(isim);
                     }
                 });
     }

@@ -4,6 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true">
+
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -47,6 +53,13 @@
         android:background="@drawable/gonder_kutusu"
         android:elevation="2dp"
         >
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/YrmgndrFotoImageView"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/kullanici"
+            android:padding="5dp" />
+
 
         <EditText
             android:id="@+id/yorumEditText"
@@ -120,6 +133,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/YntgndrFotoImageView"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/kullanici"
+                android:padding="5dp" />
+
             <EditText
                 android:id="@+id/yntEditText"
                 android:layout_width="0dp"
@@ -142,11 +162,12 @@
                 android:src="@drawable/mavipati"
 
                 />
-        </LinearLayout>
+           </LinearLayout>
 
 
-    </LinearLayout>
+          </LinearLayout>
 
-</LinearLayout>
+       </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

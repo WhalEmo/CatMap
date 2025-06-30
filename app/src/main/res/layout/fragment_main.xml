@@ -25,7 +25,7 @@
         android:id="@+id/KullaniciAdi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Beyza Nur Takca"
+        android:text=""
         android:textColor="#000"
         android:textSize="18sp"
         android:textStyle="bold"

@@ -5,6 +5,11 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MapsActivity">
+    <RelativeLayout
+        android:id="@+id/anaGorunum"
+        android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <fragment
         android:id="@+id/map"
@@ -108,7 +113,9 @@
             android:elevation="6dp"
             map:tint="#FFFFFF" />
 
+      </RelativeLayout>
     </RelativeLayout>
+
 
     <FrameLayout
         android:id="@+id/container"

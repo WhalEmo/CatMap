@@ -85,6 +85,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private LinearLayout ProfilDuzenleme;
     private Button takipEtButonu;
 
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -214,7 +215,7 @@ public class ProfilSayfasiFragment extends Fragment {
         });
     }
     private void HakkindaUI(){
-        if(yukleyenID==MainActivity.kullanici.getID()) {
+        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
             SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
             String cacheHakkinda = sp.getString("Hakkinda", null);
             if (cacheHakkinda != null) {
@@ -233,27 +234,15 @@ public class ProfilSayfasiFragment extends Fragment {
         }
     }
     private void KullaniciAdiUI(){
-      if(yukleyenID==MainActivity.kullanici.getID()) {
+      if(yukleyenID.equals(MainActivity.kullanici.getID())){
           SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit", MODE_PRIVATE);
           String cacheKAd = sp.getString("KullaniciAdi", null);
           kullaniciadi.setText(cacheKAd.trim());
       }else{
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          mViewModel.KullaniciAdiGetirDB(yukleyenID);
+          ObserveDataSınıfı.observeOnce(mViewModel.kullaniciAdi(), getViewLifecycleOwner(), isim -> {
+              kullaniciadi.setText(isim);
+          });
       }
 
     }
@@ -289,7 +278,8 @@ public class ProfilSayfasiFragment extends Fragment {
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
 
-       if(yukleyenID==MainActivity.kullanici.getID()) {
+       if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
@@ -338,7 +328,7 @@ public class ProfilSayfasiFragment extends Fragment {
            profiliDuzenleTiklandi.setOnClickListener(p -> {
                BottomSheetAc();
            });
-       }else if(yukleyenID!=MainActivity.kullanici.getID()){
+       }else {
            ProfilDuzenleme.setVisibility(View.GONE);
            takipEtButonu.setVisibility(View.VISIBLE);
 
@@ -357,7 +347,7 @@ public class ProfilSayfasiFragment extends Fragment {
            });
 
            HakkindaUI();
-
+           KullaniciAdiUI();
        }
         return view;
     }
@@ -403,6 +393,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 // 3. BottomSheet'i expanded moda al (tam ekran gibi)
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 behavior.setSkipCollapsed(true);
+                
             }
         });
         EditText KullaniciAdi = sheetView.findViewById(R.id.editKullaniciAdi);
@@ -475,7 +466,7 @@ public class ProfilSayfasiFragment extends Fragment {
           if(!kAdi.equals(mevcutKullaniciAdi)){
               mViewModel.KAdiDBekle(kAdi,requireContext(),uyariMesaji);
              if(uyariMesaji.DahaOnceAlinmisMi==false) {
-                 ObserveDataSınıfı.observeOnce(mViewModel.kullaniciAdi, getViewLifecycleOwner(), kAdii -> {
+                 ObserveDataSınıfı.observeOnce(mViewModel.kullaniciAdi(), getViewLifecycleOwner(), kAdii -> {
                      kullaniciadi.setText(kAdii);
                  });
 
