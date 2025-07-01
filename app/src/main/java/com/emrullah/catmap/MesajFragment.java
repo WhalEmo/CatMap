@@ -8,6 +8,8 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +33,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MesajFragment extends Fragment {
 
@@ -108,6 +112,13 @@ public class MesajFragment extends Fragment {
             });
         });
 
+        YaziyorMuCalistir();
+        mesajlasmaYonetici.YaziyorDinleyici(()->{
+            kisiDurumText.setText("Yazıyor...");
+        },()->{
+            kisiDurumText.setText("Çevrimiçi");
+        });
+
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
 
         ScrollDinleyici();
@@ -167,6 +178,35 @@ public class MesajFragment extends Fragment {
 
     private int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+
+
+    private void YaziyorMuCalistir(){
+        mesajEditText.addTextChangedListener(new TextWatcher() {
+            Timer timer = new Timer();
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(mesajEditText.getText().toString().trim().isEmpty()) return;
+                mesajlasmaYonetici.YaziyorMu(true);
+                timer.cancel();
+                timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        mesajlasmaYonetici.YaziyorMu(false);
+                    }
+                },1000);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
     }
 
 

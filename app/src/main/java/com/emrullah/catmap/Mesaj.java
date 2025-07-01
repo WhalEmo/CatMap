@@ -6,7 +6,6 @@ import java.util.TimeZone;
 
 public class Mesaj {
     private String gonderici;
-    private String alici;
     private String mesaj;
     private long zaman;
     private String mesajID;
@@ -30,13 +29,6 @@ public class Mesaj {
         this.gonderici = gonderici;
     }
 
-    public String getAlici() {
-        return alici;
-    }
-
-    public void setAlici(String alici) {
-        this.alici = alici;
-    }
 
     public String getMesaj() {
         return mesaj;

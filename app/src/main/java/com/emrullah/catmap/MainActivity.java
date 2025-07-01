@@ -29,12 +29,15 @@ import com.emrullah.catmap.sohbet.SohbetFragment;
 import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -101,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         SohbetMesajAyarlari();
+        CevrimIciOl(true);
     }
 
     public void profilSayfasinaGit(View view){
@@ -124,6 +128,11 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        CevrimIciOl(false);
+    }
 
     public void girisMetodu(View view){
         if(diyalog!=null && diyalog.isShowing()){
@@ -385,5 +394,15 @@ public class MainActivity extends AppCompatActivity {
         SohbetYonetici.getInstance().setKullanicilar(new HashMap<>());
         SohbetYonetici.getInstance().setSonMesajlar(new HashMap<>());
         SohbetYonetici.getInstance().setProfilFotolari(new HashMap<>());
+    }
+
+
+    ///
+    private void CevrimIciOl(boolean durumu){
+        DatabaseReference durum = FirebaseDatabase.getInstance().getReference("durumlar");
+        durum.child(kullanici.getID()).child("cevrimici").setValue(durumu);
+        if(!durumu){
+            durum.child(kullanici.getID()).child("sonGorulme").setValue(System.currentTimeMillis());
+        }
     }
 }

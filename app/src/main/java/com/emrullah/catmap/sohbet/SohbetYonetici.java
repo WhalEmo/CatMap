@@ -138,6 +138,7 @@ public class SohbetYonetici {
                     .orderByChild("zaman")
                     .limitToLast(1)
                     .addChildEventListener(dinleyici);
+            SonGorulmeCevrimIci(sohbet);
         }
     }
 
@@ -171,6 +172,26 @@ public class SohbetYonetici {
                     }
                 });
     }
+
+    private void SonGorulmeCevrimIci(Sohbet sohbet){
+        FirebaseDatabase.getInstance().getReference("durumlar")
+                .child(sohbet.getAlici().getID())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        boolean cevrimici = snapshot.child("cevrimici").getValue(Boolean.class);
+                        long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
+                        sohbet.getAlici().setCevrimiciMi(cevrimici);
+                        sohbet.getAlici().setSonGorulme(sonGorulme);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+    }
+
     public void setSonMesajlar(HashMap<String, Mesaj> sonMesajlar) {
         SonMesajlar = sonMesajlar;
     }

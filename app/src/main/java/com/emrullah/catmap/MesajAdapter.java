@@ -44,18 +44,18 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             holder.sagMesajLayout.setVisibility(View.VISIBLE);
             holder.sagMesajText.setText(mesaj.getMesaj().trim());
             holder.sagZaman.setText(mesaj.getZaman());
-        }
-        else{
-            holder.solMesajLayout.setVisibility(View.VISIBLE);
-            holder.sagMesajLayout.setVisibility(View.GONE);
-            holder.solMesajText.setText(mesaj.getMesaj().trim());
-            holder.solZaman.setText(mesaj.getZaman());
             if(mesaj.isGoruldu()){
                 holder.gorulmeIkon.setImageResource(R.drawable.patidolu);
             }
             else{
                 holder.gorulmeIkon.setImageResource(R.drawable.patibos);
             }
+        }
+        else{
+            holder.solMesajLayout.setVisibility(View.VISIBLE);
+            holder.sagMesajLayout.setVisibility(View.GONE);
+            holder.solMesajText.setText(mesaj.getMesaj().trim());
+            holder.solZaman.setText(mesaj.getZaman());
         }
     }
 

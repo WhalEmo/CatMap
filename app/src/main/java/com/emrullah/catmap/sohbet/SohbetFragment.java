@@ -43,7 +43,7 @@ public class SohbetFragment extends Fragment {
             adapter.notifyDataSetChanged();
         });
 
-        MesajGonder("mesaj");
+    //    MesajGonder("mesaj");
         return view;
     }
 
