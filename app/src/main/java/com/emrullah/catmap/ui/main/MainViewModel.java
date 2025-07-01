@@ -43,6 +43,11 @@ public class MainViewModel extends ViewModel {
     }
     public MutableLiveData<String>_hakkinda = new MutableLiveData<>();
     public LiveData<String>hakkinda(){return _hakkinda;}
+    private final MutableLiveData<Boolean>_takipDurumu = new MutableLiveData<>();
+    public LiveData<Boolean>getTakipDurumu() {
+        return _takipDurumu;
+    }
+
 
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
@@ -130,6 +135,8 @@ public class MainViewModel extends ViewModel {
             if (!takipEdilenDocSnap.exists()) {
                 Map<String, Object> takipEdilenData = new HashMap<>();
                 takipEdilenData.put("followedAt", FieldValue.serverTimestamp());
+                takipEdilenData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // Doğru alan adı
+                takipEdilenData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
                 transaction.set(takipEdilenDocRef, takipEdilenData);
                 takipEdilenSayisi += 1;
                 takipEklendi = true;
@@ -139,6 +146,8 @@ public class MainViewModel extends ViewModel {
             if (!takipciDocSnap.exists()) {
                 Map<String, Object> takipciData = new HashMap<>();
                 takipciData.put("followedAt", FieldValue.serverTimestamp());
+                takipciData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // Doğru alan adı
+                takipciData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
                 transaction.set(takipciDocRef, takipciData);
                 if (takipEklendi) { // Sadece takip eklenmişse takipçi sayısını artır
                     takipciSayisi += 1;
@@ -155,6 +164,22 @@ public class MainViewModel extends ViewModel {
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takip işlemi başarısız", e);
         });
+    }
+
+    public void takipEdiliyorMu(String bakilanId,Context context){
+        db.collection("users")
+                .document(MainActivity.kullanici.getID())
+                .collection("takipEdilenler")
+                .document(bakilanId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    _takipDurumu.setValue(documentSnapshot.exists());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("TakipKontrol", "Hata oluştu", e);
+                    _takipDurumu.setValue(false);
+                });
+
     }
 
     public void TakiptenCikarma(String TakiptenCiktiginId){

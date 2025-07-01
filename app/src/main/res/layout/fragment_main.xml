@@ -153,11 +153,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:backgroundTint="#BFA58A  "
-        android:text="Takip Ediliyor"
+        android:backgroundTint="#C8E6C9"
+        android:text="Takip ediliyor"
         android:visibility="gone"
         android:textAllCaps="false"
-        android:textColor="#5C2D00"
+        android:textColor="#555555"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
@@ -196,5 +196,6 @@
             app:strokeWidth="2dp" />
 
     </LinearLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
