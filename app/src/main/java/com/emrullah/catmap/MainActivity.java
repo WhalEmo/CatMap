@@ -96,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(kullanici.getAd());
             KayitOlButon.setVisibility(View.INVISIBLE);
             GirisYapButon.setVisibility(View.INVISIBLE);
+            CevrimIciOl(true);
         }
         else{
             KediKaydetButon.setVisibility(View.INVISIBLE);
@@ -104,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         SohbetMesajAyarlari();
-        CevrimIciOl(true);
     }
 
     public void profilSayfasinaGit(View view){
@@ -131,7 +131,26 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        System.out.println("onDestroy");
         CevrimIciOl(false);
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        System.out.println("onStop");
+        CevrimIciOl(false);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        System.out.println("onPause");
+        CevrimIciOl(false);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("onResum");
+        CevrimIciOl(true);
     }
 
     public void girisMetodu(View view){
@@ -298,6 +317,7 @@ public class MainActivity extends AppCompatActivity {
                                                 db.collection("users")
                                                         .add(kullanici.KullaniciData())
                                                         .addOnSuccessListener(documentReference -> {
+                                                            kullanici.setID(documentReference.getId());
                                                             YerelKayit();
                                                             uyariMesaji.BasariliDurum("Kayıt Başarılı...",1000);
                                                         })
@@ -339,6 +359,7 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         diyalog.dismiss();
         ButonlariKaybet();
+        CevrimIciOl(true);
     }
 
 
@@ -399,10 +420,14 @@ public class MainActivity extends AppCompatActivity {
 
     ///
     private void CevrimIciOl(boolean durumu){
+        if(durumu == kullanici.isCevrimiciMi()) return;
+        if(kullanici.getID()==null) return;
         DatabaseReference durum = FirebaseDatabase.getInstance().getReference("durumlar");
         durum.child(kullanici.getID()).child("cevrimici").setValue(durumu);
+        kullanici.setCevrimiciMi(durumu);
         if(!durumu){
             durum.child(kullanici.getID()).child("sonGorulme").setValue(System.currentTimeMillis());
+            kullanici.setSonGorulme(System.currentTimeMillis());
         }
     }
 }

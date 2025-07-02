@@ -93,7 +93,7 @@ public class MesajFragment extends Fragment {
         kisiBilgiLayout = view.findViewById(R.id.kisi_bilgi_layout);
 
         //profil işlemleri
-        mesajlasmaYonetici.ProfilCubugunuDoldur(kisiAdiText,kisiProfilFoto);
+        mesajlasmaYonetici.ProfilCubugunuDoldur(kisiAdiText,kisiProfilFoto,kisiDurumText);
 
 
         mesajArrayList = new ArrayList<>();
@@ -113,11 +113,7 @@ public class MesajFragment extends Fragment {
         });
 
         YaziyorMuCalistir();
-        mesajlasmaYonetici.YaziyorDinleyici(()->{
-            kisiDurumText.setText("Yazıyor...");
-        },()->{
-            kisiDurumText.setText("Çevrimiçi");
-        });
+        mesajlasmaYonetici.YaziyorDinleyici(kisiDurumText);
 
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
 

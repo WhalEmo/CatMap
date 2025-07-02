@@ -34,6 +34,7 @@ public class SohbetFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.sohbetler, container, false);
+        MesajGonder("mesaj");
         sohbetler = new ArrayList<>();
         adapter = new SohbetAdapter(sohbetler, getActivity(),MesajFragment);
         kisilerRecyclerView = view.findViewById(R.id.kisilerRecyclerView);
@@ -43,7 +44,6 @@ public class SohbetFragment extends Fragment {
             adapter.notifyDataSetChanged();
         });
 
-    //    MesajGonder("mesaj");
         return view;
     }
 
@@ -56,7 +56,7 @@ private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference
         veri.put("mesaj",mesaj);
         veri.put("zaman",System.currentTimeMillis());
         veri.put("goruldu",false);
-        String sohbetID = "oVtMwJS69picHgRTqEYR_CJl7rX5pUF2BzDUI9sLl";
+        String sohbetID = "y1l5bbCjazN5fBCaz7nv_"+MainActivity.kullanici.getID();
         mesajlar.child(sohbetID).child(mesajID).setValue(veri);
     }
 }

@@ -80,6 +80,8 @@ public class MesajlasmaYonetici {
             public void onDataChange(DataSnapshot snapshot) {
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     String mesajID = msgSnap.getKey();
+                    if (mesajID.equals("yaziyorMu")) continue;
+                    System.out.println("--+ "+ mesajID);
                     String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
                     Long zaman = msgSnap.child("zaman").getValue(Long.class);
                     String gonderen = msgSnap.child("gonderen").getValue(String.class);
@@ -116,6 +118,7 @@ public class MesajlasmaYonetici {
                 ArrayList<Mesaj> yeniMesajlar = new ArrayList<>();
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     String mesajID = msgSnap.getKey();
+                    System.out.println("--- "+ mesajID);
                     String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
                     String gonderen = msgSnap.child("gonderen").getValue(String.class);
                     Long zaman = msgSnap.child("zaman").getValue(Long.class);
@@ -240,9 +243,16 @@ public class MesajlasmaYonetici {
         });
     }
 
-    public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto){
+    public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto,TextView durum){
         if(!alici.getKullaniciAdi().isEmpty()){
             kisiAdiText.setText(alici.getKullaniciAdi());
+            if(alici.isCevrimiciMi()){
+                durum.setText("Çevrimiçi");
+                System.out.println("çevrimiçi");
+            }
+            else{
+                durum.setText(alici.getSonGorulme());
+            }
             if(alici.getFotoBitmap() != null){
                 kisiProfilFoto.setImageBitmap(alici.getFotoBitmap());
                 return;
@@ -276,23 +286,28 @@ public class MesajlasmaYonetici {
 
     }
 
-    public void YaziyorDinleyici(Runnable YAZIYOR, Runnable YAZMIYOR){
+    public void YaziyorDinleyici(TextView kisiDurumText){
         yaziyorDinleyici = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean yaziyor = snapshot.getValue(Boolean.class);
                 if(yaziyor == null) return;
                 if(yaziyor){
-                    YAZIYOR.run();
+                    kisiDurumText.setText("Yazıyor...");
                 }
                 else{
-                    YAZMIYOR.run();
+                    if(!alici.isCevrimiciMi()){
+                        kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
+                    }
+                    else {
+                        kisiDurumText.setText("Çevrimiçi");
+                    }
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                YAZMIYOR.run();
+                kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
             }
         };
 

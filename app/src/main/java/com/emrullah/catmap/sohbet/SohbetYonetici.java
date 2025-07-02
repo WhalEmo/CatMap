@@ -94,6 +94,7 @@ public class SohbetYonetici {
                             }
                         });
             }
+            SonGorulmeCevrimIci(sohbet);
             if (dinleyiciler.containsKey(sohbet.getSohbetID())){
                 tamamdir.run();
                 sohbetDB.child(sohbet.getSohbetID()).removeEventListener(dinleyiciler.get(sohbet.getSohbetID()));
@@ -138,7 +139,6 @@ public class SohbetYonetici {
                     .orderByChild("zaman")
                     .limitToLast(1)
                     .addChildEventListener(dinleyici);
-            SonGorulmeCevrimIci(sohbet);
         }
     }
 
