@@ -10,6 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -43,7 +45,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.MesajFragment;
+import com.emrullah.catmap.MesajlasmaYonetici;
 import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.UyariMesaji;
@@ -84,6 +89,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private String yukleyenID;;
     private LinearLayout ProfilDuzenleme;
     private Button takipEtButonu;
+    private Button sohbetButon;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -286,12 +292,14 @@ public class ProfilSayfasiFragment extends Fragment {
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
+        sohbetButon = view.findViewById(R.id.sohbetButon); /// -> aşkım bunu ben ekledim sohbeti açan buton
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
 
        if(yukleyenID==MainActivity.kullanici.getID()) {
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
+           sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
            String cacheURL = sp.getString("profil_url", null);
            if (cacheURL != null) {
@@ -341,6 +349,7 @@ public class ProfilSayfasiFragment extends Fragment {
        }else if(yukleyenID!=MainActivity.kullanici.getID()){
            ProfilDuzenleme.setVisibility(View.GONE);
            takipEtButonu.setVisibility(View.VISIBLE);
+           SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 
            mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);
            ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
@@ -485,6 +494,19 @@ public class ProfilSayfasiFragment extends Fragment {
       });
         bottom.setContentView(sheetView);
         bottom.show();
+    }
+
+    private void SohbetButonCalistir(){ // -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
+        sohbetButon.setOnClickListener(v->{
+            Kullanici alici = new Kullanici();
+            alici.setID(yukleyenID);
+            MesajlasmaYonetici.getInstance().setAlici(alici);
+            FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.container, new MesajFragment(requireContext()));
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
     }
 
 }

@@ -1,6 +1,5 @@
 package com.emrullah.catmap;
 
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -9,13 +8,9 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,10 +29,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -89,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         GirisYapButon = findViewById(R.id.girisid);
         KediHaritaButon = findViewById(R.id.haritaid);
         KediKaydetButon = findViewById(R.id.yukleid);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
         if(GirisYapildi){
@@ -96,14 +89,13 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(kullanici.getAd());
             KayitOlButon.setVisibility(View.INVISIBLE);
             GirisYapButon.setVisibility(View.INVISIBLE);
-            CevrimIciOl(true);
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
         }
         else{
             KediKaydetButon.setVisibility(View.INVISIBLE);
             KediHaritaButon.setVisibility(View.INVISIBLE);
             uyariMesaji = new UyariMesaji(this,false);
         }
-
         SohbetMesajAyarlari();
     }
 
@@ -360,6 +352,7 @@ public class MainActivity extends AppCompatActivity {
         diyalog.dismiss();
         ButonlariKaybet();
         CevrimIciOl(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
 
 

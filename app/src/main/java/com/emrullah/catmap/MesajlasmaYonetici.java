@@ -31,6 +31,7 @@ public class MesajlasmaYonetici {
     private static MesajlasmaYonetici yonetici;
     private ChildEventListener dinleyici;
     private ValueEventListener yaziyorDinleyici;
+    private ValueEventListener cevrimiciDinleyici;
 
 
 
@@ -118,6 +119,7 @@ public class MesajlasmaYonetici {
                 ArrayList<Mesaj> yeniMesajlar = new ArrayList<>();
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     String mesajID = msgSnap.getKey();
+                    if (mesajID.equals("yaziyorMu")) continue;
                     System.out.println("--- "+ mesajID);
                     String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
                     String gonderen = msgSnap.child("gonderen").getValue(String.class);
@@ -146,6 +148,7 @@ public class MesajlasmaYonetici {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
                 String mesajID = snapshot.getKey();
+                if (mesajID.equals("yaziyorMu")) return;
                 String mesajicerik = snapshot.child("mesaj").getValue(String.class);
                 Long zaman = snapshot.child("zaman").getValue(Long.class);
                 String gonderen = snapshot.child("gonderen").getValue(String.class);
@@ -169,6 +172,7 @@ public class MesajlasmaYonetici {
             public void onChildChanged(DataSnapshot snapshot, String previousChildName) {
                 System.out.println("calisiyor2guncel");
                 String mesajID = snapshot.getKey();
+                if (mesajID.equals("yaziyorMu")) return;
                 boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
                 for (int i=0; i<adapter.getMesajArrayList().size(); i++) {
                     if(adapter.getMesajArrayList().get(i).getMesajID().equals(mesajID)){
@@ -224,6 +228,8 @@ public class MesajlasmaYonetici {
                             if (dataSnapshot.exists()) {
                                 callback.onResult(sohbetID2);
                             } else {
+                                ref1.child("yaziyorMu").child(gonderen).setValue(false);
+                                ref1.child("yaziyorMu").child(alici).setValue(false);
                                 callback.onResult(sohbetID);
                             }
                         }
@@ -244,25 +250,24 @@ public class MesajlasmaYonetici {
     }
 
     public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto,TextView durum){
-        if(!alici.getKullaniciAdi().isEmpty()){
-            kisiAdiText.setText(alici.getKullaniciAdi());
-            if(alici.isCevrimiciMi()){
-                durum.setText("Çevrimiçi");
-                System.out.println("çevrimiçi");
-            }
-            else{
-                durum.setText(alici.getSonGorulme());
-            }
-            if(alici.getFotoBitmap() != null){
-                kisiProfilFoto.setImageBitmap(alici.getFotoBitmap());
-                return;
-            }
-            else if(alici.getFotoUrl() == null) {
-                kisiProfilFoto.setImageResource(R.drawable.kullanici);
-            }
-            else if (alici.getFotoUrl().isEmpty()){
-                kisiProfilFoto.setImageResource(R.drawable.kullanici);
-                return;
+        if(alici.getKullaniciAdi()!=null){
+            if(alici.getKullaniciAdi().isEmpty()) {
+                kisiAdiText.setText(alici.getKullaniciAdi());
+                if (alici.isCevrimiciMi()) {
+                    durum.setText("Çevrimiçi");
+                    System.out.println("çevrimiçi");
+                } else {
+                    durum.setText(alici.getSonGorulme());
+                }
+                if (alici.getFotoBitmap() != null) {
+                    kisiProfilFoto.setImageBitmap(alici.getFotoBitmap());
+                    return;
+                } else if (alici.getFotoUrl() == null) {
+                    kisiProfilFoto.setImageResource(R.drawable.kullanici);
+                } else if (alici.getFotoUrl().isEmpty()) {
+                    kisiProfilFoto.setImageResource(R.drawable.kullanici);
+                    return;
+                }
             }
         }
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -317,6 +322,34 @@ public class MesajlasmaYonetici {
                 .addValueEventListener(yaziyorDinleyici);
     }
 
+    public void CevrimIciDinleyici(TextView kisiDurumText){
+        cevrimiciDinleyici = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Boolean cevrimiciMi = snapshot.child("cevrimici").getValue(Boolean.class);
+                long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
+                alici.setCevrimiciMi(cevrimiciMi);
+                alici.setSonGorulme(sonGorulme);
+                if(cevrimiciMi){
+                    kisiDurumText.setText("Çevrimiçi");
+                }
+                else{
+                    kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        };
+
+        FirebaseDatabase.getInstance().getReference("durumlar")
+                .child(alici.getID())
+                .addValueEventListener(cevrimiciDinleyici);
+
+    }
+
     private void Goruldu(Mesaj mesaj, MesajAdapter adapter){
         if(mesaj.isGoruldu()){
             adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
@@ -333,12 +366,16 @@ public class MesajlasmaYonetici {
 
 
     public void DinleyiciKaldir(){
-        if(dinleyici == null && yaziyorDinleyici==null){
+        if(dinleyici == null && yaziyorDinleyici==null && cevrimiciDinleyici==null){
             return;
         }
         if(yaziyorDinleyici != null){
             mesajlar.child(sohbetID).child("yaziyorMu").child(alici.getID()).removeEventListener(yaziyorDinleyici);
             yaziyorDinleyici = null;
+        }
+        if(cevrimiciDinleyici != null){
+            FirebaseDatabase.getInstance().getReference("durumlar").child(alici.getID()).removeEventListener(cevrimiciDinleyici);
+            cevrimiciDinleyici = null;
         }
         if(dinleyici == null) return;
         mesajlar.child(sohbetID).removeEventListener(dinleyici);

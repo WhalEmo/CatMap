@@ -110,10 +110,10 @@ public class MesajFragment extends Fragment {
                     mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
                 });
             });
+            YaziyorMuCalistir();
+            mesajlasmaYonetici.YaziyorDinleyici(kisiDurumText);
+            mesajlasmaYonetici.CevrimIciDinleyici(kisiDurumText);
         });
-
-        YaziyorMuCalistir();
-        mesajlasmaYonetici.YaziyorDinleyici(kisiDurumText);
 
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
 
