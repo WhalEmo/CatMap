@@ -47,7 +47,10 @@ public class MainViewModel extends ViewModel {
     public LiveData<Boolean>getTakipDurumu() {
         return _takipDurumu;
     }
-
+    public MutableLiveData<ArrayList<String>> _engelliler = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<ArrayList<String>>EngellilerLiveData() {
+        return _engelliler;
+    }
 
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
@@ -135,7 +138,7 @@ public class MainViewModel extends ViewModel {
             if (!takipEdilenDocSnap.exists()) {
                 Map<String, Object> takipEdilenData = new HashMap<>();
                 takipEdilenData.put("followedAt", FieldValue.serverTimestamp());
-                takipEdilenData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // Doğru alan adı
+                takipEdilenData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // doğru
                 takipEdilenData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
                 transaction.set(takipEdilenDocRef, takipEdilenData);
                 takipEdilenSayisi += 1;
@@ -146,8 +149,8 @@ public class MainViewModel extends ViewModel {
             if (!takipciDocSnap.exists()) {
                 Map<String, Object> takipciData = new HashMap<>();
                 takipciData.put("followedAt", FieldValue.serverTimestamp());
-                takipciData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // Doğru alan adı
-                takipciData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
+                takipciData.put("KullaniciAdi", mevcutKullaniciSnapshot.getString("KullaniciAdi"));  // ✅ düzeltildi
+                takipciData.put("profilFotoUrl", mevcutKullaniciSnapshot.getString("profilFotoUrl"));
                 transaction.set(takipciDocRef, takipciData);
                 if (takipEklendi) { // Sadece takip eklenmişse takipçi sayısını artır
                     takipciSayisi += 1;
@@ -179,7 +182,6 @@ public class MainViewModel extends ViewModel {
                     Log.e("TakipKontrol", "Hata oluştu", e);
                     _takipDurumu.setValue(false);
                 });
-
     }
 
     public void TakiptenCikarma(String TakiptenCiktiginId){
@@ -328,6 +330,46 @@ public class MainViewModel extends ViewModel {
                         String isim=documentSnapshot.getString("KullaniciAdi");
                          _kullaniciAdi.postValue(isim);
                     }
+                });
+    }
+    public void engelle(String engellenecekKullaniciId,String kisiId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        DocumentReference kullaniciRef = db.collection("users").document(kisiId);
+
+        kullaniciRef.update("blockedUsers", FieldValue.arrayUnion(engellenecekKullaniciId))
+                .addOnSuccessListener(aVoid -> {
+                    // Güncel listeyi tekrar çek
+                    kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
+                            if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
+                            _engelliler.setValue(engellilerListesi);
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
+                });
+    }
+
+    public void engelKaldir(String engellenenKullaniciId,String kisiId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        DocumentReference kullaniciRef = db.collection("users").document(kisiId);
+        kullaniciRef.update("blockedUsers", FieldValue.arrayRemove(engellenenKullaniciId))
+                .addOnSuccessListener(aVoid -> {
+                    // Güncel listeyi tekrar çek
+                    kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
+                            if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
+                            _engelliler.setValue(engellilerListesi);
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
 

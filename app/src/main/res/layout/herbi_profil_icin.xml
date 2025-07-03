@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@drawable/duzenle_background"
     android:padding="20dp">
 
     <LinearLayout
@@ -21,34 +22,35 @@
 
         <TextView
             android:id="@+id/RecyclerkullaniciAdi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:translationX="10dp"
-            android:text="Kullanıcı Adı"
-            android:textStyle="bold" />
-
-        <View
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:text="Kullanıcı adı"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <Button
             android:id="@+id/takipediyosa"
-            android:layout_width="150dp"
+            android:layout_width="120dp"
             android:layout_height="40dp"
             android:visibility="gone"
             android:backgroundTint="#C8E6C9"
             android:textColor="#555555"
-            android:text="takip ediliyor" />
+            android:textAllCaps="false"
+            android:text="Takip ediliyor" />
 
         <Button
             android:id="@+id/takippet"
-            android:layout_width="150dp"
+            android:layout_width="120dp"
             android:layout_height="40dp"
-            android:visibility="visible"
             android:backgroundTint="#FF9800"
             android:textColor="#fff"
-            android:text="takip et" />
+            android:textAllCaps="false"
+            android:text="Takip et" />
+
 
     </LinearLayout>
 

@@ -12,19 +12,28 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.emrullah.catmap.Kullanici;
+import com.emrullah.catmap.KullaniciAdiTiklamaListener;
 import com.emrullah.catmap.R;
+import com.emrullah.catmap.Yanit_Model;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adapter.ViewHolder> {
 
     private Context context;
-    private List<Kullanici> kullaniciList; // Örnek olarak String liste, kendi modelin olabilir
+    private List<Kullanici> kullaniciList;
+    public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
 
     public Kullanicilar_adapter(Context context, List<Kullanici> kullaniciList) {
         this.context = context;
         this.kullaniciList = kullaniciList;
+    }
+
+    public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
+        this.kullaniciAdiTiklamaListener = listener;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -59,7 +68,21 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
                 .into(holder.recyclerFotoImageView);
+        if(kullanici.getTakipEdiliyorMu()==true){
+            holder.takipediyosa.setVisibility(View.VISIBLE);//takip ediliyor
+            holder.takippet.setVisibility(View.GONE);//takip et
+        }else if(kullanici.getTakipciMi()==true&&kullanici.getTakipEdiliyorMu()==false){
+            holder.takipediyosa.setVisibility(View.GONE);
+            holder.takippet.setVisibility(View.VISIBLE);
+        }
+
+       holder.RecyclerkullaniciAdi.setOnClickListener(t->{
+               if (kullaniciAdiTiklamaListener != null) {
+                   kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(kullanici.getID());
+               }
+       });
     }
+
 
     @Override
     public int getItemCount() {

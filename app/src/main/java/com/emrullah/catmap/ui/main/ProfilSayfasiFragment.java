@@ -3,10 +3,12 @@ package com.emrullah.catmap.ui.main;
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -34,6 +36,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -41,9 +44,12 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
+import com.emrullah.catmap.BottomSheetController;
 import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.MapsActivity;
 import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.UyariMesaji;
@@ -60,6 +66,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -85,7 +92,8 @@ public class ProfilSayfasiFragment extends Fragment {
     private LinearLayout ProfilDuzenleme;
     private Button takipEtButonu;
     private Button takipEdiliyorButonu;
-
+    private ConstraintLayout myConstraintLayout;
+    private ImageView PPmenuButton;
 
 
     @Override
@@ -270,8 +278,22 @@ public class ProfilSayfasiFragment extends Fragment {
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
         takipEdiliyorButonu=view.findViewById(R.id.takipEdiliyorButonu);
+        myConstraintLayout=view.findViewById(R.id.myConstraintLayout);
+        PPmenuButton=view.findViewById(R.id.PPmenuButton);
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
+        if (requireActivity() instanceof MapsActivity) {
+            requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    myConstraintLayout.setVisibility(View.VISIBLE);
+                    if (requireActivity() instanceof BottomSheetController) {
+                        ((BottomSheetController) requireActivity()).showBottomSheet();
+                    }
+                    getParentFragmentManager().popBackStack();
+                }
+            });
+        }
 
         TakipTakipciSayilariUI();
         mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
@@ -284,8 +306,19 @@ public class ProfilSayfasiFragment extends Fragment {
                 takipciSayisiTextView.setText(String.valueOf(takipciSayisi));
         });
 
-       if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+        BURASI YANLIS
+        mViewModel.EngellilerLiveData().observe(getViewLifecycleOwner(),engelli->{
+            if(engelli.contains(yukleyenID)){
 
+            }else if(engelli.contains(MainActivity.kullanici.getID())) {
+                myConstraintLayout.setVisibility(View.GONE);
+            }else{
+                myConstraintLayout.setVisibility(View.VISIBLE);
+            }
+        });
+
+       if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+           PPmenuButton.setVisibility(View.GONE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
@@ -329,11 +362,14 @@ public class ProfilSayfasiFragment extends Fragment {
            }
            HakkindaUI();
            KullaniciAdiUI();
+           takipciGorme();
+           takipleriGorme();
 
            profiliDuzenleTiklandi.setOnClickListener(p -> {
                BottomSheetAc();
            });
        }else {
+           PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.GONE);
            mViewModel.getTakipDurumu().observe(getViewLifecycleOwner(),takipEdiliyor->{
               if (takipEdiliyor != null && takipEdiliyor) {
@@ -362,17 +398,83 @@ public class ProfilSayfasiFragment extends Fragment {
            HakkindaUI();
            KullaniciAdiUI();
            mViewModel.takipEdiliyorMu(yukleyenID,requireContext());
+           ObserveDataSınıfı.observeOnce(mViewModel.getTakipDurumu(), getViewLifecycleOwner(), durum -> {
+               if (durum == true) {
+                   takipciSayisiTextView.setClickable(true);
+                   takipEdilenSayisiTextView.setClickable(true);
+                   takipciGorme();
+                   takipleriGorme();
+               } else {
+                   takipciSayisiTextView.setClickable(false);
+                   takipEdilenSayisiTextView.setClickable(false);
+               }
+           });
            takipEtme();
            cikarma();
+           Engelliduzen();
        }
-       takipciGorme();
-       takipleriGorme();
-
         return view;
     }
+   public void Engelliduzen(){
+    PPmenuButton.setOnClickListener(b->{
+        PopupMenu popupmenu = new PopupMenu(requireContext(), PPmenuButton);
+        popupmenu.getMenuInflater().inflate(R.menu.profil_uc_nokta_menu, popupmenu.getMenu());
+
+        // Açılmadan önce başlığı güncelle
+        MenuItem engelleItem = popupmenu.getMenu().findItem(R.id.profilmenu_engelle);
+        ArrayList<String> engelliler = mViewModel.EngellilerLiveData().getValue();
+        if (engelliler != null && engelliler.contains(yukleyenID)) {
+            engelleItem.setTitle("Engeli Kaldır");
+        } else {
+            engelleItem.setTitle("Engelle");
+        }
+        popupmenu.setOnMenuItemClickListener(item->{
+            int id = item.getItemId();
+            String mevcutBaslik = item.getTitle().toString();
+            if (id == R.id.profilmenu_engelle&&mevcutBaslik.equals("Engelle")) {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle(kullaniciadi.getText().toString())
+                        .setMessage("Bu kullanıcıyı engellemek istiyor musunuz?")
+                        .setPositiveButton("Evet", (dialog, which) -> {
+                            mViewModel.engelle(yukleyenID,MainActivity.kullanici.getID());
+                            mViewModel.TakiptenCikarma(yukleyenID);
+                            //menu olarak takipicden cıkar eklencek
+                            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                            item.setTitle("Engeli Kaldır");
+
+                        })
+                        .setNegativeButton("Hayır", (dialog, which) -> {
+                            dialog.dismiss();
+                        })
+                        .show();
+                return true;
+            } else if (id == R.id.profilmenu_engelle&&mevcutBaslik.equals("Engeli Kaldır")) {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle(kullaniciadi.getText().toString())
+                        .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
+                        .setPositiveButton("Evet", (dialog, which) -> {
+                            mViewModel.engelKaldir(yukleyenID,MainActivity.kullanici.getID());
+                            item.setTitle("Engelle"); // veya "Engelle"
+                        })
+                        .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                        .show();
+                return true;
+            }
+            return false;
+        });
+        popupmenu.show();
+    });
+    }
+
 
     public void takipciGorme(){
         takipciSayisiTextView.setOnClickListener(b->{
+            myConstraintLayout.setVisibility(View.GONE);
+            Activity activity = requireActivity();
+            if (activity instanceof BottomSheetController) {
+                BottomSheetController controller = (BottomSheetController) activity;
+                controller.hideBottomSheet();
+            }
 
             TakiplerFragment fragment = new TakiplerFragment();
 
@@ -382,7 +484,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
             getParentFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
+                    .replace(R.id.container, fragment)
                     .addToBackStack(null)
                     .commit();
 
@@ -391,6 +493,12 @@ public class ProfilSayfasiFragment extends Fragment {
 
     public void takipleriGorme(){
         takipEdilenSayisiTextView.setOnClickListener(t->{
+            myConstraintLayout.setVisibility(View.GONE);
+            Activity activity = requireActivity();
+            if (activity instanceof BottomSheetController) {
+                BottomSheetController controller = (BottomSheetController) activity;
+                controller.hideBottomSheet();
+            }
             TakiplerFragment fragment = new TakiplerFragment();
 
             Bundle bundle = new Bundle();
@@ -399,7 +507,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
             getParentFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
+                    .replace(R.id.container, fragment)
                     .addToBackStack(null)
                     .commit();
 
@@ -408,22 +516,39 @@ public class ProfilSayfasiFragment extends Fragment {
 
     public void takipEtme() {
         takipEtButonu.setOnClickListener(t -> {
-            takipEdiliyorButonu.setVisibility(View.VISIBLE);
-            takipEtButonu.setVisibility(View.GONE);
-            mViewModel.TakipEt(yukleyenID);
-            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(kullaniciadi.getText().toString())
+                    .setMessage("Bu kullanıcıyı takip etmek istiyor musunuz?")
+                    .setPositiveButton("Evet", (dialog, which) -> {
+                        takipEdiliyorButonu.setVisibility(View.VISIBLE);
+                        takipEtButonu.setVisibility(View.GONE);
+                        mViewModel.TakipEt(yukleyenID);
+                        mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                    })
+                    .setNegativeButton("Hayır", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
         });
-
     }
 
    public void cikarma(){
-       takipEdiliyorButonu.setOnClickListener(c->{
-           takipEdiliyorButonu.setVisibility(View.GONE);
-           takipEtButonu.setVisibility(View.VISIBLE);
-           mViewModel.TakiptenCikarma(yukleyenID);
-           mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+       takipEdiliyorButonu.setOnClickListener(c -> {
+           new AlertDialog.Builder(requireContext())
+                   .setTitle(kullaniciadi.getText().toString())
+                   .setMessage("Bu kullanıcıyı takip etmeyi bırakmak istiyor musunuz?")
+                   .setPositiveButton("Evet", (dialog, which) -> {
+                       // Onaylandıysa:
+                       takipEdiliyorButonu.setVisibility(View.GONE);
+                       takipEtButonu.setVisibility(View.VISIBLE);
+                       mViewModel.TakiptenCikarma(yukleyenID);
+                       mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                   })
+                   .setNegativeButton("Hayır", (dialog, which) -> {
+                       dialog.dismiss();
+                   })
+                   .show();
        });
-
    }
     private void fotoSecimDialoguGoster() {
         String[] secenekler = {"Galeriden Seç", "Kamerayla Çek"};

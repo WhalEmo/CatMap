@@ -30,6 +30,23 @@ public class TakipEdilenlerFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         adapter=new Kullanicilar_adapter(requireContext(),kullaniciList);
+
+        adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
+            ProfilSayfasiFragment fragment = new ProfilSayfasiFragment();
+
+            Bundle bundle = new Bundle();
+            bundle.putString("yukleyenID", kullaniciId);
+            fragment.setArguments(bundle);
+
+            // Activity'deki fragment_container'a yönlendirme:
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         recyclerView.setAdapter(adapter);
 
         db = FirebaseFirestore.getInstance();
@@ -49,6 +66,7 @@ public class TakipEdilenlerFragment extends Fragment {
                         Kullanici kullanici=new Kullanici();
                         kullanici.setKullaniciAdi(ad);
                         kullanici.setFotoUrl(url);
+                        kullanici.setTakipEdiliyorMu(true);
                         kullaniciList.add(kullanici);
                     }
                     adapter.notifyDataSetChanged();

@@ -2,6 +2,7 @@ package com.emrullah.catmap;
 
 import static java.security.AccessController.getContext;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -86,7 +87,7 @@ import java.util.Set;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback , BottomSheetController{
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -532,29 +533,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
            }
         });
     }
-
+    private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
-        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
-            @Override
-            public void onBackStackChanged() {
-                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
-                if (fragment instanceof ProfilSayfasiFragment) {
-                    profilAlan.setVisibility(View.GONE);
-                    anaGorunum.setVisibility(View.GONE);
-                } else {
-                    profilAlan.setVisibility(View.VISIBLE);
-                    anaGorunum.setVisibility(View.VISIBLE);
-                    // Fragment kapanmış, listener’ı kaldır
-                    if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
-                        bottomSheetDialog.show();
-                    }
-                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+            if (fragment instanceof ProfilSayfasiFragment) {
+                profilAlan.setVisibility(View.GONE);
+                anaGorunum.setVisibility(View.GONE);
+            } else {
+                profilAlan.setVisibility(View.VISIBLE);
+                anaGorunum.setVisibility(View.VISIBLE);
+                if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()&&isBackPressed==true) {
+                    bottomSheetDialog.show();
                 }
             }
+        });
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                isBackPressed = true;
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                    // Geri tuş işlemi bittikten sonra flag sıfırlama (küçük gecikme ile)
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        isBackPressed = false;
+                    }, 100);
+                } else {
+                    finish();
+                }
+                // Sıfırlama burada olabilir ama dikkat et, bazen burada sıfırlarsan flag erken sıfırlanır.
+            }
         };
-        // Listener’ı ekle
-        getSupportFragmentManager().addOnBackStackChangedListener(listener);
+        getOnBackPressedDispatcher().addCallback(this, callback);
         YukleyenKullaniciDBgetir(YukleyenId);
         isim.setText(ad);
         hakkinda.setText(hakkindasi);
@@ -642,8 +653,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     public void yukleyenProfilineGit(View view) {
         bottomSheetDialog.hide(); // dismiss yok eder hide gizler
-        profilAlan.setVisibility(View.GONE);
-        anaGorunum.setVisibility(View.GONE);
+        profilAlan.setVisibility(View.GONE);//dıstaki keilippharket eden
+        anaGorunum.setVisibility(View.GONE);//MAPS
         ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kediYukleyenID);
         getSupportFragmentManager()
                 .beginTransaction()
@@ -958,4 +969,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
       }
+
+    @Override
+    public void hideBottomSheet() {
+        if (bottomSheetDialog != null && bottomSheetDialog.isShowing()) {
+            bottomSheetDialog.hide();
+        }
+    }
+
+    @Override
+    public void showBottomSheet() {
+        if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
+            bottomSheetDialog.show();
+        }
+
+    }
+
 }
