@@ -12,6 +12,8 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -46,6 +48,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
+import com.emrullah.catmap.Kullanici;
+import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.MesajFragment;
+import com.emrullah.catmap.MesajlasmaYonetici;
 
 import com.emrullah.catmap.BottomSheetController;
 import com.emrullah.catmap.MainActivity;
@@ -91,6 +98,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private String yukleyenID;;
     private LinearLayout ProfilDuzenleme;
     private Button takipEtButonu;
+    private Button sohbetButon;
     private Button takipEdiliyorButonu;
     private ConstraintLayout myConstraintLayout;
     private ImageView PPmenuButton;
@@ -279,10 +287,14 @@ public class ProfilSayfasiFragment extends Fragment {
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
+
+        sohbetButon = view.findViewById(R.id.sohbetButon); /// -> aşkım bunu ben ekledim sohbeti açan buton
+
         takipEdiliyorButonu=view.findViewById(R.id.takipEdiliyorButonu);
         myConstraintLayout=view.findViewById(R.id.myConstraintLayout);
         PPmenuButton=view.findViewById(R.id.PPmenuButton);
         engelButonu=view.findViewById(R.id.engelButonu);
+
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
         if (requireActivity() instanceof MapsActivity) {
@@ -313,6 +325,7 @@ public class ProfilSayfasiFragment extends Fragment {
            PPmenuButton.setVisibility(View.GONE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
+           sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
            String cacheURL = sp.getString("profil_url", null);
            if (cacheURL != null) {
@@ -379,6 +392,10 @@ public class ProfilSayfasiFragment extends Fragment {
 
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.GONE);
+
+           takipEtButonu.setVisibility(View.VISIBLE);
+           SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
+
            mViewModel.takipDurumlariniBirlestir();
 
            mViewModel.getTakipDurumuCift().observe(getViewLifecycleOwner(), pair -> {
@@ -714,6 +731,19 @@ public class ProfilSayfasiFragment extends Fragment {
       });
         bottom.setContentView(sheetView);
         bottom.show();
+    }
+
+    private void SohbetButonCalistir(){ // -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
+        sohbetButon.setOnClickListener(v->{
+            Kullanici alici = new Kullanici();
+            alici.setID(yukleyenID);
+            MesajlasmaYonetici.getInstance().setAlici(alici);
+            FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.container, new MesajFragment(requireContext()));
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
     }
 
 }

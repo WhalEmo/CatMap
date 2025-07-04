@@ -211,6 +211,22 @@
             app:strokeWidth="2dp" />
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/sohbetButon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/ProfilDuzenleme"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="Sohbet"
+        android:textColor="@color/black"
+        app:strokeColor="#FEDFB1"
+        app:strokeWidth="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:backgroundTint="#FEB8AE"
+        />
+
     <ImageView
         android:id="@+id/PPmenuButton"
         android:layout_width="wrap_content"
@@ -227,5 +243,6 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
     />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,6 +8,8 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -30,6 +33,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MesajFragment extends Fragment {
 
@@ -40,25 +45,19 @@ public class MesajFragment extends Fragment {
     private ProgressBar yukleniyorProgress;
     private ArrayList<Mesaj> mesajArrayList;
     private MesajAdapter adapter;
-    private MesajlasmaYonetici mesajlasmaYonetici;
-    private Kullanici alici;
-    private Kullanici gonderici = MainActivity.kullanici;
+    private MesajlasmaYonetici mesajlasmaYonetici = MesajlasmaYonetici.getInstance();
     private Context context;
     private boolean yukleniyorMu = false;
-    private Bitmap profilResim;
     private ImageView kisiProfilFoto;
     private TextView kisiAdiText;
     private TextView kisiDurumText;
     private LinearLayout kisiBilgiLayout;
-    private MesajFragment fragment;
-
 
     public static MesajFragment newInstance(Context context){
         return new MesajFragment(context);
     }
     public MesajFragment(Context context){
         this.context = context;
-        fragment = this;
     }
 
     @Nullable
@@ -68,6 +67,18 @@ public class MesajFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.mesajlasma, container, false);
 
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true){
+                    @Override
+                    public void handleOnBackPressed() {
+                        mesajlasmaYonetici.DinleyiciKaldir();
+                        mesajlasmaYonetici.setAlici(null);
+                        mesajlasmaYonetici.setSohbetID(null);
+                      //  requireActivity().getSupportFragmentManager().popBackStack();
+                        requireActivity().getSupportFragmentManager().beginTransaction().remove(MesajFragment.this).commit();
+                    }
+                });
+
 
         mesajRecyclerView = view.findViewById(R.id.mesajRecyclerView);
         mesaj_gonder_layout = view.findViewById(R.id.mesaj_gonder_layout);
@@ -76,16 +87,13 @@ public class MesajFragment extends Fragment {
         yukleniyorProgress = view.findViewById(R.id.yukleniyorProgress);
         yukleniyorProgress.setVisibility(View.VISIBLE);
         KlavyeAyari(view);
-        alici = new Kullanici();
-        alici.setID("A8mt0DjcK1oulvcZFWtU");
-
         kisiProfilFoto = view.findViewById(R.id.kisiProfilFoto);
         kisiAdiText = view.findViewById(R.id.kisiAdiText);
         kisiDurumText = view.findViewById(R.id.kisiDurumText);
         kisiBilgiLayout = view.findViewById(R.id.kisi_bilgi_layout);
 
         //profil işlemleri
-        ProfilCubugunuDoldur();
+        mesajlasmaYonetici.ProfilCubugunuDoldur(kisiAdiText,kisiProfilFoto,kisiDurumText);
 
 
         mesajArrayList = new ArrayList<>();
@@ -96,12 +104,15 @@ public class MesajFragment extends Fragment {
         layoutManager.setReverseLayout(false);
         mesajRecyclerView.setLayoutManager(layoutManager);
 
-        mesajlasmaYonetici = new MesajlasmaYonetici(gonderici.getID(), alici.getID(), ()->{
+        mesajlasmaYonetici.MesajlasmaYoneticiStart(()->{
             mesajlasmaYonetici.MesajlariCek(adapter,20,yukleniyorProgress,mesajRecyclerView,()->{
                 mesajlasmaYonetici.MesajlariDinle(adapter,()->{
                     mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
                 });
-            }); //ilk mesajları çek
+            });
+            YaziyorMuCalistir();
+            mesajlasmaYonetici.YaziyorDinleyici(kisiDurumText);
+            mesajlasmaYonetici.CevrimIciDinleyici(kisiDurumText);
         });
 
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
@@ -114,7 +125,7 @@ public class MesajFragment extends Fragment {
     private void MesajGondermeButonu(){
         if (mesajEditText.getText().toString().trim().isEmpty()) return;
         if (mesajlasmaYonetici == null) return;
-        mesajlasmaYonetici.MesajGonder(gonderici.getID(),mesajEditText.getText().toString().trim(),adapter);
+        mesajlasmaYonetici.MesajGonder(mesajEditText.getText().toString().trim(),adapter);
         mesajEditText.getText().clear();
         mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
     }
@@ -137,29 +148,6 @@ public class MesajFragment extends Fragment {
 
         });
     }
-
-    private void ProfilCubugunuDoldur(){
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("users")
-                .document(alici.getID())
-                .get()
-                .addOnSuccessListener(veri ->{
-                    if(veri.exists()){
-                        alici.setAd(veri.getString("Ad"));
-                        alici.setFotoUrl(veri.getString("profilFotoUrl"));
-                        alici.setSoyad(veri.getString("Soyad"));
-                        alici.setKullaniciAdi(veri.getString("KullaniciAdi"));
-                        kisiAdiText.setText(alici.getKullaniciAdi());
-                        Picasso.get()
-                                .load(alici.getFotoUrl())
-                                .placeholder(R.drawable.kullanici)
-                                .error(R.drawable.kullanici)
-                                .into(kisiProfilFoto);
-                    }
-                });
-
-    }
-
 
 
     private void KlavyeAyari(View rootView){
@@ -186,6 +174,35 @@ public class MesajFragment extends Fragment {
 
     private int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+
+
+    private void YaziyorMuCalistir(){
+        mesajEditText.addTextChangedListener(new TextWatcher() {
+            Timer timer = new Timer();
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if(mesajEditText.getText().toString().trim().isEmpty()) return;
+                mesajlasmaYonetici.YaziyorMu(true);
+                timer.cancel();
+                timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        mesajlasmaYonetici.YaziyorMu(false);
+                    }
+                },1000);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
     }
 
 

@@ -4,9 +4,13 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class Kullanici {
     private String ID;
@@ -18,8 +22,38 @@ public class Kullanici {
     private double latitude;
     private boolean girisBasarili;
     private String FotoUrl;
+
+    private Bitmap fotoBitmap;
+    private long sonGorulme;
+    private boolean cevrimiciMi;
+
+    public boolean isCevrimiciMi() {
+        return cevrimiciMi;
+    }
+    public void setCevrimiciMi(boolean cevrimiciMi) {
+        this.cevrimiciMi = cevrimiciMi;
+    }
+
+    public String getSonGorulme() {
+        Date tarih = new Date(sonGorulme);
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+        sdf.setTimeZone(TimeZone.getDefault());
+        return sdf.format(tarih);
+    }
+    public void setSonGorulme(long sonGorulme) {
+        this.sonGorulme = sonGorulme;
+    }
+
+    public Bitmap getFotoBitmap() {
+        return fotoBitmap;
+    }
+    public void setFotoBitmap(Bitmap fotoBitmap) {
+        this.fotoBitmap = fotoBitmap;
+    }
+
     private Boolean TakipEdiliyorMu=false;
     private Boolean TakipciMi=false;
+
 
     public String getFotoUrl() {
         return FotoUrl;

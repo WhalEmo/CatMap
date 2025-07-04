@@ -28,7 +28,7 @@
             app:civ_border_width="2dp"
             android:scaleType="centerCrop"
             android:src="@drawable/kullanici"
-            app:civ_border_color="#13216E"
+            app:civ_border_color="#FF9800"
             />
 
         <LinearLayout

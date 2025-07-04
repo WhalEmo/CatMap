@@ -3,6 +3,7 @@ package com.emrullah.catmap;
 import static java.security.AccessController.getContext;
 
 import androidx.activity.OnBackPressedCallback;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -18,7 +19,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
@@ -26,7 +26,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
-import android.text.Layout;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,7 +34,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -131,6 +129,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        System.out.println(MainActivity.kullanici.getID());
         // Firestore cache ayarını yap
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -171,6 +170,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 behavior.setSkipCollapsed(true);
             }
         });
+//        SohbetMesajAyarlari();
 
         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
@@ -298,6 +298,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         bittimi = false;
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
         MainActivity.kullanici.setLatitude(latitude);
         MainActivity.kullanici.setLongitude(longitude);
             if (yorumAdapter != null) {
@@ -311,6 +313,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
     }
 
     private int dpDenPx(int dp) {
@@ -934,6 +961,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 })
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
+
+
+/*    private void SohbetMesajAyarlari(){
+        Context con = this;
+        MesajlasmaYonetici.getInstance().setSohbetButon(new SohbetButonListener() {
+            @Override
+            public void MesajlasmaFragmentStart() {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container,new MesajFragment(con))
+                        .addToBackStack(null)
+                        .commit();
+            }
+        });
+    }*/
 
 
     @Override

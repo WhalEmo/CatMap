@@ -1,6 +1,5 @@
 package com.emrullah.catmap;
 
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -9,13 +8,9 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,13 +20,16 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.emrullah.catmap.sohbet.SohbetFragment;
+import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -51,12 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private ImageView KediHaritaButon;
     private ImageView Goz;
     boolean AcikMi;
-    private FrameLayout YuklemeEkrani;
-    private TextView Durum;
-    private ImageView BasariliTik;
-    private ImageView BasarisizCarpi;
-    private ProgressBar YuklemeBar;
-    private Dialog yuklemeDialog;
     private UyariMesaji uyariMesaji;
     private LinearLayout Profil;
     private ConstraintLayout GirisKayit;
@@ -89,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         GirisYapButon = findViewById(R.id.girisid);
         KediHaritaButon = findViewById(R.id.haritaid);
         KediKaydetButon = findViewById(R.id.yukleid);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
         if(GirisYapildi){
@@ -96,12 +89,14 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(kullanici.getAd());
             KayitOlButon.setVisibility(View.INVISIBLE);
             GirisYapButon.setVisibility(View.INVISIBLE);
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
         }
         else{
             KediKaydetButon.setVisibility(View.INVISIBLE);
             KediHaritaButon.setVisibility(View.INVISIBLE);
             uyariMesaji = new UyariMesaji(this,false);
         }
+        SohbetMesajAyarlari();
     }
 
     public void profilSayfasinaGit(View view){
@@ -117,14 +112,44 @@ public class MainActivity extends AppCompatActivity {
 
     public void yuklemeSayfasi(View view){
         System.out.println("Yukleme Sayfasi gecildi");
+        CevrimIciYonetimi.getInstance().YuklemeArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, YuklemeArayuzuActivity.class);
         startActivity(intent);
     }
     public  void haritaSayfasi(View view){
+        CevrimIciYonetimi.getInstance().HaritaArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, MapsActivity.class);
         startActivity(intent);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        System.out.println("onDestroy");
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        System.out.println("onStop");
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        System.out.println("onPause");
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("onResum");
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+    }
 
     public void girisMetodu(View view){
         if(diyalog!=null && diyalog.isShowing()){
@@ -290,6 +315,7 @@ public class MainActivity extends AppCompatActivity {
                                                 db.collection("users")
                                                         .add(kullanici.KullaniciData())
                                                         .addOnSuccessListener(documentReference -> {
+                                                            kullanici.setID(documentReference.getId());
                                                             YerelKayit();
                                                             uyariMesaji.BasariliDurum("Kayıt Başarılı...",1000);
                                                         })
@@ -331,6 +357,8 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         diyalog.dismiss();
         ButonlariKaybet();
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
 
 
@@ -370,8 +398,35 @@ public class MainActivity extends AppCompatActivity {
     public void Sohbet(View view){
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container,new MesajFragment(this))
+                .replace(R.id.fragment_container,new SohbetFragment(()->{
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container,new MesajFragment(this))
+                            .addToBackStack(null)
+                            .commit();
+                }))
                 .addToBackStack(null)  // geri tuşuyla geri döner
                 .commit();
+    }
+
+    /// bu metodda mesajlaşma ve sohbetteki başlatılmadan önce temel ayarlar yapılır
+    private void SohbetMesajAyarlari(){
+        SohbetYonetici.getInstance().setKullanicilar(new HashMap<>());
+        SohbetYonetici.getInstance().setSonMesajlar(new HashMap<>());
+        SohbetYonetici.getInstance().setProfilFotolari(new HashMap<>());
+    }
+
+
+    ///
+    private void CevrimIciOl(boolean durumu){
+        if(durumu == kullanici.isCevrimiciMi()) return;
+        if(kullanici.getID()==null) return;
+        DatabaseReference durum = FirebaseDatabase.getInstance().getReference("durumlar");
+        durum.child(kullanici.getID()).child("cevrimici").setValue(durumu);
+        kullanici.setCevrimiciMi(durumu);
+        if(!durumu){
+            durum.child(kullanici.getID()).child("sonGorulme").setValue(System.currentTimeMillis());
+            kullanici.setSonGorulme(System.currentTimeMillis());
+        }
     }
 }
