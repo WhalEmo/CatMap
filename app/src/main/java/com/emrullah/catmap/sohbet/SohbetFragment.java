@@ -25,6 +25,7 @@ public class SohbetFragment extends Fragment {
     private SohbetAdapter adapter;
     private ArrayList<Sohbet> sohbetler;
     private Runnable MesajFragment;
+    private SohbetYonetici sohbetYonetici = SohbetYonetici.getInstance();
 
 
     public SohbetFragment(Runnable MesajFragment) {
@@ -38,7 +39,6 @@ public class SohbetFragment extends Fragment {
         adapter = new SohbetAdapter(sohbetler, getActivity(),MesajFragment);
         kisilerRecyclerView = view.findViewById(R.id.kisilerRecyclerView);
         kisilerRecyclerView.setAdapter(adapter);
-        SohbetYonetici sohbetYonetici = SohbetYonetici.getInstance();
         sohbetYonetici.SohbetleriCek(sohbetler, ()->{
             adapter.notifyDataSetChanged();
         });

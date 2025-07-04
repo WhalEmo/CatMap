@@ -28,6 +28,7 @@ public class SohbetYonetici {
     private HashMap<String,Kullanici> Kullanicilar;
     private HashMap<String,Mesaj> SonMesajlar;
     private static SohbetYonetici yonetici;
+    private HashMap<String,Target> FotolariCek = new HashMap<>();
     private HashMap<String, ChildEventListener> dinleyiciler = new HashMap<>();
 
     public static SohbetYonetici getInstance(){
@@ -151,26 +152,16 @@ public class SohbetYonetici {
             tamamdir.run();
             return;
         }
+        if(sohbet.getAlici().getFotoBitmap() != null){
+            ProfilFotolari.put(sohbet.getAlici().getFotoUrl(),sohbet.getAlici().getFotoBitmap());
+            tamamdir.run();
+            return;
+        }
         Picasso.get()
                 .load(sohbet.getAlici().getFotoUrl())
                 .placeholder(R.drawable.kullanici)
                 .error(R.drawable.kullanici)
-                .into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        sohbet.getAlici().setFotoBitmap(bitmap);
-                        ProfilFotolari.put(sohbet.getAlici().getFotoUrl(),bitmap);
-                        tamamdir.run();
-                    }
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        sohbet.getAlici().setFotoBitmap(null);
-                    }
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-                        sohbet.getAlici().setFotoBitmap(null);
-                    }
-                });
+                .into(FotografTargetHaziriligi(sohbet,tamamdir));
     }
 
     private void SonGorulmeCevrimIci(Sohbet sohbet){
@@ -190,6 +181,28 @@ public class SohbetYonetici {
 
                     }
                 });
+    }
+
+    private Target FotografTargetHaziriligi(Sohbet sohbet, Runnable tamamdir){
+        Target target = new Target() {
+            @Override
+            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                sohbet.getAlici().setFotoBitmap(bitmap);
+                ProfilFotolari.put(sohbet.getAlici().getFotoUrl(),bitmap);
+                FotolariCek.remove(sohbet.getAlici().getFotoUrl());
+                tamamdir.run();
+            }
+            @Override
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                sohbet.getAlici().setFotoBitmap(null);
+            }
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {
+                sohbet.getAlici().setFotoBitmap(null);
+            }
+        };
+        FotolariCek.put(sohbet.getAlici().getFotoUrl(),target);
+        return  target;
     }
 
     public void setSonMesajlar(HashMap<String, Mesaj> sonMesajlar) {
