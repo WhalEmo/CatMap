@@ -164,6 +164,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
+    <Button
+        android:id="@+id/engelButonu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#646C70"
+        android:text="Engeli kaldır"
+        android:textAllCaps="false"
+        android:textColor="#fff"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
     <LinearLayout
         android:id="@+id/ProfilDuzenleme"
