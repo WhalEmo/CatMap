@@ -1,8 +1,15 @@
 package com.emrullah.catmap;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,7 +32,10 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
+
+
     private ArrayList<Yorum_Model>yorumList;
     public ArrayList<Yorum_Model> getYorumList() {
         return yorumList;
@@ -33,6 +43,11 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     public boolean yorumMuGeldi=false;
     private Set<String> begenilenYorumIDSeti = new HashSet<>();
     private Map<String, Integer> begeniSayisiMap = new HashMap<>();
+    public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
+
+    public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
+        this.kullaniciAdiTiklamaListener = listener;
+    }
 
     private Context context;
     private final Handler zamanHandler = new Handler();
@@ -97,12 +112,18 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
-
         Yorum_Model yorum=yorumList.get(position);
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
+        URLye_Ulasma ulasma=new URLye_Ulasma();
+        ulasma.IDdenUrlyeUlasma(yorum.getYukleyenId(),holder.YorumFotoImageView);
 
+        holder.kullaniciAditext.setOnClickListener(v -> {
+            if (kullaniciAdiTiklamaListener != null) {
+                kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yorum.getYukleyenId());
+            }
+        });
 
         int begeniSayisi = begeniSayisiMap.getOrDefault(yorum.getYorumID(), 0);
         if (begeniSayisi >= 1_000_000) {
@@ -139,8 +160,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             }
         });
 
-
-
         if (MainActivity.kullanici.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
             if(yorumMuGeldi==true){
                 holder.menuButonu.setVisibility(View.GONE);
@@ -161,12 +180,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             holder.menuButonu.setVisibility(View.GONE);
         }
 
-
-
         if (yorum.isYanitlarGorunuyor()) {
             holder.container.setVisibility(View.VISIBLE);
             holder.yanitlariGor.setText("Yanıtları Gizle");
-
 
             ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
             if (yanitlar == null) {
@@ -174,13 +190,14 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 yorum.setYanitlar(yanitlar);
             }
 
-
             // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
             if (yorum.getYanitAdapter() == null) {
                 Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,position,yorum.getYorumID());
                 yorum.setYanitAdapter(yntadapter);
                 yntadapter.baslatZamanlayici();
                 yntadapter.hazirliklariYapBegenme(context, MainActivity.kullanici.getID(), yorum);
+
+                yntadapter.setKullaniciAdiTiklamaListener(kullaniciAdiTiklamaListener);
             }
 
             // Adapter'i bağla
@@ -215,7 +232,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                             @Override
                             public void onComplete() {
                                 yorum.setYanitlarYuklendi(true);
-                               yorum.setYanitYokMu(yorum.getYanitlar().isEmpty());
+                                yorum.setYanitYokMu(yorum.getYanitlar().isEmpty());
                                 holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
                                 notifyDataSetChanged();
                             }
@@ -250,7 +267,36 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
-            MapsActivity.textt.setText("@"+yorum.getKullaniciAdi());
+            String kullaniciAdi=yorum.getKullaniciAdi();
+            String metin="@"+kullaniciAdi + " ";
+
+            SpannableString spannableString=new SpannableString(metin);
+            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
+            spannableString.setSpan(
+                    new ForegroundColorSpan(Color.BLUE),
+                    0,
+                    metin.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            ClickableSpan clickableSpan=new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View view) {
+                    if (kullaniciAdiTiklamaListener != null) {
+                        kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yorum.getYukleyenId());
+                    }
+                }
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.BLUE);
+                    ds.setUnderlineText(false);
+                }
+            };
+            spannableString.setSpan(clickableSpan, 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            MapsActivity.textt.setText(spannableString);
+            MapsActivity.textt.setMovementMethod(LinkMovementMethod.getInstance());
+
             MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
             MapsActivity.kimeyanit.setHint(yorum.getKullaniciAdi() + " 'e yanıt veriyorsun");
             Klavye klavye=new Klavye(context);
@@ -322,6 +368,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         LinearLayout getYanitlarYukleniyorLayout2;
         ImageView kalpImageView;
         TextView begeniSayisiTextView;
+        ImageView YorumFotoImageView;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -339,6 +386,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             getYanitlarYukleniyorLayout2=itemView.findViewById(R.id.yanitlarYukleniyorLayout2);
             kalpImageView=itemView.findViewById(R.id.kalpImageView);
             begeniSayisiTextView=itemView.findViewById(R.id.begeniSayisiTextView);
+            YorumFotoImageView=itemView.findViewById(R.id.YorumFotoImageView);
 
         }
     }

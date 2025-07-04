@@ -4,6 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:id="@+id/myConstraintLayout"
+    android:visibility="visible"
     android:layout_height="match_parent"
     android:padding="16dp">
 
@@ -25,7 +27,7 @@
         android:id="@+id/KullaniciAdi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Beyza Nur Takca"
+        android:text=""
         android:textColor="#000"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -148,6 +150,33 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+    <Button
+        android:id="@+id/takipEdiliyorButonu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#C8E6C9"
+        android:text="Takip ediliyor"
+        android:visibility="gone"
+        android:textAllCaps="false"
+        android:textColor="#555555"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
+    <Button
+        android:id="@+id/engelButonu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#646C70"
+        android:text="Engeli kaldır"
+        android:textAllCaps="false"
+        android:textColor="#fff"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
     <LinearLayout
         android:id="@+id/ProfilDuzenleme"
@@ -168,6 +197,7 @@
             android:src="@drawable/pati"
             android:translationY="20dp" />
 
+
         <Button
             android:id="@+id/profiliDuzenleTiklandi"
             android:layout_width="158dp"
@@ -181,6 +211,7 @@
             app:strokeWidth="2dp" />
 
     </LinearLayout>
+
     <Button
         android:id="@+id/sohbetButon"
         android:layout_width="wrap_content"
@@ -195,5 +226,23 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:backgroundTint="#FEB8AE"
         />
+
+    <ImageView
+        android:id="@+id/PPmenuButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/baseline_more_vert_24"
+        android:contentDescription="Menü"
+        android:visibility="gone"
+        android:padding="3dp"
+        android:clickable="true"
+        android:tint="#888888"
+        android:background="?selectableItemBackgroundBorderless"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+    />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

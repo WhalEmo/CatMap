@@ -44,7 +44,8 @@ public class Yanitlari_Cekme {
                                     doc.getId(),
                                     doc.getString("kullanici_adi"),
                                     doc.getString("yaniticerik"),
-                                    doc.getDate("yanitzaman")
+                                    doc.getDate("yanitzaman"),
+                                    doc.getString("YanitiYukleyenID")
                             );
                             yanitlar.add(yanit);
                         }

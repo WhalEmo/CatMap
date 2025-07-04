@@ -24,9 +24,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CatMap"
         tools:targetApi="31">
-        <activity
-            android:name=".Profil_Sayfasi"
-            android:exported="false" />
+
         <!-- FileProvider Tanımı -->
         <provider
             android:name="androidx.core.content.FileProvider"

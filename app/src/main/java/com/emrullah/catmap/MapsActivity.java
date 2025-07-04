@@ -1,5 +1,9 @@
 package com.emrullah.catmap;
 
+import static java.security.AccessController.getContext;
+
+import androidx.activity.OnBackPressedCallback;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -27,6 +31,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
@@ -64,6 +69,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.emrullah.catmap.KullaniciAdiTiklamaListener;
 import com.google.firebase.firestore.Query;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
@@ -79,7 +85,7 @@ import java.util.Set;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback , BottomSheetController{
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -114,6 +120,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private TextView yukleyenAdiText;
     private ImageView yukleyenPP;
     private LinearLayout profilAlan;
+    private RelativeLayout anaGorunum;
+    private ImageView YrmgndrFotoImageView;
+    private ImageView YntgndrFotoImageView;
+    private URLye_Ulasma ulasma;
 
 
     @Override
@@ -131,6 +141,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
+        anaGorunum=findViewById(R.id.anaGorunum);
         // Map Fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -161,7 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 //        SohbetMesajAyarlari();
 
-         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
+        begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         fotoPager = bottomSheetView.findViewById(R.id.fotoPager);
@@ -189,7 +200,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yanıtbutton.setEnabled(false);
         yanıtbutton.setAlpha(0.5f);
         bosyorum=ikinci.findViewById(R.id.bosYorumTextView);
-
+        YrmgndrFotoImageView=ikinci.findViewById(R.id.YrmgndrFotoImageView);
+        YntgndrFotoImageView=ikinci.findViewById(R.id.YntgndrFotoImageView);
+        ulasma=new URLye_Ulasma();
+        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YrmgndrFotoImageView);
+        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YntgndrFotoImageView);
 
 
         textt.addTextChangedListener(new TextWatcher() {
@@ -240,8 +255,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 klavye.klavyeAc(TEXT);
             }, 250);
         });
-    }
 
+
+    }
 
     private void konumizni() {
         // Eğer izin verilmemişse
@@ -544,24 +560,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
            }
         });
     }
-
+    private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
-        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
-            @Override
-            public void onBackStackChanged() {
-                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
-                if (fragment instanceof ProfilSayfasiFragment) {
-                    profilAlan.setVisibility(View.GONE);
-                } else {
-                    profilAlan.setVisibility(View.VISIBLE);
-                    // Fragment kapanmış, listener’ı kaldır
-                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+            if (fragment instanceof ProfilSayfasiFragment) {
+                profilAlan.setVisibility(View.GONE);
+                anaGorunum.setVisibility(View.GONE);
+            } else {
+                profilAlan.setVisibility(View.VISIBLE);
+                anaGorunum.setVisibility(View.VISIBLE);
+                if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()&&isBackPressed==true) {
+                    bottomSheetDialog.show();
                 }
             }
+        });
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                isBackPressed = true;
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                    // Geri tuş işlemi bittikten sonra flag sıfırlama (küçük gecikme ile)
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        isBackPressed = false;
+                    }, 100);
+                } else {
+                    finish();
+                }
+                // Sıfırlama burada olabilir ama dikkat et, bazen burada sıfırlarsan flag erken sıfırlanır.
+            }
         };
-        // Listener’ı ekle
-        getSupportFragmentManager().addOnBackStackChangedListener(listener);
+        getOnBackPressedDispatcher().addCallback(this, callback);
         YukleyenKullaniciDBgetir(YukleyenId);
         isim.setText(ad);
         hakkinda.setText(hakkindasi);
@@ -621,6 +652,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
+
     public void YukleyenKullaniciDBgetir(String YId){
         yukleyenAdiText=bottomSheetView.findViewById(R.id.yukleyenAdiText);
         yukleyenPP=bottomSheetView.findViewById(R.id.YukprofilFotoImageView);
@@ -647,7 +679,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 });
     }
     public void yukleyenProfilineGit(View view) {
-        profilAlan.setVisibility(View.GONE);
+        bottomSheetDialog.hide(); // dismiss yok eder hide gizler
+        profilAlan.setVisibility(View.GONE);//dıstaki keilippharket eden
+        anaGorunum.setVisibility(View.GONE);//MAPS
         ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kediYukleyenID);
         getSupportFragmentManager()
                 .beginTransaction()
@@ -655,6 +689,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .addToBackStack(null)
                 .commit();
     }
+
     ArrayList<Yorum_Model>yorumlar=new ArrayList<>();
     Yorum_Adapter yorumAdapter;
     public void YorumSayisiToplam(){
@@ -698,8 +733,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             String IDsi=doc.getId();
                             String kAdi=doc.getString("kullanici_adi");
                             String icerik=doc.getString("icerik");
+                            String YukleyenId=doc.getString("Yukleyen_ID");
                             Date zaman=doc.getDate("zaman");
-                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null);
+                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null,YukleyenId);
                             yorumlar.add(yorum);
                         }
                         yorumAdapter.notifyDataSetChanged();
@@ -734,13 +770,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
 
+        yorumAdapter.setKullaniciAdiTiklamaListener(new KullaniciAdiTiklamaListener() {
+            @Override
+            public void onKullaniciAdiTiklandi(String kullaniciID) {
+                bottomSheetDialog.hide();
+                ikincibottom.hide();
+                ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciID);
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.container, fragment)
+                        .addToBackStack(null)
+                        .commit();
+
+            }
+        });
+        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+                if (fragment instanceof ProfilSayfasiFragment) {
+                    profilAlan.setVisibility(View.GONE);
+                    anaGorunum.setVisibility(View.GONE);
+                } else {
+                    profilAlan.setVisibility(View.VISIBLE);
+                    anaGorunum.setVisibility(View.VISIBLE);
+
+                    if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
+                        bottomSheetDialog.show();
+                    }
+                    if (ikincibottom != null && !ikincibottom.isShowing()) {
+                        ikincibottom.show();
+                    }
+                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
+                }
+            }
+        };
+        // Listener’ı ekle
+        getSupportFragmentManager().addOnBackStackChangedListener(listener);
+
         Set<String> cachedSet = CacheHelperYorum.loadBegenilenSet(this);
         Map<String, Integer> begeniMap = CacheHelperYorum.loadBegeniSayilariMap(this);
         yorumAdapter.setBegenilenYorumIDSeti(cachedSet);
         yorumAdapter.setBegeniSayisiMap(begeniMap);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            yorumAdapter.notifyDataSetChanged();
+            yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks);
+            //yorumAdapter.notifyDataSetChanged();
         }, 100);
         begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, MainActivity.kullanici.getID(), yorumAdapter);
 
@@ -766,8 +841,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             String IDsi=doc.getId();
                             String kAdi=doc.getString("kullanici_adi");
                             String icerik=doc.getString("icerik");
+                            String YukleyenID=doc.getString("Yukleyen_ID");
                             Date zaman=doc.getDate("zaman");
-                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null);
+                            Yorum_Model yorum=new Yorum_Model(IDsi,kAdi,icerik,zaman,null,YukleyenID);
                             switch (dc.getType()){
                                 case ADDED:
                                     yorumlar.add(0,yorum);
@@ -817,15 +893,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
       if(!ikincibottom.isShowing()){
           ikincibottom.show();
+
       }
     }
 
 
     public void yorumgonder(View view){
-        DBekle(ID,TEXT.getText().toString());
+        DBekle(ID,TEXT.getText().toString(),MainActivity.kullanici.getID());
         TEXT.setText("");
         yorumAdapter.yorumMuGeldi=true;
     }
+
 
     public void yntgonder(View view){
         if (Yorum_Adapter.yorumindeks < 0 || Yorum_Adapter.yorumindeks >= yorumlar.size()) return;
@@ -833,13 +911,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
         if (holder != null) {
             String yanitMetni = textt.getText().toString().trim();
-            Yanit_Model yanit=new Yanit_Model("geciciid",MainActivity.kullanici.getKullaniciAdi(),yanitMetni,null);
+            Yanit_Model yanit=new Yanit_Model("geciciid",MainActivity.kullanici.getKullaniciAdi(),yanitMetni,null,MainActivity.kullanici.getID());
            yorumm.getYanitlar().add(0,yanit);
             yorumm.setYanitYokMu(false);
             yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks); // görünüm güncelle
             if (!yanitMetni.isEmpty()) {
                 yorumID=yorumm.getYorumID();
-                DBekleYanit(ID, yorumID, yanitMetni,yanit);
+                DBekleYanit(ID, yorumID, yanitMetni,yanit,MainActivity.kullanici.getID());
                 textt.setText(""); // Yalnızca görünür olan EditText temizlenir
                 yanit.yanitMiGeldi=true;
                 Yorum_Adapter.yorumindeks = -1;
@@ -847,26 +925,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
     }
-    public void DBekle(String kediId,String yorumIcerik) {
-        Map<String, Object> yanitData = new HashMap<>();
-        yanitData.put("icerik", yorumIcerik);
-        yanitData.put("zaman", FieldValue.serverTimestamp());
-        yanitData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
+    public void DBekle(String kediId,String yorumIcerik,String YukleyenId) {
+        Map<String, Object> yorumData = new HashMap<>();
+        yorumData.put("icerik", yorumIcerik);
+        yorumData.put("zaman", FieldValue.serverTimestamp());
+        yorumData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
+        yorumData.put("Yukleyen_ID",YukleyenId);
 
         FirebaseFirestore.getInstance()
                 .collection("cats")
                 .document(kediId)
                 .collection("yorumlar")
-                .add(yanitData)
+                .add(yorumData)
                 .addOnSuccessListener(yanitRef ->{
                 })
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
-    public void DBekleYanit(String kediId,String yorumId,String yorumIcerik,Yanit_Model yanit){
+    public void DBekleYanit(String kediId,String yorumId,String yorumIcerik,Yanit_Model yanit,String YntyukleyenId){
         Map<String, Object> yanittData = new HashMap<>();
         yanittData.put("yaniticerik", yorumIcerik);
         yanittData.put("yanitzaman", FieldValue.serverTimestamp());
         yanittData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi());
+        yanittData.put("YanitiYukleyenID",YntyukleyenId);
 
         FirebaseFirestore.getInstance()
                 .collection("cats")
@@ -931,4 +1011,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
       }
+
+    @Override
+    public void hideBottomSheet() {
+        if (bottomSheetDialog != null && bottomSheetDialog.isShowing()) {
+            bottomSheetDialog.hide();
+        }
+    }
+
+    @Override
+    public void showBottomSheet() {
+        if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
+            bottomSheetDialog.show();
+        }
+
+    }
+
 }

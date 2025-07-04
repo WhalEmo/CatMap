@@ -22,6 +22,7 @@ public class Kullanici {
     private double latitude;
     private boolean girisBasarili;
     private String FotoUrl;
+
     private Bitmap fotoBitmap;
     private long sonGorulme;
     private boolean cevrimiciMi;
@@ -49,6 +50,10 @@ public class Kullanici {
     public void setFotoBitmap(Bitmap fotoBitmap) {
         this.fotoBitmap = fotoBitmap;
     }
+
+    private Boolean TakipEdiliyorMu=false;
+    private Boolean TakipciMi=false;
+
 
     public String getFotoUrl() {
         return FotoUrl;
@@ -135,6 +140,22 @@ public class Kullanici {
 
     public void setEmail(String email) {
         Email = email.toLowerCase().trim();
+    }
+
+    public Boolean getTakipEdiliyorMu() {
+        return TakipEdiliyorMu;
+    }
+
+    public void setTakipEdiliyorMu(Boolean takipEdiliyorMu) {
+        TakipEdiliyorMu = takipEdiliyorMu;
+    }
+
+    public Boolean getTakipciMi() {
+        return TakipciMi;
+    }
+
+    public void setTakipciMi(Boolean takipciMi) {
+        TakipciMi = takipciMi;
     }
 
     public boolean KullaniciIs(){

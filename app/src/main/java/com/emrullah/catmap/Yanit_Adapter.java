@@ -1,7 +1,14 @@
 package com.emrullah.catmap;
 
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewHolder> {
+
     private ArrayList<Yanit_Model>yanitListe;
     public ArrayList<Yanit_Model> getYanitList() {
         return yanitListe;
@@ -33,11 +41,16 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
     private String yorumID;
     private Set<String>begenilenYanitIdSeti=new HashSet<>();
     private Map<String, Integer> begeniSayisiYanitMap = new HashMap<>();
+    public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
+
     public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context, int yorumIndeks,String yorumID) {
         this.yanitListe = yanitListe;
         this.context = context;
         this.aitOlduguYorumIndeks = yorumIndeks;
         this.yorumID=yorumID;
+    }
+    public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
+        this.kullaniciAdiTiklamaListener = listener;
     }
 
     public void setBegenilenYanitIdSeti(Set<String> begenilenYanitIdSeti) {
@@ -116,6 +129,15 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         holder.yanitText.setText(yanit.getYaniticerik());
         holder.yanitTarihiText.setText(yanit.duzenlenmisTarih());
 
+        URLye_Ulasma ulasma=new URLye_Ulasma();
+        ulasma.IDdenUrlyeUlasma(yanit.getYanitiYukleyen(),holder.YorumFotoImageViewYnt);
+
+        holder.kullaniciAditext.setOnClickListener(v -> {
+            if (kullaniciAdiTiklamaListener != null) {
+                kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yanit.getYanitiYukleyen());
+            }
+        });
+
         int begeniSayisi = begeniSayisiYanitMap.getOrDefault(yanit.getYanitId(), 0);
         holder.begeniSayisiTextViewYnt.setText(String.valueOf(begeniSayisi));
 
@@ -166,7 +188,39 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
 
 
         holder.yanitlabutonu.setOnClickListener(cvp->{
-            MapsActivity.textt.setText("@"+yanit.getAdi());
+            String kullaniciAdi=yanit.getAdi();
+            String metin="@"+kullaniciAdi+ " ";
+
+            SpannableString spannableString=new SpannableString(metin);
+            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
+            spannableString.setSpan(
+                    new ForegroundColorSpan(Color.BLUE),
+                    0,
+                    metin.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            ClickableSpan clickableSpan=new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View view) {
+                    if (kullaniciAdiTiklamaListener != null) {
+                        kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yanit.getYanitiYukleyen());
+
+                    }
+
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.BLUE);
+                    ds.setUnderlineText(false);
+                }
+            };
+            spannableString.setSpan(clickableSpan, 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            MapsActivity.textt.setText(spannableString);
+            MapsActivity.textt.setMovementMethod(LinkMovementMethod.getInstance());
+
             MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
             MapsActivity.kimeyanit.setHint(yanit.getAdi() + " 'e yanıt veriyorsun");
             Klavye klavye=new Klavye(context);
@@ -233,6 +287,7 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         LinearLayout getYanitlarYukleniyorLayout2ynt;
         TextView begeniSayisiTextViewYnt;
         ImageView kalpImageViewYnt;
+        ImageView YorumFotoImageViewYnt;
         public YanitViewHolder(@NonNull View itemView) {
             super(itemView);
             kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextViewynt);
@@ -244,6 +299,7 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
             getYanitlarYukleniyorLayout2ynt=itemView.findViewById(R.id.yanitlarYukleniyorLayout2ynt);
             begeniSayisiTextViewYnt=itemView.findViewById(R.id.begeniSayisiTextViewYnt);
             kalpImageViewYnt=itemView.findViewById(R.id.kalpImageViewYnt);
+            YorumFotoImageViewYnt=itemView.findViewById(R.id.YorumFotoImageViewYnt);
         }
     }
 }
