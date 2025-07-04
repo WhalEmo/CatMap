@@ -367,8 +367,8 @@ public class ProfilSayfasiFragment extends Fragment {
            }
            HakkindaUI();
            KullaniciAdiUI();
-           takipciGorme();
-           takipleriGorme();
+           takipciGorme(MainActivity.kullanici.getID());
+           takipleriGorme(MainActivity.kullanici.getID());
 
            profiliDuzenleTiklandi.setOnClickListener(p -> {
                BottomSheetAc();
@@ -396,7 +396,6 @@ public class ProfilSayfasiFragment extends Fragment {
            takipEtButonu.setVisibility(View.VISIBLE);
            SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 
-           mViewModel.takipDurumlariniBirlestir();
 
            mViewModel.getTakipDurumuCift().observe(getViewLifecycleOwner(), pair -> {
                Boolean benTakipEdiyorum = pair.first != null && pair.first;
@@ -438,8 +437,8 @@ public class ProfilSayfasiFragment extends Fragment {
                if (durum == true) {
                    takipciSayisiTextView.setClickable(true);
                    takipEdilenSayisiTextView.setClickable(true);
-                   takipciGorme();
-                   takipleriGorme();
+                   takipciGorme(yukleyenID);
+                   takipleriGorme(yukleyenID);
                } else {
                    takipciSayisiTextView.setClickable(false);
                    takipEdilenSayisiTextView.setClickable(false);
@@ -511,6 +510,7 @@ public class ProfilSayfasiFragment extends Fragment {
                         .setPositiveButton("Evet", (dialog, which) -> {
                             mViewModel.TakipcidenCikarma(yukleyenID);
                             mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                            takipciCikarItem.setVisible(false);
                         })
                         .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
                         .show();
@@ -524,7 +524,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
 
-    public void takipciGorme(){
+    public void takipciGorme(String Id){
         takipciSayisiTextView.setOnClickListener(b->{
             myConstraintLayout.setVisibility(View.GONE);
             Activity activity = requireActivity();
@@ -536,6 +536,7 @@ public class ProfilSayfasiFragment extends Fragment {
             TakiplerFragment fragment = new TakiplerFragment();
 
             Bundle bundle = new Bundle();
+            bundle.putString("yukleyenID", Id);
             bundle.putInt("startPage", 0); // 0 = Takipçiler, 1 = Takipler (Takip Edilenler)
             fragment.setArguments(bundle);
 
@@ -548,7 +549,7 @@ public class ProfilSayfasiFragment extends Fragment {
         });
     }
 
-    public void takipleriGorme(){
+    public void takipleriGorme(String Id){
         takipEdilenSayisiTextView.setOnClickListener(t->{
             myConstraintLayout.setVisibility(View.GONE);
             Activity activity = requireActivity();
@@ -559,6 +560,7 @@ public class ProfilSayfasiFragment extends Fragment {
             TakiplerFragment fragment = new TakiplerFragment();
 
             Bundle bundle = new Bundle();
+            bundle.putString("yukleyenID", Id);
             bundle.putInt("startPage", 1); // 0 = Takipçiler, 1 = Takipler (Takip Edilenler)
             fragment.setArguments(bundle);
 
@@ -701,6 +703,7 @@ public class ProfilSayfasiFragment extends Fragment {
             });
 
       kaydetButonu.setOnClickListener(k->{
+          uyariMesaji.YuklemeDurum("Kaydediliyor");
           if (bitmap != null) {
               profilResmiImageView.setImageBitmap(bitmap);
               mViewModel.profilFotoUrlKaydetFirebaseVeCachele(photoUri,requireContext());
@@ -726,6 +729,9 @@ public class ProfilSayfasiFragment extends Fragment {
                  });
 
              }
+          }
+          if(kAdi.equals(mevcutKullaniciAdi)) {
+              uyariMesaji.BasariliDurum("Kaydedildi", 1000);
           }
           bottom.dismiss();
       });

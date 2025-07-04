@@ -78,6 +78,7 @@ public class MainViewModel extends ViewModel {
 
 
     public MainViewModel() {
+        takipDurumlariniBirlestir();
         db = FirebaseFirestore.getInstance();
     }
 
@@ -162,6 +163,7 @@ public class MainViewModel extends ViewModel {
                 takipEdilenData.put("followedAt", FieldValue.serverTimestamp());
                 takipEdilenData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // doğru
                 takipEdilenData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
+                takipEdilenData.put("ID", hedefKullaniciSnapshot.getId());
                 transaction.set(takipEdilenDocRef, takipEdilenData);
                 takipEdilenSayisi += 1;
                 takipEklendi = true;
@@ -173,6 +175,7 @@ public class MainViewModel extends ViewModel {
                 takipciData.put("followedAt", FieldValue.serverTimestamp());
                 takipciData.put("KullaniciAdi", mevcutKullaniciSnapshot.getString("KullaniciAdi"));  // ✅ düzeltildi
                 takipciData.put("profilFotoUrl", mevcutKullaniciSnapshot.getString("profilFotoUrl"));
+                takipciData.put("ID", mevcutKullaniciSnapshot.getId());
                 transaction.set(takipciDocRef, takipciData);
                 if (takipEklendi) { // Sadece takip eklenmişse takipçi sayısını artır
                     takipciSayisi += 1;
