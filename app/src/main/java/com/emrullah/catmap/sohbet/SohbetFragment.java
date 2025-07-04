@@ -34,7 +34,6 @@ public class SohbetFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.sohbetler, container, false);
-        MesajGonder("mesaj");
         sohbetler = new ArrayList<>();
         adapter = new SohbetAdapter(sohbetler, getActivity(),MesajFragment);
         kisilerRecyclerView = view.findViewById(R.id.kisilerRecyclerView);
@@ -48,7 +47,7 @@ public class SohbetFragment extends Fragment {
     }
 
 
-private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference("mesajlar");
+  /*private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference("mesajlar");
   public void MesajGonder(String mesaj){
         String mesajID = mesajlar.push().getKey();
         Map<String, Object> veri = new HashMap<>();
@@ -58,5 +57,5 @@ private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference
         veri.put("goruldu",false);
         String sohbetID = "y1l5bbCjazN5fBCaz7nv_"+MainActivity.kullanici.getID();
         mesajlar.child(sohbetID).child(mesajID).setValue(veri);
-    }
+    }*/
 }

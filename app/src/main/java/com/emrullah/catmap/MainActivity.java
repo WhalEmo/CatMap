@@ -112,10 +112,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void yuklemeSayfasi(View view){
         System.out.println("Yukleme Sayfasi gecildi");
+        CevrimIciYonetimi.getInstance().YuklemeArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, YuklemeArayuzuActivity.class);
         startActivity(intent);
     }
     public  void haritaSayfasi(View view){
+        CevrimIciYonetimi.getInstance().HaritaArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, MapsActivity.class);
         startActivity(intent);
     }
@@ -124,25 +126,29 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         System.out.println("onDestroy");
-        CevrimIciOl(false);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
     @Override
     protected void onStop() {
         super.onStop();
         System.out.println("onStop");
-        CevrimIciOl(false);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
     @Override
     protected void onPause() {
         super.onPause();
         System.out.println("onPause");
-        CevrimIciOl(false);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
     @Override
     protected void onResume() {
         super.onResume();
         System.out.println("onResum");
-        CevrimIciOl(true);
+        CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
 
     public void girisMetodu(View view){
@@ -351,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         diyalog.dismiss();
         ButonlariKaybet();
-        CevrimIciOl(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
 

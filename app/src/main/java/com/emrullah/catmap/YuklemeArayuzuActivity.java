@@ -83,6 +83,40 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+    }
+
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
     ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),

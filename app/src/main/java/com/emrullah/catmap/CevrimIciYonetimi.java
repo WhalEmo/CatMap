@@ -8,7 +8,7 @@ public class CevrimIciYonetimi {
 
     private boolean yuklemeEkraniGorunuyor = false;
     private boolean anasayfaGorunuyor = false;
-    private boolean hataEkraniGorunuyor = false;
+    private boolean haritaEkraniGorunuyor = false;
     private CevrimIciYonetimi() {
     }
     public static CevrimIciYonetimi getInstance() {
@@ -19,7 +19,7 @@ public class CevrimIciYonetimi {
     }
 
     public void CevrimIciCalistir(Kullanici kullanici){
-        if(!(yuklemeEkraniGorunuyor || anasayfaGorunuyor || hataEkraniGorunuyor)){
+        if(!(yuklemeEkraniGorunuyor || anasayfaGorunuyor || haritaEkraniGorunuyor)){
             CevrimIciOl(false,kullanici);
         }
         else {
@@ -30,17 +30,17 @@ public class CevrimIciYonetimi {
     public void YuklemeArayuzAktivitiyeGecildi(){
         this.yuklemeEkraniGorunuyor = true;
         this.anasayfaGorunuyor = false;
-        this.hataEkraniGorunuyor = false;
+        this.haritaEkraniGorunuyor = false;
     }
     public void AnasayfaArayuzAktivitiyeGecildi(){
         this.yuklemeEkraniGorunuyor = false;
         this.anasayfaGorunuyor = true;
-        this.hataEkraniGorunuyor = false;
+        this.haritaEkraniGorunuyor = false;
     }
-    public void HataArayuzAktivitiyeGecildi(){
+    public void HaritaArayuzAktivitiyeGecildi(){
         this.yuklemeEkraniGorunuyor = false;
         this.anasayfaGorunuyor = false;
-        this.hataEkraniGorunuyor = true;
+        this.haritaEkraniGorunuyor = true;
     }
 
     private void CevrimIciOl(boolean durumu, Kullanici kullanici){
@@ -63,7 +63,7 @@ public class CevrimIciYonetimi {
         this.anasayfaGorunuyor = anasayfaGorunuyor;
     }
 
-    public void setHataEkraniGorunuyor(boolean hataEkraniGorunuyor) {
-        this.hataEkraniGorunuyor = hataEkraniGorunuyor;
+    public void setHaritaEkraniGorunuyor(boolean hataEkraniGorunuyor) {
+        this.haritaEkraniGorunuyor = hataEkraniGorunuyor;
     }
 }

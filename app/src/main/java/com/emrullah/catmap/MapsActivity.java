@@ -282,6 +282,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         bittimi = false;
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
         MainActivity.kullanici.setLatitude(latitude);
         MainActivity.kullanici.setLongitude(longitude);
             if (yorumAdapter != null) {
@@ -295,6 +297,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
     }
 
     private int dpDenPx(int dp) {
