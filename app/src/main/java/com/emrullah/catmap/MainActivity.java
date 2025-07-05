@@ -398,10 +398,10 @@ public class MainActivity extends AppCompatActivity {
     public void Sohbet(View view){
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container,new SohbetFragment(()->{
+                .replace(R.id.container,new SohbetFragment(()->{
                     getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.fragment_container,new MesajFragment(this))
+                            .replace(R.id.container,new MesajFragment(this))
                             .addToBackStack(null)
                             .commit();
                 }))

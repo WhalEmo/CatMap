@@ -30,6 +30,7 @@ public class SohbetYonetici {
     private static SohbetYonetici yonetici;
     private HashMap<String,Target> FotolariCek = new HashMap<>();
     private HashMap<String, ChildEventListener> dinleyiciler = new HashMap<>();
+    private HashMap<String, Mesaj> gorulmemisMesajlar = new HashMap<>();
 
     public static SohbetYonetici getInstance(){
         if(yonetici == null){
@@ -89,21 +90,20 @@ public class SohbetYonetici {
                                 sohbet.getAlici().setFotoUrl(veri.getString("profilFotoUrl"));
                                 sohbet.getAlici().setSoyad(veri.getString("Soyad"));
                                 sohbet.getAlici().setKullaniciAdi(veri.getString("KullaniciAdi"));
-                                FotolariCek(sohbet,tamamdir);
-                                Kullanicilar.put(sohbet.getAlici().getID(),sohbet.getAlici());
                                 tamamdir.run();
+                                Kullanicilar.put(sohbet.getAlici().getID(),sohbet.getAlici());
+                                FotolariCek(sohbet,tamamdir);
                             }
                         });
             }
             SonGorulmeCevrimIci(sohbet);
             if (dinleyiciler.containsKey(sohbet.getSohbetID())){
-                tamamdir.run();
                 sohbetDB.child(sohbet.getSohbetID()).removeEventListener(dinleyiciler.get(sohbet.getSohbetID()));
             }
             ChildEventListener dinleyici = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
-                    System.out.println("bende çalıştım");
+                    System.out.println("bende çalıştım-"+snapshot.getChildrenCount());
                     String mesajID = snapshot.getKey();
                     String mesajicerik = snapshot.child("mesaj").getValue(String.class);
                     Long zaman = snapshot.child("zaman").getValue(Long.class);
@@ -111,9 +111,14 @@ public class SohbetYonetici {
                     boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
                     Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,goruldu);
                     sohbet.setMesaj(mesaj);
+                    yeniGelenGorulmemisMesajlarSayisi(sohbet);
+
                     SonMesajlar.put(sohbet.getAlici().getID(),mesaj);
+                    if(sohbet.isSohbetYuklendiMi()){
+                    //    Sirala(sohbetArrayList);
+                        tamamdir.run();
+                    }
                     System.out.println(SonMesajlar.size());
-                    tamamdir.run();
                     // Yeni mesajı listeye ekle ve ekranda göster
                 }
 
@@ -138,22 +143,26 @@ public class SohbetYonetici {
             dinleyiciler.put(sohbet.getSohbetID(),dinleyici);
             sohbetDB.child(sohbet.getSohbetID())
                     .orderByChild("zaman")
-                    .limitToLast(1)
+                    .limitToLast(20)
                     .addChildEventListener(dinleyici);
         }
     }
 
     private void FotolariCek(Sohbet sohbet, Runnable tamamdir){
         if(sohbet.getAlici().getFotoUrl() == null || sohbet.getAlici().getFotoUrl().isEmpty()){
+            tamamdir.run();
+            sohbet.setSohbetYuklendiMi(true);
             return;
         }
         if(ProfilFotolari.containsKey(sohbet.getAlici().getFotoUrl())){
             sohbet.getAlici().setFotoBitmap((Bitmap) ProfilFotolari.get(sohbet.getAlici().getFotoUrl()));
             tamamdir.run();
+            sohbet.setSohbetYuklendiMi(true);
             return;
         }
         if(sohbet.getAlici().getFotoBitmap() != null){
             ProfilFotolari.put(sohbet.getAlici().getFotoUrl(),sohbet.getAlici().getFotoBitmap());
+            sohbet.setSohbetYuklendiMi(true);
             tamamdir.run();
             return;
         }
@@ -183,6 +192,17 @@ public class SohbetYonetici {
                 });
     }
 
+    private void yeniGelenGorulmemisMesajlarSayisi(Sohbet sohbet){
+        if(sohbet.getMesaj().getGonderici().equals(sohbet.getAlici().getID())){
+            if(sohbet.getMesaj().isGoruldu()){
+                sohbet.setOkunmamisMesajSayisi(0);
+            }
+            else {
+                sohbet.setOkunmamisMesajSayisi(sohbet.getOkunmamisMesajSayisi()+1);
+            }
+        }
+    }
+
     private Target FotografTargetHaziriligi(Sohbet sohbet, Runnable tamamdir){
         Target target = new Target() {
             @Override
@@ -190,15 +210,20 @@ public class SohbetYonetici {
                 sohbet.getAlici().setFotoBitmap(bitmap);
                 ProfilFotolari.put(sohbet.getAlici().getFotoUrl(),bitmap);
                 FotolariCek.remove(sohbet.getAlici().getFotoUrl());
+                sohbet.setSohbetYuklendiMi(true);
                 tamamdir.run();
             }
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
                 sohbet.getAlici().setFotoBitmap(null);
+                sohbet.setSohbetYuklendiMi(true);
+                tamamdir.run();
             }
             @Override
             public void onPrepareLoad(Drawable placeHolderDrawable) {
                 sohbet.getAlici().setFotoBitmap(null);
+                sohbet.setSohbetYuklendiMi(true);
+                tamamdir.run();
             }
         };
         FotolariCek.put(sohbet.getAlici().getFotoUrl(),target);
@@ -215,5 +240,26 @@ public class SohbetYonetici {
 
     public void setKullanicilar(HashMap<String, Kullanici> kullanicilar) {
         Kullanicilar = kullanicilar;
+    }
+    public HashMap getKullanicilar() {
+        return Kullanicilar;
+    }
+
+    private void Sirala(ArrayList<Sohbet> sohbetler){
+        for(int i=0; i<sohbetler.size(); i++){
+            long zaman = sohbetler.get(i).getMesaj().getLongZaman();
+            Sohbet sohbet = sohbetler.get(i);
+            int ink = i;
+            for(int j=i+1; j<sohbetler.size(); j++){
+                if(zaman > sohbetler.get(j).getMesaj().getLongZaman()){
+                    zaman = sohbetler.get(j).getMesaj().getLongZaman();
+                    ink = j;
+                }
+            }
+            if(ink != i) {
+                sohbetler.set(i, sohbetler.get(ink));
+                sohbetler.set(ink, sohbet);
+            }
+        }
     }
 }

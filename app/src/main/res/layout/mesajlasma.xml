@@ -41,7 +41,7 @@
                 android:id="@+id/kisiAdiText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Kullanıcı Adı"
+                android:text=""
                 android:textColor="#13216E"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -50,7 +50,7 @@
                 android:id="@+id/kisiDurumText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Çevrimiçi"
+                android:text=""
                 android:textColor="#BF6A33"
                 android:textSize="14sp" />
         </LinearLayout>

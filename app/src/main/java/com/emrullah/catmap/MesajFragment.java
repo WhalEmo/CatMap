@@ -1,10 +1,9 @@
 package com.emrullah.catmap;
 
-import static androidx.core.content.ContentProviderCompat.requireContext;
-
+import androidx.fragment.app.Fragment;
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
+
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,13 +23,13 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.fragment.app.Fragment;
+
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.airbnb.lottie.LottieAnimationView;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.squareup.picasso.Picasso;
+import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -116,6 +115,8 @@ public class MesajFragment extends Fragment {
         });
 
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
+
+        kisiProfilFoto.setOnClickListener(v->{ ProfilSayfasinaYonlendir(); });
 
         ScrollDinleyici();
         // Burada RecyclerView kur, mesajları çek
@@ -203,6 +204,15 @@ public class MesajFragment extends Fragment {
             public void afterTextChanged(Editable editable) {
             }
         });
+    }
+
+
+    private void ProfilSayfasinaYonlendir(){
+        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.container, ProfilSayfasiFragment.newInstance(mesajlasmaYonetici.getAlici().getID()));
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
 

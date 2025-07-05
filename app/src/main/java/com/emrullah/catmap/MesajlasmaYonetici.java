@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -253,14 +254,17 @@ public class MesajlasmaYonetici {
     }
 
     public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto,TextView durum){
+        if(SohbetYonetici.getInstance().getKullanicilar().containsKey(alici.getID())){
+            alici = (Kullanici) SohbetYonetici.getInstance().getKullanicilar().get(alici.getID());
+        }
         if(alici.getKullaniciAdi()!=null){
-            if(alici.getKullaniciAdi().isEmpty()) {
+            if(!alici.getKullaniciAdi().isEmpty()) {
                 kisiAdiText.setText(alici.getKullaniciAdi());
                 if (alici.isCevrimiciMi()) {
                     durum.setText("Çevrimiçi");
                     System.out.println("çevrimiçi");
                 } else {
-                    durum.setText(alici.getSonGorulme());
+                    durum.setText("Son Görülme: "+alici.getSonGorulme());
                 }
                 if (alici.getFotoBitmap() != null) {
                     kisiProfilFoto.setImageBitmap(alici.getFotoBitmap());
