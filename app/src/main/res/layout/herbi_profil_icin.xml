@@ -40,7 +40,7 @@
             android:backgroundTint="#C8E6C9"
             android:textColor="#555555"
             android:textAllCaps="false"
-            android:text="Takip ediliyor" />
+            android:text="Takip" />
 
         <Button
             android:id="@+id/takippet"
@@ -50,7 +50,6 @@
             android:textColor="#fff"
             android:textAllCaps="false"
             android:text="Takip et" />
-
 
     </LinearLayout>
 

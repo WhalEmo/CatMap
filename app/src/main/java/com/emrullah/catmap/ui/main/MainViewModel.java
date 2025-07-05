@@ -53,9 +53,13 @@ public class MainViewModel extends ViewModel {
     public LiveData<Boolean> getBeniTakipEdiyor() {
         return _beniTakipEdiyor;
     }
-    public MutableLiveData<ArrayList<String>> _engelliler = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<ArrayList<String>>EngellilerLiveData() {
-        return _engelliler;
+    private MutableLiveData<ArrayList<String>> _benimEngellediklerim = new MutableLiveData<>();
+    private MutableLiveData<ArrayList<String>> _beniEngelleyenler = new MutableLiveData<>();
+    public LiveData<ArrayList<String>> BenimEngellediklerimLiveData() {
+        return _benimEngellediklerim;
+    }
+    public LiveData<ArrayList<String>> BeniEngelleyenlerLiveData() {
+        return _beniEngelleyenler;
     }
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
@@ -127,6 +131,13 @@ public class MainViewModel extends ViewModel {
     }
 
     public void TakipEt(String TakipEttiginId){
+        List<String> benimEngellediklerim = _benimEngellediklerim.getValue();
+        List<String> beniEngelleyenler = _beniEngelleyenler.getValue();
+
+        if ((benimEngellediklerim != null && benimEngellediklerim.contains(TakipEttiginId)) ||
+                (beniEngelleyenler != null && beniEngelleyenler.contains(MainActivity.kullanici.getID()))) {
+            return;
+        }
         DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakipEttiginId);
 
@@ -188,13 +199,14 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _takipDurumu.setValue(true);
             Log.d("Firestore", "Takip işlemi başarılı ve sayılar güncellendi");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takip işlemi başarısız", e);
         });
     }
 
-    public void takipEdiliyorMu(String bakilanId,Context context){
+    public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
                 .document(MainActivity.kullanici.getID())
                 .collection("takipEdilenler")
@@ -275,6 +287,7 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _takipDurumu.setValue(false);
             Log.d("Firestore", "Takipten çıkma işlemi başarılı ve sayılar güncellendi");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takipten çıkma işlemi başarısız", e);
@@ -329,6 +342,7 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _beniTakipEdiyor.setValue(false);
             Log.d("Firestore", "Takipçiden çıkarma işlemi başarılı");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takipçiden çıkarma işlemi başarısız", e);
@@ -427,7 +441,8 @@ public class MainViewModel extends ViewModel {
                     }
                 });
     }
-    public void engelle(String engellenecekKullaniciId,String kisiId) {
+    public void engelle(String engellenecekKullaniciId,String kisiId,UyariMesaji uyari) {
+        uyari.YuklemeDurum("Engelleniyor...");
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
 
         kullaniciRef.update("blockedUsers", FieldValue.arrayUnion(engellenecekKullaniciId))
@@ -437,11 +452,13 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                             if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                            _engelliler.setValue(engellilerListesi);
+                            _benimEngellediklerim.setValue(engellilerListesi);
                         }
                     });
+                    uyari.BasariliDurum("Engellendi",1000);
                 })
                 .addOnFailureListener(e -> {
+                    uyari.BasarisizDurum("Engellenemedi",1000);
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
@@ -452,16 +469,31 @@ public class MainViewModel extends ViewModel {
             if (documentSnapshot.exists()) {
                 ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                 if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                _engelliler.setValue(engellilerListesi);
+                _beniEngelleyenler.setValue(engellilerListesi);
             } else {
-                _engelliler.setValue(new ArrayList<>());
+                _beniEngelleyenler.setValue(new ArrayList<>());
             }
         }).addOnFailureListener(e -> {
             Log.e("EngelVerisi", "Engelli kullanıcılar yüklenemedi: " + e.getMessage());
         });
     }
+    public void benimEngellediklerimiiGetir(){
+        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
 
-    public void engelKaldir(String engellenenKullaniciId,String kisiId) {
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
+                if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
+                _benimEngellediklerim.setValue(engellilerListesi);
+            } else {
+                _benimEngellediklerim.setValue(new ArrayList<>());
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("EngelVerisi", "Engelli kullanıcılar yüklenemedi: " + e.getMessage());
+        });
+    }
+    public void engelKaldir(String engellenenKullaniciId,String kisiId,UyariMesaji uyari) {
+        uyari.YuklemeDurum("Engel kaldırılıyor...");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
@@ -472,11 +504,13 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                             if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                            _engelliler.setValue(engellilerListesi);
+                            _benimEngellediklerim.setValue(engellilerListesi);
                         }
                     });
+                    uyari.BasariliDurum("Engel kaldırıldı",1000);
                 })
                 .addOnFailureListener(e -> {
+                    uyari.BasarisizDurum("Engel kaldırılamadı",1000);
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }

@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -46,7 +47,9 @@ public class TakipcilerFragment extends Fragment {
         recyclerView=view.findViewById(R.id.recyclerViewTakipciler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter=new Kullanicilar_adapter(requireContext(),kullaniciList);
+        MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        // ViewModelProvider Android'de bir ViewModel nesnesi üretmeye ve yönetmeye yarayan bir sınıftır.
+        adapter=new Kullanicilar_adapter(requireContext(),kullaniciList,viewModel);
 
         recyclerView.setAdapter(adapter);
         // ID'yi alıyoruz
@@ -59,7 +62,7 @@ public class TakipcilerFragment extends Fragment {
         veriCekTakipciler(id);
 
         adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
-            ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId); // 👈 burada kullandık
+            ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId);
             requireActivity()
                     .getSupportFragmentManager()
                     .beginTransaction()

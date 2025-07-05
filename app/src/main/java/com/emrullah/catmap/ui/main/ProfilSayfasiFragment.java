@@ -104,7 +104,8 @@ public class ProfilSayfasiFragment extends Fragment {
     private ImageView PPmenuButton;
     private Button engelButonu;
     private LinearLayout engelLayout;
-
+    private TextView KullaniciAdiEngel;
+    private String isim;
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -210,7 +211,6 @@ public class ProfilSayfasiFragment extends Fragment {
         }
     }
 
-
     private void TakipTakipciSayilariUI() {
         if(yukleyenID.equals(MainActivity.kullanici.getID())) {
             SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
@@ -249,10 +249,12 @@ public class ProfilSayfasiFragment extends Fragment {
           SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit", MODE_PRIVATE);
           String cacheKAd = sp.getString("KullaniciAdi", null);
           kullaniciadi.setText(cacheKAd.trim());
+           isim=kullaniciadi.getText().toString();
       }else{
           mViewModel.KullaniciAdiGetirDB(yukleyenID);
           ObserveDataSınıfı.observeOnce(mViewModel.kullaniciAdi(), getViewLifecycleOwner(), isim -> {
               kullaniciadi.setText(isim);
+              isim=kullaniciadi.getText().toString();
           });
       }
 
@@ -280,6 +282,7 @@ public class ProfilSayfasiFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         engelLayout = view.findViewById(R.id.engelLayout);
         kullaniciadi= view.findViewById(R.id.KullaniciAdi);
+        KullaniciAdiEngel=view.findViewById(R.id.KullaniciAdiEngel);
         bioTextView=view.findViewById(R.id.bioTextView);
         profilResmiImageView = view.findViewById(R.id.profilFotoImageView);
         takipciSayisiTextView=view.findViewById(R.id.takipciSayisiTextView);
@@ -374,29 +377,32 @@ public class ProfilSayfasiFragment extends Fragment {
                BottomSheetAc();
            });
        }else {
-           mViewModel.EngellileriGetir(MainActivity.kullanici.getID());
-           ObserveDataSınıfı.observeOnce(mViewModel.EngellilerLiveData(), getViewLifecycleOwner(), engelliler -> {
+           mViewModel.benimEngellediklerimiiGetir();
+           ObserveDataSınıfı.observeOnce(mViewModel.BenimEngellediklerimLiveData(), getViewLifecycleOwner(), engelliler -> {
                if (engelliler.contains(yukleyenID)) {
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.GONE);
                    engelButonu.setVisibility(View.VISIBLE);
                }
            });
+
            mViewModel.EngellileriGetir(yukleyenID);
-           ObserveDataSınıfı.observeOnce(mViewModel.EngellilerLiveData(), getViewLifecycleOwner(), engelliler -> {
+           ObserveDataSınıfı.observeOnce(mViewModel.BeniEngelleyenlerLiveData(), getViewLifecycleOwner(), engelliler -> {
                if (engelliler.contains(MainActivity.kullanici.getID())) {
                    myConstraintLayout.setVisibility(View.GONE);
                    engelLayout.setVisibility(View.VISIBLE);
+                   PPmenuButton.setVisibility(View.VISIBLE);
+                   KullaniciAdiEngel.setText(isim);
                }
            });
 
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.GONE);
 
-           takipEtButonu.setVisibility(View.VISIBLE);
            SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 
-
+           mViewModel.beniTakipEdiyorMu(yukleyenID);
+           mViewModel.takipEdiliyorMu(yukleyenID);
            mViewModel.getTakipDurumuCift().observe(getViewLifecycleOwner(), pair -> {
                Boolean benTakipEdiyorum = pair.first != null && pair.first;
                Boolean oBeniTakipEdiyor = pair.second != null && pair.second;
@@ -432,7 +438,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
            HakkindaUI();
            KullaniciAdiUI();
-           mViewModel.takipEdiliyorMu(yukleyenID,requireContext());
+           mViewModel.takipEdiliyorMu(yukleyenID);
            ObserveDataSınıfı.observeOnce(mViewModel.getTakipDurumu(), getViewLifecycleOwner(), durum -> {
                if (durum == true) {
                    takipciSayisiTextView.setClickable(true);
@@ -450,77 +456,82 @@ public class ProfilSayfasiFragment extends Fragment {
        }
         return view;
     }
-   public void Engelliduzen(){
-    PPmenuButton.setOnClickListener(b->{
-        PopupMenu popupmenu = new PopupMenu(requireContext(), PPmenuButton);
-        popupmenu.getMenuInflater().inflate(R.menu.profil_uc_nokta_menu, popupmenu.getMenu());
-
-        // Açılmadan önce başlığı güncelle
-        MenuItem engelleItem = popupmenu.getMenu().findItem(R.id.profilmenu_engelle);
-        ArrayList<String> engelliler = mViewModel.EngellilerLiveData().getValue();
-        if (engelliler != null && engelliler.contains(yukleyenID)) {
-            engelleItem.setTitle("Engeli Kaldır");
-        } else {
-            engelleItem.setTitle("Engelle");
-        }
-        popupmenu.setOnMenuItemClickListener(item->{
-            int id = item.getItemId();
-            MenuItem takipciCikarItem = popupmenu.getMenu().findItem(R.id.profiltakipciCikar);
-            takipciCikarItem.setVisible(false); // başta gizle
-
+    public void Engelliduzen() {
+        PPmenuButton.setOnClickListener(b -> {
             mViewModel.beniTakipEdiyorMu(yukleyenID);
             ObserveDataSınıfı.observeOnce(mViewModel.getBeniTakipEdiyor(), getViewLifecycleOwner(), takipEdiyor -> {
-                if (takipEdiyor != null && takipEdiyor) {
-                    takipciCikarItem.setVisible(true); // sadece takip ediyorsa göster
+                PopupMenu popupmenu = new PopupMenu(requireContext(), PPmenuButton);
+                popupmenu.getMenuInflater().inflate(R.menu.profil_uc_nokta_menu, popupmenu.getMenu());
+
+                MenuItem engelleItem = popupmenu.getMenu().findItem(R.id.profilmenu_engelle);
+                ArrayList<String> engelliler = mViewModel.BenimEngellediklerimLiveData().getValue();
+                if (engelliler != null && engelliler.contains(yukleyenID)) {
+                    engelleItem.setTitle("Engeli Kaldır");
+                } else {
+                    engelleItem.setTitle("Engelle");
                 }
+
+                MenuItem takipciCikarItem = popupmenu.getMenu().findItem(R.id.profiltakipciCikar);
+                if (Boolean.TRUE.equals(takipEdiyor)) {
+                    takipciCikarItem.setVisible(true);
+                } else {
+                    takipciCikarItem.setVisible(false);
+                }
+
+                popupmenu.setOnMenuItemClickListener(item -> {
+                    int id = item.getItemId();
+                    String mevcutBaslik = item.getTitle().toString();
+
+                    if (id == R.id.profilmenu_engelle && mevcutBaslik.equals("Engelle")) {
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle(kullaniciadi.getText().toString())
+                                .setMessage("Bu kullanıcıyı engellemek istiyor musunuz?")
+                                .setPositiveButton("Evet", (dialog, which) -> {
+                                    mViewModel.engelle(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
+                                    mViewModel.TakiptenCikarma(yukleyenID);
+                                    mViewModel.TakipcidenCikarma(yukleyenID);
+                                    mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                                    String text = takipciSayisiTextView.getText().toString().trim();
+                                    int takipci = Integer.parseInt(text) - 1;
+                                    takipciSayisiTextView.setText(String.valueOf(takipci));
+                                    item.setTitle("Engeli Kaldır");
+                                    popupmenu.dismiss();
+                                })
+                                .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                .show();
+                        return true;
+                    } else if (id == R.id.profilmenu_engelle && mevcutBaslik.equals("Engeli Kaldır")) {
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle(kullaniciadi.getText().toString())
+                                .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
+                                .setPositiveButton("Evet", (dialog, which) -> {
+                                    mViewModel.engelKaldir(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
+                                    item.setTitle("Engelle");
+                                    popupmenu.dismiss();
+                                })
+                                .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                .show();
+                        return true;
+                    } else if (id == R.id.profiltakipciCikar) {
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle(kullaniciadi.getText().toString())
+                                .setMessage("Bu takipçiyi çıkarmak istiyor musunuz?")
+                                .setPositiveButton("Evet", (dialog, which) -> {
+                                    mViewModel.TakipcidenCikarma(yukleyenID);
+                                    mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                                    popupmenu.dismiss();
+                                })
+                                .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                .show();
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                popupmenu.show();
             });
-            String mevcutBaslik = item.getTitle().toString();
-            if (id == R.id.profilmenu_engelle&&mevcutBaslik.equals("Engelle")) {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(kullaniciadi.getText().toString())
-                        .setMessage("Bu kullanıcıyı engellemek istiyor musunuz?")
-                        .setPositiveButton("Evet", (dialog, which) -> {
-                            mViewModel.engelle(yukleyenID,MainActivity.kullanici.getID());
-                            mViewModel.TakiptenCikarma(yukleyenID);
-                            mViewModel.TakipcidenCikarma(yukleyenID);
-                            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
-                            item.setTitle("Engeli Kaldır");
-
-                        })
-                        .setNegativeButton("Hayır", (dialog, which) -> {
-                            dialog.dismiss();
-                        })
-                        .show();
-                return true;
-            } else if (id == R.id.profilmenu_engelle&&mevcutBaslik.equals("Engeli Kaldır")) {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(kullaniciadi.getText().toString())
-                        .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
-                        .setPositiveButton("Evet", (dialog, which) -> {
-                            mViewModel.engelKaldir(yukleyenID,MainActivity.kullanici.getID());
-                            item.setTitle("Engelle"); // veya "Engelle"
-                        })
-                        .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return true;
-            }else if (id == R.id.profiltakipciCikar) {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(kullaniciadi.getText().toString())
-                        .setMessage("Bu takipçiyi çıkarmak istiyor musunuz?")
-                        .setPositiveButton("Evet", (dialog, which) -> {
-                            mViewModel.TakipcidenCikarma(yukleyenID);
-                            mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
-                            takipciCikarItem.setVisible(false);
-                        })
-                        .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return true;
-            }
-
-            return false;
         });
-        popupmenu.show();
-    });
     }
 
 
@@ -579,10 +590,12 @@ public class ProfilSayfasiFragment extends Fragment {
                     .setTitle(kullaniciadi.getText().toString())
                     .setMessage("Bu kullanıcıyı takip etmek istiyor musunuz?")
                     .setPositiveButton("Evet", (dialog, which) -> {
-                        takipEdiliyorButonu.setVisibility(View.VISIBLE);
-                        takipEtButonu.setVisibility(View.GONE);
                         mViewModel.TakipEt(yukleyenID);
+                        mViewModel.beniTakipEdiyorMu(yukleyenID);
                         mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                        String text = takipEdilenSayisiTextView.getText().toString().trim();
+                        int takip_edilen = Integer.parseInt(text) + 1;
+                        takipEdilenSayisiTextView.setText(String.valueOf(takip_edilen));
                     })
                     .setNegativeButton("Hayır", (dialog, which) -> {
                         dialog.dismiss();
@@ -598,10 +611,12 @@ public class ProfilSayfasiFragment extends Fragment {
                    .setMessage("Bu kullanıcıyı takip etmeyi bırakmak istiyor musunuz?")
                    .setPositiveButton("Evet", (dialog, which) -> {
                        // Onaylandıysa:
-                       takipEdiliyorButonu.setVisibility(View.GONE);
-                       takipEtButonu.setVisibility(View.VISIBLE);
                        mViewModel.TakiptenCikarma(yukleyenID);
+                       mViewModel.takipEdiliyorMu(yukleyenID);
                        mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                       String text = takipEdilenSayisiTextView.getText().toString().trim();
+                       int takip_edilen = Integer.parseInt(text) - 1;
+                       takipEdilenSayisiTextView.setText(String.valueOf(takip_edilen));
                    })
                    .setNegativeButton("Hayır", (dialog, which) -> {
                        dialog.dismiss();

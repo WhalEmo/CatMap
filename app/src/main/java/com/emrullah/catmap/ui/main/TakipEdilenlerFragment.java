@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import androidx.lifecycle.ViewModelProvider;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -42,7 +43,9 @@ public class TakipEdilenlerFragment extends Fragment {
         recyclerView=view.findViewById(R.id.recyclerViewTakipedilenler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter=new Kullanicilar_adapter(requireContext(),kullaniciList);
+        MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        // ViewModelProvider Android'de bir ViewModel nesnesi üretmeye ve yönetmeye yarayan bir sınıftır.
+        adapter=new Kullanicilar_adapter(requireContext(),kullaniciList,viewModel);
 
         recyclerView.setAdapter(adapter);
         // ID'yi alıyoruz
@@ -64,6 +67,7 @@ public class TakipEdilenlerFragment extends Fragment {
                     .commit();
 
         });
+
 
         return view;
     }

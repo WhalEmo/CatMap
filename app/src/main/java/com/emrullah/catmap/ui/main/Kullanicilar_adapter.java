@@ -26,10 +26,12 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
     private Context context;
     private List<Kullanici> kullaniciList;
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
+    private MainViewModel viewModel;
 
-    public Kullanicilar_adapter(Context context, List<Kullanici> kullaniciList) {
+    public Kullanicilar_adapter(Context context, List<Kullanici> kullaniciList,MainViewModel viewModel) {
         this.context = context;
         this.kullaniciList = kullaniciList;
+        this.viewModel=viewModel;
     }
 
     public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
@@ -68,22 +70,30 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
                 .into(holder.recyclerFotoImageView);
-        if(kullanici.getTakipEdiliyorMu()==true){
+        if(kullanici.getTakipEdiliyorMu()==true&&kullanici.getTakipciMi()==true||kullanici.getTakipciMi()==false){
             holder.takipediyosa.setVisibility(View.VISIBLE);//takip ediliyor
             holder.takippet.setVisibility(View.GONE);//takip et
         }else if(kullanici.getTakipciMi()==true&&kullanici.getTakipEdiliyorMu()==false){
             holder.takipediyosa.setVisibility(View.GONE);
+            holder.takippet.setText("Sende takip et");
             holder.takippet.setVisibility(View.VISIBLE);
         }
-
-       holder.RecyclerkullaniciAdi.setOnClickListener(t->{
+        holder.RecyclerkullaniciAdi.setOnClickListener(t->{
                if (kullaniciAdiTiklamaListener != null) {
                    kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(kullanici.getID());
                }
        });
+        holder.takippet.setOnClickListener(t->{
+            kullanici.setTakipEdiliyorMu(true);
+            viewModel.TakipEt(kullanici.getID());
+            notifyItemChanged(position);
+        });
+        holder.takipediyosa.setOnClickListener(b->{
+            kullanici.setTakipEdiliyorMu(false);
+            viewModel.TakiptenCikarma(kullanici.getID());
+            notifyItemChanged(position);
+        });
     }
-
-
     @Override
     public int getItemCount() {
         return kullaniciList.size();
