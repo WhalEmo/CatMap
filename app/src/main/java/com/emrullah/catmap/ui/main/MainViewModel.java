@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Adapter;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
@@ -63,6 +64,8 @@ public class MainViewModel extends ViewModel {
     }
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
+    private MutableLiveData<ArrayList<Gonderi>> _kediIdGonderilist = new MutableLiveData<>();
+    public LiveData<ArrayList<Gonderi>>kediGonderi(){return _kediIdGonderilist;}
 
     private MediatorLiveData<Pair<Boolean, Boolean>> takipDurumuCift = new MediatorLiveData<>();
 
@@ -514,5 +517,45 @@ public class MainViewModel extends ViewModel {
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
+    public void GonderiCekme(String id, UyariMesaji uyari) {
+        uyari.YuklemeDurum("Yükleniyor...");
+        DocumentReference kullaniciRef = db.collection("users").document(id);
+
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<String> liste = (ArrayList<String>) documentSnapshot.get("GonderilenKediler");
+                if (liste == null) liste = new ArrayList<>();
+
+                ArrayList<Gonderi>gonderiListesi=new ArrayList<Gonderi>();
+
+                for (String kediID : liste) {
+                    db.collection("cats")
+                            .document(kediID)
+                            .get()
+                            .addOnSuccessListener(doc -> {
+                                if (doc.exists()) {
+                                    ArrayList<String> fotoList = (ArrayList<String>) doc.get("photoUri");
+                                    String aciklama = doc.getString("kediHakkinda");
+                                    String kediadi=doc.getString("kediAdi");
+                                    if (fotoList != null && !fotoList.isEmpty()) {
+                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi));
+                                    }
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("KediGetirme", "Hata: " + e.getMessage());
+                            });
+                }
+                 uyari.BasariliDurum("Yüklendi",1000);
+                _kediIdGonderilist.setValue(gonderiListesi);
+            } else {
+                uyari.BasarisizDurum("Kullanıcı bulunamadı", 1000);
+            }
+        }).addOnFailureListener(e -> {
+            uyari.BasarisizDurum("Gonderiler alınamadı", 1000);
+            Log.e("Firestore", "Hata: " + e.getMessage());
+        });
+    }
+
 
 }

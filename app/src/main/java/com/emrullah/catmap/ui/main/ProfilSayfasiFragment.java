@@ -79,6 +79,9 @@ import java.util.Locale;
 
 import android.content.pm.PackageManager;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 
 public class ProfilSayfasiFragment extends Fragment {
@@ -106,6 +109,9 @@ public class ProfilSayfasiFragment extends Fragment {
     private LinearLayout engelLayout;
     private TextView KullaniciAdiEngel;
     private String isim;
+    private RecyclerView gonderiRecyclerView;
+    private GonderiAdapter gonderiAdapter;
+    private TextView emptyTextView;
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -290,6 +296,7 @@ public class ProfilSayfasiFragment extends Fragment {
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
+        emptyTextView=view.findViewById(R.id.emptyTextView);
 
         sohbetButon = view.findViewById(R.id.sohbetButon); /// -> aşkım bunu ben ekledim sohbeti açan buton
 
@@ -297,6 +304,10 @@ public class ProfilSayfasiFragment extends Fragment {
         myConstraintLayout=view.findViewById(R.id.myConstraintLayout);
         PPmenuButton=view.findViewById(R.id.PPmenuButton);
         engelButonu=view.findViewById(R.id.engelButonu);
+
+
+        gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
+        gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
 
         uyariMesaji=new UyariMesaji(requireContext(),true);
 
@@ -373,6 +384,23 @@ public class ProfilSayfasiFragment extends Fragment {
            takipciGorme(MainActivity.kullanici.getID());
            takipleriGorme(MainActivity.kullanici.getID());
 
+           mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji);
+           ObserveDataSınıfı.observeOnce(mViewModel.kediGonderi(), getViewLifecycleOwner(), gonderilist -> {
+               if (gonderilist == null || gonderilist.isEmpty()) {
+                   emptyTextView.setVisibility(View.VISIBLE);
+                   gonderiRecyclerView.setVisibility(View.GONE);
+               } else {
+                   emptyTextView.setVisibility(View.GONE);
+                   gonderiRecyclerView.setVisibility(View.VISIBLE);
+                   if (gonderiAdapter == null) {
+                       gonderiAdapter = new GonderiAdapter(gonderilist);
+                       gonderiRecyclerView.setAdapter(gonderiAdapter);
+                   } else {
+                       gonderiAdapter.guncelleList(gonderilist); // adapter içinde bir metot olmalı
+                   }
+               }
+           });
+
            profiliDuzenleTiklandi.setOnClickListener(p -> {
                BottomSheetAc();
            });
@@ -410,6 +438,18 @@ public class ProfilSayfasiFragment extends Fragment {
                if (benTakipEdiyorum) {
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.VISIBLE);
+                   mViewModel.GonderiCekme(yukleyenID,uyariMesaji);
+                   ObserveDataSınıfı.observeOnce(mViewModel.kediGonderi(), getViewLifecycleOwner(), gonderilist -> {
+                       if (gonderilist == null || gonderilist.isEmpty()) {
+                           emptyTextView.setVisibility(View.VISIBLE);
+                           gonderiRecyclerView.setVisibility(View.GONE);
+                       } else {
+                           emptyTextView.setVisibility(View.GONE);
+                           gonderiRecyclerView.setVisibility(View.VISIBLE);
+                           gonderiAdapter = new GonderiAdapter(gonderilist);
+                           gonderiRecyclerView.setAdapter(gonderiAdapter);
+                       }
+                   });
                } else {
                    takipEdiliyorButonu.setVisibility(View.GONE);
                    takipEtButonu.setVisibility(View.VISIBLE);
