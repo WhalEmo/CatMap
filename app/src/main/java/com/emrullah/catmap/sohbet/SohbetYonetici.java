@@ -105,6 +105,7 @@ public class SohbetYonetici {
                 public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
                     System.out.println("bende çalıştım-"+snapshot.getChildrenCount());
                     String mesajID = snapshot.getKey();
+                    if(mesajID.equals("yaziyorMu")) return;
                     String mesajicerik = snapshot.child("mesaj").getValue(String.class);
                     Long zaman = snapshot.child("zaman").getValue(Long.class);
                     String gonderen = snapshot.child("gonderen").getValue(String.class);
@@ -115,7 +116,7 @@ public class SohbetYonetici {
 
                     SonMesajlar.put(sohbet.getAlici().getID(),mesaj);
                     if(sohbet.isSohbetYuklendiMi()){
-                    //    Sirala(sohbetArrayList);
+                        Sirala(sohbetArrayList);
                         tamamdir.run();
                     }
                     System.out.println(SonMesajlar.size());
@@ -251,7 +252,7 @@ public class SohbetYonetici {
             Sohbet sohbet = sohbetler.get(i);
             int ink = i;
             for(int j=i+1; j<sohbetler.size(); j++){
-                if(zaman > sohbetler.get(j).getMesaj().getLongZaman()){
+                if(zaman < sohbetler.get(j).getMesaj().getLongZaman()){
                     zaman = sohbetler.get(j).getMesaj().getLongZaman();
                     ink = j;
                 }

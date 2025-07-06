@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mesajSecenekMenu"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/secenek_menu_background"
+    android:padding="6dp"
+    android:elevation="4dp">
+
+    <ImageButton
+        android:id="@+id/btnMesajGuncelle"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_button_circular"
+        android:src="@drawable/ic_edit"
+        android:contentDescription="Mesajı Güncelle" />
+
+    <View
+        android:layout_width="8dp"
+        android:layout_height="0dp" />
+
+    <ImageButton
+        android:id="@+id/btnMesajSil"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_button_circular"
+        android:src="@drawable/ic_delete"
+        android:contentDescription="Mesajı Sil" />
+</LinearLayout>

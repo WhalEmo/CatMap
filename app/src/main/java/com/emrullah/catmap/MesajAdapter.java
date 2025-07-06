@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,6 +20,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
     private ArrayList<Mesaj> mesajArrayList;
     private Context context;
+    private PopupWindow popupWindow;
+    private ImageButton btnMesajGuncelle;
+    private ImageButton btnMesajSil;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -27,6 +31,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     public MesajAdapter(ArrayList<Mesaj> mesajArrayList, Context context) {
         this.mesajArrayList = mesajArrayList;
         this.context = context;
+        MesajSecenkMenu();
     }
 
     @NonNull
@@ -57,11 +62,46 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             holder.solMesajText.setText(mesaj.getMesaj().trim());
             holder.solZaman.setText(mesaj.getZaman());
         }
+        holder.sagMesajLayout.setOnLongClickListener(v -> {
+            SilmeGuncellemeGoster(v);
+            Sil(mesaj);
+            return true;
+        });
     }
 
     @Override
     public int getItemCount() {
         return mesajArrayList.size();
+    }
+
+    private void SilmeGuncellemeGoster(View item){
+        popupWindow.showAsDropDown(item, -50, -item.getHeight() - 20);
+    }
+
+    private void MesajSecenkMenu(){
+        View secenekMenu = LayoutInflater.from(context)
+                .inflate(R.layout.mesaj_secenek_menu,null);
+        btnMesajGuncelle = secenekMenu.findViewById(R.id.btnMesajGuncelle);
+        btnMesajSil = secenekMenu.findViewById(R.id.btnMesajSil);
+        popupWindow = new PopupWindow(
+                secenekMenu,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                true
+        );
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setElevation(10);
+    }
+    public void Guncelle(){
+
+        notifyDataSetChanged();
+    }
+    public void Sil(Mesaj mesaj){
+        btnMesajSil.setOnClickListener(v ->{
+        MesajlasmaYonetici.getInstance().MesajSil(mesaj.getMesajID());
+        mesajArrayList.remove(mesaj);
+        notifyDataSetChanged();
+    });
     }
 
     public static class MesajViewHolder extends RecyclerView.ViewHolder{

@@ -205,7 +205,7 @@ public class MesajlasmaYonetici {
 
         mesajlar.child(sohbetID)
                 .orderByChild("zaman")
-                .limitToLast(1)
+                .limitToLast(20)
                 .addChildEventListener(dinleyici);
     }
 
@@ -369,6 +369,13 @@ public class MesajlasmaYonetici {
                     mesaj.setGoruldu(true);
                     adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
                 });
+    }
+
+    public void MesajSil(String MesajID){
+        mesajlar.child(sohbetID).child(MesajID).removeValue();
+    }
+    public void MesajGuncelle(String mesajID, String yeniMesaj){
+        mesajlar.child(sohbetID).child(mesajID).child("mesaj").setValue(yeniMesaj);
     }
 
 
