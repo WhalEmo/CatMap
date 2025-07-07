@@ -9,12 +9,10 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.app.Activity;
@@ -27,14 +25,12 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -51,11 +47,10 @@ import android.widget.TextView;
 
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
-import com.emrullah.catmap.MesajFragment;
-import com.emrullah.catmap.MesajlasmaYonetici;
+import com.emrullah.catmap.mesaj.MesajFragment;
+import com.emrullah.catmap.mesaj.MesajlasmaYonetici;
 
 import com.emrullah.catmap.BottomSheetController;
-import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.MapsActivity;
 import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
@@ -65,20 +60,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import android.Manifest;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-
-import android.content.pm.PackageManager;
-import androidx.core.content.ContextCompat;
 
 
 public class ProfilSayfasiFragment extends Fragment {

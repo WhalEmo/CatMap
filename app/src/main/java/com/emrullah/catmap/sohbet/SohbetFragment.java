@@ -8,17 +8,10 @@ import android.view.ViewGroup;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.emrullah.catmap.MainActivity;
-import com.emrullah.catmap.Mesaj;
-import com.emrullah.catmap.MesajAdapter;
 import com.emrullah.catmap.R;
 import com.facebook.shimmer.ShimmerFrameLayout;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SohbetFragment extends Fragment {
 

@@ -1,4 +1,4 @@
-package com.emrullah.catmap;
+package com.emrullah.catmap.mesaj;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -10,6 +10,7 @@ public class Mesaj {
     private long zaman;
     private String mesajID;
     private boolean goruldu;
+    private boolean siliniyorMu = false;
 
     public Mesaj(String gonderici, String mesaj, long zaman, String mesajID, boolean goruldu) {
         this.gonderici = gonderici;
@@ -19,6 +20,9 @@ public class Mesaj {
         this.goruldu = goruldu;
     }
     public Mesaj() {
+    }
+    public void setSiliniyorMu(boolean siliniyorMu) {
+        this.siliniyorMu = siliniyorMu;
     }
 
     public String getGonderici() {

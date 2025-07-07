@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
 
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
-import com.emrullah.catmap.Mesaj;
+import com.emrullah.catmap.mesaj.Mesaj;
 import com.emrullah.catmap.R;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -98,7 +98,7 @@ public class SohbetYonetici {
             }
             SonGorulmeCevrimIci(sohbet);
             if (dinleyiciler.containsKey(sohbet.getSohbetID())){
-                sohbetDB.child(sohbet.getSohbetID()).removeEventListener(dinleyiciler.get(sohbet.getSohbetID()));
+                sohbetDB.child(sohbet.getSohbetID()).child("anaMesaj").removeEventListener(dinleyiciler.get(sohbet.getSohbetID()));
             }
             ChildEventListener dinleyici = new ChildEventListener() {
                 @Override
@@ -143,6 +143,7 @@ public class SohbetYonetici {
             };
             dinleyiciler.put(sohbet.getSohbetID(),dinleyici);
             sohbetDB.child(sohbet.getSohbetID())
+                    .child("anaMesaj")
                     .orderByChild("zaman")
                     .limitToLast(20)
                     .addChildEventListener(dinleyici);
@@ -260,6 +261,14 @@ public class SohbetYonetici {
             if(ink != i) {
                 sohbetler.set(i, sohbetler.get(ink));
                 sohbetler.set(ink, sohbet);
+            }
+        }
+    }
+    public void DinleyicileriKaldir(ArrayList<Sohbet> sohbetArrayList){
+        for(Sohbet sohbet: sohbetArrayList){
+            if(dinleyiciler.containsKey(sohbet.getSohbetID())) {
+                sohbetDB.child(sohbet.getSohbetID()).child("anaMesaj").removeEventListener(dinleyiciler.get(sohbet.getSohbetID()));
+                dinleyiciler.remove(sohbet.getSohbetID());
             }
         }
     }

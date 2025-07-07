@@ -1,4 +1,4 @@
-package com.emrullah.catmap;
+package com.emrullah.catmap.mesaj;
 
 import androidx.fragment.app.Fragment;
 import android.content.Context;
@@ -29,6 +29,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.emrullah.catmap.R;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 
 import java.util.ArrayList;
@@ -108,6 +109,8 @@ public class MesajFragment extends Fragment {
                 mesajlasmaYonetici.MesajlariDinle(adapter,()->{
                     mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
                 });
+                mesajlasmaYonetici.SilDinleyici(adapter);
+                mesajlasmaYonetici.GuncelleDinleyici(adapter);
             });
             YaziyorMuCalistir();
             mesajlasmaYonetici.YaziyorDinleyici(kisiDurumText);

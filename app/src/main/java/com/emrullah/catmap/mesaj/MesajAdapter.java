@@ -1,4 +1,4 @@
-package com.emrullah.catmap;
+package com.emrullah.catmap.mesaj;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -13,6 +13,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.R;
+
 import java.util.ArrayList;
 
 public class
@@ -23,6 +26,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private PopupWindow popupWindow;
     private ImageButton btnMesajGuncelle;
     private ImageButton btnMesajSil;
+    private MesajDuzenlePopup mesajDuzenlePopup;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -31,6 +35,8 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     public MesajAdapter(ArrayList<Mesaj> mesajArrayList, Context context) {
         this.mesajArrayList = mesajArrayList;
         this.context = context;
+        mesajDuzenlePopup = new MesajDuzenlePopup();
+        mesajDuzenlePopup.Olustur(context);
         MesajSecenkMenu();
     }
 
@@ -65,6 +71,8 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         holder.sagMesajLayout.setOnLongClickListener(v -> {
             SilmeGuncellemeGoster(v);
             Sil(mesaj);
+            Guncelle(mesaj,v);
+
             return true;
         });
     }
@@ -92,15 +100,17 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         popupWindow.setOutsideTouchable(true);
         popupWindow.setElevation(10);
     }
-    public void Guncelle(){
-
-        notifyDataSetChanged();
+    public void Guncelle(Mesaj mesaj, View item){
+        btnMesajGuncelle.setOnClickListener(v ->{
+            popupWindow.dismiss();
+            mesajDuzenlePopup.Goster(item,mesaj); // --> mesajlasma yoneticisi bu nesnenin içinde işlemler yapıyor
+            notifyItemChanged(mesajArrayList.indexOf(mesaj));
+        });
     }
     public void Sil(Mesaj mesaj){
         btnMesajSil.setOnClickListener(v ->{
-        MesajlasmaYonetici.getInstance().MesajSil(mesaj.getMesajID());
-        mesajArrayList.remove(mesaj);
-        notifyDataSetChanged();
+            MesajlasmaYonetici.getInstance().MesajSil(mesaj.getMesajID());
+            popupWindow.dismiss();
     });
     }
 

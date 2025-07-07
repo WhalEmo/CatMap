@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.emrullah.catmap.MesajlasmaYonetici;
+import com.emrullah.catmap.mesaj.MesajlasmaYonetici;
 import com.emrullah.catmap.R;
 
 import java.util.ArrayList;
@@ -55,6 +55,7 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
             MesajlasmaYonetici.getInstance().setAlici(sohbet.getAlici());
             MesajlasmaYonetici.getInstance().setSohbetID(sohbet.getSohbetID());
             MesajlasmaYonetici.getInstance().DinleyiciKaldir();
+            SohbetYonetici.getInstance().DinleyicileriKaldir(sohbetArrayList);
             this.MesajFragment.run();
         });
 

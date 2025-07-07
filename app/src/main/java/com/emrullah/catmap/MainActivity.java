@@ -20,6 +20,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.emrullah.catmap.mesaj.MesajFragment;
 import com.emrullah.catmap.sohbet.SohbetFragment;
 import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;

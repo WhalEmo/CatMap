@@ -1,7 +1,7 @@
 package com.emrullah.catmap.sohbet;
 
 import com.emrullah.catmap.Kullanici;
-import com.emrullah.catmap.Mesaj;
+import com.emrullah.catmap.mesaj.Mesaj;
 
 public class Sohbet {
     private String SohbetID;
