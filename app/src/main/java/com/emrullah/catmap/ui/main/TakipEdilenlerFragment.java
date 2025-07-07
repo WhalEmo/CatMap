@@ -44,7 +44,6 @@ public class TakipEdilenlerFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-        // ViewModelProvider Android'de bir ViewModel nesnesi üretmeye ve yönetmeye yarayan bir sınıftır.
         adapter=new Kullanicilar_adapter(requireContext(),kullaniciList,viewModel);
 
         recyclerView.setAdapter(adapter);

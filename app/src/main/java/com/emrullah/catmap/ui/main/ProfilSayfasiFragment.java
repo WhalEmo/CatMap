@@ -60,6 +60,7 @@ import com.emrullah.catmap.MapsActivity;
 import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.UyariMesaji;
+import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.squareup.picasso.Callback;
@@ -112,6 +113,10 @@ public class ProfilSayfasiFragment extends Fragment {
     private RecyclerView gonderiRecyclerView;
     private GonderiAdapter gonderiAdapter;
     private TextView emptyTextView;
+    private boolean takiptenDonuldu = false;
+    private ShimmerFrameLayout shimmerLayout;
+    private boolean gonderiAdapterGerigitti = false;
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -278,7 +283,7 @@ public class ProfilSayfasiFragment extends Fragment {
         if (getArguments() != null) {
             yukleyenID = getArguments().getString("yukleyenID");
         }
-        mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     }
 
     @Nullable
@@ -305,20 +310,26 @@ public class ProfilSayfasiFragment extends Fragment {
         PPmenuButton=view.findViewById(R.id.PPmenuButton);
         engelButonu=view.findViewById(R.id.engelButonu);
 
+        shimmerLayout = view.findViewById(R.id.shimmer_layout);
+
+        myConstraintLayout.setVisibility(View.GONE);
+        shimmerLayout.setVisibility(View.VISIBLE);
+        shimmerLayout.startShimmer();
 
         gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
         gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
 
         uyariMesaji=new UyariMesaji(requireContext(),true);
-
-        if (requireActivity() instanceof MapsActivity) {
+        if (!gonderiAdapterGerigitti&&!takiptenDonuldu &&requireActivity() instanceof MapsActivity) {
             requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
                 @Override
                 public void handleOnBackPressed() {
                     myConstraintLayout.setVisibility(View.VISIBLE);
-                    if (requireActivity() instanceof BottomSheetController) {
+                    if (!takiptenDonuldu&&requireActivity() instanceof BottomSheetController) {
                         ((BottomSheetController) requireActivity()).showBottomSheet();
                     }
+                    takiptenDonuldu = false;
+                    gonderiAdapterGerigitti = false;
                     getParentFragmentManager().popBackStack();
                 }
             });
@@ -385,7 +396,7 @@ public class ProfilSayfasiFragment extends Fragment {
            takipleriGorme(MainActivity.kullanici.getID());
 
            mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji);
-           ObserveDataSınıfı.observeOnce(mViewModel.kediGonderi(), getViewLifecycleOwner(), gonderilist -> {
+           mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
                if (gonderilist == null || gonderilist.isEmpty()) {
                    emptyTextView.setVisibility(View.VISIBLE);
                    gonderiRecyclerView.setVisibility(View.GONE);
@@ -393,11 +404,19 @@ public class ProfilSayfasiFragment extends Fragment {
                    emptyTextView.setVisibility(View.GONE);
                    gonderiRecyclerView.setVisibility(View.VISIBLE);
                    if (gonderiAdapter == null) {
-                       gonderiAdapter = new GonderiAdapter(gonderilist);
+                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager());
+                       gonderiAdapterGerigitti = gonderiAdapter.gerigitti;
                        gonderiRecyclerView.setAdapter(gonderiAdapter);
                    } else {
-                       gonderiAdapter.guncelleList(gonderilist); // adapter içinde bir metot olmalı
+                       gonderiRecyclerView.setAdapter(gonderiAdapter);
+                       gonderiAdapter.guncelleList(gonderilist);
+                       gonderiAdapterGerigitti = gonderiAdapter.gerigitti;
                    }
+               }
+               if (shimmerLayout.getVisibility() == View.VISIBLE) {
+                   shimmerLayout.stopShimmer();
+                   shimmerLayout.setVisibility(View.GONE);
+                   myConstraintLayout.setVisibility(View.VISIBLE);
                }
            });
 
@@ -436,29 +455,36 @@ public class ProfilSayfasiFragment extends Fragment {
                Boolean oBeniTakipEdiyor = pair.second != null && pair.second;
 
                if (benTakipEdiyorum) {
+                   sohbetButon.setVisibility(View.VISIBLE);
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.VISIBLE);
                    mViewModel.GonderiCekme(yukleyenID,uyariMesaji);
-                   ObserveDataSınıfı.observeOnce(mViewModel.kediGonderi(), getViewLifecycleOwner(), gonderilist -> {
+                   mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
                        if (gonderilist == null || gonderilist.isEmpty()) {
                            emptyTextView.setVisibility(View.VISIBLE);
                            gonderiRecyclerView.setVisibility(View.GONE);
                        } else {
                            emptyTextView.setVisibility(View.GONE);
                            gonderiRecyclerView.setVisibility(View.VISIBLE);
-                           gonderiAdapter = new GonderiAdapter(gonderilist);
+                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager());
                            gonderiRecyclerView.setAdapter(gonderiAdapter);
                        }
                    });
                } else {
                    takipEdiliyorButonu.setVisibility(View.GONE);
                    takipEtButonu.setVisibility(View.VISIBLE);
+                   sohbetButon.setVisibility(View.GONE);
 
                    if (oBeniTakipEdiyor) {
-                       takipEtButonu.setText("Sen de takip et");
+                       takipEtButonu.setText("Sende takip et");
                    } else {
                        takipEtButonu.setText("Takip Et");
                    }
+               }
+               if (shimmerLayout.getVisibility() == View.VISIBLE) {
+                   shimmerLayout.stopShimmer();
+                   shimmerLayout.setVisibility(View.GONE);
+                   myConstraintLayout.setVisibility(View.VISIBLE);
                }
            });
 
@@ -564,7 +590,9 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
                                 .show();
                         return true;
-                    }
+                    }else if(id==R.id.mesajGonder){}
+
+                    //BURADA YAPCAKSIN AŞKIMMMMM
 
                     return false;
                 });
@@ -575,52 +603,68 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
 
-    public void takipciGorme(String Id){
-        takipciSayisiTextView.setOnClickListener(b->{
+    public void takipciGorme(String Id) {
+        takipciSayisiTextView.setOnClickListener(b -> {
+            takiptenDonuldu=true;
             myConstraintLayout.setVisibility(View.GONE);
-            Activity activity = requireActivity();
-            if (activity instanceof BottomSheetController) {
-                BottomSheetController controller = (BottomSheetController) activity;
-                controller.hideBottomSheet();
+
+            if (requireActivity() instanceof BottomSheetController) {
+                ((BottomSheetController) requireActivity()).hideBottomSheet();
             }
 
-            TakiplerFragment fragment = new TakiplerFragment();
+            FragmentManager fm = getParentFragmentManager();
+            FragmentTransaction transaction = fm.beginTransaction();
 
+            // Eski fragmenti gizle
+            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            if (mevcutFragment != null) {
+                transaction.hide(mevcutFragment);
+            }
+
+            // Yeni fragment oluştur
+            TakiplerFragment fragment = new TakiplerFragment();
             Bundle bundle = new Bundle();
             bundle.putString("yukleyenID", Id);
-            bundle.putInt("startPage", 0); // 0 = Takipçiler, 1 = Takipler (Takip Edilenler)
+            bundle.putInt("startPage", 0); // 0 = Takipçiler
             fragment.setArguments(bundle);
 
-            getParentFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
+            transaction
+                    .replace(R.id.container, fragment) // replace = hide+remove+add
+                    .addToBackStack(null) // geri tuşu için back stack'e ekle
                     .commit();
-
         });
     }
 
-    public void takipleriGorme(String Id){
-        takipEdilenSayisiTextView.setOnClickListener(t->{
+    public void takipleriGorme(String Id) {
+        takipEdilenSayisiTextView.setOnClickListener(t -> {
+            takiptenDonuldu=true;
             myConstraintLayout.setVisibility(View.GONE);
-            Activity activity = requireActivity();
-            if (activity instanceof BottomSheetController) {
-                BottomSheetController controller = (BottomSheetController) activity;
-                controller.hideBottomSheet();
-            }
-            TakiplerFragment fragment = new TakiplerFragment();
 
+            if (requireActivity() instanceof BottomSheetController) {
+                ((BottomSheetController) requireActivity()).hideBottomSheet();
+            }
+
+            FragmentManager fm = getParentFragmentManager();
+            FragmentTransaction transaction = fm.beginTransaction();
+
+            // Mevcut fragmenti gizle (örneğin ProfilSayfasiFragment)
+            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            if (mevcutFragment != null) {
+                transaction.hide(mevcutFragment);
+            }
+
+            // Yeni fragment oluşturuluyor
+            TakiplerFragment fragment = new TakiplerFragment();
             Bundle bundle = new Bundle();
             bundle.putString("yukleyenID", Id);
-            bundle.putInt("startPage", 1); // 0 = Takipçiler, 1 = Takipler (Takip Edilenler)
+            bundle.putInt("startPage", 1); // 1 = Takipler (Takip edilenler)
             fragment.setArguments(bundle);
 
-            getParentFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null)
+            // Mevcut fragment yerine yenisi konuluyor
+            transaction
+                    .replace(R.id.container, fragment) // replace = hide+remove+add
+                    .addToBackStack(null) // geri tuşu için back stack'e ekle
                     .commit();
-
         });
     }
 

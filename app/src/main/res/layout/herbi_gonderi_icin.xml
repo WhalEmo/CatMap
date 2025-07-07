@@ -2,78 +2,117 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="4dp">
-
-    <!-- Fotoğrafların yatay kaydırılması için -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/fotoPager"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/gonderiBaslik"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:orientation="horizontal" />
+        android:layout_height="wrap_content"
+        android:text="Gönderi"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="#FFFFFF" />
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFD1A4"
+    android:fillViewport="true">
 
-    <!-- Alt bilgi alanı: Kedi ikonu + Haritada Gör + Kedi Adı ve Açıklama -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="start"
-        android:paddingTop="8dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
+        android:orientation="vertical"
+        android:padding="4dp">
 
-        <!-- Kedi simgesi + Haritada Gör -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
+        <androidx.cardview.widget.CardView
+            android:id="@+id/fotoCardView"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_margin="25dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@android:color/white">
 
-            <ImageView
-                android:id="@+id/fotomrkr"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:translationY="-9dp"
-                android:src="@drawable/markerkedy" />
-
-            <TextView
-                android:id="@+id/haritadaGorText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Haritada Gör"
-                android:textColor="#0C79AA"
-                android:translationY="-20dp"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-
-        <!-- Kedi bilgileri -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
-
-            <TextView
-                android:id="@+id/kediAdiText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Kedi Adı"
-                android:textColor="#000000"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:paddingBottom="4dp" />
-
-            <TextView
-                android:id="@+id/kediAciklama"
+            <!-- Fotoğrafların yatay kaydırılması için -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/fotoPager"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Alt bilgi alanı: Kedi ikonu + Haritada Gör + Kedi Adı ve Açıklama -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start"
+            android:layout_margin="25dp"
+            android:paddingTop="8dp"
+            android:background="@drawable/duzenle_background"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <!-- Kedi bilgileri -->
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Kedi hakkında kısa açıklama"
-                android:textColor="#555555"
-                android:textSize="14sp" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
+                <!-- Kedi simgesi + Haritada Gör -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                    <ImageView
+                        android:id="@+id/fotomrkr"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:translationY="-9dp"
+                        android:src="@drawable/markerkedy" />
+
+                    <TextView
+                        android:id="@+id/haritadaGorText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Haritada Gör"
+                        android:translationY="-30dp"
+                        android:clickable="true"
+                        android:textColor="#0C79AA"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/kediAdiText"
+                    android:translationY="-25dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kedi Adı"
+                    android:textColor="#000000"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:paddingBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/kediAciklama"
+                    android:translationY="-25dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Kedi hakkında çok uzun bir açıklama olabilir. Eğer bu metin uzarsa, aşağıya doğru kaydırılabilir hale gelsin."
+                    android:textColor="#555555"
+                    android:textSize="14sp" />
+            </LinearLayout>
         </LinearLayout>
+
     </LinearLayout>
+  </ScrollView>
 </LinearLayout>

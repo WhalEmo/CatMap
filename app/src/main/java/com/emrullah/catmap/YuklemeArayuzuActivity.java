@@ -28,6 +28,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -39,6 +40,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -67,6 +69,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private FotoGeciciAdapter fotoAdapter;
     private ImageView geciciFoto;
     final int MAX_FOTO_SAYISI = 5;
+    private ConstraintLayout main;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReference();
@@ -75,6 +78,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.yukleme_arayuzu);
+        main=findViewById(R.id.main);
         geciciFoto = findViewById(R.id.geciciFoto);
         fotoPager = findViewById(R.id.fotoPager);
         fotoAdapter = new FotoGeciciAdapter(this, secilenFotolar,null);
@@ -344,14 +348,19 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     }
     public void kullaniciyaGonderiKaydet(String kediID){
         DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
-        kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(kediID))
+        Map<String, Object> yeniKedi = new HashMap<>();
+        yeniKedi.put("kediID", kediID);
+        yeniKedi.put("tarih", Timestamp.now());
+        kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
                 .addOnSuccessListener(aVoid -> {
-                    mesaji.BasariliDurum("Eklendi",1000);
                     ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
                     getSupportFragmentManager()
                             .beginTransaction()
                             .replace(R.id.container, fragment)
+                            .addToBackStack(null)
                             .commit();
+                    main.setVisibility(View.GONE);
+                    mesaji.BasariliDurum("Eklendi",1000);
                 })
                 .addOnFailureListener(e -> {
                     mesaji.BasarisizDurum("Eklenemedi",1000);

@@ -49,10 +49,15 @@ public class GonderiDetayFragment extends Fragment {
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
+        TextView haritadaGorText=view.findViewById(R.id.haritadaGorText);
 
         viewPager.setAdapter(new FotoAdapter(fotoListesi));
         kediAdiText.setText(kediAdi);
         aciklamaText.setText(aciklama);
+
+        haritadaGorText.setOnClickListener(b->{
+
+        });
 
         return view;
     }

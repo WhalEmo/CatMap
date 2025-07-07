@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -20,16 +22,18 @@ import java.util.ArrayList;
 public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiViewHolder> {
 
     private ArrayList<Gonderi> gonderiler;
+    private FragmentManager fragmentManager;
+    public Boolean gerigitti=false;
 
-    public GonderiAdapter(ArrayList<Gonderi> gonderiler) {
+    public GonderiAdapter(ArrayList<Gonderi> gonderiler,FragmentManager fragmentManager) {
         this.gonderiler = gonderiler;
+        this.fragmentManager = fragmentManager;
     }
 
     public void guncelleList(ArrayList<Gonderi> yeniListe) {
         this.gonderiler = yeniListe;
         notifyDataSetChanged();
     }
-
 
     @NonNull
     @Override
@@ -43,16 +47,24 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
         Gonderi gonderi = gonderiler.get(position);
 
         holder.itemView.setOnClickListener(v -> {
+            gerigitti=true;
+            FragmentManager fm = fragmentManager;
+            FragmentTransaction transaction = fm.beginTransaction();
+
+            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            if (mevcutFragment != null) {
+                transaction.hide(mevcutFragment);
+            }
+
             Fragment fragment = GonderiDetayFragment.newInstance(
                     new ArrayList<>(gonderi.getFotoUrlListesi()),
                     gonderi.getKediAdi(),
                     gonderi.getAciklama()
             );
 
-            ((AppCompatActivity) v.getContext()).getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null) // Geri tuşu çalışsın istiyorsan
+            transaction
+                    .add(R.id.container, fragment)
+                    .addToBackStack(null)
                     .commit();
         });
 

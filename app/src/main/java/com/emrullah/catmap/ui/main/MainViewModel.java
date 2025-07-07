@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel;
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.UyariMesaji;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -517,18 +518,29 @@ public class MainViewModel extends ViewModel {
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
-    public void GonderiCekme(String id, UyariMesaji uyari) {
-        uyari.YuklemeDurum("Yükleniyor...");
+    public void GonderiCekme(String id,UyariMesaji uyari ) {
         DocumentReference kullaniciRef = db.collection("users").document(id);
-
         kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
-                ArrayList<String> liste = (ArrayList<String>) documentSnapshot.get("GonderilenKediler");
+                ArrayList<Map<String, Object>> liste = (ArrayList<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
                 if (liste == null) liste = new ArrayList<>();
 
                 ArrayList<Gonderi>gonderiListesi=new ArrayList<Gonderi>();
+                if (liste.isEmpty()) {
+                    _kediIdGonderilist.setValue(gonderiListesi); // boş liste dön
+                    return;
+                }
+                liste.sort((o1, o2) -> {
+                    Timestamp t1 = (Timestamp) o1.get("tarih");
+                    Timestamp t2 = (Timestamp) o2.get("tarih");
+                    return t2.compareTo(t1);
+                });
 
-                for (String kediID : liste) {
+                final int toplam = liste.size();
+                final int[] tamamlanan = {0};
+
+                for (Map<String, Object> gonderiMap : liste) {
+                    String kediID = (String) gonderiMap.get("kediID");
                     db.collection("cats")
                             .document(kediID)
                             .get()
@@ -541,18 +553,18 @@ public class MainViewModel extends ViewModel {
                                         gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi));
                                     }
                                 }
+                                tamamlanan[0]++;
+                                if (tamamlanan[0] == toplam) {
+                                    _kediIdGonderilist.setValue(gonderiListesi);
+                                }
                             })
                             .addOnFailureListener(e -> {
                                 Log.e("KediGetirme", "Hata: " + e.getMessage());
                             });
                 }
-                 uyari.BasariliDurum("Yüklendi",1000);
-                _kediIdGonderilist.setValue(gonderiListesi);
             } else {
-                uyari.BasarisizDurum("Kullanıcı bulunamadı", 1000);
             }
         }).addOnFailureListener(e -> {
-            uyari.BasarisizDurum("Gonderiler alınamadı", 1000);
             Log.e("Firestore", "Hata: " + e.getMessage());
         });
     }
