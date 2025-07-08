@@ -18,6 +18,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -39,6 +40,7 @@ public class MesajlasmaYonetici {
     private ValueEventListener cevrimiciDinleyici;
     private ChildEventListener silDinleyici;
     private ChildEventListener guncellemeDinleyici;
+    private GenericTypeIndicator<ArrayList<String>> type = new GenericTypeIndicator<ArrayList<String>>() {};
 
 
 
@@ -68,6 +70,7 @@ public class MesajlasmaYonetici {
         veri.put("mesaj",mesaj);
         veri.put("zaman",System.currentTimeMillis());
         veri.put("goruldu",false);
+        veri.put("tur","metin");
         mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).setValue(veri);
         mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.getID()).setValue(false);
         mesajMap.put(mesajID,null);
@@ -87,17 +90,10 @@ public class MesajlasmaYonetici {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
-                    String mesajID = msgSnap.getKey();
-                    if (mesajID.equals("yaziyorMu")) continue;
-                    System.out.println("--+ "+ mesajID);
-                    String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
-                    Long zaman = msgSnap.child("zaman").getValue(Long.class);
-                    String gonderen = msgSnap.child("gonderen").getValue(String.class);
-                    boolean goruldu = msgSnap.child("goruldu").getValue(Boolean.class);
-                    Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,goruldu);
+                    Mesaj mesaj = MesajOlustur(msgSnap);
                     Goruldu(mesaj,adapter);
                     adapter.getMesajArrayList().add(mesaj);
-                    mesajMap.put(mesajID,null);
+                    mesajMap.put(mesaj.getMesajID(),null);
                 }
                 adapter.notifyDataSetChanged();
                 yukleniyor.setVisibility(View.GONE);
@@ -125,14 +121,7 @@ public class MesajlasmaYonetici {
             public void onDataChange(DataSnapshot snapshot) {
                 ArrayList<Mesaj> yeniMesajlar = new ArrayList<>();
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
-                    String mesajID = msgSnap.getKey();
-                    if (mesajID.equals("yaziyorMu")) continue;
-                    System.out.println("--- "+ mesajID);
-                    String mesajicerik = msgSnap.child("mesaj").getValue(String.class);
-                    String gonderen = msgSnap.child("gonderen").getValue(String.class);
-                    Long zaman = msgSnap.child("zaman").getValue(Long.class);
-                    boolean goruldu = msgSnap.child("goruldu").getValue(Boolean.class);
-                    Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,goruldu);
+                    Mesaj mesaj = MesajOlustur(msgSnap);
                     yeniMesajlar.add(mesaj);
                     Goruldu(mesaj,adapter);
                 }
@@ -157,12 +146,7 @@ public class MesajlasmaYonetici {
                 System.out.println("Added");
                 String mesajID = snapshot.getKey();
                 if(mesajMap.containsKey(mesajID)) return;
-                String gonderen = snapshot.child("gonderen").getValue(String.class);
-                String mesajicerik = snapshot.child("mesaj").getValue(String.class);
-                Long zaman = snapshot.child("zaman").getValue(Long.class);
-                boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
-
-                Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,goruldu);
+                Mesaj mesaj = MesajOlustur(snapshot);
                 mesajMap.put(mesajID,null);
                 adapter.getMesajArrayList().add(mesaj);
                 adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
@@ -470,6 +454,28 @@ public class MesajlasmaYonetici {
         veri.put("mesaj",yeniMesaj);
         veri.put("ID",mesajID);
         mesajlar.child(sohbetID).child("gunMesaj").push().setValue(veri);
+    }
+
+    private Mesaj MesajOlustur(DataSnapshot snapshot){
+        Mesaj mesaj;
+        String tur = snapshot.child("tur").getValue(String.class);
+        if(tur.equals("metin")){
+            String mesajID = snapshot.getKey();
+            String gonderen = snapshot.child("gonderen").getValue(String.class);
+            Long zaman = snapshot.child("zaman").getValue(Long.class);
+            String mesajicerik = snapshot.child("mesaj").getValue(String.class);
+            mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,false);
+        }
+        else{
+            String mesajID = snapshot.getKey();
+            String gonderen = snapshot.child("gonderen").getValue(String.class);
+            Long zaman = snapshot.child("zaman").getValue(Long.class);
+            ArrayList<String> fotoUrl = snapshot.child("fotoUrlleri").getValue(type);
+            mesaj = new Mesaj(gonderen,fotoUrl,zaman,mesajID,false);
+        }
+        mesaj.setTur(tur);
+        mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+        return mesaj;
     }
 
 

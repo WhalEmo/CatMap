@@ -1,6 +1,9 @@
 package com.emrullah.catmap.mesaj;
 
+import android.graphics.Bitmap;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -10,7 +13,9 @@ public class Mesaj {
     private long zaman;
     private String mesajID;
     private boolean goruldu;
-    private boolean siliniyorMu = false;
+    private String tur;
+    private ArrayList<String> urller;
+    private ArrayList<Bitmap> fotoBitmapler;
 
     public Mesaj(String gonderici, String mesaj, long zaman, String mesajID, boolean goruldu) {
         this.gonderici = gonderici;
@@ -19,10 +24,29 @@ public class Mesaj {
         this.mesajID = mesajID;
         this.goruldu = goruldu;
     }
+    public Mesaj(String gonderici, ArrayList<String> urller, long zaman, String mesajID, boolean goruldu) {
+        this.gonderici = gonderici;
+        this.urller = urller;
+        this.zaman = zaman;
+        this.mesajID = mesajID;
+        this.goruldu = goruldu;
+    }
     public Mesaj() {
     }
-    public void setSiliniyorMu(boolean siliniyorMu) {
-        this.siliniyorMu = siliniyorMu;
+
+    public void setTur(String tur) {
+        this.tur = tur;
+    }
+    public String getTur() {
+        return tur;
+    }
+
+    public ArrayList<String> getUrller() {
+        return urller;
+    }
+
+    public ArrayList<Bitmap> getFotoBitmapler() {
+        return fotoBitmapler;
     }
 
     public String getGonderici() {

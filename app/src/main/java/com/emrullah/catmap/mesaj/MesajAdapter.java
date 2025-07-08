@@ -1,9 +1,11 @@
 package com.emrullah.catmap.mesaj;
 
 import android.content.Context;
+import android.view.FocusFinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -15,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.R;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -50,23 +53,45 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull MesajViewHolder holder, int position) {
         Mesaj mesaj = mesajArrayList.get(position);
-        if(mesaj.getGonderici().equals(MainActivity.kullanici.getID())){
-            holder.solMesajLayout.setVisibility(View.GONE);
-            holder.sagMesajLayout.setVisibility(View.VISIBLE);
-            holder.sagMesajText.setText(mesaj.getMesaj().trim());
-            holder.sagZaman.setText(mesaj.getZaman());
-            if(mesaj.isGoruldu()){
-                holder.gorulmeIkon.setImageResource(R.drawable.patidolu);
-            }
-            else{
-                holder.gorulmeIkon.setImageResource(R.drawable.patibos);
+        if(!mesaj.getTur().equals("foto")) {
+            if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
+                holder.solMesajLayout.setVisibility(View.GONE);
+                holder.sagMesajLayout.setVisibility(View.VISIBLE);
+                holder.sagMesajText.setText(mesaj.getMesaj().trim());
+                holder.sagZaman.setText(mesaj.getZaman());
+                if (mesaj.isGoruldu()) {
+                    holder.gorulmeIkon.setImageResource(R.drawable.patidolu);
+                } else {
+                    holder.gorulmeIkon.setImageResource(R.drawable.patibos);
+                }
+            } else {
+                holder.solMesajLayout.setVisibility(View.VISIBLE);
+                holder.sagMesajLayout.setVisibility(View.GONE);
+                holder.solMesajText.setText(mesaj.getMesaj().trim());
+                holder.solZaman.setText(mesaj.getZaman());
             }
         }
-        else{
-            holder.solMesajLayout.setVisibility(View.VISIBLE);
-            holder.sagMesajLayout.setVisibility(View.GONE);
-            holder.solMesajText.setText(mesaj.getMesaj().trim());
-            holder.solZaman.setText(mesaj.getZaman());
+        else {
+            System.out.println(mesaj.getUrller().get(0));
+            // burası fotograf mesajları için
+            if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
+                holder.sagMesajLayout.setVisibility(View.VISIBLE);
+                holder.solMesajLayout.setVisibility(View.GONE);
+                holder.sagZaman.setText(mesaj.getZaman());
+                if (mesaj.isGoruldu()) {
+                    holder.gorulmeIkon.setImageResource(R.drawable.patidolu);
+                } else {
+                    holder.gorulmeIkon.setImageResource(R.drawable.patibos);
+                }
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(true,holder,mesaj,context);
+            }
+            else {
+                holder.sagMesajLayout.setVisibility(View.GONE);
+                holder.solMesajLayout.setVisibility(View.VISIBLE);
+                holder.solZaman.setText(mesaj.getZaman());
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(false,holder,mesaj,context);
+            }
+
         }
         holder.sagMesajLayout.setOnLongClickListener(v -> {
             SilmeGuncellemeGoster(v);
@@ -111,13 +136,17 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         btnMesajSil.setOnClickListener(v ->{
             MesajlasmaYonetici.getInstance().MesajSil(mesaj.getMesajID());
             popupWindow.dismiss();
-    });
+        });
     }
+
 
     public static class MesajViewHolder extends RecyclerView.ViewHolder{
         LinearLayout solMesajLayout;
         TextView solMesajText;
         TextView solZaman;
+
+        GridLayout solFotoLayout;
+        GridLayout sagFotoLayout;
 
         ImageView gorulmeIkon;
 
@@ -130,6 +159,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             solMesajLayout = itemView.findViewById(R.id.solMesajLayout);
             solMesajText = itemView.findViewById(R.id.solMesajText);
             solZaman = itemView.findViewById(R.id.solZaman);
+
+            solFotoLayout = itemView.findViewById(R.id.solFotoLayout);
+            sagFotoLayout = itemView.findViewById(R.id.sagFotoLayout);
 
             gorulmeIkon = itemView.findViewById(R.id.gorulmeIkon);
 

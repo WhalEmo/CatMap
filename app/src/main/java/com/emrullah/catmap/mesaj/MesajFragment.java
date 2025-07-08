@@ -1,7 +1,13 @@
 package com.emrullah.catmap.mesaj;
 
+import static android.app.Activity.RESULT_OK;
+import static androidx.core.app.ActivityCompat.startActivityForResult;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 
 import android.os.Bundle;
@@ -14,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -38,6 +45,8 @@ import java.util.TimerTask;
 
 public class MesajFragment extends Fragment {
 
+    private final int REQUEST_CODE_GALERI = 100;
+
     private RecyclerView mesajRecyclerView;
     private LinearLayout mesaj_gonder_layout;
     private EditText mesajEditText;
@@ -52,6 +61,8 @@ public class MesajFragment extends Fragment {
     private TextView kisiAdiText;
     private TextView kisiDurumText;
     private LinearLayout kisiBilgiLayout;
+    private ImageButton fotoEkleButton;
+    private ActivityResultLauncher<Intent> galeriLauncher;
 
     public static MesajFragment newInstance(Context context){
         return new MesajFragment(context);
@@ -84,6 +95,7 @@ public class MesajFragment extends Fragment {
         mesaj_gonder_layout = view.findViewById(R.id.mesaj_gonder_layout);
         mesajEditText = view.findViewById(R.id.mesajEditText);
         gonderButton = view.findViewById(R.id.gonderButton);
+        fotoEkleButton = view.findViewById(R.id.fotoEkleButton);
         yukleniyorProgress = view.findViewById(R.id.yukleniyorProgress);
         yukleniyorProgress.setVisibility(View.VISIBLE);
         KlavyeAyari(view);
@@ -120,6 +132,9 @@ public class MesajFragment extends Fragment {
         gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
 
         kisiProfilFoto.setOnClickListener(v->{ ProfilSayfasinaYonlendir(); });
+
+        GaleriLauncheriHazirla();
+        fotoEkleButton.setOnClickListener(v->{ GaleriyeYonlendir(); });
 
         ScrollDinleyici();
         // Burada RecyclerView kur, mesajları çek
@@ -218,6 +233,31 @@ public class MesajFragment extends Fragment {
         transaction.commit();
     }
 
+    private void GaleriyeYonlendir(){
+        Intent galeriIntent = new Intent(Intent.ACTION_PICK);
+        galeriIntent.setType("image/*");
+        galeriIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+
+        galeriLauncher.launch(Intent.createChooser(galeriIntent, "Fotoğraf Seç"));
+    }
+
+    private void GaleriLauncheriHazirla(){
+        galeriLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result ->{
+                    if(result.getResultCode() == RESULT_OK){
+                        Intent data = result.getData();
+                        if(data.getClipData() != null){
+                            for(int i=0; i<data.getClipData().getItemCount(); i++){
+                                MesajFotoGonderYonetici.getInstance().UriEkle(data.getClipData().getItemAt(i).getUri());
+                            }
+                        }
+                        else if(data.getData() != null){
+                            MesajFotoGonderYonetici.getInstance().UriEkle(data.getData());
+                        }
+                        MesajFotoGonderYonetici.getInstance().GondericiStart();
+                    }
+                }
+        );
+    }
 
 
 
