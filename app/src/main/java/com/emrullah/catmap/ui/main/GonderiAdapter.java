@@ -23,11 +23,12 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
 
     private ArrayList<Gonderi> gonderiler;
     private FragmentManager fragmentManager;
-    public Boolean gerigitti=false;
+    public Boolean gerigitti=true;
 
-    public GonderiAdapter(ArrayList<Gonderi> gonderiler,FragmentManager fragmentManager) {
+    public GonderiAdapter(ArrayList<Gonderi> gonderiler,FragmentManager fragmentManager,Boolean gerigitti) {
         this.gonderiler = gonderiler;
         this.fragmentManager = fragmentManager;
+        this.gerigitti=gerigitti;
     }
 
     public void guncelleList(ArrayList<Gonderi> yeniListe) {

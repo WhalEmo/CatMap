@@ -282,7 +282,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:background="@drawable/duzenle_background"
+        android:background="@drawable/gonderiler_background"
         android:gravity="center"
         android:padding="8dp"
         android:text="Gönderiler"

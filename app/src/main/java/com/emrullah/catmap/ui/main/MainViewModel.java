@@ -34,7 +34,7 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-
+    public int Gsayisi=0;
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
@@ -67,6 +67,8 @@ public class MainViewModel extends ViewModel {
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
     private MutableLiveData<ArrayList<Gonderi>> _kediIdGonderilist = new MutableLiveData<>();
     public LiveData<ArrayList<Gonderi>>kediGonderi(){return _kediIdGonderilist;}
+    public MutableLiveData<Integer>_GonderiSayisi=new MutableLiveData<>();
+    public LiveData<Integer>GonderiSayisi(){return _GonderiSayisi;}
 
     private MediatorLiveData<Pair<Boolean, Boolean>> takipDurumuCift = new MediatorLiveData<>();
 
@@ -524,7 +526,6 @@ public class MainViewModel extends ViewModel {
             if (documentSnapshot.exists()) {
                 ArrayList<Map<String, Object>> liste = (ArrayList<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
                 if (liste == null) liste = new ArrayList<>();
-
                 ArrayList<Gonderi>gonderiListesi=new ArrayList<Gonderi>();
                 if (liste.isEmpty()) {
                     _kediIdGonderilist.setValue(gonderiListesi); // boş liste dön
@@ -541,6 +542,7 @@ public class MainViewModel extends ViewModel {
 
                 for (Map<String, Object> gonderiMap : liste) {
                     String kediID = (String) gonderiMap.get("kediID");
+                    Timestamp tarih = (Timestamp) gonderiMap.get("tarih");
                     db.collection("cats")
                             .document(kediID)
                             .get()
@@ -550,11 +552,12 @@ public class MainViewModel extends ViewModel {
                                     String aciklama = doc.getString("kediHakkinda");
                                     String kediadi=doc.getString("kediAdi");
                                     if (fotoList != null && !fotoList.isEmpty()) {
-                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi));
+                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih));
                                     }
                                 }
                                 tamamlanan[0]++;
                                 if (tamamlanan[0] == toplam) {
+                                    gonderiListesi.sort((g1, g2) -> g2.getTarih().compareTo(g1.getTarih()));
                                     _kediIdGonderilist.setValue(gonderiListesi);
                                 }
                             })
@@ -568,6 +571,23 @@ public class MainViewModel extends ViewModel {
             Log.e("Firestore", "Hata: " + e.getMessage());
         });
     }
+    public void GonderiSayisiniCek(String id) {
+        DocumentReference kullaniciRef = db.collection("users").document(id);
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<Map<String, Object>> liste = (ArrayList<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
+                if (liste == null) {
+                    _GonderiSayisi.setValue(0); // hiç gönderi yoksa
+                } else {
+                    _GonderiSayisi.setValue(liste.size()); // mevcut sayıyı ata
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("GonderiSayisi", "Veri çekme hatası: " + e.getMessage());
+            _GonderiSayisi.setValue(0); // hata durumunda yine sıfır ata
+        });
+    }
+
 
 
 }

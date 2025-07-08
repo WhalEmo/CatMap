@@ -1,16 +1,28 @@
 package com.emrullah.catmap.ui.main;
 
+import com.google.firebase.Timestamp;
+
 import java.util.ArrayList;
 
 public class Gonderi {
     private ArrayList<String> fotoUrlListesi;
     private String aciklama;
     private String kediAdi;
+    private Timestamp tarih;
 
-    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama,String kediAdi) {
+    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama, String kediAdi,Timestamp  tarih) {
         this.fotoUrlListesi = fotoUrlListesi;
         this.aciklama = aciklama;
         this.kediAdi=kediAdi;
+        this.tarih = tarih;
+    }
+
+    public Timestamp  getTarih() {
+        return tarih;
+    }
+
+    public void setTarih(Timestamp  tarih) {
+        this.tarih = tarih;
     }
 
     public void setFotoUrlListesi(ArrayList<String> fotoUrlListesi) {

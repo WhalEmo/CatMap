@@ -353,13 +353,13 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         yeniKedi.put("tarih", Timestamp.now());
         kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
                 .addOnSuccessListener(aVoid -> {
+                    main.setVisibility(View.GONE);
                     ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
                     getSupportFragmentManager()
                             .beginTransaction()
                             .replace(R.id.container, fragment)
                             .addToBackStack(null)
                             .commit();
-                    main.setVisibility(View.GONE);
                     mesaji.BasariliDurum("Eklendi",1000);
                 })
                 .addOnFailureListener(e -> {

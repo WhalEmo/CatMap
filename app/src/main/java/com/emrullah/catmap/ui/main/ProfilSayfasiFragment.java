@@ -60,6 +60,7 @@ import com.emrullah.catmap.MapsActivity;
 import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.UyariMesaji;
+import com.emrullah.catmap.YuklemeArayuzuActivity;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -115,7 +116,8 @@ public class ProfilSayfasiFragment extends Fragment {
     private TextView emptyTextView;
     private boolean takiptenDonuldu = false;
     private ShimmerFrameLayout shimmerLayout;
-    private boolean gonderiAdapterGerigitti = false;
+    private Boolean gonderiGeri=true;
+    private TextView gonderiSayisiTextView;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -302,7 +304,7 @@ public class ProfilSayfasiFragment extends Fragment {
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
         emptyTextView=view.findViewById(R.id.emptyTextView);
-
+        gonderiSayisiTextView=view.findViewById(R.id.gonderiSayisiTextView);
         sohbetButon = view.findViewById(R.id.sohbetButon); /// -> aşkım bunu ben ekledim sohbeti açan buton
 
         takipEdiliyorButonu=view.findViewById(R.id.takipEdiliyorButonu);
@@ -320,20 +322,36 @@ public class ProfilSayfasiFragment extends Fragment {
         gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
 
         uyariMesaji=new UyariMesaji(requireContext(),true);
-        if (!gonderiAdapterGerigitti&&!takiptenDonuldu &&requireActivity() instanceof MapsActivity) {
-            requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
-                @Override
-                public void handleOnBackPressed() {
-                    myConstraintLayout.setVisibility(View.VISIBLE);
-                    if (!takiptenDonuldu&&requireActivity() instanceof BottomSheetController) {
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (requireActivity() instanceof YuklemeArayuzuActivity&&!gonderiGeri) {
+                    View main = requireActivity().findViewById(R.id.main);
+                    if (main != null) {
+                        main.setVisibility(View.VISIBLE);
+                    }
+                    gonderiGeri=false;
+                }
+
+                // Eğer MapsActivity'deysek ve özel durumlar geçerliyse BottomSheet göster
+                if (requireActivity() instanceof MapsActivity && !takiptenDonuldu&&!gonderiGeri) {
+                    if (requireActivity() instanceof BottomSheetController) {
                         ((BottomSheetController) requireActivity()).showBottomSheet();
+                        View main = requireActivity().findViewById(R.id.main);
+                        if (main != null) {
+                            main.setVisibility(View.GONE);
+                        }
+
                     }
                     takiptenDonuldu = false;
-                    gonderiAdapterGerigitti = false;
-                    getParentFragmentManager().popBackStack();
+                    gonderiGeri=false;
                 }
-            });
-        }
+
+                // Fragment'i geri al
+                setEnabled(false); // callback'in devreden çıkması için
+                getParentFragmentManager().popBackStack();
+            }
+        });
 
         TakipTakipciSayilariUI();
         mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
@@ -363,7 +381,6 @@ public class ProfilSayfasiFragment extends Fragment {
                            public void onSuccess() {
                                // Cache’den başarıyla yüklendi, başka bir şey yapmaya gerek yok
                            }
-
                            @Override
                            public void onError(Exception e) {
                                // Cache’den yüklenemezseinternetten yükle
@@ -394,6 +411,12 @@ public class ProfilSayfasiFragment extends Fragment {
            KullaniciAdiUI();
            takipciGorme(MainActivity.kullanici.getID());
            takipleriGorme(MainActivity.kullanici.getID());
+           mViewModel.GonderiSayisiniCek(MainActivity.kullanici.getID());
+           mViewModel.GonderiSayisi().observe(getViewLifecycleOwner(), sayi -> {
+               if (sayi != null) {
+                   gonderiSayisiTextView.setText(sayi.toString());
+               }
+           });
 
            mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji);
            mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
@@ -404,13 +427,13 @@ public class ProfilSayfasiFragment extends Fragment {
                    emptyTextView.setVisibility(View.GONE);
                    gonderiRecyclerView.setVisibility(View.VISIBLE);
                    if (gonderiAdapter == null) {
-                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager());
-                       gonderiAdapterGerigitti = gonderiAdapter.gerigitti;
+                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager(),true);
+                       gonderiGeri=gonderiAdapter.gerigitti;
                        gonderiRecyclerView.setAdapter(gonderiAdapter);
                    } else {
                        gonderiRecyclerView.setAdapter(gonderiAdapter);
                        gonderiAdapter.guncelleList(gonderilist);
-                       gonderiAdapterGerigitti = gonderiAdapter.gerigitti;
+                       gonderiGeri=gonderiAdapter.gerigitti;
                    }
                }
                if (shimmerLayout.getVisibility() == View.VISIBLE) {
@@ -448,6 +471,13 @@ public class ProfilSayfasiFragment extends Fragment {
 
            SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 
+           mViewModel.GonderiSayisiniCek(yukleyenID);
+           mViewModel.GonderiSayisi().observe(getViewLifecycleOwner(), sayi -> {
+               if (sayi != null) {
+                   gonderiSayisiTextView.setText(sayi.toString());
+               }
+           });
+
            mViewModel.beniTakipEdiyorMu(yukleyenID);
            mViewModel.takipEdiliyorMu(yukleyenID);
            mViewModel.getTakipDurumuCift().observe(getViewLifecycleOwner(), pair -> {
@@ -466,10 +496,15 @@ public class ProfilSayfasiFragment extends Fragment {
                        } else {
                            emptyTextView.setVisibility(View.GONE);
                            gonderiRecyclerView.setVisibility(View.VISIBLE);
-                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager());
+                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager(),true);
                            gonderiRecyclerView.setAdapter(gonderiAdapter);
                        }
                    });
+                   if (shimmerLayout.getVisibility() == View.VISIBLE) {
+                       shimmerLayout.stopShimmer();
+                       shimmerLayout.setVisibility(View.GONE);
+                       myConstraintLayout.setVisibility(View.VISIBLE);
+                   }
                } else {
                    takipEdiliyorButonu.setVisibility(View.GONE);
                    takipEtButonu.setVisibility(View.VISIBLE);
@@ -480,11 +515,6 @@ public class ProfilSayfasiFragment extends Fragment {
                    } else {
                        takipEtButonu.setText("Takip Et");
                    }
-               }
-               if (shimmerLayout.getVisibility() == View.VISIBLE) {
-                   shimmerLayout.stopShimmer();
-                   shimmerLayout.setVisibility(View.GONE);
-                   myConstraintLayout.setVisibility(View.VISIBLE);
                }
            });
 
