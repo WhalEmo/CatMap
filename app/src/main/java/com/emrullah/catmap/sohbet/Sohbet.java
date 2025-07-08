@@ -1,12 +1,14 @@
 package com.emrullah.catmap.sohbet;
 
 import com.emrullah.catmap.Kullanici;
-import com.emrullah.catmap.Mesaj;
+import com.emrullah.catmap.mesaj.Mesaj;
 
 public class Sohbet {
     private String SohbetID;
     private Kullanici alici;
     private Mesaj mesaj;
+    private boolean sohbetYuklendiMi = false;
+    private int okunmamisMesajSayisi = 0;
 
     public Sohbet() {
 
@@ -40,5 +42,17 @@ public class Sohbet {
 
     public void setSohbetID(String sohbetID) {
         SohbetID = sohbetID;
+    }
+    public int getOkunmamisMesajSayisi() {
+        return okunmamisMesajSayisi;
+    }
+    public void setOkunmamisMesajSayisi(int okunmamisMesajSayisi) {
+        this.okunmamisMesajSayisi = okunmamisMesajSayisi;
+    }
+    public boolean isSohbetYuklendiMi() {
+        return sohbetYuklendiMi;
+    }
+    public void setSohbetYuklendiMi(boolean sohbetYuklendiMi) {
+        this.sohbetYuklendiMi = sohbetYuklendiMi;
     }
 }

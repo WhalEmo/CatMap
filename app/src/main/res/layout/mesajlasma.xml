@@ -41,7 +41,7 @@
                 android:id="@+id/kisiAdiText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Kullanıcı Adı"
+                android:text=""
                 android:textColor="#13216E"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -50,7 +50,7 @@
                 android:id="@+id/kisiDurumText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Çevrimiçi"
+                android:text=""
                 android:textColor="#BF6A33"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -103,6 +103,15 @@
             android:scrollbars="vertical"
             android:overScrollMode="always"
             android:gravity="top|start" />
+        <ImageButton
+            android:id="@+id/fotoEkleButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/foto_yukleme"
+            android:contentDescription="Fotoğraf Ekle"
+            android:scaleType="centerInside"
+            android:layout_marginEnd="8dp" />
 
         <ImageButton
             android:id="@+id/gonderButton"

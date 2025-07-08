@@ -20,6 +20,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.emrullah.catmap.mesaj.MesajFragment;
 import com.emrullah.catmap.sohbet.SohbetFragment;
 import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
@@ -398,10 +399,10 @@ public class MainActivity extends AppCompatActivity {
     public void Sohbet(View view){
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container,new SohbetFragment(()->{
+                .replace(R.id.container,new SohbetFragment(()->{
                     getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.fragment_container,new MesajFragment(this))
+                            .replace(R.id.container,new MesajFragment(this))
                             .addToBackStack(null)
                             .commit();
                 }))

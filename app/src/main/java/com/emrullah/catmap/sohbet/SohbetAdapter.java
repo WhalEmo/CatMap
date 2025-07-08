@@ -1,6 +1,8 @@
 package com.emrullah.catmap.sohbet;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.emrullah.catmap.MesajlasmaYonetici;
+import com.emrullah.catmap.mesaj.MesajlasmaYonetici;
 import com.emrullah.catmap.R;
 
 import java.util.ArrayList;
@@ -53,8 +55,32 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
             MesajlasmaYonetici.getInstance().setAlici(sohbet.getAlici());
             MesajlasmaYonetici.getInstance().setSohbetID(sohbet.getSohbetID());
             MesajlasmaYonetici.getInstance().DinleyiciKaldir();
+            SohbetYonetici.getInstance().DinleyicileriKaldir(sohbetArrayList);
             this.MesajFragment.run();
         });
+
+        if(sohbet.getOkunmamisMesajSayisi() != 0){
+            holder.okunmamis_sayac.setVisibility(View.VISIBLE);
+            if(sohbet.getOkunmamisMesajSayisi()>=99){
+                holder.okunmamis_sayac.setText("99+");
+            }
+            else {
+                holder.okunmamis_sayac.setText(String.valueOf(sohbet.getOkunmamisMesajSayisi()));
+            }
+            holder.son_mesaj.setTypeface(null, Typeface.BOLD);
+            holder.son_mesaj.setTextColor(Color.parseColor("#13216E"));
+
+
+            holder.mesaj_saat.setTextColor(Color.parseColor("#555555"));
+        }
+        else{
+            holder.okunmamis_sayac.setVisibility(View.GONE);
+
+            holder.son_mesaj.setTypeface(null, Typeface.NORMAL);
+            holder.son_mesaj.setTextColor(Color.parseColor("#555555"));
+
+            holder.mesaj_saat.setTextColor(Color.parseColor("#888888"));
+        }
     }
 
     @Override
@@ -67,6 +93,7 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
         TextView son_mesaj;
         TextView mesaj_saat;
         TextView kisi_adi;
+        TextView okunmamis_sayac;
         ConstraintLayout sohbet_kutu;
 
         public SohbetViewHolder(@NonNull View itemView) {
@@ -76,6 +103,7 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
             mesaj_saat = itemView.findViewById(R.id.mesaj_saat);
             kisi_adi = itemView.findViewById(R.id.kisi_adi);
             sohbet_kutu = itemView.findViewById(R.id.sohbet_kutu);
+            okunmamis_sayac = itemView.findViewById(R.id.okunmamis_sayac);
         }
     }
 }

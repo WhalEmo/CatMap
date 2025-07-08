@@ -8,16 +8,10 @@ import android.view.ViewGroup;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.emrullah.catmap.MainActivity;
-import com.emrullah.catmap.Mesaj;
-import com.emrullah.catmap.MesajAdapter;
 import com.emrullah.catmap.R;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.facebook.shimmer.ShimmerFrameLayout;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SohbetFragment extends Fragment {
 
@@ -25,6 +19,8 @@ public class SohbetFragment extends Fragment {
     private SohbetAdapter adapter;
     private ArrayList<Sohbet> sohbetler;
     private Runnable MesajFragment;
+    private SohbetYonetici sohbetYonetici = SohbetYonetici.getInstance();
+    private ShimmerFrameLayout shimmerLayout;
 
 
     public SohbetFragment(Runnable MesajFragment) {
@@ -36,26 +32,15 @@ public class SohbetFragment extends Fragment {
         View view = inflater.inflate(R.layout.sohbetler, container, false);
         sohbetler = new ArrayList<>();
         adapter = new SohbetAdapter(sohbetler, getActivity(),MesajFragment);
+        shimmerLayout = view.findViewById(R.id.shimmerLayout);
         kisilerRecyclerView = view.findViewById(R.id.kisilerRecyclerView);
         kisilerRecyclerView.setAdapter(adapter);
-        SohbetYonetici sohbetYonetici = SohbetYonetici.getInstance();
         sohbetYonetici.SohbetleriCek(sohbetler, ()->{
             adapter.notifyDataSetChanged();
+            shimmerLayout.setVisibility(View.GONE);
         });
 
         return view;
     }
 
-
-  /*private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference("mesajlar");
-  public void MesajGonder(String mesaj){
-        String mesajID = mesajlar.push().getKey();
-        Map<String, Object> veri = new HashMap<>();
-        veri.put("gonderen", MainActivity.kullanici.getID());
-        veri.put("mesaj",mesaj);
-        veri.put("zaman",System.currentTimeMillis());
-        veri.put("goruldu",false);
-        String sohbetID = "y1l5bbCjazN5fBCaz7nv_"+MainActivity.kullanici.getID();
-        mesajlar.child(sohbetID).child(mesajID).setValue(veri);
-    }*/
 }

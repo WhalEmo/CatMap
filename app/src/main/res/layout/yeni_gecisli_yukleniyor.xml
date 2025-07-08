@@ -1,0 +1,55 @@
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#EEEEEE">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:padding="12dp">
+
+        <View
+            android:id="@+id/fake_foto"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="#CCCCCC"
+            android:layout_marginEnd="12dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <View
+            android:id="@+id/fake_adi"
+            android:layout_width="0dp"
+            android:layout_height="14dp"
+            android:background="#DDDDDD"
+            app:layout_constraintStart_toEndOf="@id/fake_foto"
+            app:layout_constraintTop_toTopOf="@id/fake_foto"
+            app:layout_constraintEnd_toStartOf="@id/fake_saat"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp" />
+
+        <View
+            android:id="@+id/fake_mesaj"
+            android:layout_width="0dp"
+            android:layout_height="12dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/fake_adi"
+            app:layout_constraintStart_toStartOf="@id/fake_adi"
+            app:layout_constraintEnd_toEndOf="@id/fake_adi"
+            android:layout_marginTop="8dp" />
+
+        <View
+            android:id="@+id/fake_saat"
+            android:layout_width="36dp"
+            android:layout_height="10dp"
+            android:background="#CCCCCC"
+            app:layout_constraintTop_toTopOf="@id/fake_adi"
+            app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FFF8F6"/> <!-- Sol mesaj rengine yakın çok açık pembe -->
+    <corners android:radius="8dp" />
+    <stroke android:width="1dp" android:color="#FEB8AE"/>
+</shape>
