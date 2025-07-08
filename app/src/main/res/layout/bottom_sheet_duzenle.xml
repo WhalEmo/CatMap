@@ -34,37 +34,73 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Kullanıcı Adı -->
-    <EditText
-        android:id="@+id/editKullaniciAdi"
+    <!-- Kullanıcı Adı Başlık ve EditText bir LinearLayout içinde -->
+    <LinearLayout
+        android:id="@+id/kullaniciAdiLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Kullanıcı adı"
+        android:orientation="vertical"
         android:layout_marginTop="24dp"
-        android:inputType="textPersonName"
-        android:textColor="#000"
         android:background="@drawable/duzenle_background"
-        android:padding="12dp"
         app:layout_constraintTop_toBottomOf="@id/fotoDegistirText"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Biyografi -->
-    <EditText
-        android:id="@+id/editBio"
+        <TextView
+            android:id="@+id/kullaniciAdiBaslik"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kullanıcı adı"
+            android:translationX="10dp"
+            android:translationY="10dp"
+            android:textColor="#808080"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/editKullaniciAdi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Kullanıcı adı"
+            android:inputType="textPersonName"
+            android:background="@null"
+            android:textColor="#000"
+            android:padding="12dp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/hakkindaLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Hakkında"
+        android:orientation="vertical"
         android:layout_marginTop="16dp"
-        android:inputType="textMultiLine"
-        android:minLines="3"
-        android:gravity="top|start"
-        android:textColor="#000"
         android:background="@drawable/duzenle_background"
-        android:padding="12dp"
-        app:layout_constraintTop_toBottomOf="@id/editKullaniciAdi"
+        app:layout_constraintTop_toBottomOf="@id/kullaniciAdiLayout"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/hakkindaBaslik"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hakkında"
+            android:translationX="10dp"
+            android:translationY="10dp"
+            android:textColor="#808080"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/editBio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Hakkında"
+            android:inputType="textMultiLine"
+            android:background="@null"
+            android:minLines="3"
+            android:gravity="top|start"
+            android:textColor="#000"
+            android:padding="12dp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
 
     <!-- Kaydet Butonu -->
     <Button
@@ -78,7 +114,7 @@
         android:layout_marginTop="24dp"
         android:backgroundTint="#FF9800"
         android:textColor="@android:color/white"
-        app:layout_constraintTop_toBottomOf="@id/editBio"
+        app:layout_constraintTop_toBottomOf="@id/hakkindaLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

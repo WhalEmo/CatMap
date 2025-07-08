@@ -1,10 +1,12 @@
 package com.emrullah.catmap.ui.main;
 
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager2.widget.ViewPager2;
@@ -20,7 +22,12 @@ public class TakiplerFragment extends Fragment {
         TabLayout tabLayout=view.findViewById(R.id.tabLayout);
         ViewPager2 viewPager2=view.findViewById(R.id.viewPager);
 
-        TakipViewPagerAdapter takipViewPagerAdapter=new TakipViewPagerAdapter(this);
+        String yukleyenID = null;
+        if (getArguments() != null) {
+            yukleyenID = getArguments().getString("yukleyenID");
+        }
+
+        TakipViewPagerAdapter takipViewPagerAdapter=new TakipViewPagerAdapter(this,yukleyenID);
         viewPager2.setAdapter(takipViewPagerAdapter);
 
         new TabLayoutMediator(tabLayout, viewPager2, (tab, position) -> {//secim yapılınca kaydırmayı ve gecisi saglar

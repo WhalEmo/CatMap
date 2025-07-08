@@ -6,4 +6,7 @@
     <item
         android:id="@+id/profiltakipciCikar"
         android:title="Takipçiyi çıkar"/>
+    <item
+        android:id="@+id/mesajGonder"
+        android:title="Mesaj gönder"/>
 </menu>

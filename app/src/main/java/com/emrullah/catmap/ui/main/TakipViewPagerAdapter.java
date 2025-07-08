@@ -8,22 +8,30 @@ import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 public class TakipViewPagerAdapter extends FragmentStateAdapter {
-    public TakipViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+    private final String profilID;
+    public TakipViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, String profilID) {
         super(fragmentActivity);
+        this.profilID = profilID;
     }
 
-    public TakipViewPagerAdapter(@NonNull Fragment fragment) {
+    public TakipViewPagerAdapter(@NonNull Fragment fragment,String profilID) {
         super(fragment);
+        this.profilID = profilID;
     }
 
-    public TakipViewPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle) {
+    public TakipViewPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle, String profilID) {
         super(fragmentManager, lifecycle);
+        this.profilID = profilID;
     }
 
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        return position == 0 ? new TakipcilerFragment() : new TakipEdilenlerFragment();
+        if (position == 0) {
+            return TakipcilerFragment.newInstance(profilID);
+        } else {
+            return TakipEdilenlerFragment.newInstance(profilID);
+        }
     }
 
     @Override

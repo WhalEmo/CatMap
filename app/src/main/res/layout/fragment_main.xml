@@ -1,13 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ✅ Shimmer Layout (ilk başta görünür olacak) -->
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:id="@+id/shimmer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:layout_margin="20dp"
+        app:shimmer_auto_start="true"
+        app:shimmer_duration="1500">
+
+        <!-- Shimmer Placeholder İçeriği -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <!-- Shimmer için oval gri kutu (profil foto) -->
+            <View
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="40dp"
+                android:background="@drawable/shimmer_circle_placeholder" />
+
+            <!-- İsim -->
+            <View
+                android:layout_width="150dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="24dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/shimmer_rounded_rectangle" />
+
+            <!-- Gönderi Sayı Alanı (örnek) -->
+            <View
+                android:layout_width="300dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/shimmer_rounded_rectangle" />
+        </LinearLayout>
+    </com.facebook.shimmer.ShimmerFrameLayout>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
     android:id="@+id/myConstraintLayout"
-    android:visibility="visible"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:visibility="visible">
 
     <!-- Profil Fotoğrafı -->
     <de.hdodenhof.circleimageview.CircleImageView
@@ -15,12 +61,11 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_marginTop="40dp"
-        app:civ_border_width="2dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         android:src="@drawable/kullanici"
         app:civ_border_color="#B0B0B0"
-        />
+        app:civ_border_width="2dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Ad Soyad -->
     <TextView
@@ -31,10 +76,10 @@
         android:textColor="#000"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
-        app:layout_constraintTop_toTopOf="@id/profilFotoImageView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0" />
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
+        app:layout_constraintTop_toTopOf="@id/profilFotoImageView" />
 
     <!-- Biyografi -->
 
@@ -64,7 +109,7 @@
                 android:id="@+id/gonderiSayisiTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="-"
                 android:textColor="#000"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -88,7 +133,7 @@
                 android:id="@+id/takipciSayisiTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="-"
                 android:textColor="#000"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -111,7 +156,7 @@
                 android:id="@+id/takipEdilenSayisiTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="-"
                 android:textColor="#000"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -123,19 +168,20 @@
                 android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
+
     <TextView
         android:id="@+id/bioTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="start"
         android:text="Hakkinda..."
         android:textColor="#262626 "
         android:textSize="14sp"
-        android:gravity="start"
-        app:layout_constraintTop_toBottomOf="@id/profilFotoImageView"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
-        android:layout_marginTop="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profilFotoImageView" />
     <!-- Takip Et Butonu -->
     <Button
         android:id="@+id/takipEtButonu"
@@ -144,23 +190,24 @@
         android:layout_marginTop="16dp"
         android:backgroundTint="#FF9800"
         android:text="Takip Et"
-        android:visibility="gone"
         android:textAllCaps="false"
         android:textColor="#fff"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
     <Button
         android:id="@+id/takipEdiliyorButonu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_width="158dp"
+        android:layout_height="42dp"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="47dp"
         android:backgroundTint="#C8E6C9"
         android:text="Takip ediliyor"
-        android:visibility="gone"
         android:textAllCaps="false"
         android:textColor="#555555"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
@@ -180,12 +227,12 @@
 
     <LinearLayout
         android:id="@+id/ProfilDuzenleme"
-        android:layout_width="169dp"
+        android:layout_width="wrap_content"
         android:layout_height="88dp"
+        android:layout_marginStart="25dp"
+        android:orientation="vertical"
         android:paddingBottom="0dp"
         android:visibility="visible"
-        android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bioTextView">
 
@@ -212,37 +259,128 @@
 
     </LinearLayout>
 
+
     <Button
         android:id="@+id/sohbetButon"
-        android:layout_width="wrap_content"
+        android:layout_width="158dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="47dp"
+        android:layout_marginEnd="25dp"
+        android:backgroundTint="#FEB8AE"
+        android:text="Mesaj gönder"
+        android:textAllCaps="false"
+        android:textColor="#000000"
+        app:cornerRadius="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.866"
+        app:layout_constraintTop_toBottomOf="@id/bioTextView"
+        app:strokeColor="#FF9800"
+        app:strokeWidth="2dp" />
+
+    <TextView
+        android:id="@+id/gonderilerBaslikTextView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/ProfilDuzenleme"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/gonderiler_background"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="Gönderiler"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ProfilDuzenleme" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/gonderiRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="42dp"
+        android:layout_marginEnd="0dp"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:translationY="15dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:text="Sohbet"
-        android:textColor="@color/black"
-        app:strokeColor="#FEDFB1"
-        app:strokeWidth="4dp"
+        app:layout_constraintTop_toBottomOf="@id/ProfilDuzenleme" />
+
+    <TextView
+        android:id="@+id/emptyTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="Henüz gönderi yok"
+        android:textColor="#888888"
+        android:textSize="16sp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:backgroundTint="#FEB8AE"
-        />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ProfilDuzenleme" />
+
 
     <ImageView
         android:id="@+id/PPmenuButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/baseline_more_vert_24"
-        android:contentDescription="Menü"
-        android:visibility="gone"
-        android:padding="3dp"
-        android:clickable="true"
-        android:tint="#888888"
-        android:background="?selectableItemBackgroundBorderless"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-    />
+        android:background="?selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Menü"
+        android:padding="3dp"
+        android:src="@drawable/baseline_more_vert_24"
+        android:tint="#888888"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/engelLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/white"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Kullanıcı adı -->
+        <TextView
+            android:id="@+id/KullaniciAdiEngel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text=""
+            android:textColor="#000000"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!-- Uyarı metni -->
+        <TextView
+            android:id="@+id/engelBilgiText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="Bu profili göremiyorsun çünkü seni engellemiş olabilir."
+            android:textColor="#666666"
+            android:textSize="16sp" />
+
+    </LinearLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

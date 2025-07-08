@@ -1,5 +1,6 @@
 package com.emrullah.catmap;
 
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -16,6 +18,8 @@ import android.Manifest;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.location.Location;
+
+import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -24,6 +28,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -34,6 +39,10 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -60,6 +69,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private FotoGeciciAdapter fotoAdapter;
     private ImageView geciciFoto;
     final int MAX_FOTO_SAYISI = 5;
+    private ConstraintLayout main;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReference();
@@ -68,6 +78,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.yukleme_arayuzu);
+        main=findViewById(R.id.main);
         geciciFoto = findViewById(R.id.geciciFoto);
         fotoPager = findViewById(R.id.fotoPager);
         fotoAdapter = new FotoGeciciAdapter(this, secilenFotolar,null);
@@ -305,16 +316,56 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                     .add(catData)
                     .addOnSuccessListener(documentReference -> {
                         mesaji.BasariliDurum("Kedi bilgileri başarıyla kaydedildi!",1000);
+
+                        View dialogView = LayoutInflater.from(this).inflate(R.layout.alert_dialog_tasarimi, null);
+                        AlertDialog dialog = new AlertDialog.Builder(this)
+                                .setView(dialogView)
+                                .create();
+
+                        dialogView.findViewById(R.id.btn_yes).setOnClickListener(v -> {
+                            mesaji.YuklemeDurum("Ekleniyor...");
+                            kullaniciyaGonderiKaydet(documentReference.getId());
+                            dialog.dismiss();
+                        });
+
+                        dialogView.findViewById(R.id.btn_no).setOnClickListener(v -> {
+                            dialog.dismiss();
+                        });
+
+                        dialog.show();
+
                         secilenFotolar.clear();
                         fotoAdapter.notifyDataSetChanged();
                         geciciFoto.setVisibility(View.VISIBLE);
                         kedininismi.getText().clear();
                         kedininhakkindasi.getText().clear();
+
                     })
                     .addOnFailureListener(e -> {
                         mesaji.BasarisizDurum("Kedi kaydedilirken hata oluştu.",1000);
                     });
         }
+    }
+    public void kullaniciyaGonderiKaydet(String kediID){
+        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        Map<String, Object> yeniKedi = new HashMap<>();
+        yeniKedi.put("kediID", kediID);
+        yeniKedi.put("tarih", Timestamp.now());
+        kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
+                .addOnSuccessListener(aVoid -> {
+                    main.setVisibility(View.GONE);
+                    ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.container, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                    mesaji.BasariliDurum("Eklendi",1000);
+                })
+                .addOnFailureListener(e -> {
+                    mesaji.BasarisizDurum("Eklenemedi",1000);
+                    Log.e("Yukle", "yukleme başarısız: " + e.getMessage());
+                });
     }
 
 

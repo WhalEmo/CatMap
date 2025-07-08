@@ -55,6 +55,7 @@ dependencies {
 
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.viewpager2:viewpager2:1.1.0-beta02")
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
 
 
     testImplementation(libs.junit)

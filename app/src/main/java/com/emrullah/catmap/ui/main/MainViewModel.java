@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Adapter;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
@@ -16,6 +17,7 @@ import androidx.lifecycle.ViewModel;
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.UyariMesaji;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -32,7 +34,7 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-
+    public int Gsayisi=0;
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
@@ -53,12 +55,20 @@ public class MainViewModel extends ViewModel {
     public LiveData<Boolean> getBeniTakipEdiyor() {
         return _beniTakipEdiyor;
     }
-    public MutableLiveData<ArrayList<String>> _engelliler = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<ArrayList<String>>EngellilerLiveData() {
-        return _engelliler;
+    private MutableLiveData<ArrayList<String>> _benimEngellediklerim = new MutableLiveData<>();
+    private MutableLiveData<ArrayList<String>> _beniEngelleyenler = new MutableLiveData<>();
+    public LiveData<ArrayList<String>> BenimEngellediklerimLiveData() {
+        return _benimEngellediklerim;
+    }
+    public LiveData<ArrayList<String>> BeniEngelleyenlerLiveData() {
+        return _beniEngelleyenler;
     }
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
+    private MutableLiveData<ArrayList<Gonderi>> _kediIdGonderilist = new MutableLiveData<>();
+    public LiveData<ArrayList<Gonderi>>kediGonderi(){return _kediIdGonderilist;}
+    public MutableLiveData<Integer>_GonderiSayisi=new MutableLiveData<>();
+    public LiveData<Integer>GonderiSayisi(){return _GonderiSayisi;}
 
     private MediatorLiveData<Pair<Boolean, Boolean>> takipDurumuCift = new MediatorLiveData<>();
 
@@ -78,6 +88,7 @@ public class MainViewModel extends ViewModel {
 
 
     public MainViewModel() {
+        takipDurumlariniBirlestir();
         db = FirebaseFirestore.getInstance();
     }
 
@@ -126,6 +137,13 @@ public class MainViewModel extends ViewModel {
     }
 
     public void TakipEt(String TakipEttiginId){
+        List<String> benimEngellediklerim = _benimEngellediklerim.getValue();
+        List<String> beniEngelleyenler = _beniEngelleyenler.getValue();
+
+        if ((benimEngellediklerim != null && benimEngellediklerim.contains(TakipEttiginId)) ||
+                (beniEngelleyenler != null && beniEngelleyenler.contains(MainActivity.kullanici.getID()))) {
+            return;
+        }
         DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakipEttiginId);
 
@@ -162,6 +180,7 @@ public class MainViewModel extends ViewModel {
                 takipEdilenData.put("followedAt", FieldValue.serverTimestamp());
                 takipEdilenData.put("KullaniciAdi", hedefKullaniciSnapshot.getString("KullaniciAdi"));  // doğru
                 takipEdilenData.put("profilFotoUrl", hedefKullaniciSnapshot.getString("profilFotoUrl"));
+                takipEdilenData.put("ID", hedefKullaniciSnapshot.getId());
                 transaction.set(takipEdilenDocRef, takipEdilenData);
                 takipEdilenSayisi += 1;
                 takipEklendi = true;
@@ -173,6 +192,7 @@ public class MainViewModel extends ViewModel {
                 takipciData.put("followedAt", FieldValue.serverTimestamp());
                 takipciData.put("KullaniciAdi", mevcutKullaniciSnapshot.getString("KullaniciAdi"));  // ✅ düzeltildi
                 takipciData.put("profilFotoUrl", mevcutKullaniciSnapshot.getString("profilFotoUrl"));
+                takipciData.put("ID", mevcutKullaniciSnapshot.getId());
                 transaction.set(takipciDocRef, takipciData);
                 if (takipEklendi) { // Sadece takip eklenmişse takipçi sayısını artır
                     takipciSayisi += 1;
@@ -185,13 +205,14 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _takipDurumu.setValue(true);
             Log.d("Firestore", "Takip işlemi başarılı ve sayılar güncellendi");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takip işlemi başarısız", e);
         });
     }
 
-    public void takipEdiliyorMu(String bakilanId,Context context){
+    public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
                 .document(MainActivity.kullanici.getID())
                 .collection("takipEdilenler")
@@ -272,6 +293,7 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _takipDurumu.setValue(false);
             Log.d("Firestore", "Takipten çıkma işlemi başarılı ve sayılar güncellendi");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takipten çıkma işlemi başarısız", e);
@@ -326,6 +348,7 @@ public class MainViewModel extends ViewModel {
 
             return null;
         }).addOnSuccessListener(aVoid -> {
+            _beniTakipEdiyor.setValue(false);
             Log.d("Firestore", "Takipçiden çıkarma işlemi başarılı");
         }).addOnFailureListener(e -> {
             Log.e("Firestore", "Takipçiden çıkarma işlemi başarısız", e);
@@ -424,7 +447,8 @@ public class MainViewModel extends ViewModel {
                     }
                 });
     }
-    public void engelle(String engellenecekKullaniciId,String kisiId) {
+    public void engelle(String engellenecekKullaniciId,String kisiId,UyariMesaji uyari) {
+        uyari.YuklemeDurum("Engelleniyor...");
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
 
         kullaniciRef.update("blockedUsers", FieldValue.arrayUnion(engellenecekKullaniciId))
@@ -434,11 +458,13 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                             if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                            _engelliler.setValue(engellilerListesi);
+                            _benimEngellediklerim.setValue(engellilerListesi);
                         }
                     });
+                    uyari.BasariliDurum("Engellendi",1000);
                 })
                 .addOnFailureListener(e -> {
+                    uyari.BasarisizDurum("Engellenemedi",1000);
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
@@ -449,16 +475,31 @@ public class MainViewModel extends ViewModel {
             if (documentSnapshot.exists()) {
                 ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                 if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                _engelliler.setValue(engellilerListesi);
+                _beniEngelleyenler.setValue(engellilerListesi);
             } else {
-                _engelliler.setValue(new ArrayList<>());
+                _beniEngelleyenler.setValue(new ArrayList<>());
             }
         }).addOnFailureListener(e -> {
             Log.e("EngelVerisi", "Engelli kullanıcılar yüklenemedi: " + e.getMessage());
         });
     }
+    public void benimEngellediklerimiiGetir(){
+        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
 
-    public void engelKaldir(String engellenenKullaniciId,String kisiId) {
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
+                if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
+                _benimEngellediklerim.setValue(engellilerListesi);
+            } else {
+                _benimEngellediklerim.setValue(new ArrayList<>());
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("EngelVerisi", "Engelli kullanıcılar yüklenemedi: " + e.getMessage());
+        });
+    }
+    public void engelKaldir(String engellenenKullaniciId,String kisiId,UyariMesaji uyari) {
+        uyari.YuklemeDurum("Engel kaldırılıyor...");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
@@ -469,13 +510,84 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
                             if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                            _engelliler.setValue(engellilerListesi);
+                            _benimEngellediklerim.setValue(engellilerListesi);
                         }
                     });
+                    uyari.BasariliDurum("Engel kaldırıldı",1000);
                 })
                 .addOnFailureListener(e -> {
+                    uyari.BasarisizDurum("Engel kaldırılamadı",1000);
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
+    public void GonderiCekme(String id,UyariMesaji uyari ) {
+        DocumentReference kullaniciRef = db.collection("users").document(id);
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<Map<String, Object>> liste = (ArrayList<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
+                if (liste == null) liste = new ArrayList<>();
+                ArrayList<Gonderi>gonderiListesi=new ArrayList<Gonderi>();
+                if (liste.isEmpty()) {
+                    _kediIdGonderilist.setValue(gonderiListesi); // boş liste dön
+                    return;
+                }
+                liste.sort((o1, o2) -> {
+                    Timestamp t1 = (Timestamp) o1.get("tarih");
+                    Timestamp t2 = (Timestamp) o2.get("tarih");
+                    return t2.compareTo(t1);
+                });
+
+                final int toplam = liste.size();
+                final int[] tamamlanan = {0};
+
+                for (Map<String, Object> gonderiMap : liste) {
+                    String kediID = (String) gonderiMap.get("kediID");
+                    Timestamp tarih = (Timestamp) gonderiMap.get("tarih");
+                    db.collection("cats")
+                            .document(kediID)
+                            .get()
+                            .addOnSuccessListener(doc -> {
+                                if (doc.exists()) {
+                                    ArrayList<String> fotoList = (ArrayList<String>) doc.get("photoUri");
+                                    String aciklama = doc.getString("kediHakkinda");
+                                    String kediadi=doc.getString("kediAdi");
+                                    if (fotoList != null && !fotoList.isEmpty()) {
+                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih));
+                                    }
+                                }
+                                tamamlanan[0]++;
+                                if (tamamlanan[0] == toplam) {
+                                    gonderiListesi.sort((g1, g2) -> g2.getTarih().compareTo(g1.getTarih()));
+                                    _kediIdGonderilist.setValue(gonderiListesi);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("KediGetirme", "Hata: " + e.getMessage());
+                            });
+                }
+            } else {
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("Firestore", "Hata: " + e.getMessage());
+        });
+    }
+    public void GonderiSayisiniCek(String id) {
+        DocumentReference kullaniciRef = db.collection("users").document(id);
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                ArrayList<Map<String, Object>> liste = (ArrayList<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
+                if (liste == null) {
+                    _GonderiSayisi.setValue(0); // hiç gönderi yoksa
+                } else {
+                    _GonderiSayisi.setValue(liste.size()); // mevcut sayıyı ata
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("GonderiSayisi", "Veri çekme hatası: " + e.getMessage());
+            _GonderiSayisi.setValue(0); // hata durumunda yine sıfır ata
+        });
+    }
+
+
 
 }

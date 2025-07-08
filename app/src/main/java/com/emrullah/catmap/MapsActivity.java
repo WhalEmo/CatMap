@@ -44,6 +44,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 
+import com.emrullah.catmap.ui.main.Gonderi;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -64,6 +65,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -78,6 +80,7 @@ import com.squareup.picasso.Target;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -124,6 +127,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ImageView YrmgndrFotoImageView;
     private ImageView YntgndrFotoImageView;
     private URLye_Ulasma ulasma;
+    private ImageView kalpImageView;
+    private TextView begeniSayisiTextView;
 
 
     @Override
@@ -176,6 +181,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
         hakkinda = bottomSheetView.findViewById(R.id.hakkindagosterme);
         fotoPager = bottomSheetView.findViewById(R.id.fotoPager);
+        kalpImageView=bottomSheetView.findViewById(R.id.kalpImageView);
+        begeniSayisiTextView=bottomSheetView.findViewById(R.id.begeniSayisiTextView);
         yorumSayisiTextView=bottomSheetView.findViewById(R.id.yorumSayisiTextView);
         fotoAdapter = new FotoGeciciAdapter(this,fotolar,fotografYukleyiciYonetici);
         fotoPager.setAdapter(fotoAdapter);
@@ -205,7 +212,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ulasma=new URLye_Ulasma();
         ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YrmgndrFotoImageView);
         ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YntgndrFotoImageView);
-
+        BegenileriCek();
 
         textt.addTextChangedListener(new TextWatcher() {
             @Override
@@ -499,8 +506,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
+   private void GonderiBegenisiEkleme(String kediId){
+       DocumentReference ref = db.collection("users").document(MainActivity.kullanici.getID());
+       DocumentReference kediRef = db.collection("cats").document(kediId);
+       ref.update("begendigiGonderiler", FieldValue.arrayUnion(kediId))
+               .addOnSuccessListener(aVoid -> {
+                   CacheHelperGonderiBegeni.getInstance().begen(kediId);
+                   kediRef.update("begeniSayisi", FieldValue.increment(1));
+               })
+               .addOnFailureListener(e -> {
 
-
+               });
+   }
+   private void GonderiBegenisiKaldirma(String kediId){
+       DocumentReference ref = db.collection("users").document(MainActivity.kullanici.getID());
+       DocumentReference kediRef = db.collection("cats").document(kediId);
+       ref.update("begendigiGonderiler", FieldValue.arrayRemove(kediId))
+               .addOnSuccessListener(aVoid -> {
+                   CacheHelperGonderiBegeni.getInstance().begeniKaldir(kediId);
+                   kediRef.update("begeniSayisi", FieldValue.increment(-1));
+               })
+               .addOnFailureListener(e -> {
+                   Log.e("BegeniKaldirma", "Beğeni kaldırılamadı: " + e.getMessage());
+               });
+   }
+   private void BegenileriCek() {
+       DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+       kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+           if (documentSnapshot.exists()) {
+               ArrayList<String> liste = (ArrayList<String>) documentSnapshot.get("begendigiGonderiler");
+               if (liste != null) {
+                   CacheHelperGonderiBegeni.getInstance().setBegeniList(new HashSet<>(liste));
+               } else {
+                   liste = new ArrayList<>();
+                   CacheHelperGonderiBegeni.getInstance().setBegeniList(new HashSet<>(liste));
+               }
+           } else {
+               Log.d("BegeniYukleme", "Kullanıcı belgesi yok");
+           }
+       });
+   }
+   private void BegeniSayisiCekToplam(String kediIDsi){
+       FirebaseFirestore db = FirebaseFirestore.getInstance();
+       DocumentReference kediRef = db.collection("cats").document(kediIDsi);
+       kediRef.get().addOnSuccessListener(documentSnapshot -> {
+           if (documentSnapshot.exists()) {
+               Long begeniSayisi = documentSnapshot.getLong("begeniSayisi");
+               if (begeniSayisi != null) {
+                   begeniSayisiTextView.setText(begeniSayisi.toString());
+               } else {
+                   begeniSayisiTextView.setText("0");
+               }
+           }
+       }).addOnFailureListener(e -> {
+           Log.e("BegeniSayisi", "Beğeni sayısı çekilemedi: " + e.getMessage());
+       });
+   }
 
    // View'ı Bitmap'e Çeviren Yardımcı Fonksiyon
    private Bitmap fotoduzenle(Bitmap imageBitmap){
@@ -648,7 +709,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 kediID=ID;
                 kediYukleyenID=kedi.getYukleyenId();
                 YorumSayisiToplam();
+                if (CacheHelperGonderiBegeni.getInstance().begenmisMi(ID)) {
+                    kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
+                } else {
+                    kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
+                }
                 tiklanan_markerdaki_kedi(kedi.getIsim(), kedi.getHakkindasi(), Uri.parse(kedi.getURL()),kedi,kedi.getYukleyenId());
+                BegeniSayisiCekToplam(ID);
+                kalpImageView.setOnClickListener(v -> {
+                    if (CacheHelperGonderiBegeni.getInstance().begenmisMi(kediID)) {
+                        kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
+                        String sayi=begeniSayisiTextView.getText().toString();
+                        int begeni = Integer.parseInt(sayi);
+                        begeni=begeni-1;
+                        begeniSayisiTextView.setText(String.valueOf(begeni));
+                        GonderiBegenisiKaldirma(ID);
+                    } else {
+                        kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
+                        String sayi=begeniSayisiTextView.getText().toString();
+                        int begeni = Integer.parseInt(sayi);
+                        begeni=begeni+1;
+                        begeniSayisiTextView.setText(String.valueOf(begeni));
+                        GonderiBegenisiEkleme(ID);
+                    }
+                });
+
             }
         }
     }
