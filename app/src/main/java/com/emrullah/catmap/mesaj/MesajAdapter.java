@@ -52,11 +52,18 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MesajViewHolder holder, int position) {
+        holder.solMesajLayout.setVisibility(View.GONE);
+        holder.sagMesajLayout.setVisibility(View.GONE);
+        holder.solFotoLayout.setVisibility(View.GONE);
+        holder.sagFotoLayout.setVisibility(View.GONE);
+        holder.sagMesajText.setVisibility(View.GONE);
+        holder.solMesajText.setVisibility(View.GONE);
         Mesaj mesaj = mesajArrayList.get(position);
         if(!mesaj.getTur().equals("foto")) {
             if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
+                holder.sagMesajText.setVisibility(View.VISIBLE);
                 holder.sagMesajText.setText(mesaj.getMesaj().trim());
                 holder.sagZaman.setText(mesaj.getZaman());
                 if (mesaj.isGoruldu()) {
@@ -67,12 +74,12 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             } else {
                 holder.solMesajLayout.setVisibility(View.VISIBLE);
                 holder.sagMesajLayout.setVisibility(View.GONE);
+                holder.solMesajText.setVisibility(View.VISIBLE);
                 holder.solMesajText.setText(mesaj.getMesaj().trim());
                 holder.solZaman.setText(mesaj.getZaman());
             }
         }
         else {
-            System.out.println(mesaj.getUrller().get(0));
             // burası fotograf mesajları için
             if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
@@ -101,6 +108,8 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             return true;
         });
     }
+
+
 
     @Override
     public int getItemCount() {

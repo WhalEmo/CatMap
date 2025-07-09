@@ -253,7 +253,7 @@ public class MesajFragment extends Fragment {
                         else if(data.getData() != null){
                             MesajFotoGonderYonetici.getInstance().UriEkle(data.getData());
                         }
-                        MesajFotoGonderYonetici.getInstance().GondericiStart();
+                        MesajFotoGonderYonetici.getInstance().GondericiStart(adapter);
                     }
                 }
         );

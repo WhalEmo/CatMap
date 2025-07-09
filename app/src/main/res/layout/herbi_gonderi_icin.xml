@@ -90,7 +90,7 @@
                         android:layout_width="64dp"
                         android:layout_height="64dp"
                         android:translationY="-9dp"
-                        android:src="@drawable/markerKedy" />
+                        android:src="@drawable/markerkedy" />
 
                     <TextView
                         android:id="@+id/haritadaGorText"

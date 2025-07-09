@@ -75,6 +75,7 @@ public class MesajlasmaYonetici {
         mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.getID()).setValue(false);
         mesajMap.put(mesajID,null);
         Mesaj yeniMesaj = new Mesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false);
+        yeniMesaj.setTur("metin");
         adapter.getMesajArrayList().add(yeniMesaj);
         adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
     }

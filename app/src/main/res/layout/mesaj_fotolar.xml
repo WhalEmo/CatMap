@@ -10,7 +10,16 @@
 
     <FrameLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@drawable/foto_background_ortak">
+        <ImageView
+            android:id="@+id/placeholderImage"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:src="@drawable/placeholder"
+            android:scaleType="centerInside"
+            card_view:tint="#DDC6BA" />
 
         <ImageView
             android:id="@+id/fotoImage"
@@ -21,5 +30,20 @@
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
             android:contentDescription="Mesaj fotoğrafı" />
+
+        <TextView
+            android:id="@+id/fazlaFotoSayisi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="6dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="+3"
+            android:visibility="gone"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:background="@drawable/foto_overlay_label"
+            android:elevation="4dp" />
     </FrameLayout>
 </androidx.cardview.widget.CardView>
