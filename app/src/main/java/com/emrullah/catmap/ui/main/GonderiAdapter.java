@@ -60,7 +60,8 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
             Fragment fragment = GonderiDetayFragment.newInstance(
                     new ArrayList<>(gonderi.getFotoUrlListesi()),
                     gonderi.getKediAdi(),
-                    gonderi.getAciklama()
+                    gonderi.getAciklama(),
+                    gonderi.getBegeniSayisi()
             );
 
             transaction

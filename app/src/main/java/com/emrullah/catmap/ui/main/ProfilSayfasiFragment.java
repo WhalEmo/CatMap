@@ -112,6 +112,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private ShimmerFrameLayout shimmerLayout;
     private Boolean gonderiGeri=true;
     private TextView gonderiSayisiTextView;
+    private TextView gonderilerBaslikTextView;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -305,6 +306,7 @@ public class ProfilSayfasiFragment extends Fragment {
         myConstraintLayout=view.findViewById(R.id.myConstraintLayout);
         PPmenuButton=view.findViewById(R.id.PPmenuButton);
         engelButonu=view.findViewById(R.id.engelButonu);
+        gonderilerBaslikTextView=view.findViewById(R.id.gonderilerBaslikTextView);
 
         shimmerLayout = view.findViewById(R.id.shimmer_layout);
 
@@ -361,6 +363,7 @@ public class ProfilSayfasiFragment extends Fragment {
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
            PPmenuButton.setVisibility(View.GONE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
+           gonderilerBaslikTextView.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
            sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
            SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
@@ -479,9 +482,11 @@ public class ProfilSayfasiFragment extends Fragment {
                Boolean oBeniTakipEdiyor = pair.second != null && pair.second;
 
                if (benTakipEdiyorum) {
+                   mViewModel.takipediyorMuyum=true;
                    sohbetButon.setVisibility(View.VISIBLE);
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.VISIBLE);
+                   gonderilerBaslikTextView.setVisibility(View.VISIBLE);
                    mViewModel.GonderiCekme(yukleyenID,uyariMesaji);
                    mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
                        if (gonderilist == null || gonderilist.isEmpty()) {
@@ -493,22 +498,28 @@ public class ProfilSayfasiFragment extends Fragment {
                            gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager(),true);
                            gonderiRecyclerView.setAdapter(gonderiAdapter);
                        }
+
                    });
-                   if (shimmerLayout.getVisibility() == View.VISIBLE) {
-                       shimmerLayout.stopShimmer();
-                       shimmerLayout.setVisibility(View.GONE);
-                       myConstraintLayout.setVisibility(View.VISIBLE);
-                   }
+
                } else {
+                   mViewModel.takipediyorMuyum=false;
                    takipEdiliyorButonu.setVisibility(View.GONE);
+                   gonderilerBaslikTextView.setVisibility(View.GONE);
                    takipEtButonu.setVisibility(View.VISIBLE);
                    sohbetButon.setVisibility(View.GONE);
 
                    if (oBeniTakipEdiyor) {
+                       mViewModel.takipciMi=true;
                        takipEtButonu.setText("Sende takip et");
                    } else {
+                       mViewModel.takipciMi=false;
                        takipEtButonu.setText("Takip Et");
                    }
+               }
+               if (shimmerLayout.getVisibility() == View.VISIBLE) {
+                   shimmerLayout.stopShimmer();
+                   shimmerLayout.setVisibility(View.GONE);
+                   myConstraintLayout.setVisibility(View.VISIBLE);
                }
            });
 
@@ -700,6 +711,7 @@ public class ProfilSayfasiFragment extends Fragment {
                     .setPositiveButton("Evet", (dialog, which) -> {
                         mViewModel.TakipEt(yukleyenID);
                         mViewModel.beniTakipEdiyorMu(yukleyenID);
+                        mViewModel.takipediyorMuyum=true;
                         mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
                         String text = takipEdilenSayisiTextView.getText().toString().trim();
                         int takip_edilen = Integer.parseInt(text) + 1;
@@ -721,6 +733,7 @@ public class ProfilSayfasiFragment extends Fragment {
                        // Onaylandıysa:
                        mViewModel.TakiptenCikarma(yukleyenID);
                        mViewModel.takipEdiliyorMu(yukleyenID);
+                       mViewModel.takipediyorMuyum=false;
                        mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
                        String text = takipEdilenSayisiTextView.getText().toString().trim();
                        int takip_edilen = Integer.parseInt(text) - 1;

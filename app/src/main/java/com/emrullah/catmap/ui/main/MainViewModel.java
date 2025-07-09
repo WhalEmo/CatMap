@@ -34,7 +34,9 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-    public int Gsayisi=0;
+    public Boolean takipediyorMuyum=false;
+    public Boolean takipciMi=false;
+
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
@@ -220,6 +222,7 @@ public class MainViewModel extends ViewModel {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     _takipDurumu.setValue(documentSnapshot.exists());
+                    takipediyorMuyum=documentSnapshot.exists();
                 })
                 .addOnFailureListener(e -> {
                     Log.e("TakipKontrol", "Hata oluştu", e);
@@ -234,6 +237,7 @@ public class MainViewModel extends ViewModel {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     _beniTakipEdiyor.setValue(documentSnapshot.exists());
+                    takipciMi=documentSnapshot.exists();
                 })
                 .addOnFailureListener(e -> {
                     Log.e("TakipçiKontrol", "Hata oluştu", e);
@@ -259,6 +263,7 @@ public class MainViewModel extends ViewModel {
             if (takipciSayisi == null) takipciSayisi = 0L;
 
             // Alt koleksiyon referansları
+
             CollectionReference takipEdilenlerSubCol = mevcutKullaniciRef.collection("takipEdilenler");
             CollectionReference takipcilerSubCol = TakipEtiginRef.collection("takipciler");
 
@@ -551,8 +556,9 @@ public class MainViewModel extends ViewModel {
                                     ArrayList<String> fotoList = (ArrayList<String>) doc.get("photoUri");
                                     String aciklama = doc.getString("kediHakkinda");
                                     String kediadi=doc.getString("kediAdi");
+                                    Long begeniSayisi = doc.getLong("begeniSayisi");
                                     if (fotoList != null && !fotoList.isEmpty()) {
-                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih));
+                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih,begeniSayisi));
                                     }
                                 }
                                 tamamlanan[0]++;

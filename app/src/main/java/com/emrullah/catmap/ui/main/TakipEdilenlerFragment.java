@@ -54,7 +54,7 @@ public class TakipEdilenlerFragment extends Fragment {
             id = MainActivity.kullanici.getID(); // Yedek olarak kendi ID'miz
         }
 
-        veriCekTakipedilenler(id);
+        veriCekTakipedilenler(id,viewModel);
 
         adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
             ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId); // 👈 burada kullandık
@@ -70,7 +70,7 @@ public class TakipEdilenlerFragment extends Fragment {
 
         return view;
     }
-    public void veriCekTakipedilenler(String Id){
+    public void veriCekTakipedilenler(String Id, MainViewModel viewModel){
         progressBar.setVisibility(View.VISIBLE);
         db.collection("users")
                 .document(Id)
@@ -83,10 +83,10 @@ public class TakipEdilenlerFragment extends Fragment {
                         String url=doc.getString("profilFotoUrl");
                         String Idsi=doc.getString("ID");
                         Kullanici kullanici=new Kullanici();
+                        viewModel.takipediyorMuyum=true;
                         kullanici.setKullaniciAdi(ad);
                         kullanici.setFotoUrl(url);
                         kullanici.setID(Idsi);
-                        kullanici.setTakipEdiliyorMu(true);
                         kullaniciList.add(kullanici);
                     }
                     adapter.notifyDataSetChanged();

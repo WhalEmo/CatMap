@@ -70,12 +70,17 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
                 .into(holder.recyclerFotoImageView);
-        if(kullanici.getTakipEdiliyorMu()==true&&kullanici.getTakipciMi()==true||kullanici.getTakipciMi()==false){
-            holder.takipediyosa.setVisibility(View.VISIBLE);//takip ediliyor
-            holder.takippet.setVisibility(View.GONE);//takip et
-        }else if(kullanici.getTakipciMi()==true&&kullanici.getTakipEdiliyorMu()==false){
+
+        if (viewModel.takipediyorMuyum==true){
+            holder.takipediyosa.setVisibility(View.VISIBLE);
+            holder.takippet.setVisibility(View.GONE);
+        } else if (viewModel.takipediyorMuyum==false&&viewModel.takipciMi==true) {
             holder.takipediyosa.setVisibility(View.GONE);
             holder.takippet.setText("Sende takip et");
+            holder.takippet.setVisibility(View.VISIBLE);
+        }else if (viewModel.takipediyorMuyum==false&&viewModel.takipciMi==false) {
+            holder.takipediyosa.setVisibility(View.GONE);
+            holder.takippet.setText("Takip et");
             holder.takippet.setVisibility(View.VISIBLE);
         }
         holder.RecyclerkullaniciAdi.setOnClickListener(t->{
@@ -84,12 +89,12 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
                }
        });
         holder.takippet.setOnClickListener(t->{
-            kullanici.setTakipEdiliyorMu(true);
+            viewModel.takipediyorMuyum=true;
             viewModel.TakipEt(kullanici.getID());
             notifyItemChanged(position);
         });
         holder.takipediyosa.setOnClickListener(b->{
-            kullanici.setTakipEdiliyorMu(false);
+            viewModel.takipediyorMuyum=false;
             viewModel.TakiptenCikarma(kullanici.getID());
             notifyItemChanged(position);
         });

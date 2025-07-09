@@ -9,12 +9,22 @@ public class Gonderi {
     private String aciklama;
     private String kediAdi;
     private Timestamp tarih;
+    private Long BegeniSayisi;
 
-    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama, String kediAdi,Timestamp  tarih) {
+    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama, String kediAdi,Timestamp  tarih,Long BegeniSayisi) {
         this.fotoUrlListesi = fotoUrlListesi;
         this.aciklama = aciklama;
         this.kediAdi=kediAdi;
         this.tarih = tarih;
+        this.BegeniSayisi=BegeniSayisi;
+    }
+
+    public Long getBegeniSayisi() {
+        return BegeniSayisi;
+    }
+
+    public void setBegeniSayisi(Long begeniSayisi) {
+        BegeniSayisi = begeniSayisi;
     }
 
     public Timestamp  getTarih() {
