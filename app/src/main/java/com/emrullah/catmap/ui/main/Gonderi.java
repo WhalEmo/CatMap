@@ -10,13 +10,23 @@ public class Gonderi {
     private String kediAdi;
     private Timestamp tarih;
     private Long BegeniSayisi;
+    private String kediID;
 
-    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama, String kediAdi,Timestamp  tarih,Long BegeniSayisi) {
+    public Gonderi(ArrayList<String> fotoUrlListesi, String aciklama, String kediAdi,Timestamp  tarih,Long BegeniSayisi,String kediID) {
         this.fotoUrlListesi = fotoUrlListesi;
         this.aciklama = aciklama;
         this.kediAdi=kediAdi;
         this.tarih = tarih;
         this.BegeniSayisi=BegeniSayisi;
+        this.kediID=kediID;
+    }
+
+    public String getKediID() {
+        return kediID;
+    }
+
+    public void setKediID(String kediID) {
+        this.kediID = kediID;
     }
 
     public Long getBegeniSayisi() {

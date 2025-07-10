@@ -61,7 +61,8 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
                     new ArrayList<>(gonderi.getFotoUrlListesi()),
                     gonderi.getKediAdi(),
                     gonderi.getAciklama(),
-                    gonderi.getBegeniSayisi()
+                    gonderi.getBegeniSayisi(),
+                    gonderi.getKediID()
             );
 
             transaction

@@ -348,7 +348,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 getParentFragmentManager().popBackStack();
             }
         });
-
+        mViewModel.setYukleyenID(yukleyenID);
         TakipTakipciSayilariUI();
         mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
             if (takipEdilenSayisi != null)
@@ -359,6 +359,7 @@ public class ProfilSayfasiFragment extends Fragment {
             if (takipciSayisi != null)
                 takipciSayisiTextView.setText(String.valueOf(takipciSayisi));
         });
+
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
            PPmenuButton.setVisibility(View.GONE);
@@ -482,7 +483,6 @@ public class ProfilSayfasiFragment extends Fragment {
                Boolean oBeniTakipEdiyor = pair.second != null && pair.second;
 
                if (benTakipEdiyorum) {
-                   mViewModel.takipediyorMuyum=true;
                    sohbetButon.setVisibility(View.VISIBLE);
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.VISIBLE);
@@ -502,17 +502,15 @@ public class ProfilSayfasiFragment extends Fragment {
                    });
 
                } else {
-                   mViewModel.takipediyorMuyum=false;
                    takipEdiliyorButonu.setVisibility(View.GONE);
                    gonderilerBaslikTextView.setVisibility(View.GONE);
                    takipEtButonu.setVisibility(View.VISIBLE);
+                   gonderiRecyclerView.setVisibility(View.GONE);
                    sohbetButon.setVisibility(View.GONE);
 
                    if (oBeniTakipEdiyor) {
-                       mViewModel.takipciMi=true;
                        takipEtButonu.setText("Sende takip et");
                    } else {
-                       mViewModel.takipciMi=false;
                        takipEtButonu.setText("Takip Et");
                    }
                }
@@ -553,11 +551,11 @@ public class ProfilSayfasiFragment extends Fragment {
            });
            takipEtme();
            cikarma();
-           Engelliduzen();
+           Engelliduzen(uyariMesaji);
        }
         return view;
     }
-    public void Engelliduzen() {
+    public void Engelliduzen(UyariMesaji uyari) {
         PPmenuButton.setOnClickListener(b -> {
             mViewModel.beniTakipEdiyorMu(yukleyenID);
             ObserveDataSınıfı.observeOnce(mViewModel.getBeniTakipEdiyor(), getViewLifecycleOwner(), takipEdiyor -> {
@@ -588,6 +586,7 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setTitle(kullaniciadi.getText().toString())
                                 .setMessage("Bu kullanıcıyı engellemek istiyor musunuz?")
                                 .setPositiveButton("Evet", (dialog, which) -> {
+                                    uyari.YuklemeDurum("Engelleniyor...");
                                     mViewModel.engelle(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
                                     mViewModel.TakiptenCikarma(yukleyenID);
                                     mViewModel.TakipcidenCikarma(yukleyenID);
@@ -595,6 +594,12 @@ public class ProfilSayfasiFragment extends Fragment {
                                     String text = takipciSayisiTextView.getText().toString().trim();
                                     int takipci = Integer.parseInt(text) - 1;
                                     takipciSayisiTextView.setText(String.valueOf(takipci));
+                                    String text2= takipEdilenSayisiTextView.getText().toString().trim();
+                                    int takipci2 = Integer.parseInt(text2) - 1;
+                                    takipEdilenSayisiTextView.setText(String.valueOf(takipci2));
+                                    takipciSayisiTextView.setClickable(false);
+                                    takipEdilenSayisiTextView.setClickable(false);
+                                    uyari.BasariliDurum("Engellendi",1000);
                                     item.setTitle("Engeli Kaldır");
                                     popupmenu.dismiss();
                                 })
@@ -606,8 +611,15 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setTitle(kullaniciadi.getText().toString())
                                 .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
                                 .setPositiveButton("Evet", (dialog, which) -> {
+                                    uyari.YuklemeDurum("Engel kaldırılıyor...");
                                     mViewModel.engelKaldir(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
+                                    mViewModel.TakipTakipciSayisi(yukleyenID,requireContext());
+                                    takipciSayisiTextView.setClickable(true);
+                                    takipEdilenSayisiTextView.setClickable(true);
+                                    takipciGorme(yukleyenID);
+                                    takipleriGorme(yukleyenID);
                                     item.setTitle("Engelle");
+                                    uyari.BasariliDurum("Engel kaldırıldı...",1000);
                                     popupmenu.dismiss();
                                 })
                                 .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
@@ -619,7 +631,9 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setMessage("Bu takipçiyi çıkarmak istiyor musunuz?")
                                 .setPositiveButton("Evet", (dialog, which) -> {
                                     mViewModel.TakipcidenCikarma(yukleyenID);
-                                    mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
+                                    String text = takipEdilenSayisiTextView.getText().toString().trim();
+                                    int takip_edilen = Integer.parseInt(text) - 1;
+                                    takipEdilenSayisiTextView.setText(String.valueOf(takip_edilen));
                                     popupmenu.dismiss();
                                 })
                                 .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
@@ -636,7 +650,6 @@ public class ProfilSayfasiFragment extends Fragment {
             });
         });
     }
-
 
     public void takipciGorme(String Id) {
         takipciSayisiTextView.setOnClickListener(b -> {
@@ -709,13 +722,15 @@ public class ProfilSayfasiFragment extends Fragment {
                     .setTitle(kullaniciadi.getText().toString())
                     .setMessage("Bu kullanıcıyı takip etmek istiyor musunuz?")
                     .setPositiveButton("Evet", (dialog, which) -> {
+                        String text = takipciSayisiTextView.getText().toString().trim();
+                        int takip_edilen = Integer.parseInt(text) + 1;
+                        takipciSayisiTextView.setText(String.valueOf(takip_edilen));
                         mViewModel.TakipEt(yukleyenID);
                         mViewModel.beniTakipEdiyorMu(yukleyenID);
-                        mViewModel.takipediyorMuyum=true;
-                        mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
-                        String text = takipEdilenSayisiTextView.getText().toString().trim();
-                        int takip_edilen = Integer.parseInt(text) + 1;
-                        takipEdilenSayisiTextView.setText(String.valueOf(takip_edilen));
+                        takipciSayisiTextView.setClickable(true);
+                        takipEdilenSayisiTextView.setClickable(true);
+                        takipciGorme(yukleyenID);
+                        takipleriGorme(yukleyenID);
                     })
                     .setNegativeButton("Hayır", (dialog, which) -> {
                         dialog.dismiss();
@@ -730,14 +745,13 @@ public class ProfilSayfasiFragment extends Fragment {
                    .setTitle(kullaniciadi.getText().toString())
                    .setMessage("Bu kullanıcıyı takip etmeyi bırakmak istiyor musunuz?")
                    .setPositiveButton("Evet", (dialog, which) -> {
-                       // Onaylandıysa:
+                       String text = takipciSayisiTextView.getText().toString().trim();
+                       int takip_edilen = Integer.parseInt(text) - 1;
+                       takipciSayisiTextView.setText(String.valueOf(takip_edilen));
                        mViewModel.TakiptenCikarma(yukleyenID);
                        mViewModel.takipEdiliyorMu(yukleyenID);
-                       mViewModel.takipediyorMuyum=false;
-                       mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
-                       String text = takipEdilenSayisiTextView.getText().toString().trim();
-                       int takip_edilen = Integer.parseInt(text) - 1;
-                       takipEdilenSayisiTextView.setText(String.valueOf(takip_edilen));
+                       takipciSayisiTextView.setClickable(false);
+                       takipEdilenSayisiTextView.setClickable(false);
                    })
                    .setNegativeButton("Hayır", (dialog, which) -> {
                        dialog.dismiss();

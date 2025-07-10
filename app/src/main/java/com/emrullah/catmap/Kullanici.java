@@ -27,6 +27,9 @@ public class Kullanici {
     private long sonGorulme;
     private boolean cevrimiciMi;
 
+    public int TakipEdiyorMuyum=0;
+    public int TakipciMi=0;
+
     public boolean isCevrimiciMi() {
         return cevrimiciMi;
     }

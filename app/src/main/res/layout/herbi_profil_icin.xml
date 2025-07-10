@@ -36,20 +36,14 @@
             android:id="@+id/takipediyosa"
             android:layout_width="120dp"
             android:layout_height="40dp"
-            android:visibility="gone"
+            android:visibility="visible"
+            android:enabled="false"
+            android:alpha="0.5"
             android:backgroundTint="#C8E6C9"
             android:textColor="#555555"
             android:textAllCaps="false"
             android:text="Takip" />
 
-        <Button
-            android:id="@+id/takippet"
-            android:layout_width="120dp"
-            android:layout_height="40dp"
-            android:backgroundTint="#FF9800"
-            android:textColor="#fff"
-            android:textAllCaps="false"
-            android:text="Takip et" />
 
     </LinearLayout>
 

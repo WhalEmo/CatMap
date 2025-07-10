@@ -59,7 +59,7 @@ public class TakipcilerFragment extends Fragment {
             id = MainActivity.kullanici.getID(); // Yedek olarak kendi ID'miz
         }
 
-        veriCekTakipciler(id,viewModel);
+        veriCekTakipciler(id);
 
         adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
             ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId);
@@ -74,7 +74,7 @@ public class TakipcilerFragment extends Fragment {
         return view;
 
     }
-    public void veriCekTakipciler(String Id, MainViewModel viewModel){
+    public void veriCekTakipciler(String Id){
         progressBar.setVisibility(View.VISIBLE);
         db.collection("users")
                 .document(Id)
@@ -88,7 +88,7 @@ public class TakipcilerFragment extends Fragment {
                         String Idsi=doc.getString("ID");
                        Kullanici kullanici=new Kullanici();
                        kullanici.setKullaniciAdi(ad);
-                       viewModel.takipciMi=true;
+                       kullanici.TakipciMi=2;
                        kullanici.setFotoUrl(url);
                        kullanici.setID(Idsi);
                        kullaniciList.add(kullanici);

@@ -3,68 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
-    <!-- Shimmer Efekti -->
-    <com.facebook.shimmer.ShimmerFrameLayout
-        android:id="@+id/shimmerLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="30dp"
-        android:layout_gravity="center"
-        android:background="#FFFFFF"
-        android:visibility="visible"
-        app:shimmer_auto_start="true"
-        app:shimmer_duration="1000">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Sahte foto alanı -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:background="@android:color/darker_gray" />
-
-            <!-- Sahte kedi adı -->
-            <View
-                android:layout_width="150dp"
-                android:layout_height="20dp"
-                android:layout_marginTop="16dp"
-                android:background="@android:color/darker_gray" />
-
-            <!-- Sahte açıklama -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="14dp"
-                android:layout_marginTop="8dp"
-                android:background="@android:color/darker_gray" />
-
-            <View
-                android:layout_width="60dp"
-                android:layout_height="14dp"
-                android:layout_marginTop="8dp"
-                android:background="@android:color/darker_gray" />
-        </LinearLayout>
-    </com.facebook.shimmer.ShimmerFrameLayout>
-
     <!-- Asıl İçerik -->
     <LinearLayout
         android:id="@+id/gercekIcerikLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:visibility="gone"> <!-- Başta gizli -->
+        android:visibility="visible"> <!-- Başta gizli -->
 
         <TextView
             android:id="@+id/gonderiBaslik"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="55dp"
             android:text="Gönderi"
-            android:textSize="22sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#000000"
             android:gravity="center"
@@ -77,27 +29,52 @@
             android:background="#FFD1A4"
             android:fillViewport="true">
 
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="4dp">
 
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/fotoCardView"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="300dp"
-                    android:layout_margin="25dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="8dp"
-                    app:cardBackgroundColor="@android:color/white">
+                    android:layout_height="wrap_content">
 
-                    <androidx.viewpager2.widget.ViewPager2
-                        android:id="@+id/fotoPager"
+                    <!-- Fotoğraf Kartı -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/fotoCardView"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal" />
-                </androidx.cardview.widget.CardView>
+                        android:layout_height="300dp"
+                        android:layout_margin="25dp"
+                        android:translationY="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="8dp"
+                        app:cardBackgroundColor="@android:color/white">
+
+                        <androidx.viewpager2.widget.ViewPager2
+                            android:id="@+id/fotoPager"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="horizontal" />
+                    </androidx.cardview.widget.CardView>
+
+                    <ImageView
+                        android:id="@+id/GonderiMenu"
+                        android:layout_width="65dp"
+                        android:layout_height="33dp"
+                        android:layout_marginTop="8dp"
+                        android:translationY="-5dp"
+                        android:layout_gravity="end"
+                        android:background="?selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="Menü"
+                        android:padding="2dp"
+                        android:src="@drawable/baseline_more_vert_24"
+                        android:tint="#1C1C1C"
+                        android:visibility="visible"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/begeniBilgiTextView"
