@@ -84,9 +84,9 @@ public class TakipEdilenlerFragment extends Fragment {
                         String Idsi=doc.getString("ID");
                         Kullanici kullanici=new Kullanici();
                         kullanici.setKullaniciAdi(ad);
+                        kullanici.TakipEdiyorMuyum=2;
                         kullanici.setFotoUrl(url);
                         kullanici.setID(Idsi);
-                        kullanici.setTakipEdiliyorMu(true);
                         kullaniciList.add(kullanici);
                     }
                     adapter.notifyDataSetChanged();

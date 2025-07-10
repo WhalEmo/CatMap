@@ -1,6 +1,8 @@
 package com.emrullah.catmap.ui.main;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,11 +15,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.KullaniciAdiTiklamaListener;
+import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.Yanit_Model;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -41,14 +45,12 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView recyclerFotoImageView;
         TextView RecyclerkullaniciAdi;
-        Button takippet;
         Button takipediyosa;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             recyclerFotoImageView=itemView.findViewById(R.id.recyclerFotoImageView);
             RecyclerkullaniciAdi=itemView.findViewById(R.id.RecyclerkullaniciAdi);
-            takippet=itemView.findViewById(R.id.takippet);
             takipediyosa=itemView.findViewById(R.id.takipediyosa);
         }
     }
@@ -70,29 +72,23 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
                 .into(holder.recyclerFotoImageView);
-        if(kullanici.getTakipEdiliyorMu()==true&&kullanici.getTakipciMi()==true||kullanici.getTakipciMi()==false){
-            holder.takipediyosa.setVisibility(View.VISIBLE);//takip ediliyor
-            holder.takippet.setVisibility(View.GONE);//takip et
-        }else if(kullanici.getTakipciMi()==true&&kullanici.getTakipEdiliyorMu()==false){
-            holder.takipediyosa.setVisibility(View.GONE);
-            holder.takippet.setText("Sende takip et");
-            holder.takippet.setVisibility(View.VISIBLE);
+
+
+        if (kullanici.TakipEdiyorMuyum==2){
+            holder.takipediyosa.setText("Takip");
+        } else if (kullanici.TakipciMi==2) {
+            holder.takipediyosa.setText("Takipçi");
+        }else{
+            holder.takipediyosa.setText("Takip et");
+            holder.takipediyosa.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+
         }
+
         holder.RecyclerkullaniciAdi.setOnClickListener(t->{
                if (kullaniciAdiTiklamaListener != null) {
                    kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(kullanici.getID());
                }
        });
-        holder.takippet.setOnClickListener(t->{
-            kullanici.setTakipEdiliyorMu(true);
-            viewModel.TakipEt(kullanici.getID());
-            notifyItemChanged(position);
-        });
-        holder.takipediyosa.setOnClickListener(b->{
-            kullanici.setTakipEdiliyorMu(false);
-            viewModel.TakiptenCikarma(kullanici.getID());
-            notifyItemChanged(position);
-        });
     }
     @Override
     public int getItemCount() {

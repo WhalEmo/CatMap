@@ -88,8 +88,8 @@ public class TakipcilerFragment extends Fragment {
                         String Idsi=doc.getString("ID");
                        Kullanici kullanici=new Kullanici();
                        kullanici.setKullaniciAdi(ad);
+                       kullanici.TakipciMi=2;
                        kullanici.setFotoUrl(url);
-                       kullanici.setTakipciMi(true);
                        kullanici.setID(Idsi);
                        kullaniciList.add(kullanici);
                     }

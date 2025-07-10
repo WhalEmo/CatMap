@@ -27,6 +27,9 @@ public class Kullanici {
     private long sonGorulme;
     private boolean cevrimiciMi;
 
+    public int TakipEdiyorMuyum=0;
+    public int TakipciMi=0;
+
     public boolean isCevrimiciMi() {
         return cevrimiciMi;
     }
@@ -50,9 +53,6 @@ public class Kullanici {
     public void setFotoBitmap(Bitmap fotoBitmap) {
         this.fotoBitmap = fotoBitmap;
     }
-
-    private Boolean TakipEdiliyorMu=false;
-    private Boolean TakipciMi=false;
 
 
     public String getFotoUrl() {
@@ -142,21 +142,6 @@ public class Kullanici {
         Email = email.toLowerCase().trim();
     }
 
-    public Boolean getTakipEdiliyorMu() {
-        return TakipEdiliyorMu;
-    }
-
-    public void setTakipEdiliyorMu(Boolean takipEdiliyorMu) {
-        TakipEdiliyorMu = takipEdiliyorMu;
-    }
-
-    public Boolean getTakipciMi() {
-        return TakipciMi;
-    }
-
-    public void setTakipciMi(Boolean takipciMi) {
-        TakipciMi = takipciMi;
-    }
 
     public boolean KullaniciIs(){
         if(this.Ad.isEmpty() || this.Soyad.isEmpty() || this.Email.isEmpty() || this.KullaniciAdi.isEmpty() || this.Sifre.isEmpty()){

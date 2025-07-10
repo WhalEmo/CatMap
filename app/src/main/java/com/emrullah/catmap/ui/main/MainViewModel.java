@@ -28,17 +28,19 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-    public int Gsayisi=0;
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
     public LiveData<Long>takipEdilenSayisiLiveData(){
+
         return _takipEdilenSayisi;
     }
     public MutableLiveData<Long>_takipciSayisi=new MutableLiveData<>();
@@ -69,8 +71,28 @@ public class MainViewModel extends ViewModel {
     public LiveData<ArrayList<Gonderi>>kediGonderi(){return _kediIdGonderilist;}
     public MutableLiveData<Integer>_GonderiSayisi=new MutableLiveData<>();
     public LiveData<Integer>GonderiSayisi(){return _GonderiSayisi;}
-
     private MediatorLiveData<Pair<Boolean, Boolean>> takipDurumuCift = new MediatorLiveData<>();
+
+    private final MutableLiveData<String> yukleyenID = new MutableLiveData<>();
+
+    public void gonderiSil(String kediId) {
+        List<Gonderi> mevcutListe = _kediIdGonderilist.getValue();
+        if (mevcutListe != null) {
+            ArrayList<Gonderi> guncelListe = new ArrayList<>(mevcutListe);
+            guncelListe.removeIf(g -> g.getKediID().equals(kediId));
+            _kediIdGonderilist.setValue(guncelListe);
+            int sayi=_GonderiSayisi.getValue();
+            _GonderiSayisi.setValue(sayi-1);
+        }
+    }
+
+    public void setYukleyenID(String id) {
+        yukleyenID.setValue(id);
+    }
+
+    public LiveData<String> getYukleyenID() {
+        return yukleyenID;
+    }
 
     public void takipDurumlariniBirlestir() {
         takipDurumuCift.addSource(_takipDurumu, benimTakipDurumum ->
@@ -259,6 +281,7 @@ public class MainViewModel extends ViewModel {
             if (takipciSayisi == null) takipciSayisi = 0L;
 
             // Alt koleksiyon referansları
+
             CollectionReference takipEdilenlerSubCol = mevcutKullaniciRef.collection("takipEdilenler");
             CollectionReference takipcilerSubCol = TakipEtiginRef.collection("takipciler");
 
@@ -411,6 +434,7 @@ public class MainViewModel extends ViewModel {
         });
 
     }
+
     public void KAdiDBekle(String kullaniciAdi,Context context,UyariMesaji uyari){
         uyari.YuklemeDurum("Kaydediliyor...");
         db.collection("users")
@@ -551,8 +575,9 @@ public class MainViewModel extends ViewModel {
                                     ArrayList<String> fotoList = (ArrayList<String>) doc.get("photoUri");
                                     String aciklama = doc.getString("kediHakkinda");
                                     String kediadi=doc.getString("kediAdi");
+                                    Long begeniSayisi = doc.getLong("begeniSayisi");
                                     if (fotoList != null && !fotoList.isEmpty()) {
-                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih));
+                                        gonderiListesi.add(new Gonderi(fotoList, aciklama,kediadi,tarih,begeniSayisi,kediID));
                                     }
                                 }
                                 tamamlanan[0]++;
@@ -588,6 +613,36 @@ public class MainViewModel extends ViewModel {
         });
     }
 
+    public void kullaniciyaGonderiSil(String kediID,UyariMesaji mesaji) {
+        mesaji.YuklemeDurum("Gönderi siliniyor");
+        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+            List<Map<String, Object>> gonderilenKediler = (List<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
 
+            if (gonderilenKediler != null) {
+                Map<String, Object> silinecekKedi = null;
+
+                for (Map<String, Object> item : gonderilenKediler) {
+                    if (kediID.equals(item.get("kediID"))) {
+                        silinecekKedi = item;
+                        break;
+                    }
+                }
+                if (silinecekKedi != null) {
+                    kullaniciRef.update("GonderilenKediler", FieldValue.arrayRemove(silinecekKedi))
+                            .addOnSuccessListener(aVoid -> {
+                                mesaji.BasariliDurum("Silindi", 1000);
+                                Log.d("Silme", "Kedi silindi: " + kediID);
+                            })
+                            .addOnFailureListener(e -> {
+                                mesaji.BasarisizDurum("Silinemedi", 1000);
+                                Log.e("Silme", "Silme hatası: " + e.getMessage());
+                            });
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Log.e("Silme", "Veri çekme hatası: " + e.getMessage());
+        });
+    }
 
 }
