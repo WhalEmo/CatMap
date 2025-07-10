@@ -35,6 +35,7 @@ public class MesajFotoGonderYonetici {
     private ArrayList<String> mesajlasmaFotoUrl = new ArrayList<>();
     private HashMap<String, Target> targetlar = new HashMap<>();
     private final int BITMAP_ADET = 80;
+    private Mesaj sonMesaj;
 
     public static MesajFotoGonderYonetici getInstance(){
         if(yonetici == null){
@@ -88,12 +89,11 @@ public class MesajFotoGonderYonetici {
         fotografUrileri.clear();
     }
 
-    public void FotoMesaj(boolean Kim, MesajAdapter.MesajViewHolder holder, Mesaj mesaj, Context context){
+    public void FotoMesaj(boolean Kim, MesajAdapter.MesajViewHolder holder, Mesaj mesaj, Context context, Runnable goster){
         GridLayout layout = Kim ? holder.sagFotoLayout : holder.solFotoLayout;
         layout.removeAllViews();
         System.out.println("girildi fotomesaj");
         layout.setVisibility(View.VISIBLE);
-        // burda hata var
         View mesajFoto = LayoutInflater.from(context).inflate(R.layout.mesaj_fotolar, null);
         ImageView resim = mesajFoto.findViewById(R.id.fotoImage);
         ImageView placeholder = mesajFoto.findViewById(R.id.placeholderImage);
@@ -103,6 +103,10 @@ public class MesajFotoGonderYonetici {
         if (count == 1) {
             url = mesaj.getUrller().get(0);
             layout.addView(mesajFoto);
+            resim.setOnClickListener(v->{
+                this.sonMesaj = mesaj;
+                goster.run();
+            });
             if(mesajlasmaFotolari.containsKey(url)) {
                 resim.setImageBitmap(mesajlasmaFotolari.get(url));
             }
@@ -114,6 +118,10 @@ public class MesajFotoGonderYonetici {
             fazlası.setVisibility(View.VISIBLE);
             fazlası.setText("+"+String.valueOf(count - 1));
             layout.addView(mesajFoto);
+            resim.setOnClickListener(v->{
+                this.sonMesaj = mesaj;
+                goster.run();
+            });
 
             if(mesajlasmaFotolari.containsKey(url)) {
                 resim.setImageBitmap(mesajlasmaFotolari.get(url));
@@ -148,12 +156,44 @@ public class MesajFotoGonderYonetici {
         targetlar.put(url,target);
         return target;
     }
+    private Target FotoTarget(String url, MesajFotoAdapter adapter){
+        Target target = new Target() {
+            @Override
+            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                FotoYerAc();
+                mesajlasmaFotolari.put(url,bitmap);
+                adapter.addFoto(bitmap);
+                targetlar.remove(url);
+            }
+
+            @Override
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+            }
+
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {
+            }
+        };
+        targetlar.put(url,target);
+        return target;
+    }
+
+    public void CokluFotoIndir(MesajFotoAdapter adapter){
+        adapter.setADET(sonMesaj.getUrller().size());
+        for(String url : sonMesaj.getUrller()){
+            if(mesajlasmaFotolari.containsKey(url)){
+                adapter.addFoto(mesajlasmaFotolari.get(url));
+            }
+            else {
+                Picasso.get().load(url).into(FotoTarget(url,adapter));
+            }
+        }
+    }
 
     private void FotoYerAc(){
         if(mesajlasmaFotoUrl.size() >= BITMAP_ADET){
             mesajlasmaFotolari.remove(mesajlasmaFotoUrl.get(0));
         }
     }
-
 
 }

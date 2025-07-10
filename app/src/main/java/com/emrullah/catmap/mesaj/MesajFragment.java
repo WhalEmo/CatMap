@@ -36,6 +36,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 
@@ -115,6 +116,14 @@ public class MesajFragment extends Fragment {
         layoutManager.setStackFromEnd(true);
         layoutManager.setReverseLayout(false);
         mesajRecyclerView.setLayoutManager(layoutManager);
+
+        adapter.setGoster(new Runnable() {      /// burası MesajFotoGosterFragment ı çalıştırıyor
+            @Override
+            public void run() {
+                MesajFotoGosterFragment fragment = new MesajFotoGosterFragment();
+                fragment.show(requireActivity().getSupportFragmentManager(), "mesajFotoGoster");
+            }
+        });
 
         mesajlasmaYonetici.MesajlasmaYoneticiStart(()->{
             mesajlasmaYonetici.MesajlariCek(adapter,20,yukleniyorProgress,mesajRecyclerView,()->{

@@ -30,6 +30,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private ImageButton btnMesajGuncelle;
     private ImageButton btnMesajSil;
     private MesajDuzenlePopup mesajDuzenlePopup;
+    private Runnable goster;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -90,13 +91,13 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
                 } else {
                     holder.gorulmeIkon.setImageResource(R.drawable.patibos);
                 }
-                MesajFotoGonderYonetici.getInstance().FotoMesaj(true,holder,mesaj,context);
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(true,holder,mesaj,context,goster);
             }
             else {
                 holder.sagMesajLayout.setVisibility(View.GONE);
                 holder.solMesajLayout.setVisibility(View.VISIBLE);
                 holder.solZaman.setText(mesaj.getZaman());
-                MesajFotoGonderYonetici.getInstance().FotoMesaj(false,holder,mesaj,context);
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(false,holder,mesaj,context,goster);
             }
 
         }
@@ -106,6 +107,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             Guncelle(mesaj,v);
 
             return true;
+        });
+        holder.sagFotoLayout.setOnClickListener(v ->{
+
         });
     }
 
@@ -178,5 +182,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             sagMesajText = itemView.findViewById(R.id.sagMesajText);
             sagZaman = itemView.findViewById(R.id.sagZaman);
         }
+    }
+
+    public void setGoster(Runnable goster) {
+        this.goster = goster;
     }
 }
