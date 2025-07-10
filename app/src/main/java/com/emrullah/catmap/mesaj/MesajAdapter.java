@@ -30,6 +30,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private ImageButton btnMesajGuncelle;
     private ImageButton btnMesajSil;
     private MesajDuzenlePopup mesajDuzenlePopup;
+    private Runnable goster;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -52,11 +53,18 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MesajViewHolder holder, int position) {
+        holder.solMesajLayout.setVisibility(View.GONE);
+        holder.sagMesajLayout.setVisibility(View.GONE);
+        holder.solFotoLayout.setVisibility(View.GONE);
+        holder.sagFotoLayout.setVisibility(View.GONE);
+        holder.sagMesajText.setVisibility(View.GONE);
+        holder.solMesajText.setVisibility(View.GONE);
         Mesaj mesaj = mesajArrayList.get(position);
         if(!mesaj.getTur().equals("foto")) {
             if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
+                holder.sagMesajText.setVisibility(View.VISIBLE);
                 holder.sagMesajText.setText(mesaj.getMesaj().trim());
                 holder.sagZaman.setText(mesaj.getZaman());
                 if (mesaj.isGoruldu()) {
@@ -67,12 +75,12 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             } else {
                 holder.solMesajLayout.setVisibility(View.VISIBLE);
                 holder.sagMesajLayout.setVisibility(View.GONE);
+                holder.solMesajText.setVisibility(View.VISIBLE);
                 holder.solMesajText.setText(mesaj.getMesaj().trim());
                 holder.solZaman.setText(mesaj.getZaman());
             }
         }
         else {
-            System.out.println(mesaj.getUrller().get(0));
             // burası fotograf mesajları için
             if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
@@ -83,13 +91,13 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
                 } else {
                     holder.gorulmeIkon.setImageResource(R.drawable.patibos);
                 }
-                MesajFotoGonderYonetici.getInstance().FotoMesaj(true,holder,mesaj,context);
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(true,holder,mesaj,context,goster);
             }
             else {
                 holder.sagMesajLayout.setVisibility(View.GONE);
                 holder.solMesajLayout.setVisibility(View.VISIBLE);
                 holder.solZaman.setText(mesaj.getZaman());
-                MesajFotoGonderYonetici.getInstance().FotoMesaj(false,holder,mesaj,context);
+                MesajFotoGonderYonetici.getInstance().FotoMesaj(false,holder,mesaj,context,goster);
             }
 
         }
@@ -100,7 +108,12 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
             return true;
         });
+        holder.sagFotoLayout.setOnClickListener(v ->{
+
+        });
     }
+
+
 
     @Override
     public int getItemCount() {
@@ -169,5 +182,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             sagMesajText = itemView.findViewById(R.id.sagMesajText);
             sagZaman = itemView.findViewById(R.id.sagZaman);
         }
+    }
+
+    public void setGoster(Runnable goster) {
+        this.goster = goster;
     }
 }
