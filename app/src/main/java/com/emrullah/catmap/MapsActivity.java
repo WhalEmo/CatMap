@@ -1,10 +1,9 @@
 package com.emrullah.catmap;
 
-import static java.security.AccessController.getContext;
-
 import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -14,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -31,7 +31,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
@@ -39,12 +38,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 
-import com.emrullah.catmap.ui.main.Gonderi;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -71,7 +70,6 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.emrullah.catmap.KullaniciAdiTiklamaListener;
 import com.google.firebase.firestore.Query;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
@@ -84,11 +82,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback , BottomSheetController{
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback , BottomSheetController{
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -129,7 +128,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private URLye_Ulasma ulasma;
     private ImageView kalpImageView;
     private TextView begeniSayisiTextView;
-
+    private ImageView GonderiEkleButton;
+    private UyariMesaji mesaji;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,6 +154,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         konumizni();
 
+        mesaji=new UyariMesaji(this,true);
         bottomSheetView = getLayoutInflater().inflate(R.layout.markerdaki_kediyi_gosterme, null);
         bottomSheetDialog = new BottomSheetDialog(this);
         bottomSheetDialog.setContentView(bottomSheetView);
@@ -183,6 +184,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         fotoPager = bottomSheetView.findViewById(R.id.fotoPager);
         kalpImageView=bottomSheetView.findViewById(R.id.kalpImageView);
         begeniSayisiTextView=bottomSheetView.findViewById(R.id.begeniSayisiTextView);
+        GonderiEkleButton=bottomSheetView.findViewById(R.id.GonderiEkleButton);
         yorumSayisiTextView=bottomSheetView.findViewById(R.id.yorumSayisiTextView);
         fotoAdapter = new FotoGeciciAdapter(this,fotolar,fotografYukleyiciYonetici);
         fotoPager.setAdapter(fotoAdapter);
@@ -327,6 +329,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onResume();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+            if (KediSilmeDurumu.getInstance().isSilindiMi()) {
+                vericekme(); // sadece silme olduysa
+                KediSilmeDurumu.getInstance().setSilindiMi(false); // sıfırla
+        }
     }
     @Override
     protected void onStop() {
@@ -346,6 +352,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onBackPressed();
         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
     }
+
 
     private int dpDenPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
@@ -621,6 +628,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
            }
         });
     }
+
     private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
@@ -698,6 +706,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         targetListesi.add(t);
         Picasso.get().load(Url).into(t);*/
     }
+
     String ID;
     public static String kediID;
     String yorumID;
@@ -737,19 +746,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
+    public void YukleyenKullaniciDBgetir(String YId) {
+        yukleyenAdiText = bottomSheetView.findViewById(R.id.yukleyenAdiText);
+        yukleyenPP = bottomSheetView.findViewById(R.id.YukprofilFotoImageView);
 
-    public void YukleyenKullaniciDBgetir(String YId){
-        yukleyenAdiText=bottomSheetView.findViewById(R.id.yukleyenAdiText);
-        yukleyenPP=bottomSheetView.findViewById(R.id.YukprofilFotoImageView);
         db.collection("users")
                 .document(YId)
                 .get()
-                .addOnSuccessListener(documentSnapshot ->{
+                .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String kullaniciAdi = documentSnapshot.getString("KullaniciAdi");
-                        String ProfilUrl=documentSnapshot.getString("profilFotoUrl");
-                        yukleyenAdiText.setText("@"+kullaniciAdi);
-                        if(ProfilUrl!=null) {
+                        String ProfilUrl = documentSnapshot.getString("profilFotoUrl");
+                        yukleyenAdiText.setText("@" + kullaniciAdi);
+
+                        if (ProfilUrl != null) {
                             Picasso.get()
                                     .load(ProfilUrl)
                                     .fit()
@@ -757,12 +767,70 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     .placeholder(R.drawable.kullanici)
                                     .into(yukleyenPP);
                         }
-                    }
 
-                }) .addOnFailureListener(e -> {
+                        // Eğer kendi profilimizse
+                        if (YId.equals(MainActivity.kullanici.getID())) {
+                            DocumentReference kullaniciRef = db.collection("users").document(YId);
+                            kullaniciRef.get().addOnSuccessListener(innerSnapshot -> {
+                                List<Map<String, Object>> gonderilenKediler = (List<Map<String, Object>>) innerSnapshot.get("GonderilenKediler");
+
+                                boolean kediZatenVar = false;
+
+                                if (gonderilenKediler != null) {
+                                    for (Map<String, Object> item : gonderilenKediler) {
+                                        if (kediID.equals(item.get("kediID"))) {
+                                            kediZatenVar = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                GonderiEkleButton.setVisibility(View.VISIBLE);
+                                boolean finalKediZatenVar = kediZatenVar;
+
+                                GonderiEkleButton.setOnClickListener(v -> {
+                                    PopupMenu popupMenu = new PopupMenu(bottomSheetView.getContext(), v);
+                                    popupMenu.getMenuInflater().inflate(R.menu.kediyi_gosterme_uc_nokta, popupMenu.getMenu());
+                                    popupMenu.setOnMenuItemClickListener(item -> {
+                                        if (item.getItemId() == R.id.gonderi_ekle) {
+                                            new AlertDialog.Builder(bottomSheetView.getContext())
+                                                    .setTitle("Ekleme")
+                                                    .setMessage("Bu kediyi gönderilerinize eklemek istiyor musunuz?")
+                                                    .setPositiveButton("Evet", (dialog, which) -> {
+                                                        mesaji.YuklemeDurum("Ekleniyor...");
+                                                        if (finalKediZatenVar) {
+                                                            mesaji.BasarisizDurum("Bu kedi zaten gönderilerinizde var!", 2000);
+                                                        } else {
+                                                            GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
+                                                                    MapsActivity.this,
+                                                                    kediID,
+                                                                    null,
+                                                                    mesaji
+                                                            );
+                                                            bottomSheetDialog.dismiss();
+                                                        }
+                                                    })
+                                                    .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                                    .show();
+                                            return true;
+                                        }
+                                        return false;
+                                    });
+                                    popupMenu.show();
+                                });
+
+                            });
+                        } else {
+                            GonderiEkleButton.setVisibility(View.GONE);
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
                     Log.e("Firestore", "Kullanıcı alınamadı: " + e.getMessage());
                 });
     }
+
+
     public void yukleyenProfilineGit(View view) {
         bottomSheetDialog.hide(); // dismiss yok eder hide gizler
         profilAlan.setVisibility(View.GONE);//dıstaki keilippharket eden

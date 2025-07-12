@@ -644,5 +644,21 @@ public class MainViewModel extends ViewModel {
             Log.e("Silme", "Veri çekme hatası: " + e.getMessage());
         });
     }
+    public interface SilmeCallback {
+        void onSilmeTamamlandi();
+    }
+    public void HaritadanSilme(String kediId,SilmeCallback callback){
+            db.collection("cats")
+                    .document(kediId)
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+                        if (callback != null) {
+                            callback.onSilmeTamamlandi(); // -> MapsActivity'ye bildir
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("KediSilme", "Kedi silinirken hata oluştu: " + e.getMessage());
+                    });
+    }
 
 }

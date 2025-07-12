@@ -321,10 +321,15 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                         AlertDialog dialog = new AlertDialog.Builder(this)
                                 .setView(dialogView)
                                 .create();
-
                         dialogView.findViewById(R.id.btn_yes).setOnClickListener(v -> {
                             mesaji.YuklemeDurum("Ekleniyor...");
-                            kullaniciyaGonderiKaydet(documentReference.getId());
+                            GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
+                                    YuklemeArayuzuActivity.this,
+                                    documentReference.getId(),
+                                    main,
+                                    mesaji
+                            );
+
                             dialog.dismiss();
                         });
 
@@ -345,27 +350,6 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                         mesaji.BasarisizDurum("Kedi kaydedilirken hata oluştu.",1000);
                     });
         }
-    }
-    public void kullaniciyaGonderiKaydet(String kediID){
-        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
-        Map<String, Object> yeniKedi = new HashMap<>();
-        yeniKedi.put("kediID", kediID);
-        yeniKedi.put("tarih", Timestamp.now());
-        kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
-                .addOnSuccessListener(aVoid -> {
-                    main.setVisibility(View.GONE);
-                    ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.container, fragment)
-                            .addToBackStack(null)
-                            .commit();
-                    mesaji.BasariliDurum("Eklendi",1000);
-                })
-                .addOnFailureListener(e -> {
-                    mesaji.BasarisizDurum("Eklenemedi",1000);
-                    Log.e("Yukle", "yukleme başarısız: " + e.getMessage());
-                });
     }
 
 

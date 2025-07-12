@@ -65,6 +65,27 @@
             android:translationY="19dp" />
     </LinearLayout>
 
+
+    <ImageView
+        android:id="@+id/GonderiEkleButton"
+        android:layout_width="65dp"
+        android:layout_height="33dp"
+        android:layout_marginTop="8dp"
+        android:background="?selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="Menü"
+        android:elevation="6dp"
+        android:padding="2dp"
+        android:src="@drawable/baseline_more_vert_24"
+        android:tint="#888888"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@id/profilAlani"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.902"
+        app:layout_constraintStart_toEndOf="@+id/profilAlani"
+        app:layout_constraintTop_toTopOf="@id/profilAlani"
+        app:layout_constraintVertical_bias="0.0" />
+
     <androidx.viewpager2.widget.ViewPager2
     android:id="@+id/fotoPager"
     android:layout_width="0dp"

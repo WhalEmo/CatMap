@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.emrullah.catmap.KediSilmeDurumu;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.MapsActivity;
 import com.emrullah.catmap.R;
@@ -91,7 +92,7 @@ public class GonderiDetayFragment extends Fragment {
             }
 
         mViewModel.getYukleyenID().observe(getViewLifecycleOwner(), id -> {
-            if(id==MainActivity.kullanici.getID()){
+            if(id.equals(MainActivity.kullanici.getID())){
                 GonderiMenu.setVisibility(View.VISIBLE);
                 GonderiMenu.setOnClickListener(v -> {
                     PopupMenu popupMenu = new PopupMenu(requireContext(), v);
@@ -106,6 +107,25 @@ public class GonderiDetayFragment extends Fragment {
                                         mViewModel.kullaniciyaGonderiSil(kediid,uyari);
                                         mViewModel.gonderiSil(kediid);
                                         requireActivity().getSupportFragmentManager().popBackStack();
+                                        popupMenu.dismiss();
+                                    })
+                                    .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                    .show();
+                            return true;
+                        }else if(idsi==R.id.gonderiharita_sil){
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Silme")
+                                    .setMessage("Kediyi haritadan silmek istiyor musunuz? Bu işlemi yaptığınızda, kediye ait gönderiler de silinecektir.")
+                                    .setPositiveButton("Evet", (dialog, which) -> {
+                                           mViewModel.HaritadanSilme(kediid, () -> {
+                                            KediSilmeDurumu.getInstance().setSilindiMi(true);
+                                            mViewModel.kullaniciyaGonderiSil(kediid,uyari);
+                                            mViewModel.gonderiSil(kediid);
+                                               if (getActivity() instanceof MapsActivity) {
+                                                   ((MapsActivity) getActivity()).vericekme();
+                                               }
+                                               requireActivity().getSupportFragmentManager().popBackStack();
+                                        });
                                         popupMenu.dismiss();
                                     })
                                     .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())

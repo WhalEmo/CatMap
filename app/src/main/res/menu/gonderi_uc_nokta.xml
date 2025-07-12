@@ -3,4 +3,7 @@
     <item
         android:id="@+id/gonderi_sil"
         android:title="Gönderiyi Sil" />
+    <item
+        android:id="@+id/gonderiharita_sil"
+        android:title="Haritadan Sil" />
 </menu>
