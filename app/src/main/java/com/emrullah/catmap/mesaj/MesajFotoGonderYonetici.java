@@ -83,8 +83,6 @@ public class MesajFotoGonderYonetici {
         mesajRef.setValue(veri);
         Mesaj yeniMesaj = new Mesaj(MainActivity.kullanici.getID(),fotoUrlleri,System.currentTimeMillis(),mesajRef.getKey(),false);
         yeniMesaj.setTur("foto");
-        adapter.getMesajArrayList().add(yeniMesaj);
-        adapter.notifyItemInserted(adapter.getItemCount() - 1);
         fotoUrlleri.clear();
         fotografUrileri.clear();
     }
@@ -162,7 +160,7 @@ public class MesajFotoGonderYonetici {
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 FotoYerAc();
                 mesajlasmaFotolari.put(url,bitmap);
-                adapter.addFoto(bitmap);
+                adapter.addFoto(url,bitmap);
                 targetlar.remove(url);
             }
 
@@ -178,14 +176,13 @@ public class MesajFotoGonderYonetici {
         return target;
     }
 
+
     public void CokluFotoIndir(MesajFotoAdapter adapter){
-        adapter.setADET(sonMesaj.getUrller().size());
-        for(String url : sonMesaj.getUrller()){
-            if(mesajlasmaFotolari.containsKey(url)){
-                adapter.addFoto(mesajlasmaFotolari.get(url));
-            }
-            else {
-                Picasso.get().load(url).into(FotoTarget(url,adapter));
+        for (String url: sonMesaj.getUrller()) {
+            if (mesajlasmaFotolari.containsKey(url)) {
+                adapter.addFoto(url, mesajlasmaFotolari.get(url));
+            } else {
+                Picasso.get().load(url).into(FotoTarget(url, adapter));
             }
         }
     }
@@ -195,5 +192,7 @@ public class MesajFotoGonderYonetici {
             mesajlasmaFotolari.remove(mesajlasmaFotoUrl.get(0));
         }
     }
-
+    public ArrayList<String> getFotoUrlleri() {
+        return sonMesaj.getUrller();
+    }
 }

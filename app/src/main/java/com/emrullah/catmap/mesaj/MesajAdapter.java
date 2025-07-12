@@ -59,7 +59,13 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         holder.sagFotoLayout.setVisibility(View.GONE);
         holder.sagMesajText.setVisibility(View.GONE);
         holder.solMesajText.setVisibility(View.GONE);
+        holder.cevapKutusu.setVisibility(View.GONE);
         Mesaj mesaj = mesajArrayList.get(position);
+        if(mesaj instanceof YanitMesaj){
+            YanitMesaj yanitMesaj = (YanitMesaj) mesaj;
+            holder.cevapKutusu.setVisibility(View.VISIBLE);
+            holder.cevapMetni.setText(yanitMesaj.getYanitlananMesaj().getMesaj());
+        }
         if(!mesaj.getTur().equals("foto")) {
             if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
                 holder.solMesajLayout.setVisibility(View.GONE);
@@ -167,6 +173,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         TextView sagMesajText;
         TextView sagZaman;
 
+        LinearLayout cevapKutusu;
+        TextView cevapMetni;
+
         public MesajViewHolder(@NonNull View itemView) {
             super(itemView);
             solMesajLayout = itemView.findViewById(R.id.solMesajLayout);
@@ -181,6 +190,9 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             sagMesajLayout = itemView.findViewById(R.id.sagMesajLayout);
             sagMesajText = itemView.findViewById(R.id.sagMesajText);
             sagZaman = itemView.findViewById(R.id.sagZaman);
+
+            cevapKutusu = itemView.findViewById(R.id.cevapKutusu);
+            cevapMetni = itemView.findViewById(R.id.cevapMetni);
         }
     }
 

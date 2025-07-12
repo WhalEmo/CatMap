@@ -80,6 +80,17 @@ public class MesajlasmaYonetici {
         adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
     }
 
+    public void MesajGonder(Mesaj yanitlananMesaj, String mesaj, MesajAdapter adapter){
+        String mesajID = mesajlar.push().getKey();
+        YanitMesaj yanit = new YanitMesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false,yanitlananMesaj);
+        if (yanitlananMesaj.getTur().equals("foto")) yanitlananMesaj.setMesaj("\uD83D\uDCF7  Fotoğraf");
+        Map<String, YanitMesaj> veri = new HashMap<>();
+        veri.put("yanit",yanit);
+        mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).setValue(veri);
+        adapter.getMesajArrayList().add(yanit);
+        adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
+    }
+
     public void MesajlariCek(MesajAdapter adapter,int adet, ProgressBar yukleniyor, RecyclerView mesajkutucuklari, Runnable dinleme){
         mesajkutucuklari.setVisibility(View.GONE);
         yukleniyor.setVisibility(View.VISIBLE);
@@ -532,6 +543,7 @@ public class MesajlasmaYonetici {
     public void setAlici(Kullanici alici) {
         this.alici = alici;
     }
+
 
     private void yolla(String mesajID, String yeniMesaj){
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference();

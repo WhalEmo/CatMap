@@ -74,54 +74,100 @@
         android:id="@+id/mesaj_gonder_layout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
+        android:orientation="vertical"
         android:background="@drawable/mesaj_gonder_bg"
+        android:padding="8dp"
         android:elevation="6dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        android:gravity="center_vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <EditText
-            android:id="@+id/mesajEditText"
-            android:layout_width="0dp"
+        <!-- 🟨 Alıntı Kutusu -->
+        <LinearLayout
+            android:id="@+id/cevapAlani"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Mesaj yaz..."
-            android:background="@drawable/edittext_oval_bg"
-            android:padding="12dp"
-            android:textColor="#000"
-            android:textColorHint="#888"
-            android:layout_marginEnd="8dp"
-            android:inputType="textMultiLine|textCapSentences"
-            android:minLines="1"
-            android:maxLines="5"
-            android:scrollbars="vertical"
-            android:overScrollMode="always"
-            android:gravity="top|start" />
-        <ImageButton
-            android:id="@+id/fotoEkleButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/foto_yukleme"
-            android:contentDescription="Fotoğraf Ekle"
-            android:scaleType="centerInside"
-            android:layout_marginEnd="8dp" />
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:background="@drawable/cevaplanan_lineerl_bg"
+            android:padding="8dp"
+            android:gravity="center_vertical"
+            android:elevation="2dp"
+            android:layout_marginBottom="4dp">
 
-        <ImageButton
-            android:id="@+id/gonderButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_send"
-            android:contentDescription="Gönder"
-            android:scaleType="centerInside" />
+            <TextView
+                android:id="@+id/cevapMetni"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/cevaplanan_tw_bg"
+                android:padding="8dp"
+                android:text="Alıntılanan mesaj"
+                android:textColor="#4E342E"
+                android:textSize="14sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+
+            <ImageButton
+                android:id="@+id/cevapKapatButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/exit"
+                android:contentDescription="Kapat"
+                app:tint="#666" />
+        </LinearLayout>
+
+        <!-- 🟩 Mesaj Yazma Satırı -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/mesajEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Mesaj yaz..."
+                android:background="@drawable/edittext_oval_bg"
+                android:padding="12dp"
+                android:textColor="#000"
+                android:textColorHint="#888"
+                android:layout_marginEnd="8dp"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="1"
+                android:maxLines="5"
+                android:scrollbars="vertical"
+                android:overScrollMode="always"
+                android:gravity="top|start" />
+
+            <ImageButton
+                android:id="@+id/fotoEkleButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/foto_yukleme"
+                android:contentDescription="Fotoğraf Ekle"
+                android:scaleType="centerInside"
+                android:layout_marginEnd="8dp" />
+
+            <ImageButton
+                android:id="@+id/gonderButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_send"
+                android:contentDescription="Gönder"
+                android:scaleType="centerInside" />
+        </LinearLayout>
     </LinearLayout>
+
 
     <ProgressBar
         android:id="@+id/yukleniyorProgress"

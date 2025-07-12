@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -33,6 +34,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -63,7 +65,11 @@ public class MesajFragment extends Fragment {
     private TextView kisiDurumText;
     private LinearLayout kisiBilgiLayout;
     private ImageButton fotoEkleButton;
+    private LinearLayout cevapAlani;
+    private TextView cevapMetni;
+    private ImageButton cevapKapatButton;
     private ActivityResultLauncher<Intent> galeriLauncher;
+    private Runnable MesajGonder;
 
     public static MesajFragment newInstance(Context context){
         return new MesajFragment(context);
@@ -104,6 +110,9 @@ public class MesajFragment extends Fragment {
         kisiAdiText = view.findViewById(R.id.kisiAdiText);
         kisiDurumText = view.findViewById(R.id.kisiDurumText);
         kisiBilgiLayout = view.findViewById(R.id.kisi_bilgi_layout);
+        cevapAlani = view.findViewById(R.id.cevapAlani);
+        cevapMetni = view.findViewById(R.id.cevapMetni);
+        cevapKapatButton = view.findViewById(R.id.cevapKapatButton);
 
         //profil işlemleri
         mesajlasmaYonetici.ProfilCubugunuDoldur(kisiAdiText,kisiProfilFoto,kisiDurumText);
@@ -116,6 +125,7 @@ public class MesajFragment extends Fragment {
         layoutManager.setStackFromEnd(true);
         layoutManager.setReverseLayout(false);
         mesajRecyclerView.setLayoutManager(layoutManager);
+        Kaydirma();
 
         adapter.setGoster(new Runnable() {      /// burası MesajFotoGosterFragment ı çalıştırıyor
             @Override
@@ -124,6 +134,7 @@ public class MesajFragment extends Fragment {
                 fragment.show(requireActivity().getSupportFragmentManager(), "mesajFotoGoster");
             }
         });
+        StandartMesajGonderme();
 
         mesajlasmaYonetici.MesajlasmaYoneticiStart(()->{
             mesajlasmaYonetici.MesajlariCek(adapter,20,yukleniyorProgress,mesajRecyclerView,()->{
@@ -138,9 +149,11 @@ public class MesajFragment extends Fragment {
             mesajlasmaYonetici.CevrimIciDinleyici(kisiDurumText);
         });
 
-        gonderButton.setOnClickListener(v->{ MesajGondermeButonu(); });
+        gonderButton.setOnClickListener(v->{ MesajGonder.run(); });
 
         kisiProfilFoto.setOnClickListener(v->{ ProfilSayfasinaYonlendir(); });
+
+        cevapKapatButton.setOnClickListener(v->{ CevaplamaKutucuguKapat(); });
 
         GaleriLauncheriHazirla();
         fotoEkleButton.setOnClickListener(v->{ GaleriyeYonlendir(); });
@@ -150,12 +163,13 @@ public class MesajFragment extends Fragment {
         return view;
     }
 
-    private void MesajGondermeButonu(){
-        if (mesajEditText.getText().toString().trim().isEmpty()) return;
-        if (mesajlasmaYonetici == null) return;
-        mesajlasmaYonetici.MesajGonder(mesajEditText.getText().toString().trim(),adapter);
-        mesajEditText.getText().clear();
-        mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
+    private void StandartMesajGonderme(){
+        MesajGonder = () -> {
+            if (mesajEditText.getText().toString().trim().isEmpty()) return;
+            mesajlasmaYonetici.MesajGonder(mesajEditText.getText().toString().trim(), adapter);
+            mesajEditText.getText().clear();
+            mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
+        };
     }
 
     private void ScrollDinleyici(){
@@ -268,6 +282,72 @@ public class MesajFragment extends Fragment {
         );
     }
 
+    private void Kaydirma(){
+        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
 
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                if (direction == ItemTouchHelper.RIGHT) {
+                    int position = viewHolder.getAdapterPosition();
+                    Mesaj mesaj = adapter.getMesajArrayList().get(position);
+
+                    CevaplamaKutucuguAc(mesaj);
+                    adapter.notifyItemChanged(position);
+                }
+            }
+
+            @Override
+            public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+                return 0.3f; // Kısmen sağa çekme yeterli olsun
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
+                                    int actionState, boolean isCurrentlyActive) {
+                float maxKaydirma = 200;
+                if (dX > maxKaydirma) {
+                    dX = maxKaydirma;
+                }
+                // Arka planda ikon göstermek istersen burada çizebilirsin
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        };
+
+        new ItemTouchHelper(simpleCallback).attachToRecyclerView(mesajRecyclerView);
+    }
+
+    private void CevaplamaKutucuguAc(Mesaj mesaj){
+        YanitlaMesajGonder(mesaj);
+        if(mesaj.getTur().equals("foto")){
+            cevapMetni.setText("\uD83D\uDCF7  Fotoğraf");
+        }
+        else{
+            cevapMetni.setText(mesaj.getMesaj());
+        }
+        cevapAlani.setVisibility(View.VISIBLE);
+    }
+
+    private void YanitlaMesajGonder(Mesaj mesaj){
+        MesajGonder = ()->{
+            if(cevapMetni.getText().toString().trim().isEmpty()) return;
+            mesajlasmaYonetici.MesajGonder(mesaj,mesajEditText.getText().toString().trim(),adapter);
+            mesajEditText.getText().clear();
+            CevaplamaKutucuguKapat();
+            mesajRecyclerView.scrollToPosition(adapter.getItemCount() - 1);
+        };
+    }
+
+    private void CevaplamaKutucuguKapat(){
+        StandartMesajGonderme();
+        cevapMetni.setText("");
+        cevapAlani.setVisibility(View.GONE);
+    }
 
 }
