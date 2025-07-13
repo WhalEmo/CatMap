@@ -53,6 +53,10 @@ public class MesajFotoGonderYonetici {
     }
 
     private void FotolariStorageKaydet(MesajAdapter adapter){
+        Mesaj mesaj = new Mesaj(MainActivity.kullanici.getID(),System.currentTimeMillis(),"gecici",false);
+        mesaj.setTur("foto");
+        adapter.getMesajArrayList().add(mesaj);
+        adapter.notifyItemInserted(adapter.getItemCount()-1);
         for (int i=0; i<fotografUrileri.size(); i++){
             Uri foto = fotografUrileri.get(i);
             String dosyaadi = "foto_"+System.currentTimeMillis()+"_"+i+".jpg";
@@ -62,7 +66,7 @@ public class MesajFotoGonderYonetici {
                             fotoUrlleri.add(uri.toString());
 
                             if(fotoUrlleri.size() == fotografUrileri.size()){
-                                FotoMesajGonder(adapter);
+                                FotoMesajGonder(adapter,mesaj);
                             }
                         });
                     }
@@ -70,10 +74,19 @@ public class MesajFotoGonderYonetici {
         }
     }
 
-    private void FotoMesajGonder(MesajAdapter adapter){
+    private void FotoMesajGonder(MesajAdapter adapter,Mesaj mesaj){
         String sohbetID = MesajlasmaYonetici.getInstance().getSohbetID();
         DatabaseReference mesajRef = FirebaseDatabase.getInstance().getReference()
                 .child("mesajlar").child(sohbetID).child("anaMesaj").push();
+
+        mesaj.setMesajID(mesajRef.getKey());
+        MesajlasmaYonetici.getInstance().getMesajMap().put(mesaj.getMesajID(),null);
+        mesaj.setYuklendiMi(true);
+        adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
+        ArrayList<String> ur = new ArrayList<>();
+        ur.addAll(fotoUrlleri);
+        mesaj.setUrller(ur);
+
         Map<String, Object> veri = new HashMap<>();
         veri.put("fotoUrlleri",fotoUrlleri);
         veri.put("zaman",System.currentTimeMillis());
@@ -81,8 +94,6 @@ public class MesajFotoGonderYonetici {
         veri.put("goruldu",false);
         veri.put("tur","foto");
         mesajRef.setValue(veri);
-        Mesaj yeniMesaj = new Mesaj(MainActivity.kullanici.getID(),fotoUrlleri,System.currentTimeMillis(),mesajRef.getKey(),false);
-        yeniMesaj.setTur("foto");
         fotoUrlleri.clear();
         fotografUrileri.clear();
     }
@@ -100,6 +111,7 @@ public class MesajFotoGonderYonetici {
         String url;
         if (count == 1) {
             url = mesaj.getUrller().get(0);
+            holder.sagGeciciFoto.setVisibility(View.GONE);
             layout.addView(mesajFoto);
             resim.setOnClickListener(v->{
                 this.sonMesaj = mesaj;

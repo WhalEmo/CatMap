@@ -10,6 +10,9 @@ public class YanitMesaj extends Mesaj{
         this.yanitlananMesaj = yanitlananMesaj;
         this.setTur("yanit");
     }
+    public YanitMesaj(){
+        super();
+    }
 
     public Mesaj getYanitlananMesaj() {
         return yanitlananMesaj;

@@ -56,6 +56,7 @@ import com.emrullah.catmap.ObserveDataSınıfı;
 import com.emrullah.catmap.R;
 import com.emrullah.catmap.UyariMesaji;
 import com.emrullah.catmap.YuklemeArayuzuActivity;
+import com.emrullah.catmap.sohbet.SohbetYonetici;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -891,6 +892,8 @@ public class ProfilSayfasiFragment extends Fragment {
 
     private void SohbetButonCalistir(){ // -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
         sohbetButon.setOnClickListener(v->{
+            MesajlasmaYonetici.getInstance().DinleyiciKaldir();
+
             Kullanici alici = new Kullanici();
             alici.setID(yukleyenID);
             MesajlasmaYonetici.getInstance().setAlici(alici);

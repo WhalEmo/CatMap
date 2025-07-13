@@ -92,8 +92,7 @@ public class MesajFragment extends Fragment {
                         mesajlasmaYonetici.DinleyiciKaldir();
                         mesajlasmaYonetici.setAlici(null);
                         mesajlasmaYonetici.setSohbetID(null);
-                      //  requireActivity().getSupportFragmentManager().popBackStack();
-                        requireActivity().getSupportFragmentManager().beginTransaction().remove(MesajFragment.this).commit();
+                        requireActivity().getSupportFragmentManager().popBackStack();
                     }
                 });
 
@@ -114,12 +113,19 @@ public class MesajFragment extends Fragment {
         cevapMetni = view.findViewById(R.id.cevapMetni);
         cevapKapatButton = view.findViewById(R.id.cevapKapatButton);
 
+        mesajlasmaYonetici.setGeriDon(()->{
+            mesajlasmaYonetici.DinleyiciKaldir();
+            mesajlasmaYonetici.setAlici(null);
+            mesajlasmaYonetici.setSohbetID(null);
+            requireActivity().getSupportFragmentManager().popBackStack();
+        });
+
         //profil işlemleri
         mesajlasmaYonetici.ProfilCubugunuDoldur(kisiAdiText,kisiProfilFoto,kisiDurumText);
 
 
         mesajArrayList = new ArrayList<>();
-        adapter = new MesajAdapter(mesajArrayList, getActivity()); // burası sıkıntı çıkartabilir
+        adapter = new MesajAdapter(mesajArrayList, getActivity(),mesajRecyclerView); // burası sıkıntı çıkartabilir
         mesajRecyclerView.setAdapter(adapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
         layoutManager.setStackFromEnd(true);
@@ -151,7 +157,7 @@ public class MesajFragment extends Fragment {
 
         gonderButton.setOnClickListener(v->{ MesajGonder.run(); });
 
-        kisiProfilFoto.setOnClickListener(v->{ ProfilSayfasinaYonlendir(); });
+        kisiAdiText.setOnClickListener(v->{ ProfilSayfasinaYonlendir(); });
 
         cevapKapatButton.setOnClickListener(v->{ CevaplamaKutucuguKapat(); });
 
@@ -181,7 +187,7 @@ public class MesajFragment extends Fragment {
                 int sonPozisyon = menajer.findFirstVisibleItemPosition();
                 if (sonPozisyon == 0 && !yukleniyorMu) {
                     yukleniyorMu = true;
-                    mesajlasmaYonetici.MesajlariCek(mesajArrayList.get(0).getLongZaman(),adapter,20,()->{
+                    mesajlasmaYonetici.MesajlariCek(mesajArrayList.get(0).getZaman(),adapter,20,()->{
                         yukleniyorMu = false;
                     });
                 }

@@ -43,7 +43,7 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
         holder.kisi_adi.setText(sohbet.getAlici().getKullaniciAdi());
         if(sohbet.getMesaj() != null){
             holder.son_mesaj.setText(sohbet.getMesaj().getMesaj());
-            holder.mesaj_saat.setText(sohbet.getMesaj().getZaman());
+            holder.mesaj_saat.setText(sohbet.getMesaj().getStringZaman());
         }
         if(sohbet.getAlici().getFotoBitmap() != null){
             holder.kisi_foto.setImageBitmap(sohbet.getAlici().getFotoBitmap());

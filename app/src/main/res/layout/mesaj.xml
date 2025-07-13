@@ -19,6 +19,31 @@
         android:layout_gravity="start"
         android:elevation="2dp"
         android:maxWidth="280dp">
+        <LinearLayout
+            android:id="@+id/SolcevapKutusu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/cevaplanan_lineerl_bg"
+            android:padding="6dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone"
+            android:gravity="center_vertical">
+
+
+            <TextView
+                android:id="@+id/SolcevapMetni"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text=""
+                android:textColor="#2E7D32"
+                android:textSize="13sp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:background="@drawable/cevaplanan_tw_bg"
+                android:padding="6dp"/>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/solMesajText"
@@ -111,7 +136,14 @@
             android:layout_marginTop="6dp"
             android:visibility="gone"
             android:columnCount="2"
-            android:orientation="horizontal" />
+            android:orientation="horizontal">
+            <ImageView
+                android:id="@+id/sagplaceholder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/placeholder"
+                android:background="@drawable/foto_background_ortak"/>
+        </GridLayout>
 
         <LinearLayout
             android:id="@+id/sagAltLayout"
