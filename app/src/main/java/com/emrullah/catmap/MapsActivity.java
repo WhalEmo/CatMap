@@ -273,14 +273,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
     public void sonTiklananMarkeriSil() {
         if (sonTiklananMarker != null) {
-            for(int i=0;i<markerlar.size();i++) {
-                if(markerlar.get(i).equals(sonTiklananMarker)) {
-                    markerlar.get(i).remove();
-                    markerlar.remove(i);
-                    sonTiklananMarker = null;
-                    break;
-                }
-            }
+            sonTiklananMarker.remove();
+            markerlar.remove(sonTiklananMarker);
+            sonTiklananMarker = null;
         }
     }
 
@@ -671,6 +666,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
    ArrayList<Kediler>kediler=new ArrayList<>();
     List<Target> targets = new ArrayList<>(); // Target'ları burada saklıyoruz
     ArrayList<Marker>markerlar=new ArrayList<>();
+    HashMap<String, Object> markerKEY = new HashMap<>();
     public void resimlimarker() {
         runOnUiThread(() -> {
         for (Kediler kedi : kediler) {
@@ -684,11 +680,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
                         Bitmap customMarkerBitmap = fotoduzenle(bitmap);
-                    Marker marker= mMap.addMarker(new MarkerOptions()
-                                .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
-                                .position(kedy)
-                                .title(kedi.getIsim()));
+                        if(markerKEY.containsKey(kedi.getURL())){
+                            return;
+                        }
+                        Marker marker= mMap.addMarker(new MarkerOptions()
+                                    .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
+                                    .position(kedy)
+                                    .title(kedi.getIsim()));
                         markerlar.add(marker);
+                        markerKEY.put(kedi.getURL(),null);
                 }
 
                 @Override
