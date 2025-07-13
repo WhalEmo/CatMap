@@ -9,6 +9,7 @@ import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.mesaj.Mesaj;
 import com.emrullah.catmap.R;
+import com.emrullah.catmap.mesaj.YanitMesaj;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -104,13 +105,8 @@ public class SohbetYonetici {
                 @Override
                 public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
                     System.out.println("bende çalıştım-"+snapshot.getChildrenCount());
-                    String mesajID = snapshot.getKey();
-                    if(mesajID.equals("yaziyorMu")) return;
-                    String mesajicerik = snapshot.child("mesaj").getValue(String.class);
-                    Long zaman = snapshot.child("zaman").getValue(Long.class);
-                    String gonderen = snapshot.child("gonderen").getValue(String.class);
-                    boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
-                    Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,goruldu);
+
+                    Mesaj mesaj = MesajOlustur(snapshot);
                     sohbet.setMesaj(mesaj);
                     yeniGelenGorulmemisMesajlarSayisi(sohbet);
 
@@ -249,12 +245,12 @@ public class SohbetYonetici {
 
     private void Sirala(ArrayList<Sohbet> sohbetler){
         for(int i=0; i<sohbetler.size(); i++){
-            long zaman = sohbetler.get(i).getMesaj().getLongZaman();
+            long zaman = sohbetler.get(i).getMesaj().getZaman();
             Sohbet sohbet = sohbetler.get(i);
             int ink = i;
             for(int j=i+1; j<sohbetler.size(); j++){
-                if(zaman < sohbetler.get(j).getMesaj().getLongZaman()){
-                    zaman = sohbetler.get(j).getMesaj().getLongZaman();
+                if(zaman < sohbetler.get(j).getMesaj().getZaman()){
+                    zaman = sohbetler.get(j).getMesaj().getZaman();
                     ink = j;
                 }
             }
@@ -271,5 +267,31 @@ public class SohbetYonetici {
                 dinleyiciler.remove(sohbet.getSohbetID());
             }
         }
+    }
+
+    private Mesaj MesajOlustur(DataSnapshot snapshot){
+        Mesaj mesaj;
+        String tur = snapshot.child("tur").getValue(String.class);
+        if(tur.equals("metin")){
+            String mesajID = snapshot.getKey();
+            String gonderen = snapshot.child("gonderen").getValue(String.class);
+            Long zaman = snapshot.child("zaman").getValue(Long.class);
+            String mesajicerik = snapshot.child("mesaj").getValue(String.class);
+            mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,false);
+            mesaj.setTur(tur);
+            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+        }
+        else if(tur.equals("yanit")){
+            mesaj = snapshot.getValue(YanitMesaj.class);
+        }
+        else{
+            String mesajID = snapshot.getKey();
+            String gonderen = snapshot.child("gonderen").getValue(String.class);
+            Long zaman = snapshot.child("zaman").getValue(Long.class);
+            mesaj = new Mesaj(gonderen,"\uD83D\uDCF7  Fotoğraf",zaman,mesajID,false);
+            mesaj.setTur(tur);
+            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+        }
+        return mesaj;
     }
 }

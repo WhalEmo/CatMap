@@ -11,18 +11,20 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.emrullah.catmap.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MesajFotoAdapter extends RecyclerView.Adapter<MesajFotoAdapter.FotoViewHolder> {
-    private ArrayList<Bitmap> fotoListesi;
+    private ArrayList<String> fotoListesi = new ArrayList<>();
     private Context context;
-    private int ADET;
+    private HashMap<String, Bitmap> mesajlasmaFotolari = new HashMap<>();
 
-    public MesajFotoAdapter(Context context, ArrayList<Bitmap> fotoListesi) {
+    public MesajFotoAdapter(Context context,ArrayList<String> fotoListesi) {
         this.context = context;
         this.fotoListesi = fotoListesi;
     }
@@ -37,9 +39,11 @@ public class MesajFotoAdapter extends RecyclerView.Adapter<MesajFotoAdapter.Foto
 
     @Override
     public void onBindViewHolder(@NonNull FotoViewHolder holder, int position) {
-        Bitmap bitmap = fotoListesi.get(position);
-        holder.imageView.setImageBitmap(bitmap);
-        holder.fotoSayaci.setText(String.valueOf((position + 1) + " / " + this.ADET));
+        String url = fotoListesi.get(position);
+        if(mesajlasmaFotolari.containsKey(url)) {
+            holder.imageView.setImageBitmap(mesajlasmaFotolari.get(url));
+        }
+        holder.fotoSayaci.setText(String.valueOf((position + 1) + " / " + this.fotoListesi.size()));
     }
 
     @Override
@@ -57,16 +61,10 @@ public class MesajFotoAdapter extends RecyclerView.Adapter<MesajFotoAdapter.Foto
             fotoSayaci = itemView.findViewById(R.id.fotoSayaci);
         }
     }
-    public void addFoto(Bitmap bitmap){
-        fotoListesi.add(bitmap);
-        notifyItemInserted(fotoListesi.size()-1);
+    public void addFoto(String url ,Bitmap bitmap){
+        mesajlasmaFotolari.put(url,bitmap);
+        notifyDataSetChanged();
     }
 
-    public void setADET(int ADET) {
-        this.ADET = ADET;
-    }
 
-    public int getADET() {
-        return ADET;
-    }
 }

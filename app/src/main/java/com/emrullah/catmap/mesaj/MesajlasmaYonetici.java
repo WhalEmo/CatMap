@@ -41,6 +41,7 @@ public class MesajlasmaYonetici {
     private ChildEventListener silDinleyici;
     private ChildEventListener guncellemeDinleyici;
     private GenericTypeIndicator<ArrayList<String>> type = new GenericTypeIndicator<ArrayList<String>>() {};
+    private Runnable geriDon;
 
 
 
@@ -52,6 +53,10 @@ public class MesajlasmaYonetici {
     }
 
     public void MesajlasmaYoneticiStart(Runnable mesajlaricek) {
+        if(alici == null || alici.getID() == null){
+            geriDon.run();
+            return;
+        }
         sohbetIDOlustur(gonderen.getID(),alici.getID(),sohbetID1->{
             this.sohbetID = sohbetID1;
             System.out.println("çektim");
@@ -77,6 +82,16 @@ public class MesajlasmaYonetici {
         Mesaj yeniMesaj = new Mesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false);
         yeniMesaj.setTur("metin");
         adapter.getMesajArrayList().add(yeniMesaj);
+        adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
+    }
+
+    public void MesajGonder(Mesaj yanitlananMesaj, String mesaj, MesajAdapter adapter){
+        String mesajID = mesajlar.push().getKey();
+        YanitMesaj yanit = new YanitMesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false,yanitlananMesaj);
+        if (yanitlananMesaj.getTur().equals("foto")) yanitlananMesaj.setMesaj("\uD83D\uDCF7  Fotoğraf");
+        mesajMap.put(mesajID,null);
+        mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).setValue(yanit);
+        adapter.getMesajArrayList().add(yanit);
         adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
     }
 
@@ -246,6 +261,10 @@ public class MesajlasmaYonetici {
     }
 
     public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto,TextView durum){
+        if(alici==null || alici.getID()==null){
+            geriDon.run();
+            return;
+        }
         if(SohbetYonetici.getInstance().getKullanicilar().containsKey(alici.getID())){
             alici = (Kullanici) SohbetYonetici.getInstance().getKullanicilar().get(alici.getID());
         }
@@ -466,6 +485,11 @@ public class MesajlasmaYonetici {
             Long zaman = snapshot.child("zaman").getValue(Long.class);
             String mesajicerik = snapshot.child("mesaj").getValue(String.class);
             mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,false);
+            mesaj.setTur(tur);
+            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+        }
+        else if(tur.equals("yanit")){
+            mesaj = snapshot.getValue(YanitMesaj.class);
         }
         else{
             String mesajID = snapshot.getKey();
@@ -473,9 +497,10 @@ public class MesajlasmaYonetici {
             Long zaman = snapshot.child("zaman").getValue(Long.class);
             ArrayList<String> fotoUrl = snapshot.child("fotoUrlleri").getValue(type);
             mesaj = new Mesaj(gonderen,fotoUrl,zaman,mesajID,false);
+            mesaj.setTur(tur);
+            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+            mesaj.setYuklendiMi(true);
         }
-        mesaj.setTur(tur);
-        mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
         return mesaj;
     }
 
@@ -533,10 +558,19 @@ public class MesajlasmaYonetici {
         this.alici = alici;
     }
 
+
     private void yolla(String mesajID, String yeniMesaj){
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference();
         Map<String, Object> updateMap = new HashMap<>();
         updateMap.put("mesajlar/"+sohbetID+"/anaMesaj/"+mesajID+"/mesaj", yeniMesaj);
         ref.updateChildren(updateMap);
+    }
+
+    public HashMap<String, Object> getMesajMap() {
+        return mesajMap;
+    }
+
+    public void setGeriDon(Runnable geriDon) {
+        this.geriDon = geriDon;
     }
 }

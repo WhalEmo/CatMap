@@ -46,10 +46,9 @@ public class MesajFotoGosterFragment extends DialogFragment {
                 dismiss();
             }
         });
-        fotoListesi = new ArrayList<>();
-        MesajFotoAdapter adapter = new MesajFotoAdapter(getContext(),fotoListesi);
+        fotoUrlListesi = yonetici.getFotoUrlleri();
+        MesajFotoAdapter adapter = new MesajFotoAdapter(getContext(),fotoUrlListesi);
         fotoViewPager.setAdapter(adapter);
-
         yonetici.CokluFotoIndir(adapter);
         return view;
     }
