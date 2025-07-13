@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -44,6 +45,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 
+import com.emrullah.catmap.ui.main.MainViewModel;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -130,6 +132,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private TextView begeniSayisiTextView;
     private ImageView GonderiEkleButton;
     private UyariMesaji mesaji;
+    private Marker sonTiklananMarker;
+    String gosterilecekKediID;
+    private MainViewModel mViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -264,8 +269,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 klavye.klavyeAc(TEXT);
             }, 250);
         });
-
-
+         gosterilecekKediID = getIntent().getStringExtra("kediId");
+    }
+    public void sonTiklananMarkeriSil() {
+        if (sonTiklananMarker != null) {
+            for(int i=0;i<markerlar.size();i++) {
+                if(markerlar.get(i).equals(sonTiklananMarker)) {
+                    markerlar.get(i).remove();
+                    markerlar.remove(i);
+                    sonTiklananMarker = null;
+                    break;
+                }
+            }
+        }
     }
 
     private void konumizni() {
@@ -444,6 +460,72 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
         konumAlindi = true;
     }
+    private Target picassoTarget;
+    public void HaritadaGor(String kediid) {
+        if(bottomSheetDialog.isShowing()){
+            bottomSheetDialog.dismiss();
+        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("cats")
+                .document(kediid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String kediId = documentSnapshot.getId();
+                        String YukleyenID=documentSnapshot.getString("YukleyenKullaniciID");
+                        double latitudee = documentSnapshot.getDouble("latitude");
+                        double longitudee = documentSnapshot.getDouble("longitude");
+                        String isim = documentSnapshot.getString("kediAdi");
+                        ArrayList<String> fotoUrl = (ArrayList<String>) documentSnapshot.get("photoUri");
+                        String hakkindaa=documentSnapshot.getString("kediHakkinda");
+
+                        LatLng konum = new LatLng(latitudee, longitudee);
+                        if (Math.abs(latitude - latitudee) <= 0.009 && Math.abs(longitude - longitudee) <= 0.0113){
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(konum, 16f));
+                        }else {
+                            if (mMap != null) {
+                                Kediler kedi=new Kediler(kediId,isim,hakkindaa,latitudee,longitudee,fotoUrl.get(0),fotoUrl,YukleyenID);
+                                kediler.add(kedi);
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(konum, 16f));
+                                if (fotoUrl != null && !fotoUrl.isEmpty()) {
+                                    picassoTarget = new Target() {
+                                        @Override
+                                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                            Bitmap customMarkerBitmap = fotoduzenle(bitmap);
+                                            Marker yeniMarker = mMap.addMarker(new MarkerOptions()
+                                                    .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
+                                                    .position(konum)
+                                                    .title(isim));
+                                            yeniMarker.setTag(kediid);
+                                            markerlar.add(yeniMarker);
+                                        }
+
+                                        @Override
+                                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                                            Log.e("HaritadaGor", "Resim yüklenemedi: " + e.getMessage());
+                                        }
+
+                                        @Override
+                                        public void onPrepareLoad(Drawable placeHolderDrawable) {}
+                                    };
+                                    targets.add(picassoTarget);
+                                    Picasso.get()
+                                            .load(fotoUrl.get(0))
+                                            .resize(100, 100)
+                                            .centerCrop()
+                                            .into(picassoTarget);
+                                }
+                            }
+                        }
+                    } else {
+                        Log.e("HaritadaGor", "Belge bulunamadı.");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("HaritadaGor", "Firestore hatası: ", e);
+                });
+    }
+
 
     public void vericekme() {
         db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
@@ -588,6 +670,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
    ArrayList<Kediler>kediler=new ArrayList<>();
     List<Target> targets = new ArrayList<>(); // Target'ları burada saklıyoruz
+    ArrayList<Marker>markerlar=new ArrayList<>();
     public void resimlimarker() {
         runOnUiThread(() -> {
         for (Kediler kedi : kediler) {
@@ -601,10 +684,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
                         Bitmap customMarkerBitmap = fotoduzenle(bitmap);
-                        mMap.addMarker(new MarkerOptions()
+                    Marker marker= mMap.addMarker(new MarkerOptions()
                                 .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
                                 .position(kedy)
                                 .title(kedi.getIsim()));
+                        markerlar.add(marker);
                 }
 
                 @Override
@@ -770,6 +854,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         // Eğer kendi profilimizse
                         if (YId.equals(MainActivity.kullanici.getID())) {
+                            if (mViewModel == null) {
+                                mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+                            }
+
                             DocumentReference kullaniciRef = db.collection("users").document(YId);
                             kullaniciRef.get().addOnSuccessListener(innerSnapshot -> {
                                 List<Map<String, Object>> gonderilenKediler = (List<Map<String, Object>>) innerSnapshot.get("GonderilenKediler");
@@ -809,6 +897,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                                             );
                                                             bottomSheetDialog.dismiss();
                                                         }
+                                                    })
+                                                    .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
+                                                    .show();
+                                            return true;
+                                        }else if(item.getItemId() == R.id.HaritadanSilme){
+                                            new AlertDialog.Builder(bottomSheetView.getContext())
+                                                    .setTitle("Silme")
+                                                    .setMessage("Kediyi haritadan silmek istiyor musunuz? Bu işlemi yaptığınızda, kediye ait gönderiler de silinecektir.")
+                                                    .setPositiveButton("Evet", (dialog, which) -> {
+                                                        mViewModel.HaritadanSilme(MapsActivity.kediID, () -> {
+                                                            KediSilmeDurumu.getInstance().setSilindiMi(true);
+                                                            mViewModel.kullaniciyaGonderiSil(MapsActivity.kediID,mesaji);
+                                                            mViewModel.gonderiSil(MapsActivity.kediID);
+                                                            sonTiklananMarkeriSil();
+                                                            bottomSheetDialog.dismiss();
+                                                        });
+                                                        popupMenu.dismiss();
                                                     })
                                                     .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
                                                     .show();
@@ -1150,6 +1255,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     throw new RuntimeException(e);
                 }
                 vericekme();
+                if (gosterilecekKediID != null) {
+                    HaritadaGor(gosterilecekKediID);
+                    gosterilecekKediID = null;
+                }
             }).start();
 
         });
@@ -1157,6 +1266,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public boolean onMarkerClick(Marker marker) {
                 if (!marker.getTitle().equals("konum")) {
+                    sonTiklananMarker = marker;
                     kedibilgisigetirme(marker.getPosition());
                 }
                 return true;

@@ -3,4 +3,8 @@
     <item
         android:id="@+id/gonderi_ekle"
         android:title="Gönderilere ekle" />
+    <item
+        android:id="@+id/HaritadanSilme"
+        android:title="Haritadan sil" />
+
 </menu>

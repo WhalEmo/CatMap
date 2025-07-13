@@ -39,13 +39,14 @@
         <activity
             android:name=".YuklemeArayuzuActivity"
             android:exported="false" />
-
+        <!-- AndroidManifest.xml -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyA58fD4xQDaP2bi1ElUsk8x_LKfFuqpREI" />
 
         <activity
             android:name=".MapsActivity"
+            android:theme="@style/MapsTheme"
             android:exported="true"
             android:label="@string/title_activity_maps" /> <!-- Firebase Analytics -->
         <meta-data

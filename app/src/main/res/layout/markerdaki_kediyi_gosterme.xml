@@ -65,7 +65,6 @@
             android:translationY="19dp" />
     </LinearLayout>
 
-
     <ImageView
         android:id="@+id/GonderiEkleButton"
         android:layout_width="65dp"

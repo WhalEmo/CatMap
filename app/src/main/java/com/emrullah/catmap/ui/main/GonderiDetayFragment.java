@@ -1,7 +1,9 @@
 package com.emrullah.catmap.ui.main;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,12 +11,14 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.emrullah.catmap.FotoYuklemeListener;
 import com.emrullah.catmap.KediSilmeDurumu;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.MapsActivity;
@@ -30,6 +34,8 @@ import java.util.Map;
 
 public class GonderiDetayFragment extends Fragment {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private View overlay;
+    private ProgressBar progressBar;
     private static final String ARG_FOTO_LIST = "fotoListesi";
     private static final String ARG_KEDI_ADI = "kediAdi";
     private static final String ARG_ACIKLAMA = "aciklama";
@@ -68,20 +74,29 @@ public class GonderiDetayFragment extends Fragment {
     }
 
 
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false);
         MainViewModel mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        progressBar = view.findViewById(R.id.progressBar);
+        overlay = view.findViewById(R.id.overlayView);
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
         TextView haritadaGorText=view.findViewById(R.id.haritadaGorText);
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
+        showLoading(true);
 
-           uyari.YuklemeDurum("");
-            viewPager.setAdapter(new FotoAdapter(fotoListesi));
-            kediAdiText.setText(kediAdi);
+        viewPager.setAdapter(new FotoAdapter(fotoListesi, new FotoYuklemeListener() {
+            @Override
+            public void onTumFotograflarYuklendi() {
+                showLoading(false); // ProgressBar burada kapanır
+            }
+        }));
+
+        kediAdiText.setText(kediAdi);
             aciklamaText.setText(aciklama);
 
             if (begeni != 0) {
@@ -122,7 +137,7 @@ public class GonderiDetayFragment extends Fragment {
                                             mViewModel.kullaniciyaGonderiSil(kediid,uyari);
                                             mViewModel.gonderiSil(kediid);
                                                if (getActivity() instanceof MapsActivity) {
-                                                   ((MapsActivity) getActivity()).vericekme();
+                                                   ((MapsActivity) getActivity()).sonTiklananMarkeriSil();
                                                }
                                                requireActivity().getSupportFragmentManager().popBackStack();
                                         });
@@ -137,18 +152,37 @@ public class GonderiDetayFragment extends Fragment {
 
                     popupMenu.show();
                 });
-
-
             }else{
                 GonderiMenu.setVisibility(View.GONE);
-
             }
         });
-
-            haritadaGorText.setOnClickListener(b->{
-
-            });
-            uyari.BasariliDurum("",1000);
+        haritadaGorText.setOnClickListener(b -> {
+            if (getActivity() instanceof MapsActivity) {
+                ((MapsActivity) getActivity()).HaritadaGor(kediid);
+                new Handler().postDelayed(() -> {
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                }, 100);
+            } else {
+                Intent intent = new Intent(requireContext(), MapsActivity.class);
+                intent.putExtra("kediId", kediid);
+                startActivity(intent);
+                requireActivity().overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+            }
+        });
         return view;
+    }
+    private void showLoading(boolean isLoading) {
+        if (isLoading) {
+            progressBar.setVisibility(View.VISIBLE);
+            overlay.setVisibility(View.VISIBLE);
+            // Arka planı da interaktif yapma (dokunulmaz yap)
+            getActivity().getWindow().setFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+            overlay.setVisibility(View.GONE);
+            getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
     }
 }

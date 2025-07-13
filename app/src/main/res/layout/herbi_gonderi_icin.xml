@@ -70,7 +70,7 @@
                         android:contentDescription="Menü"
                         android:padding="2dp"
                         android:src="@drawable/baseline_more_vert_24"
-                        android:tint="#1C1C1C"
+                        android:tint="#888888"
                         android:visibility="visible"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
@@ -135,29 +135,79 @@
                                 android:layout_marginTop="4dp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/kediAdiText"
-                            android:translationY="-25dp"
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kedi Adı"
-                            android:textColor="#000000"
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            android:paddingBottom="4dp" />
-
-                        <TextView
-                            android:id="@+id/kediAciklama"
+                            android:orientation="horizontal"
                             android:translationY="-25dp"
+                            android:paddingBottom="4dp">
+
+                            <TextView
+                                android:id="@+id/kediAdiBaslik"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Kedi adı:"
+                                android:textColor="#000000"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/kediAdiText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Pamuk"
+                                android:textColor="#000000"
+                                android:textSize="15sp"
+                                android:layout_marginStart="4dp" />
+                        </LinearLayout>
+
+
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Kedi hakkında çok uzun bir açıklama olabilir..."
-                            android:textColor="#555555"
-                            android:textSize="14sp" />
+                            android:orientation="vertical"
+                            android:translationY="-25dp"
+                            android:paddingBottom="4dp">
+
+                            <TextView
+                                android:id="@+id/kediAciklamaBaslik"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Açıklama:"
+                                android:textColor="#000000"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/kediAciklama"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Kedi hakkında çok uzun bir açıklama olabilir. Bu metin birkaç satır olabilir ve alt satıra düzgün hizalanmalıdır."
+                                android:textColor="#555555"
+                                android:textSize="14sp"
+                                android:layout_marginStart="8dp" />
+                        </LinearLayout>
+
                     </LinearLayout>
                 </LinearLayout>
 
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
+    <View
+        android:id="@+id/overlayView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCCCCCCC"
+        android:visibility="visible" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:indeterminate="true"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_marginTop="16dp" />
 </FrameLayout>

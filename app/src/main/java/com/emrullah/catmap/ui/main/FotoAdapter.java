@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.emrullah.catmap.FotoYuklemeListener;
 import com.emrullah.catmap.R;
 import com.squareup.picasso.Picasso;
 
@@ -15,9 +16,12 @@ import java.util.ArrayList;
 public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder> {
 
     private ArrayList<String> fotoUrlListesi;
+    private FotoYuklemeListener listener;
+    private int yuklenenFotoSayisi = 0;
 
-    public FotoAdapter(ArrayList<String> fotoUrlListesi) {
+    public FotoAdapter(ArrayList<String> fotoUrlListesi, FotoYuklemeListener listener) {
         this.fotoUrlListesi = fotoUrlListesi;
+        this.listener = listener;
     }
 
     @NonNull
@@ -26,7 +30,6 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.foto_item, parent, false);
         return new FotoViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(@NonNull FotoViewHolder holder, int position) {
         String url = fotoUrlListesi.get(position);
@@ -35,7 +38,27 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
                 .fit()
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
-                .into(holder.imageView);
+                .into(holder.imageView, new com.squareup.picasso.Callback() {
+                    @Override
+                    public void onSuccess() {
+                        yuklenenFotoSayisi++;
+                        if (yuklenenFotoSayisi == fotoUrlListesi.size()) {
+                            if (listener != null) {
+                                listener.onTumFotograflarYuklendi();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        yuklenenFotoSayisi++;
+                        if (yuklenenFotoSayisi == fotoUrlListesi.size()) {
+                            if (listener != null) {
+                                listener.onTumFotograflarYuklendi();
+                            }
+                        }
+                    }
+                });
     }
 
     @Override
