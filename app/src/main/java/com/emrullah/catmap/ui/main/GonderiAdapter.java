@@ -14,6 +14,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.emrullah.catmap.FotoYuklemeListener;
+import com.emrullah.catmap.GonderiYuklemeListener;
 import com.emrullah.catmap.R;
 import com.squareup.picasso.Picasso;
 
@@ -24,11 +26,13 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
     private ArrayList<Gonderi> gonderiler;
     private FragmentManager fragmentManager;
     public Boolean gerigitti=true;
+    private GonderiYuklemeListener listener;
 
-    public GonderiAdapter(ArrayList<Gonderi> gonderiler,FragmentManager fragmentManager,Boolean gerigitti) {
+    public GonderiAdapter(ArrayList<Gonderi> gonderiler, FragmentManager fragmentManager, Boolean gerigitti, GonderiYuklemeListener listener) {
         this.gonderiler = gonderiler;
         this.fragmentManager = fragmentManager;
         this.gerigitti=gerigitti;
+        this.listener=listener;
     }
 
     public void guncelleList(ArrayList<Gonderi> yeniListe) {

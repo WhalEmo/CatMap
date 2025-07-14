@@ -166,6 +166,7 @@ public class GonderiDetayFragment extends Fragment {
                 Intent intent = new Intent(requireContext(), MapsActivity.class);
                 intent.putExtra("kediId", kediid);
                 startActivity(intent);
+                ((MapsActivity) getActivity()).HaritadaGor(kediid);
                 requireActivity().overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
             }
         });

@@ -14,6 +14,7 @@ import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.emrullah.catmap.GonderiYuklemeListener;
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.UyariMesaji;
@@ -544,7 +545,7 @@ public class MainViewModel extends ViewModel {
                     Log.e("Engelle", "Engelleme başarısız: " + e.getMessage());
                 });
     }
-    public void GonderiCekme(String id,UyariMesaji uyari ) {
+    public void GonderiCekme(String id, UyariMesaji uyari, GonderiYuklemeListener listener) {
         DocumentReference kullaniciRef = db.collection("users").document(id);
         kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
@@ -584,6 +585,9 @@ public class MainViewModel extends ViewModel {
                                 if (tamamlanan[0] == toplam) {
                                     gonderiListesi.sort((g1, g2) -> g2.getTarih().compareTo(g1.getTarih()));
                                     _kediIdGonderilist.setValue(gonderiListesi);
+                                }
+                                if (listener != null) {
+                                    listener.onTumGonderilerYuklendi();
                                 }
                             })
                             .addOnFailureListener(e -> {
