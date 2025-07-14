@@ -737,6 +737,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void resimlimarker() {
         runOnUiThread(() -> {
         for (Kediler kedi : kediler) {
+            if(markerKEY.containsKey(kedi.getURL())){
+               continue;
+            }
             if(kedi.isMarkerOlustuMu()){
                 continue;
             }else{
@@ -747,15 +750,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
                         Bitmap customMarkerBitmap = fotoduzenle(bitmap);
-                        if(markerKEY.containsKey(kedi.getURL())){
-                            return;
-                        }
-                        Marker marker= mMap.addMarker(new MarkerOptions()
+                        if(!markerKEY.containsKey(kedi.getURL())){
+                            Marker marker = mMap.addMarker(new MarkerOptions()
                                     .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
                                     .position(kedy)
                                     .title(kedi.getIsim()));
-                        markerlar.add(marker);
-                        markerKEY.put(kedi.getURL(),null);
+                            markerlar.add(marker);
+                            markerKEY.put(kedi.getURL(), null);
+                        }
                 }
 
                 @Override

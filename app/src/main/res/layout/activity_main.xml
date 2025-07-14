@@ -57,30 +57,62 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginTop="300dp"
             app:layout_constraintBottom_toTopOf="@+id/girisid"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:layout_marginEnd="16dp">
+                <ImageButton
+                    android:id="@+id/yukleid"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:background="@null"
+                    android:onClick="yuklemeSayfasi"
+                    android:scaleType="fitCenter"
+                    app:srcCompat="@drawable/yukleme" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kedi Yükle"
+                    android:textColor="#0A4B8A"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginStart="16dp"
+                android:orientation="vertical">
 
-            <ImageButton
-                android:id="@+id/yukleid"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_marginRight="16dp"
-                android:background="@null"
-                android:onClick="yuklemeSayfasi"
-                android:scaleType="fitCenter"
-                app:srcCompat="@drawable/yukleme" />
-
-            <ImageButton
-                android:id="@+id/haritaid"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_marginLeft="16dp"
-                android:background="@null"
-                android:onClick="haritaSayfasi"
-                android:scaleType="fitCenter"
-                app:srcCompat="@drawable/harita" />
+                <ImageButton
+                    android:id="@+id/haritaid"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:background="@null"
+                    android:onClick="haritaSayfasi"
+                    android:scaleType="fitCenter"
+                    app:srcCompat="@drawable/harita" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kedi Harita"
+                    android:textColor="#0A4B8A"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
@@ -115,72 +147,98 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <LinearLayout
-        android:id="@+id/profilAlani"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/ustCubuk"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        android:gravity="center"
-        android:onClick="profilSayfasinaGit"
-        android:orientation="vertical"
-        android:visibility="visible"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:padding="16dp"
+        tools:ignore="MissingConstraints">
 
-        <!-- Yuvarlak animasyonlu pati -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            app:cardCornerRadius="100dp"
-            app:cardElevation="4dp"
-            app:cardPreventCornerOverlap="true">
-
-            <com.airbnb.lottie.LottieAnimationView
-                android:id="@+id/patiAnimasyon"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleX="1.5"
-                android:scaleY="1.5"
-                android:translationY="-15dp"
-                app:lottie_autoPlay="true"
-                app:lottie_fileName="paw.json"
-                app:lottie_loop="true" />
-        </androidx.cardview.widget.CardView>
-
-        <!-- Altına yazı -->
-        <TextView
-            android:id="@+id/profilimText"
+        <!-- PROFİL ALANI -->
+        <LinearLayout
+            android:id="@+id/profilAlani"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:fontFamily="sans-serif-medium"
+            android:orientation="vertical"
             android:gravity="center"
-            android:textStyle="bold"
-            android:text="Profilim"
-            android:textColor="#0C4F8D"
-            android:textSize="14sp" />
-    </LinearLayout>
+            android:onClick="profilSayfasinaGit"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:onClick="Sohbet"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                app:cardCornerRadius="100dp"
+                app:cardElevation="4dp"
+                app:cardPreventCornerOverlap="true">
+
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/patiAnimasyon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleX="1.5"
+                    android:scaleY="1.5"
+                    android:translationY="-15dp"
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    app:lottie_fileName="paw.json" />
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:id="@+id/profilimText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Profilim"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <!-- SOHBET BUTONU -->
+        <LinearLayout
+            android:id="@+id/sohbetAlani"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone"
+            android:layout_marginStart="20dp"
+            app:layout_constraintStart_toEndOf="@id/profilAlani"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/sohbetButon"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/sohbetbuton"
+                android:onClick="Sohbet"
+                android:scaleType="centerCrop"
+                android:contentDescription="Sohbet Butonu" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sohbet"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:context=".Profil_Sayfasi" />
+        tools:context=".Profil_Sayfasi"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
-
 

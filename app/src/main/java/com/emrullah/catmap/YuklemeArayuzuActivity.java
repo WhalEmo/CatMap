@@ -20,6 +20,12 @@ import android.widget.Toast;
 import android.location.Location;
 
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -70,6 +76,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     private ImageView geciciFoto;
     final int MAX_FOTO_SAYISI = 5;
     private ConstraintLayout main;
+    private InterstitialAd reklamAD;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReference();
@@ -91,6 +98,10 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         // Firestore Başlat
         db = FirebaseFirestore.getInstance();
         mesaji = new UyariMesaji(this,false);
+
+        // reklam ayarlarına başla
+        ReklamYukleme();
+
 
     }
 
@@ -317,6 +328,9 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                     .addOnSuccessListener(documentReference -> {
                         mesaji.BasariliDurum("Kedi bilgileri başarıyla kaydedildi!",1000);
 
+                        // burda reklamı ver
+                        ReklamVer();
+
                         View dialogView = LayoutInflater.from(this).inflate(R.layout.alert_dialog_tasarimi, null);
                         AlertDialog dialog = new AlertDialog.Builder(this)
                                 .setView(dialogView)
@@ -373,4 +387,49 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     }
 
 
+    private void ReklamYukleme(){
+        MobileAds.initialize(this, initializationStatus -> {});
+
+        AdRequest reklamIstek = new AdRequest.Builder().build();
+        InterstitialAd.load(this,
+                "ca-app-pub-3940256099942544/1033173712", // sahte id
+                reklamIstek,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(InterstitialAd ad) {
+                        reklamAD = ad;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError adError) {
+                        reklamAD = null;
+                    }
+                });
+    }
+    private void ReklamVer(){
+        if (reklamAD != null) {
+            reklamAD.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    // Reklam kapatıldıktan sonra yapılacak işlemler
+                    // Örneğin yeni aktivite açabilirsin
+                    // startActivity(new Intent(MainActivity.this, IkinciActivity.class));
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(com.google.android.gms.ads.AdError adError) {
+                    // Reklam gösterilemedi
+                }
+
+                @Override
+                public void onAdShowedFullScreenContent() {
+                    reklamAD = null;
+                }
+            });
+
+            reklamAD.show(YuklemeArayuzuActivity.this);
+        } else {
+
+        }
+    }
 }

@@ -685,7 +685,7 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .show();
                         return true;
                     }else if(id==R.id.mesajGonder){
-
+                        SohbetGecis();
                     }
 
                     //BURADA YAPCAKSIN AŞKIMMMMM
@@ -949,6 +949,18 @@ public class ProfilSayfasiFragment extends Fragment {
             transaction.addToBackStack(null);
             transaction.commit();
         });
+    }
+    private void SohbetGecis(){// -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
+        MesajlasmaYonetici.getInstance().DinleyiciKaldir();
+
+        Kullanici alici = new Kullanici();
+        alici.setID(yukleyenID);
+        MesajlasmaYonetici.getInstance().setAlici(alici);
+        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.container, new MesajFragment(requireContext()));
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
 }

@@ -52,7 +52,9 @@ public class MainActivity extends AppCompatActivity {
     boolean AcikMi;
     private UyariMesaji uyariMesaji;
     private LinearLayout Profil;
+    private LinearLayout sohbetAlani;
     private ConstraintLayout GirisKayit;
+    private ConstraintLayout ustCubuk;
 
 
     @Override
@@ -77,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
             });
             return insets;
         });
+        ustCubuk = findViewById(R.id.ustCubuk);
+        sohbetAlani = findViewById(R.id.sohbetAlani);
         kullanici = new Kullanici();
         KayitOlButon = findViewById(R.id.kaydolid);
         GirisYapButon = findViewById(R.id.girisid);
@@ -98,11 +102,24 @@ public class MainActivity extends AppCompatActivity {
             uyariMesaji = new UyariMesaji(this,false);
         }
         SohbetMesajAyarlari();
+        FragmentAyarlari();
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
+            if (currentFragment instanceof AnasayfaFragment) {
+                sohbetAlani.setVisibility(View.VISIBLE);
+                ustCubuk.setVisibility(View.VISIBLE);
+                FragmentAyarlari();
+            } else {
+                sohbetAlani.setVisibility(View.GONE);
+                ustCubuk.setVisibility(View.GONE);
+            }
+        });
     }
 
     public void profilSayfasinaGit(View view){
         Profil.setVisibility(View.GONE);
         GirisKayit.setVisibility(View.GONE);
+        ustCubuk.setVisibility(View.GONE);
         ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
             getSupportFragmentManager()
                     .beginTransaction()
@@ -408,6 +425,7 @@ public class MainActivity extends AppCompatActivity {
                 }))
                 .addToBackStack(null)  // geri tuşuyla geri döner
                 .commit();
+        GirisKayit.setVisibility(View.GONE);
     }
 
     /// bu metodda mesajlaşma ve sohbetteki başlatılmadan önce temel ayarlar yapılır
@@ -429,5 +447,13 @@ public class MainActivity extends AppCompatActivity {
             durum.child(kullanici.getID()).child("sonGorulme").setValue(System.currentTimeMillis());
             kullanici.setSonGorulme(System.currentTimeMillis());
         }
+    }
+
+    private void FragmentAyarlari(){
+        sohbetAlani.setVisibility(View.VISIBLE);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.container, new AnasayfaFragment())
+                .commit();
     }
 }
