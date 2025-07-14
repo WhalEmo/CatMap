@@ -11,6 +11,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -55,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout sohbetAlani;
     private ConstraintLayout GirisKayit;
     private ConstraintLayout ustCubuk;
+    private TextView haritatext;
+    private TextView yuklemetext;
 
 
     @Override
@@ -86,9 +89,12 @@ public class MainActivity extends AppCompatActivity {
         GirisYapButon = findViewById(R.id.girisid);
         KediHaritaButon = findViewById(R.id.haritaid);
         KediKaydetButon = findViewById(R.id.yukleid);
+        haritatext = findViewById(R.id.haritatext);
+        yuklemetext = findViewById(R.id.yuklemetext);
         CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
+        FragmentAyarlari();
         if(GirisYapildi){
             kullanici.GetYerelKullanici(this);
             System.out.println(kullanici.getAd());
@@ -97,12 +103,14 @@ public class MainActivity extends AppCompatActivity {
             CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
         }
         else{
+            ustCubuk.setVisibility(View.GONE);
             KediKaydetButon.setVisibility(View.INVISIBLE);
             KediHaritaButon.setVisibility(View.INVISIBLE);
+            haritatext.setVisibility(View.GONE);
+            yuklemetext.setVisibility(View.GONE);
             uyariMesaji = new UyariMesaji(this,false);
         }
         SohbetMesajAyarlari();
-        FragmentAyarlari();
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
             if (currentFragment instanceof AnasayfaFragment) {
@@ -410,7 +418,9 @@ public class MainActivity extends AppCompatActivity {
                 .setDuration(1000)
                 .setInterpolator(new AccelerateInterpolator())
                 .start();
-
+        ustCubuk.setVisibility(View.VISIBLE);
+        haritatext.setVisibility(View.VISIBLE);
+        yuklemetext.setVisibility(View.VISIBLE);
     }
 
     public void Sohbet(View view){

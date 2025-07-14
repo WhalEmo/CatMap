@@ -48,6 +48,8 @@ import android.Manifest;
 
 import com.emrullah.catmap.ui.main.MainViewModel;
 import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -164,6 +166,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
          screenWidth = displayMetrics.widthPixels;
+        AdView adView = findViewById(R.id.adView);
 
         btnShowFact.setOnClickListener(v -> {
             if (!isPanelVisible) {
@@ -172,6 +175,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onSuccess(String translatedFact) {
                         tvCatFactSliding.setText(translatedFact);
+                        AdRequest adRequest = new AdRequest.Builder().build();
+                        adView.loadAd(adRequest);
                         showPanel();
                     }
 
@@ -237,6 +242,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         yorumSayisiTextView=bottomSheetView.findViewById(R.id.yorumSayisiTextView);
         fotoAdapter = new FotoGeciciAdapter(this,fotolar,fotografYukleyiciYonetici);
         fotoPager.setAdapter(fotoAdapter);
+
 
 
         ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
@@ -312,6 +318,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }, 250);
         });
          gosterilecekKediID = getIntent().getStringExtra("kediId");
+
+         /// REKLAM
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
+
     }
     public void sonTiklananMarkeriSil() {
         if (sonTiklananMarker != null) {
