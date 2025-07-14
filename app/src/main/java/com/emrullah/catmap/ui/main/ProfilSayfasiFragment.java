@@ -82,6 +82,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 
 public class ProfilSayfasiFragment extends Fragment {
@@ -119,6 +120,7 @@ public class ProfilSayfasiFragment extends Fragment {
     private TextView gonderilerBaslikTextView;
     private View overlay;
     private ProgressBar progressBar;
+   private SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -141,6 +143,13 @@ public class ProfilSayfasiFragment extends Fragment {
             e.printStackTrace();
             return null;
         }
+    }
+    private void fragmentiYenidenYukle() {
+        // Fragmenti yeniden oluşturmak için detach & attach yöntemi
+        FragmentManager fragmentManager = getParentFragmentManager();
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        ft.detach(this).commitNow();  // Hemen detach et
+        ft.attach(this).commitNow();  // Hemen tekrar attach et
     }
 
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
@@ -302,6 +311,14 @@ public class ProfilSayfasiFragment extends Fragment {
         }
         mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+         swipeRefreshLayout = getView().findViewById(R.id.swipeRefreshLayout);
+        if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
+    }
 
     @Nullable
     @Override
@@ -320,7 +337,7 @@ public class ProfilSayfasiFragment extends Fragment {
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
         emptyTextView=view.findViewById(R.id.emptyTextView);
         gonderiSayisiTextView=view.findViewById(R.id.gonderiSayisiTextView);
-        sohbetButon = view.findViewById(R.id.sohbetButon); /// -> aşkım bunu ben ekledim sohbeti açan buton
+        sohbetButon = view.findViewById(R.id.sohbetButon);
 
         takipEdiliyorButonu=view.findViewById(R.id.takipEdiliyorButonu);
         myConstraintLayout=view.findViewById(R.id.myConstraintLayout);
@@ -336,6 +353,12 @@ public class ProfilSayfasiFragment extends Fragment {
         myConstraintLayout.setVisibility(View.GONE);
         shimmerLayout.setVisibility(View.VISIBLE);
         shimmerLayout.startShimmer();
+
+         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            fragmentiYenidenYukle();  // Aşağıda tanımlayacağımız yöntem
+        });
 
         gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
         gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
@@ -451,6 +474,7 @@ public class ProfilSayfasiFragment extends Fragment {
                if (gonderilist == null || gonderilist.isEmpty()) {
                    emptyTextView.setVisibility(View.VISIBLE);
                    gonderiRecyclerView.setVisibility(View.GONE);
+                   showLoading(false);
                } else {
                    emptyTextView.setVisibility(View.GONE);
                    gonderiRecyclerView.setVisibility(View.VISIBLE);
@@ -468,6 +492,7 @@ public class ProfilSayfasiFragment extends Fragment {
                        gonderiAdapter.guncelleList(gonderilist);
                        gonderiGeri=gonderiAdapter.gerigitti;
                    }
+                   showLoading(false);
                }
                if (shimmerLayout.getVisibility() == View.VISIBLE) {
                    shimmerLayout.stopShimmer();
@@ -532,6 +557,7 @@ public class ProfilSayfasiFragment extends Fragment {
                        if (gonderilist == null || gonderilist.isEmpty()) {
                            emptyTextView.setVisibility(View.VISIBLE);
                            gonderiRecyclerView.setVisibility(View.GONE);
+                           showLoading(false);
                        } else {
                            emptyTextView.setVisibility(View.GONE);
                            gonderiRecyclerView.setVisibility(View.VISIBLE);
@@ -564,6 +590,7 @@ public class ProfilSayfasiFragment extends Fragment {
                    shimmerLayout.setVisibility(View.GONE);
                    myConstraintLayout.setVisibility(View.VISIBLE);
                }
+               showLoading(false);
            });
 
            mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);

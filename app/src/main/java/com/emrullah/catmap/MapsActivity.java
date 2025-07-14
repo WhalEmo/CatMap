@@ -141,6 +141,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isPanelVisible = false;
     ImageButton btnClose;
     private int screenWidth;
+    private View touchBlocker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,6 +160,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
         btnShowFact=findViewById(R.id.btnShowFact);
         btnClose = findViewById(R.id.btnClosePanel);
+         touchBlocker = findViewById(R.id.touchBlocker);
         rightSlidingPanel = findViewById(R.id.rightSlidingPanel);
         TextView tvCatFactSliding = findViewById(R.id.tvCatFactSliding);
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -192,6 +194,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .withEndAction(() -> {
                         tvCatFactSliding.setText("");
                         isPanelVisible = false;
+                        touchBlocker.setVisibility(View.GONE);
                     })
                     .start();
         });
@@ -326,6 +329,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setDuration(300)
                 .start();
         isPanelVisible = true;
+        touchBlocker.setVisibility(View.VISIBLE);
     }
 
     // Paneli gizle (animasyonlu)
@@ -335,6 +339,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setDuration(300)
                 .start();
         isPanelVisible = false;
+        touchBlocker.setVisibility(View.GONE);
     }
 
     private void konumizni() {

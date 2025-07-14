@@ -51,6 +51,8 @@ dependencies {
     implementation("com.airbnb.android:lottie:6.3.0")
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
 
 
     implementation("com.android.volley:volley:1.2.1")
