@@ -86,6 +86,17 @@
                 app:icon="@drawable/dalga_efekti"
                 app:iconTint="@android:color/white"
                 app:rippleColor="#332B5EA3" />
+            <ImageView
+                android:id="@+id/btnShowFact"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:visibility="gone"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_margin="30dp"
+                android:src="@drawable/kitty"
+                android:background="@null"
+                android:contentDescription="Kedi Bilgisi Göster" />
 
 
             <ImageButton
@@ -125,4 +136,66 @@
         android:layout_height="match_parent"
         android:background="@android:color/transparent"
         tools:context=".Profil_Sayfasi" />
+
+    <FrameLayout
+        android:id="@+id/rightSlidingPanel"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/panel_background"
+        android:elevation="12dp"
+        android:translationX="580dp"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:translationY="30dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+            <ImageButton
+                android:id="@+id/btnClosePanel"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="end"
+                android:translationY="-10dp"
+                android:background="@null"
+                android:src="@drawable/kirmizi_hata"
+                android:contentDescription="Paneli Kapat" />
+
+            <ImageView
+                android:id="@+id/imgKedi"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:translationY="-10dp"
+                android:src="@drawable/cats"
+                android:contentDescription="Kedi resmi"
+                android:scaleType="centerCrop"
+                android:layout_gravity="center_horizontal"/>  <!-- Gerekirse -->
+
+            <TextView
+                android:id="@+id/panelTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🐾 Bilgi 🐾 "
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#13216E"
+                android:gravity="center"
+                android:paddingBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvCatFactSliding"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kedi bilgisi burada gözükecek"
+                android:textSize="16sp"
+                android:textColor="#333333"
+                android:lineSpacingExtra="4dp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
 </FrameLayout>
+

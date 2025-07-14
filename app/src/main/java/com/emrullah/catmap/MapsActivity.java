@@ -28,6 +28,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -135,6 +136,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Marker sonTiklananMarker;
     String gosterilecekKediID;
     private MainViewModel mViewModel;
+    private ImageView btnShowFact;
+    private FrameLayout rightSlidingPanel;
+    private boolean isPanelVisible = false;
+    ImageButton btnClose;
+    private int screenWidth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +157,44 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
+        btnShowFact=findViewById(R.id.btnShowFact);
+        btnClose = findViewById(R.id.btnClosePanel);
+        rightSlidingPanel = findViewById(R.id.rightSlidingPanel);
+        TextView tvCatFactSliding = findViewById(R.id.tvCatFactSliding);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+         screenWidth = displayMetrics.widthPixels;
+
+        btnShowFact.setOnClickListener(v -> {
+            if (!isPanelVisible) {
+                // API çağrısı ve paneli aç
+                CatFactService.getRandomCatFact(this, new CatFactService.CatFactCallback() {
+                    @Override
+                    public void onSuccess(String translatedFact) {
+                        tvCatFactSliding.setText(translatedFact);
+                        showPanel();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        tvCatFactSliding.setText("Hata: " + errorMessage);
+                        showPanel();
+                    }
+                });
+            } else {
+                hidePanel(screenWidth);
+            }
+        });
+        btnClose.setOnClickListener(v -> {
+            rightSlidingPanel.animate()
+                    .translationX(screenWidth) // dışarı kaydır
+                    .setDuration(300)
+                    .withEndAction(() -> {
+                        tvCatFactSliding.setText("");
+                        isPanelVisible = false;
+                    })
+                    .start();
+        });
         anaGorunum=findViewById(R.id.anaGorunum);
         // Map Fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -254,8 +298,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             }
         });
-
-
         Klavye klavye=new Klavye(this);
         iptalButton.setOnClickListener(v -> {
             View currentFocus = this.getCurrentFocus();
@@ -277,6 +319,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             markerlar.remove(sonTiklananMarker);
             sonTiklananMarker = null;
         }
+    }
+    private void showPanel() {
+        rightSlidingPanel.animate()
+                .translationX(0)
+                .setDuration(300)
+                .start();
+        isPanelVisible = true;
+    }
+
+    // Paneli gizle (animasyonlu)
+    private void hidePanel(int screenWidth) {
+        rightSlidingPanel.animate()
+                .translationX(screenWidth)
+                .setDuration(300)
+                .start();
+        isPanelVisible = false;
     }
 
     private void konumizni() {
@@ -341,7 +399,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
             if (KediSilmeDurumu.getInstance().isSilindiMi()) {
-                vericekme(); // sadece silme olduysa
+                vericekme();
                 KediSilmeDurumu.getInstance().setSilindiMi(false); // sıfırla
         }
     }
@@ -360,7 +418,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
+        if (rightSlidingPanel.getTranslationX() == 0) {
+            rightSlidingPanel.animate()
+                    .translationX(screenWidth) // sağa geri kaydır
+                    .setDuration(300)
+                    .start();
+        } else {
+            // Panel kapalıysa normal geri işlemi yap
+            super.onBackPressed();
+        }
         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
     }
 
@@ -398,6 +464,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,8f));
                             new Handler().postDelayed(() -> {
                                 yuklemeEkrani.setVisibility(View.GONE);
+                                btnShowFact.setVisibility(View.VISIBLE);
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 16f), 2000, null);
                             }, 1000);
                             konumAlindi=false;

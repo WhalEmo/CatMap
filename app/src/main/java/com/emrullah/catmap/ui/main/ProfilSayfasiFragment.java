@@ -43,8 +43,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.emrullah.catmap.FotoYuklemeListener;
+import com.emrullah.catmap.GonderiYuklemeListener;
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
 import com.emrullah.catmap.mesaj.MesajFragment;
@@ -114,6 +117,8 @@ public class ProfilSayfasiFragment extends Fragment {
     private Boolean gonderiGeri=true;
     private TextView gonderiSayisiTextView;
     private TextView gonderilerBaslikTextView;
+    private View overlay;
+    private ProgressBar progressBar;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -219,6 +224,20 @@ public class ProfilSayfasiFragment extends Fragment {
             Log.e("CameraIntent", "Kamera uygulaması bulunamadı!");
         }
     }
+    private void showLoading(boolean isLoading) {
+        if (isLoading) {
+            progressBar.setVisibility(View.VISIBLE);
+            overlay.setVisibility(View.VISIBLE);
+            // Arka planı da interaktif yapma (dokunulmaz yap)
+            getActivity().getWindow().setFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+            overlay.setVisibility(View.GONE);
+            getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+    }
 
     private void TakipTakipciSayilariUI() {
         if(yukleyenID.equals(MainActivity.kullanici.getID())) {
@@ -311,12 +330,16 @@ public class ProfilSayfasiFragment extends Fragment {
 
         shimmerLayout = view.findViewById(R.id.shimmer_layout);
 
+         progressBar = view.findViewById(R.id.progressBarr);
+         overlay = view.findViewById(R.id.overlayVieww);
+
         myConstraintLayout.setVisibility(View.GONE);
         shimmerLayout.setVisibility(View.VISIBLE);
         shimmerLayout.startShimmer();
 
         gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
         gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
+        showLoading(true);
 
         uyariMesaji=new UyariMesaji(requireContext(),true);
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
@@ -417,7 +440,13 @@ public class ProfilSayfasiFragment extends Fragment {
                }
            });
 
-           mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji);
+           mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji,new GonderiYuklemeListener() {
+               @Override
+               public void onTumGonderilerYuklendi() {
+                   showLoading(false);
+               }
+           });
+
            mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
                if (gonderilist == null || gonderilist.isEmpty()) {
                    emptyTextView.setVisibility(View.VISIBLE);
@@ -426,7 +455,12 @@ public class ProfilSayfasiFragment extends Fragment {
                    emptyTextView.setVisibility(View.GONE);
                    gonderiRecyclerView.setVisibility(View.VISIBLE);
                    if (gonderiAdapter == null) {
-                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager(),true);
+                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager(),true,new GonderiYuklemeListener() {
+                           @Override
+                           public void onTumGonderilerYuklendi() {
+                               showLoading(false); // ProgressBar burada kapanır
+                           }
+                       });
                        gonderiGeri=gonderiAdapter.gerigitti;
                        gonderiRecyclerView.setAdapter(gonderiAdapter);
                    } else {
@@ -488,7 +522,12 @@ public class ProfilSayfasiFragment extends Fragment {
                    takipEtButonu.setVisibility(View.GONE);
                    takipEdiliyorButonu.setVisibility(View.VISIBLE);
                    gonderilerBaslikTextView.setVisibility(View.VISIBLE);
-                   mViewModel.GonderiCekme(yukleyenID,uyariMesaji);
+                   mViewModel.GonderiCekme(yukleyenID,uyariMesaji,new GonderiYuklemeListener() {
+                       @Override
+                       public void onTumGonderilerYuklendi() {
+                           showLoading(false); // örneğin progressBar'ı kapat
+                       }
+                   });
                    mViewModel.kediGonderi().observe(getViewLifecycleOwner(), gonderilist -> {
                        if (gonderilist == null || gonderilist.isEmpty()) {
                            emptyTextView.setVisibility(View.VISIBLE);
@@ -496,7 +535,12 @@ public class ProfilSayfasiFragment extends Fragment {
                        } else {
                            emptyTextView.setVisibility(View.GONE);
                            gonderiRecyclerView.setVisibility(View.VISIBLE);
-                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager(),true);
+                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager(),true,new GonderiYuklemeListener() {
+                               @Override
+                               public void onTumGonderilerYuklendi() {
+                                   showLoading(false); // örneğin progressBar'ı kapat
+                               }
+                           });
                            gonderiRecyclerView.setAdapter(gonderiAdapter);
                        }
 

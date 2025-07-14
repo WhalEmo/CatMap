@@ -396,6 +396,21 @@
 
     </LinearLayout>
 
-
 </androidx.constraintlayout.widget.ConstraintLayout>
+    <View
+        android:id="@+id/overlayVieww"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCCCCCCC"
+        android:visibility="visible" />
+
+    <ProgressBar
+        android:id="@+id/progressBarr"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:indeterminate="true"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_marginTop="16dp" />
 </FrameLayout>
