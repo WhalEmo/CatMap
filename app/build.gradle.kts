@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.emrullah.catmap"
+    namespace = "com.beem.catmap"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.emrullah.catmap"
+        applicationId = "com.beem.catmap"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
