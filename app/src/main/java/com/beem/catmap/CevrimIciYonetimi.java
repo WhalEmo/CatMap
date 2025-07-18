@@ -27,6 +27,11 @@ public class CevrimIciYonetimi {
         }
     }
 
+    public void CevrimIciYonetimiDurdur(Kullanici kullanici){
+        CevrimIciOl(false,kullanici);
+        yonetici = null;
+    }
+
     public void YuklemeArayuzAktivitiyeGecildi(){
         this.yuklemeEkraniGorunuyor = true;
         this.anasayfaGorunuyor = false;

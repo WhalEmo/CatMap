@@ -9,6 +9,7 @@ public class Sohbet {
     private Mesaj mesaj;
     private boolean sohbetYuklendiMi = false;
     private int okunmamisMesajSayisi = 0;
+    private boolean engelliSohbetMi = false;
 
     public Sohbet() {
 
@@ -54,5 +55,13 @@ public class Sohbet {
     }
     public void setSohbetYuklendiMi(boolean sohbetYuklendiMi) {
         this.sohbetYuklendiMi = sohbetYuklendiMi;
+    }
+
+    public void setEngelliSohbetMi(boolean engelliSohbetMi) {
+        this.engelliSohbetMi = engelliSohbetMi;
+    }
+
+    public boolean isEngelliSohbetMi() {
+        return engelliSohbetMi;
     }
 }

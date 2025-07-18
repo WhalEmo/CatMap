@@ -75,6 +75,8 @@ public class MesajFragment extends Fragment {
     private ActivityResultLauncher<Intent> galeriLauncher;
     private Runnable MesajGonder;
     private TextView engelKaldir;
+    private boolean engellendim;
+    private boolean engelledim;
 
     public static MesajFragment newInstance(Context context){
         return new MesajFragment(context);
@@ -118,7 +120,7 @@ public class MesajFragment extends Fragment {
         cevapAlani = view.findViewById(R.id.cevapAlani);
         cevapMetni = view.findViewById(R.id.cevapMetni);
         cevapKapatButton = view.findViewById(R.id.cevapKapatButton);
-
+        EngelKontrol();
         mesajlasmaYonetici.setGeriDon(()->{
             mesajlasmaYonetici.DinleyiciKaldir();
             mesajlasmaYonetici.setAlici(null);
@@ -152,6 +154,8 @@ public class MesajFragment extends Fragment {
             mesajlasmaYonetici.AyarlariYap();
             mesajlasmaYonetici.EngelleDinleyici(()->{
                 OEngelledi();
+            }, ()->{
+                EngelAcildi();
             });
             mesajlasmaYonetici.MesajlariCek(adapter,20,yukleniyorProgress,mesajRecyclerView,()->{
                 mesajlasmaYonetici.MesajlariDinle(adapter,()->{
@@ -173,6 +177,8 @@ public class MesajFragment extends Fragment {
 
         GaleriLauncheriHazirla();
         fotoEkleButton.setOnClickListener(v->{ GaleriyeYonlendir(); });
+
+        engelKaldir.setOnClickListener(v-> { EngelKaldir(); });
 
         ScrollDinleyici();
         // Burada RecyclerView kur, mesajları çek
@@ -340,6 +346,7 @@ public class MesajFragment extends Fragment {
     }
 
     private void CevaplamaKutucuguAc(Mesaj mesaj){
+        if(engellendim || engelledim) return;
         YanitlaMesajGonder(mesaj);
         if(mesaj.getTur().equals("foto")){
             cevapMetni.setText("\uD83D\uDCF7  Fotoğraf");
@@ -367,24 +374,33 @@ public class MesajFragment extends Fragment {
     }
 
     private void EngelKontrol(){
-        DatabaseReference ref = FirebaseDatabase.getInstance()
-                .getReference("mesajlar")
-                .child(mesajlasmaYonetici.getSohbetID())
-                .child("engelliMi");
-
-        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+        if(mesajlasmaYonetici.getAlici()==null || mesajlasmaYonetici.getAlici().getID() == null){
+            return;
+        }
+        ValueEventListener event = new ValueEventListener() {
             @Override
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
-                boolean engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
-                boolean engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
-                if(engellendinMi && engelledinMi){
-                    IkiTarafEngellesti();
-                }
-                if(engelledinMi){
-                    SenEngelledin();
-                }
-                if(engellendinMi){
-                    OEngelledi();
+                if(snapshot.exists()) {
+                    System.out.println(MesajlasmaYonetici.getInstance().getAlici().getID());
+                    System.out.println(MainActivity.kullanici.getID());
+                    boolean engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
+                    boolean engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    engellendim = engellendinMi;
+                    engelledim = engelledinMi;
+                    mesajlasmaYonetici.setEngelledim(engelledim);
+                    mesajlasmaYonetici.setEngelledi(engellendim);
+                    if (engellendinMi && engelledinMi) {
+                        IkiTarafEngellesti();
+                    }
+                    else if (engelledinMi) {
+                        SenEngelledin();
+                    }
+                    else if (engellendinMi) {
+                        OEngelledi();
+                    }
+                    else{
+                        IkiTarafBarisIcinde();
+                    }
                 }
             }
 
@@ -392,31 +408,99 @@ public class MesajFragment extends Fragment {
             public void onCancelled(@androidx.annotation.NonNull DatabaseError error) {
 
             }
-        });
+        };
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("mesajlar");
+        if(mesajlasmaYonetici.getSohbetID()==null){
+            mesajlasmaYonetici.sohbetIDOlustur(MainActivity.kullanici.getID(),mesajlasmaYonetici.getAlici().getID(), id->{
+                ref.child(id)
+                        .child("engelliMi")
+                        .addListenerForSingleValueEvent(event);
+            });
+        }
+        else{
+            ref.child(mesajlasmaYonetici.getSohbetID())
+                    .child("engelliMi")
+                    .addListenerForSingleValueEvent(event);
+        }
+
     }
 
 
     private void IkiTarafEngellesti(){
-        //mesaj adapterden itemleri kapat
+        adapter.setEngel(true);
         gonderButton.setVisibility(View.GONE);
         mesajEditText.setVisibility(View.GONE);
         fotoEkleButton.setVisibility(View.GONE);
+        kisiDurumText.setVisibility(View.GONE);
         engelKaldir.setText("ENGELİ KALDIR");
+        kisiProfilFoto.setImageResource(R.drawable.kullanici);
         engelKaldir.setVisibility(View.VISIBLE);
+        mesaj_gonder_layout.setVisibility(View.VISIBLE);
     }
     private void SenEngelledin(){
+        engelKaldir.setClickable(true);
+        adapter.setEngel(true);
         gonderButton.setVisibility(View.GONE);
         mesajEditText.setVisibility(View.GONE);
         fotoEkleButton.setVisibility(View.GONE);
+        kisiDurumText.setVisibility(View.GONE);
+        kisiProfilFoto.setImageResource(R.drawable.kullanici);
         engelKaldir.setText("ENGELİ KALDIR");
         engelKaldir.setVisibility(View.VISIBLE);
+        mesaj_gonder_layout.setVisibility(View.VISIBLE);
     }
     private void OEngelledi(){
+        engelKaldir.setClickable(false);
+        adapter.setEngel(true);
         gonderButton.setVisibility(View.GONE);
         mesajEditText.setVisibility(View.GONE);
         fotoEkleButton.setVisibility(View.GONE);
+        kisiDurumText.setVisibility(View.GONE);
+        kisiProfilFoto.setImageResource(R.drawable.kullanici);
         engelKaldir.setText("ENGELLENDİN");
         engelKaldir.setVisibility(View.VISIBLE);
+        mesaj_gonder_layout.setVisibility(View.VISIBLE);
+    }
+
+    private void EngelAcildi(){
+        adapter.setEngel(false);
+        gonderButton.setVisibility(View.VISIBLE);
+        mesajEditText.setVisibility(View.VISIBLE);
+        fotoEkleButton.setVisibility(View.VISIBLE);
+        kisiDurumText.setVisibility(View.VISIBLE);
+        engelKaldir.setVisibility(View.GONE);
+        mesaj_gonder_layout.setVisibility(View.VISIBLE);
+        if(mesajlasmaYonetici.getAlici().getFotoBitmap()==null){
+            kisiProfilFoto.setImageResource(R.drawable.kullanici);
+        }
+        else{
+            kisiProfilFoto.setImageBitmap(mesajlasmaYonetici.getAlici().getFotoBitmap());
+        }
+    }
+
+    private void IkiTarafBarisIcinde(){
+        gonderButton.setVisibility(View.VISIBLE);
+        mesajEditText.setVisibility(View.VISIBLE);
+        fotoEkleButton.setVisibility(View.VISIBLE);
+        engelKaldir.setVisibility(View.GONE);
+        mesaj_gonder_layout.setVisibility(View.VISIBLE);
+    }
+
+    private void EngelKaldir(){
+        if(engellendim && engelledim){
+            engelledim = false;
+            mesajlasmaYonetici.setEngelledim(false);
+            mesajlasmaYonetici.EngelKaldir(()->{
+                OEngelledi();
+            });
+        }
+        else if(engelledim){
+            engelledim = false;
+            mesajlasmaYonetici.setEngelledim(false);
+            mesajlasmaYonetici.EngelKaldir(()->{
+                IkiTarafBarisIcinde();
+            });
+        }
     }
 
 }

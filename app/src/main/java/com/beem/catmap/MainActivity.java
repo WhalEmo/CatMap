@@ -237,6 +237,8 @@ public class MainActivity extends AppCompatActivity {
                     DogrulamaKodYonetici ynt = new DogrulamaKodYonetici();
                     ynt.girisYap(kullanici.getEmail(), kullanici.getSifre(), basarili -> {
                         if (basarili) {
+                            CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+                            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
                             YerelKayit();
                             uyariMesaji.BasariliDurum("Giriş Başarılı...",1000);
                         } else {
@@ -342,6 +344,8 @@ public class MainActivity extends AppCompatActivity {
                                                         .add(kullanici.KullaniciData())
                                                         .addOnSuccessListener(documentReference -> {
                                                             kullanici.setID(documentReference.getId());
+                                                            CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+                                                            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
                                                             YerelKayit();
                                                             uyariMesaji.BasariliDurum("Kayıt Başarılı...",1000);
                                                         })
@@ -383,8 +387,6 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         diyalog.dismiss();
         ButonlariKaybet();
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
     }
 
 

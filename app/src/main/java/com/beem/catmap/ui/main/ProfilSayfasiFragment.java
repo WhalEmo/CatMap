@@ -47,6 +47,7 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.GonderiYuklemeListener;
 import com.beem.catmap.Kullanici;
 import com.beem.catmap.MainActivity;
@@ -1003,6 +1004,11 @@ public class ProfilSayfasiFragment extends Fragment {
             builder.setCancelable(false);
 
             builder.setPositiveButton("EVET", (dialog, which) -> {
+
+                CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(MainActivity.kullanici);
+                MesajlasmaYonetici.getInstance().MesajlasmaYonetimiDurdur();
+                MainActivity.kullanici = new Kullanici();
+
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.clear();

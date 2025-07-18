@@ -25,7 +25,7 @@ public class Kullanici {
 
     private Bitmap fotoBitmap;
     private long sonGorulme;
-    private boolean cevrimiciMi;
+    private boolean cevrimiciMi = false;
 
     public int TakipEdiyorMuyum=0;
     public int TakipciMi=0;

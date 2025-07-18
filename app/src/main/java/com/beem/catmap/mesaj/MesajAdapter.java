@@ -32,6 +32,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private RecyclerView recyclerView;
     private MesajDuzenlePopup mesajDuzenlePopup;
     private Runnable goster;
+    private boolean Engel = false;
     Animation anim;
 
     public ArrayList<Mesaj> getMesajArrayList() {
@@ -137,6 +138,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         }
         holder.sagMesajLayout.setOnLongClickListener(v -> {
+            if(this.Engel) return true;
             SilmeGuncellemeGoster(v);
             Sil(mesaj);
             Guncelle(mesaj,v);
@@ -243,6 +245,10 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
                 break;
             }
         }
+    }
+
+    public void setEngel(boolean engel) {
+        Engel = engel;
     }
 
     public void setGoster(Runnable goster) {

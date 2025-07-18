@@ -1,5 +1,6 @@
 package com.beem.catmap.mesaj;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -21,6 +22,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.squareup.picasso.Picasso;
 
@@ -43,6 +46,8 @@ public class MesajlasmaYonetici {
     private ValueEventListener engellenenDinleyici;
     private GenericTypeIndicator<ArrayList<String>> type = new GenericTypeIndicator<ArrayList<String>>() {};
     private Runnable geriDon;
+    private boolean engelledim = false;
+    private boolean engelledi = false;
 
 
 
@@ -209,19 +214,29 @@ public class MesajlasmaYonetici {
                 // Hata yönetimi
             }
         };
-
-        mesajlar.child(sohbetID).child("anaMesaj")
-                .orderByChild("zaman")
-                .limitToLast(20)
-                .addChildEventListener(dinleyici);
+        if(sohbetID==null){
+            sohbetIDOlustur(gonderen.getID(),alici.getID(),sohbetID1->{
+                this.sohbetID = sohbetID1;
+                mesajlar.child(sohbetID).child("anaMesaj")
+                        .orderByChild("zaman")
+                        .limitToLast(20)
+                        .addChildEventListener(dinleyici);
+            });
+        }
+        else{
+            mesajlar.child(sohbetID).child("anaMesaj")
+                    .orderByChild("zaman")
+                    .limitToLast(20)
+                    .addChildEventListener(dinleyici);
+        }
     }
 
 
-    private interface SohbetIDCallback {
+    public interface SohbetIDCallback {
         void onResult(String sohbetID);
     }
 
-    private void sohbetIDOlustur(String gonderen, String alici, SohbetIDCallback callback){
+    public void sohbetIDOlustur(String gonderen, String alici, SohbetIDCallback callback){
         String sohbetID = alici+"_"+gonderen;
         String sohbetID2 = gonderen+"_"+alici;
 
@@ -300,6 +315,7 @@ public class MesajlasmaYonetici {
                         alici.setSoyad(veri.getString("Soyad"));
                         alici.setKullaniciAdi(veri.getString("KullaniciAdi"));
                         kisiAdiText.setText(alici.getKullaniciAdi());
+                        if(engelledim || engelledi) return;
                         Picasso.get()
                                 .load(alici.getFotoUrl())
                                 .placeholder(R.drawable.kullanici)
@@ -505,11 +521,23 @@ public class MesajlasmaYonetici {
         return mesaj;
     }
 
-    public void EngelleDinleyici(Runnable engellendin){
+    public void EngelleDinleyici(Runnable engellendin,Runnable engelAcildi){
         engellenenDinleyici = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                engellendin.run();
+                Boolean engel = snapshot.getValue(Boolean.class);
+                if(engel == null){
+                    engelledi = false;
+                }
+                else{
+                    engelledi = engel;
+                }
+                if(engelledi){
+                    engellendin.run();
+                }
+                else if(!(engelledim || engelledi)){
+                    engelAcildi.run();
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
@@ -578,6 +606,8 @@ public class MesajlasmaYonetici {
 
     public void setAlici(Kullanici alici) {
         this.alici = alici;
+        engelledi = false;
+        engelledim = false;
     }
 
 
@@ -612,6 +642,7 @@ public class MesajlasmaYonetici {
     public void MesajlasmaEngellemeKaldir(String engellenenId){
         sohbetIDOlustur(MainActivity.kullanici.getID(),engellenenId,engellenensohbetID->{
             mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.getID()).setValue(false);
+
         });
     }
 
@@ -650,5 +681,34 @@ public class MesajlasmaYonetici {
                 });
     }
 
+    public void EngelKaldir(Runnable kaldirildi){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        DocumentReference kullaniciRef = db.collection("users").document(gonderen.getID());
+        kullaniciRef.update("blockedUsers", FieldValue.arrayRemove(alici.getID()))
+                .addOnSuccessListener(aVoid -> {
+                    // Güncel listeyi tekrar çek
+                    kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
+                            if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
+                            kaldirildi.run();
+                            MesajlasmaEngellemeKaldir(alici.getID());
+                        }
+                    });
+                });
+    }
+
+    public void setEngelledi(boolean engelledi) {
+        this.engelledi = engelledi;
+    }
+
+    public void setEngelledim(boolean engelledim) {
+        this.engelledim = engelledim;
+    }
+
+    public void MesajlasmaYonetimiDurdur(){
+        DinleyiciKaldir();
+        yonetici = null;
+    }
 }

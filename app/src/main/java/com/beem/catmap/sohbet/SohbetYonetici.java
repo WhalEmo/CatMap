@@ -9,6 +9,7 @@ import com.beem.catmap.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.R;
+import com.beem.catmap.mesaj.MesajlasmaYonetici;
 import com.beem.catmap.mesaj.YanitMesaj;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -75,6 +76,7 @@ public class SohbetYonetici {
     private void SohbetNesneleriniOlustur(ArrayList<Sohbet> sohbetArrayList, Runnable tamamdir){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         for(Sohbet sohbet: sohbetArrayList){
+            EngelKontrol(sohbet);
             if(Kullanicilar.containsKey(sohbet.getAlici().getID())){
                 sohbet.setAlici(Kullanicilar.get(sohbet.getAlici().getID()));
                 FotolariCek(sohbet,tamamdir);
@@ -147,6 +149,7 @@ public class SohbetYonetici {
     }
 
     private void FotolariCek(Sohbet sohbet, Runnable tamamdir){
+        if(sohbet.isEngelliSohbetMi()) return;
         if(sohbet.getAlici().getFotoUrl() == null || sohbet.getAlici().getFotoUrl().isEmpty()){
             tamamdir.run();
             sohbet.setSohbetYuklendiMi(true);
@@ -293,5 +296,27 @@ public class SohbetYonetici {
             mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
         }
         return mesaj;
+    }
+
+    private void EngelKontrol(Sohbet sohbet){
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("mesajlar")
+                .child(sohbet.getSohbetID())
+                .child("engelliMi");
+
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
+                if(snapshot.exists()) {
+                    boolean engellendinMi = snapshot.child(sohbet.getAlici().getID()).getValue(Boolean.class);
+                    boolean engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    sohbet.setEngelliSohbetMi(engelledinMi || engellendinMi);
+                }
+            }
+            @Override
+            public void onCancelled(@androidx.annotation.NonNull DatabaseError error) {
+
+            }
+        });
     }
 }
