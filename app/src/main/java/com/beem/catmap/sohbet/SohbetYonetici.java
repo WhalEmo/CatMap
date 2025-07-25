@@ -248,10 +248,12 @@ public class SohbetYonetici {
 
     private void Sirala(ArrayList<Sohbet> sohbetler){
         for(int i=0; i<sohbetler.size(); i++){
+            if(sohbetler.get(i).getMesaj() == null) continue;
             long zaman = sohbetler.get(i).getMesaj().getZaman();
             Sohbet sohbet = sohbetler.get(i);
             int ink = i;
             for(int j=i+1; j<sohbetler.size(); j++){
+                if(sohbetler.get(j).getMesaj() == null) continue;
                 if(zaman < sohbetler.get(j).getMesaj().getZaman()){
                     zaman = sohbetler.get(j).getMesaj().getZaman();
                     ink = j;
