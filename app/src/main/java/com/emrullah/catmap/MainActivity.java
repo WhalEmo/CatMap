@@ -1,8 +1,12 @@
 package com.emrullah.catmap;
 
+import static android.app.PendingIntent.getActivity;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -11,6 +15,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
@@ -58,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
     private ConstraintLayout ustCubuk;
     private TextView haritatext;
     private TextView yuklemetext;
+    private View overlayView;
+    private ProgressBar progressBar;
 
 
     @Override
@@ -91,6 +98,8 @@ public class MainActivity extends AppCompatActivity {
         KediKaydetButon = findViewById(R.id.yukleid);
         haritatext = findViewById(R.id.haritatext);
         yuklemetext = findViewById(R.id.yuklemetext);
+        overlayView=findViewById(R.id.overlayView);
+        progressBar=findViewById(R.id.progressBar);
         CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
@@ -123,6 +132,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private void showLoading(boolean isLoading) {
+        if (isLoading) {
+            progressBar.setVisibility(View.VISIBLE);
+            overlayView.setVisibility(View.VISIBLE);
+            // Arka planı da interaktif yapma (dokunulmaz yap)
+            getWindow().setFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+            overlayView.setVisibility(View.GONE);
+           getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+    }
 
     public void profilSayfasinaGit(View view){
         Profil.setVisibility(View.GONE);
@@ -143,9 +166,13 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
     public  void haritaSayfasi(View view){
+        showLoading(true);
         CevrimIciYonetimi.getInstance().HaritaArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, MapsActivity.class);
         startActivity(intent);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            showLoading(false);
+        }, 2000);
     }
 
     @Override
