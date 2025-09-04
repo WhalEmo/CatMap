@@ -6,6 +6,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
@@ -14,7 +17,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.app.AlertDialog;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -32,6 +37,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
@@ -49,11 +55,15 @@ import com.beem.catmap.ui.main.MainViewModel;
 import com.beem.catmap.ui.main.ProfilSayfasiFragment;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -64,6 +74,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.beem.catmap.databinding.ActivityMapsBinding;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.CollectionReference;
@@ -80,6 +91,7 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -250,6 +262,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         ikincibottom=new BottomSheetDialog(this);
         ikincibottom.setContentView(ikinci);
 
+        ikincibottom.setOnShowListener(dialog -> {
+            BottomSheetDialog d = (BottomSheetDialog) dialog;
+            FrameLayout bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                // 1. Behavior al
+                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+
+                // 2. Yüksekliği tam ekran yap
+                ViewGroup.LayoutParams layoutParams = bottomSheet.getLayoutParams();
+                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                bottomSheet.setLayoutParams(layoutParams);
+
+                // 3. BottomSheet'i expanded moda al (tam ekran gibi)
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                behavior.setSkipCollapsed(true);
+            }
+        });
+
         yorumlarRecyclerView = ikinci.findViewById(R.id.yorumlarRecyclerView);
         yorumicin=ikinci.findViewById(R.id.yorumgndrLayout);
         ynticin=ikinci.findViewById(R.id.yntgndrLayout);
@@ -352,18 +382,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void konumizni() {
-        // Eğer izin verilmemişse
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            // Kullanıcıdan izin iste
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     1001);
         } else {
-            // İzin zaten verilmiş
             Toast.makeText(this, "Konum izni zaten verilmiş.", Toast.LENGTH_SHORT).show();
-            // Burada konumu almaya başlayabilirsin
         }
     }
 
@@ -381,6 +407,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             } else {
                 // İzin reddedildi
                 Toast.makeText(this, "Konum izni reddedildi!", Toast.LENGTH_SHORT).show();
+                finish();
             }
         }
     }
@@ -502,14 +529,39 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    public void konumalma() {
+    private void konumalma(){
+        LocationRequest konumIstegi = LocationRequest.create()
+                .setInterval(5000)
+                .setFastestInterval(1000)
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        LocationSettingsRequest.Builder konumAyarlariIstegi = new LocationSettingsRequest.Builder()
+                .addAllLocationRequests(Collections.singleton(konumIstegi));
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = settingsClient.checkLocationSettings(konumAyarlariIstegi.build());
+
+        task.addOnSuccessListener(locationSettingsResponse -> {
+            konumalmaBaslat(konumIstegi);
+        });
+
+        task.addOnFailureListener(e -> {
+            if (e instanceof ResolvableApiException) {
+                try {
+                    ResolvableApiException resolvable = (ResolvableApiException) e;
+                    resolvable.startResolutionForResult(this, 2001);
+                    finish();
+                } catch (IntentSender.SendIntentException sendEx) {
+                    sendEx.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void konumalmaBaslat(LocationRequest locationRequest) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(5000);  // 10 saniyede bir güncelleme almak
-        locationRequest.setFastestInterval(1000); // En hızlı güncelleme 5 saniye
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Yüksek doğruluk
 
         // Konum güncellemeleri alacak callback
         locationCallback = new LocationCallback() {
@@ -522,10 +574,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             // Yeni konumu işliyoruz
                             latitude = location.getLatitude();
                             longitude = location.getLongitude();
-                            //  Toast.makeText(MapsActivity.this,
-                            //       "Latitude: " + latitude + "\nLongitude: " + longitude,
-                            //       Toast.LENGTH_LONG).show();
-                            // Burada marker'ı taşıyabilirsiniz veya diğer işlemleri yapabilirsiniz
                         }
                     }
                 }
@@ -1371,6 +1419,32 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             bottomSheetDialog.show();
         }
 
+    }
+
+
+
+    private void KlavyeAyari(View rootView, LinearLayout YorumLinearLayout){
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime()); // Klavye boyutu
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars()); // Sistem barları
+            boolean klavyeAcik = imeInsets.bottom > 0;
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) YorumLinearLayout.getLayoutParams();
+
+            int klavyeYuksekligi = imeInsets.bottom;
+            int sistemCubuğuYuksekligi = navInsets.bottom;
+
+            int netYukseklik = klavyeYuksekligi - sistemCubuğuYuksekligi;
+            if (netYukseklik < 0) netYukseklik = 0;
+
+            params.bottomMargin = klavyeAcik ? netYukseklik + dpToPx(4) : dpToPx(8);
+            YorumLinearLayout.setLayoutParams(params);
+            return insets;
+        });
+
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
 }

@@ -69,7 +69,7 @@
                     android:id="@+id/yukleid"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:background="@null"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:onClick="yuklemeSayfasi"
                     android:scaleType="fitCenter"
                     app:srcCompat="@drawable/yukleme" />
@@ -96,7 +96,7 @@
                     android:id="@+id/haritaid"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:background="@null"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:onClick="haritaSayfasi"
                     android:scaleType="fitCenter"
                     app:srcCompat="@drawable/harita" />
