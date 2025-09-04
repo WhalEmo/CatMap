@@ -4,15 +4,20 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -25,6 +30,7 @@ import com.beem.catmap.UyariMesaji;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class GonderiDetayFragment extends Fragment {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -152,16 +158,23 @@ public class GonderiDetayFragment extends Fragment {
         });
         haritadaGorText.setOnClickListener(b -> {
             if (getActivity() instanceof MapsActivity) {
-                ((MapsActivity) getActivity()).HaritadaGor(kediid);
-                new Handler().postDelayed(() -> {
-                    requireActivity().getSupportFragmentManager().popBackStack();
-                }, 100);
+                FragmentManager fm = requireActivity().getSupportFragmentManager();
+                int count = fm.getBackStackEntryCount();
+               for(int i=0;i<count;i++){
+                   requireActivity().getSupportFragmentManager().popBackStack();
+               }
+                    ((MapsActivity) getActivity()).HaritadaGor(kediid);
             } else {
+                showLoading(true);
+
                 Intent intent = new Intent(requireContext(), MapsActivity.class);
                 intent.putExtra("kediId", kediid);
                 startActivity(intent);
-                ((MapsActivity) getActivity()).HaritadaGor(kediid);
                 requireActivity().overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    showLoading(false);
+                }, 2000);
             }
         });
         return view;

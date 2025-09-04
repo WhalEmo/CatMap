@@ -214,7 +214,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .start();
         });
         anaGorunum=findViewById(R.id.anaGorunum);
-        // Map Fragment
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -348,8 +348,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 klavye.klavyeAc(TEXT);
             }, 250);
         });
-         gosterilecekKediID = getIntent().getStringExtra("kediId");
-
+        gosterilecekKediID = getIntent().getStringExtra("kediId");
+        if (gosterilecekKediID != null) {
+            HaritadaGor(gosterilecekKediID);
+        }
          /// REKLAM
         AdRequest adRequest = new AdRequest.Builder().build();
         adView.loadAd(adRequest);

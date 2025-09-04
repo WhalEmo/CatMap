@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -48,10 +49,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.beem.catmap.CevrimIciYonetimi;
+import com.beem.catmap.FotoYuklemeListener;
 import com.beem.catmap.GonderiYuklemeListener;
 import com.beem.catmap.Kullanici;
 import com.beem.catmap.MainActivity;
-import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.mesaj.MesajlasmaYonetici;
 
@@ -61,6 +62,7 @@ import com.beem.catmap.ObserveDataSınıfı;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.YuklemeArayuzuActivity;
+import com.beem.catmap.sohbet.SohbetYonetici;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -78,7 +80,10 @@ import java.util.Date;
 import java.util.Locale;
 
 
+import android.content.pm.PackageManager;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -236,7 +241,6 @@ public class ProfilSayfasiFragment extends Fragment {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             overlay.setVisibility(View.VISIBLE);
-            // Arka planı da interaktif yapma (dokunulmaz yap)
             getActivity().getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
@@ -392,7 +396,7 @@ public class ProfilSayfasiFragment extends Fragment {
                     gonderiGeri=false;
                 }
 
-                // Fragment'i geri al
+
                 setEnabled(false); // callback'in devreden çıkması için
                 getParentFragmentManager().popBackStack();
             }
@@ -411,7 +415,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
-           PPmenuButton.setVisibility(View.GONE);
+           PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            cikisYap.setVisibility(View.VISIBLE);
            gonderilerBaslikTextView.setVisibility(View.VISIBLE);
@@ -457,6 +461,7 @@ public class ProfilSayfasiFragment extends Fragment {
            }
            HakkindaUI();
            KullaniciAdiUI();
+           ucNokta();
            takipciGorme(MainActivity.kullanici.getID());
            takipleriGorme(MainActivity.kullanici.getID());
            mViewModel.GonderiSayisiniCek(MainActivity.kullanici.getID());
@@ -721,13 +726,37 @@ public class ProfilSayfasiFragment extends Fragment {
                         SohbetGecis();
                     }
 
-                    //BURADA YAPCAKSIN AŞKIMMMMM
 
                     return false;
                 });
 
                 popupmenu.show();
             });
+        });
+    }
+    public void ucNokta(){
+        PPmenuButton.setOnClickListener(b->{
+            PopupMenu popupMenu=new PopupMenu(requireContext(),b);
+            popupMenu.getMenuInflater().inflate(R.menu.kendippucnokta, popupMenu.getMenu());
+
+            popupMenu.setOnMenuItemClickListener(item -> {
+                if(item.getItemId()==R.id.Engellenenler){
+                    Fragment engellenenlerFragment = new engellenenlerFragmnet();
+                    requireActivity()
+                            .getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.container, engellenenlerFragment)
+                            .addToBackStack(null)
+                            .commit();
+
+                    return true;
+                }
+
+                return false;
+            });
+
+            popupMenu.show();
+
         });
     }
 
@@ -869,7 +898,7 @@ public class ProfilSayfasiFragment extends Fragment {
             BottomSheetDialog d = (BottomSheetDialog) dialog;
             FrameLayout bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
-                // 1. Behavior al
+
                 BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
 
                 // 2. Yüksekliği tam ekran yap
@@ -924,7 +953,6 @@ public class ProfilSayfasiFragment extends Fragment {
                         }
                     });
         } else {
-            // Eğer cacheURL yoksa placeholder göster
             profilFotoDuzenle.setImageResource(R.drawable.kullanici);
         }
 
