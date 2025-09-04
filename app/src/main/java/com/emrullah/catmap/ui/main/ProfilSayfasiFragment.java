@@ -50,6 +50,7 @@ import com.emrullah.catmap.FotoYuklemeListener;
 import com.emrullah.catmap.GonderiYuklemeListener;
 import com.emrullah.catmap.Kullanici;
 import com.emrullah.catmap.MainActivity;
+import com.emrullah.catmap.engellenenler.engellenenlerFragmnet;
 import com.emrullah.catmap.mesaj.MesajFragment;
 import com.emrullah.catmap.mesaj.MesajlasmaYonetici;
 
@@ -237,7 +238,6 @@ public class ProfilSayfasiFragment extends Fragment {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             overlay.setVisibility(View.VISIBLE);
-            // Arka planı da interaktif yapma (dokunulmaz yap)
             getActivity().getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
@@ -390,7 +390,7 @@ public class ProfilSayfasiFragment extends Fragment {
                     gonderiGeri=false;
                 }
 
-                // Fragment'i geri al
+
                 setEnabled(false); // callback'in devreden çıkması için
                 getParentFragmentManager().popBackStack();
             }
@@ -409,7 +409,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
-           PPmenuButton.setVisibility(View.GONE);
+           PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            gonderilerBaslikTextView.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
@@ -454,6 +454,7 @@ public class ProfilSayfasiFragment extends Fragment {
            }
            HakkindaUI();
            KullaniciAdiUI();
+           ucNokta();
            takipciGorme(MainActivity.kullanici.getID());
            takipleriGorme(MainActivity.kullanici.getID());
            mViewModel.GonderiSayisiniCek(MainActivity.kullanici.getID());
@@ -715,13 +716,37 @@ public class ProfilSayfasiFragment extends Fragment {
                         SohbetGecis();
                     }
 
-                    //BURADA YAPCAKSIN AŞKIMMMMM
 
                     return false;
                 });
 
                 popupmenu.show();
             });
+        });
+    }
+    public void ucNokta(){
+        PPmenuButton.setOnClickListener(b->{
+            PopupMenu popupMenu=new PopupMenu(requireContext(),b);
+            popupMenu.getMenuInflater().inflate(R.menu.kendippucnokta, popupMenu.getMenu());
+
+            popupMenu.setOnMenuItemClickListener(item -> {
+                if(item.getItemId()==R.id.Engellenenler){
+                    Fragment engellenenlerFragment = new engellenenlerFragmnet();
+                    requireActivity()
+                            .getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.container, engellenenlerFragment)
+                            .addToBackStack(null)
+                            .commit();
+
+                    return true;
+                }
+
+                return false;
+            });
+
+            popupMenu.show();
+
         });
     }
 
@@ -863,7 +888,7 @@ public class ProfilSayfasiFragment extends Fragment {
             BottomSheetDialog d = (BottomSheetDialog) dialog;
             FrameLayout bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
-                // 1. Behavior al
+
                 BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
 
                 // 2. Yüksekliği tam ekran yap
@@ -918,7 +943,6 @@ public class ProfilSayfasiFragment extends Fragment {
                         }
                     });
         } else {
-            // Eğer cacheURL yoksa placeholder göster
             profilFotoDuzenle.setImageResource(R.drawable.kullanici);
         }
 

@@ -68,6 +68,11 @@ public class MainViewModel extends ViewModel {
     }
     private MutableLiveData<String>_kullaniciAdi=new MutableLiveData<>();
     public LiveData<String>kullaniciAdi(){return _kullaniciAdi;}
+
+    private MutableLiveData<ArrayList<Kullanici>> _engelliKullanici = new MutableLiveData<>();
+    public LiveData<ArrayList<Kullanici>> BenimEngellediklerimKullaniciLiveData() {
+        return _engelliKullanici;
+    }
     private MutableLiveData<ArrayList<Gonderi>> _kediIdGonderilist = new MutableLiveData<>();
     public LiveData<ArrayList<Gonderi>>kediGonderi(){return _kediIdGonderilist;}
     public MutableLiveData<Integer>_GonderiSayisi=new MutableLiveData<>();
@@ -122,7 +127,7 @@ public class MainViewModel extends ViewModel {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         String url = documentSnapshot.getString("profilFotoUrl");
                         _Url.postValue(url);
-                        if(MainActivity.kullanici.getID()==kullaniciId) {
+                        if(MainActivity.kullanici.getID().equals(kullaniciId)){
                             SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
                             sp.edit().putString("profil_url", url).apply();
                         }
@@ -351,14 +356,14 @@ public class MainViewModel extends ViewModel {
 
             boolean takipciSilindi = false;
 
-            // Eğer takipçi olarak varsa sil
+
             if (takipciDocSnap.exists()) {
                 transaction.delete(takipciDocRef);
                 takipciSayisi = Math.max(takipciSayisi - 1, 0);
                 takipciSilindi = true;
             }
 
-            // Karşı tarafın takip ettiği kişi olarak ben varsam, sil
+
             if (takipEdilenDocSnap.exists()) {
                 transaction.delete(takipEdilenDocRef);
                 if (takipciSilindi) {
@@ -495,7 +500,6 @@ public class MainViewModel extends ViewModel {
     }
     public void EngellileriGetir(String kisiId){
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
-
         kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
                 ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
@@ -523,6 +527,32 @@ public class MainViewModel extends ViewModel {
             Log.e("EngelVerisi", "Engelli kullanıcılar yüklenemedi: " + e.getMessage());
         });
     }
+
+    public void kullaniiclariGetir(ArrayList<String>idler){
+        ArrayList<Kullanici>kullaniciListesi=new ArrayList<>();
+        for (String id : idler){
+            db.collection("users")
+                    .document(id)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String kullaniciId = documentSnapshot.getId();
+                            String KullaniciAdi = documentSnapshot.getString("KullaniciAdi");
+                            String url=documentSnapshot.getString("profilFotoUrl");
+
+                            Kullanici kullanici = new Kullanici(KullaniciAdi,"sifre");
+                            kullanici.setKullaniciAdi(KullaniciAdi);
+                            kullanici.setFotoUrl(url);
+                            kullanici.setID(kullaniciId);
+                            kullaniciListesi.add(kullanici);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Firestore", "Kullanıcı alınamadı: " + e.getMessage());
+                    });
+        }
+        _engelliKullanici.setValue(kullaniciListesi);
+    }
     public void engelKaldir(String engellenenKullaniciId,String kisiId,UyariMesaji uyari) {
         uyari.YuklemeDurum("Engel kaldırılıyor...");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -530,7 +560,6 @@ public class MainViewModel extends ViewModel {
         DocumentReference kullaniciRef = db.collection("users").document(kisiId);
         kullaniciRef.update("blockedUsers", FieldValue.arrayRemove(engellenenKullaniciId))
                 .addOnSuccessListener(aVoid -> {
-                    // Güncel listeyi tekrar çek
                     kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
                             ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
