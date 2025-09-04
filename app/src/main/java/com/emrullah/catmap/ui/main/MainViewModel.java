@@ -528,8 +528,15 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-    public void kullaniiclariGetir(ArrayList<String>idler){
-        ArrayList<Kullanici>kullaniciListesi=new ArrayList<>();
+    public void kullaniiclariGetir(ArrayList<String> idler){
+        ArrayList<Kullanici> kullaniciListesi = new ArrayList<>();
+        if(idler.isEmpty()){
+            _engelliKullanici.setValue(kullaniciListesi);
+            return;
+        }
+
+        final int[] counter = {0};
+
         for (String id : idler){
             db.collection("users")
                     .document(id)
@@ -538,7 +545,7 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             String kullaniciId = documentSnapshot.getId();
                             String KullaniciAdi = documentSnapshot.getString("KullaniciAdi");
-                            String url=documentSnapshot.getString("profilFotoUrl");
+                            String url = documentSnapshot.getString("profilFotoUrl");
 
                             Kullanici kullanici = new Kullanici(KullaniciAdi,"sifre");
                             kullanici.setKullaniciAdi(KullaniciAdi);
@@ -546,13 +553,24 @@ public class MainViewModel extends ViewModel {
                             kullanici.setID(kullaniciId);
                             kullaniciListesi.add(kullanici);
                         }
+
+                        counter[0]++;
+                        if(counter[0] == idler.size()){
+                            // Tüm kullanıcılar geldi, LiveData’ya set et
+                            _engelliKullanici.setValue(kullaniciListesi);
+                        }
+
                     })
                     .addOnFailureListener(e -> {
+                        counter[0]++;
                         Log.e("Firestore", "Kullanıcı alınamadı: " + e.getMessage());
+                        if(counter[0] == idler.size()){
+                            _engelliKullanici.setValue(kullaniciListesi);
+                        }
                     });
         }
-        _engelliKullanici.setValue(kullaniciListesi);
     }
+
     public void engelKaldir(String engellenenKullaniciId,String kisiId,UyariMesaji uyari) {
         uyari.YuklemeDurum("Engel kaldırılıyor...");
         FirebaseFirestore db = FirebaseFirestore.getInstance();

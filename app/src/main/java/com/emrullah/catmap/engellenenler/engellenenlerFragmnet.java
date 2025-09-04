@@ -110,6 +110,7 @@ public class engellenenlerFragmnet extends Fragment {
         recycler=view.findViewById(R.id.engellenenRecyclerView);
          adapter = new engellenenlerAdapter(requireContext(),new ArrayList<>());
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recycler.setAdapter(adapter);
 
         mViewModel.benimEngellediklerimiiGetir();
         mViewModel.BenimEngellediklerimLiveData().observe(getViewLifecycleOwner(),liste->{
@@ -122,16 +123,21 @@ public class engellenenlerFragmnet extends Fragment {
         });
 
         adapter.setOnEngelClickListener(kullanici -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle(kullanici.getKullaniciAdi())
-                    .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
-                    .setPositiveButton("Evet", (dialog, which) -> {
-                        mViewModel.engelKaldir(kullanici.getID(), MainActivity.kullanici.getID(),uyari);
-                    })
-                    .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
-                    .show();
-            adapter.remove(kullanici);
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle(kullanici.getKullaniciAdi());
+            builder.setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?");
+
+            builder.setPositiveButton("Evet", (dialog, which) -> {
+                mViewModel.engelKaldir(kullanici.getID(), MainActivity.kullanici.getID(), uyari);
+                adapter.remove(kullanici);
+            });
+
+            builder.setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss());
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
         });
+
         adapter.setOnadClickListener(kullaniciId -> {
             ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId);
             requireActivity()
