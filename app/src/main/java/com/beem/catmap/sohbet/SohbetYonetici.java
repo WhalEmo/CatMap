@@ -310,8 +310,12 @@ public class SohbetYonetici {
             @Override
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()) {
-                    boolean engellendinMi = snapshot.child(sohbet.getAlici().getID()).getValue(Boolean.class);
-                    boolean engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    Boolean engellendinMiVal = snapshot.child(sohbet.getAlici().getID()).getValue(Boolean.class);
+                    Boolean engelledinMiVal = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+
+                    boolean engellendinMi = engellendinMiVal != null && engellendinMiVal;
+                    boolean engelledinMi = engelledinMiVal != null && engelledinMiVal;
+
                     sohbet.setEngelliSohbetMi(engelledinMi || engellendinMi);
                 }
             }

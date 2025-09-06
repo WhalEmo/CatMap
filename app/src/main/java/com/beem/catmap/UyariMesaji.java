@@ -1,5 +1,6 @@
 package com.beem.catmap;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
@@ -21,8 +22,10 @@ public class UyariMesaji {
     private ImageView BasariliTik, BasarisizCarpi;
     private ProgressBar YuklemeBar;
     public Boolean DahaOnceAlinmisMi=false;
+    private Context context;
 
     public UyariMesaji(Context context, boolean SefafMi){
+        this.context = context;
         AyarlarıYap(context, SefafMi);
     }
 
@@ -50,11 +53,23 @@ public class UyariMesaji {
     }
 
     private void uyariGoster() {
-        if(!yuklemeDialog.isShowing()){
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                return;
+            }
+        }
+        if (!yuklemeDialog.isShowing()) {
             yuklemeDialog.show();
         }
     }
     private void uyariGizle() {
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                return;
+            }
+        }
         if (yuklemeDialog != null && yuklemeDialog.isShowing()) {
             yuklemeDialog.dismiss();
         }

@@ -383,19 +383,19 @@ public class MesajFragment extends Fragment {
                 if(snapshot.exists()) {
                     System.out.println(MesajlasmaYonetici.getInstance().getAlici().getID());
                     System.out.println(MainActivity.kullanici.getID());
-                    boolean engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
-                    boolean engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
-                    engellendim = engellendinMi;
-                    engelledim = engelledinMi;
+                    Boolean  engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
+                    Boolean  engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    engellendim = engellendinMi != null && engellendinMi;
+                    engelledim = engelledinMi != null && engelledinMi;
                     mesajlasmaYonetici.setEngelledim(engelledim);
                     mesajlasmaYonetici.setEngelledi(engellendim);
-                    if (engellendinMi && engelledinMi) {
+                    if (engellendim && engelledim) {
                         IkiTarafEngellesti();
                     }
-                    else if (engelledinMi) {
+                    else if (engelledim) {
                         SenEngelledin();
                     }
-                    else if (engellendinMi) {
+                    else if (engellendim) {
                         OEngelledi();
                     }
                     else{

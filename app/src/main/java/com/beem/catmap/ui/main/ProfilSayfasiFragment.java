@@ -51,6 +51,7 @@ import android.widget.TextView;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.FotoYuklemeListener;
 import com.beem.catmap.GonderiYuklemeListener;
+import com.beem.catmap.HesapSil;
 import com.beem.catmap.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.mesaj.MesajFragment;
@@ -63,6 +64,7 @@ import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.YuklemeArayuzuActivity;
 import com.beem.catmap.sohbet.SohbetYonetici;
+import com.beem.catmap.engellenenler.engellenenlerFragmnet;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -81,6 +83,8 @@ import java.util.Locale;
 
 
 import android.content.pm.PackageManager;
+import android.widget.Toast;
+
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -104,7 +108,6 @@ public class ProfilSayfasiFragment extends Fragment {
     private Button kaydetButonu;
     private String yukleyenID;;
     private LinearLayout ProfilDuzenleme;
-    private ImageButton cikisYap;
     private Button takipEtButonu;
     private Button sohbetButon;
     private Button takipEdiliyorButonu;
@@ -338,7 +341,6 @@ public class ProfilSayfasiFragment extends Fragment {
         profiliDuzenleTiklandi=view.findViewById(R.id.profiliDuzenleTiklandi);
         takipEtButonu=view.findViewById(R.id.takipEtButonu);
         ProfilDuzenleme=view.findViewById(R.id.ProfilDuzenleme);
-        cikisYap=view.findViewById(R.id.cikisYap);
         emptyTextView=view.findViewById(R.id.emptyTextView);
         gonderiSayisiTextView=view.findViewById(R.id.gonderiSayisiTextView);
         sohbetButon = view.findViewById(R.id.sohbetButon);
@@ -364,7 +366,6 @@ public class ProfilSayfasiFragment extends Fragment {
             fragmentiYenidenYukle();  // Aşağıda tanımlayacağımız yöntem
         });
 
-        CikisYap(); // Cıkış işlemleri burda ayarlandı
 
         gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
         gonderiRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3)); // 3 sütunlu grid
@@ -417,7 +418,6 @@ public class ProfilSayfasiFragment extends Fragment {
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
-           cikisYap.setVisibility(View.VISIBLE);
            gonderilerBaslikTextView.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
            sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
@@ -534,7 +534,6 @@ public class ProfilSayfasiFragment extends Fragment {
 
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.GONE);
-           cikisYap.setVisibility(View.GONE);
 
            SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 
@@ -750,6 +749,12 @@ public class ProfilSayfasiFragment extends Fragment {
                             .commit();
 
                     return true;
+                }
+                else if(item.getItemId()==R.id.HesabiKapat){
+                    HesabiKapat();
+                }
+                else if(item.getItemId()==R.id.CikisYap){
+                    CikisYap();
                 }
 
                 return false;
@@ -1025,8 +1030,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
     private void CikisYap(){
-        cikisYap.setOnClickListener(v->{
-            AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
             builder.setTitle("Çıkış Onayı");
             builder.setMessage("Uygulamadan çıkış yapmak istediğinize emin misiniz?");
             builder.setCancelable(false);
@@ -1050,7 +1054,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 ShreadSil("begenilenSet");
                 ShreadSil("begeniSayilariMap");
 
-                Intent intent = new Intent(v.getContext(), MainActivity.class);
+                Intent intent = new Intent(requireContext(), MainActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
 
@@ -1064,7 +1068,6 @@ public class ProfilSayfasiFragment extends Fragment {
 
             AlertDialog dialog = builder.create();
             dialog.show();
-        });
     }
 
     private void ShreadSil(String shIsim){
@@ -1072,6 +1075,50 @@ public class ProfilSayfasiFragment extends Fragment {
         SharedPreferences.Editor editor2 = kayit.edit();
         editor2.clear();
         editor2.apply();
+    }
+
+    private void HesabiKapat(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Kapatma Onayı");
+        builder.setMessage("Hesabınızı silmek istediğinize emin misiniz?");
+        builder.setCancelable(false);
+        builder.setPositiveButton("EVET", (dialog, which) -> {
+            UyariMesaji uyari = new UyariMesaji(requireContext(),false);
+            uyari.YuklemeDurum("Hesap siliniyor...");
+            HesapSil hesapSil = new HesapSil();
+            hesapSil.HesapSilmeBaslat(()->{
+
+                CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(MainActivity.kullanici);
+                MesajlasmaYonetici.getInstance().MesajlasmaYonetimiDurdur();
+                MainActivity.kullanici = new Kullanici();
+
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.clear();
+                editor.apply();
+                ShreadSil("KullaniciKayit");
+                ShreadSil("ProfilPrefs");
+                ShreadSil("begenilenYanitCache");
+                ShreadSil("begenilenSetYanit");
+                ShreadSil("begeniSayilariMapYanit");
+                ShreadSil("begenilenYorumCache");
+                ShreadSil("begenilenSet");
+                ShreadSil("begeniSayilariMap");
+                uyari.BasariliDurum("Hesap silindi",1000);
+                Intent intent = new Intent(requireContext(), MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                getActivity().finish();
+            });
+
+        });
+
+        builder.setNegativeButton("HAYIR", (dialog, which) -> {
+            dialog.dismiss();
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
 }

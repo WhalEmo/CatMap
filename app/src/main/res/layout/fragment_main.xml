@@ -63,19 +63,6 @@
     android:padding="16dp"
     android:visibility="visible">
 
-    <ImageButton
-        android:id="@+id/cikisYap"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginTop="10dp"
-        android:src="@drawable/logout"
-        android:clickable="true"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:scaleType="centerCrop"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <!-- Profil Fotoğrafı -->
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/profilFotoImageView"

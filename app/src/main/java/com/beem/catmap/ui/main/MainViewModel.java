@@ -14,6 +14,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.beem.catmap.GonderiYuklemeListener;
+import com.beem.catmap.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.UyariMesaji;
 import com.google.firebase.Timestamp;
@@ -117,7 +118,7 @@ public class MainViewModel extends ViewModel {
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
-                db.collection("users")
+        db.collection("users")
                 .document(kullaniciId)
                 .addSnapshotListener((documentSnapshot, error) -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
@@ -469,7 +470,7 @@ public class MainViewModel extends ViewModel {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String isim=documentSnapshot.getString("KullaniciAdi");
-                         _kullaniciAdi.postValue(isim);
+                        _kullaniciAdi.postValue(isim);
                     }
                 });
     }
@@ -524,8 +525,15 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-    public void kullaniiclariGetir(ArrayList<String>idler){
-        ArrayList<Kullanici>kullaniciListesi=new ArrayList<>();
+    public void kullaniiclariGetir(ArrayList<String> idler){
+        ArrayList<Kullanici> kullaniciListesi = new ArrayList<>();
+        if(idler.isEmpty()){
+            _engelliKullanici.setValue(kullaniciListesi);
+            return;
+        }
+
+        final int[] counter = {0};
+
         for (String id : idler){
             db.collection("users")
                     .document(id)
@@ -534,7 +542,7 @@ public class MainViewModel extends ViewModel {
                         if (documentSnapshot.exists()) {
                             String kullaniciId = documentSnapshot.getId();
                             String KullaniciAdi = documentSnapshot.getString("KullaniciAdi");
-                            String url=documentSnapshot.getString("profilFotoUrl");
+                            String url = documentSnapshot.getString("profilFotoUrl");
 
                             Kullanici kullanici = new Kullanici(KullaniciAdi,"sifre");
                             kullanici.setKullaniciAdi(KullaniciAdi);
@@ -542,13 +550,24 @@ public class MainViewModel extends ViewModel {
                             kullanici.setID(kullaniciId);
                             kullaniciListesi.add(kullanici);
                         }
+
+                        counter[0]++;
+                        if(counter[0] == idler.size()){
+                            // Tüm kullanıcılar geldi, LiveData’ya set et
+                            _engelliKullanici.setValue(kullaniciListesi);
+                        }
+
                     })
                     .addOnFailureListener(e -> {
+                        counter[0]++;
                         Log.e("Firestore", "Kullanıcı alınamadı: " + e.getMessage());
+                        if(counter[0] == idler.size()){
+                            _engelliKullanici.setValue(kullaniciListesi);
+                        }
                     });
         }
-        _engelliKullanici.setValue(kullaniciListesi);
     }
+
     public void engelKaldir(String engellenenKullaniciId,String kisiId,UyariMesaji uyari) {
         uyari.YuklemeDurum("Engel kaldırılıyor...");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -677,17 +696,17 @@ public class MainViewModel extends ViewModel {
         void onSilmeTamamlandi();
     }
     public void HaritadanSilme(String kediId,SilmeCallback callback){
-            db.collection("cats")
-                    .document(kediId)
-                    .delete()
-                    .addOnSuccessListener(aVoid -> {
-                        if (callback != null) {
-                            callback.onSilmeTamamlandi(); // -> MapsActivity'ye bildir
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("KediSilme", "Kedi silinirken hata oluştu: " + e.getMessage());
-                    });
+        db.collection("cats")
+                .document(kediId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) {
+                        callback.onSilmeTamamlandi(); // -> MapsActivity'ye bildir
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("KediSilme", "Kedi silinirken hata oluştu: " + e.getMessage());
+                });
     }
 
 }

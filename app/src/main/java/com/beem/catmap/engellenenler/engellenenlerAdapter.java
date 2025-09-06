@@ -1,6 +1,5 @@
-package com.emrullah.catmap.engellenenler;
+package com.beem.catmap.engellenenler;
 
-import android.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,11 +10,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.emrullah.catmap.Kullanici;
-import com.emrullah.catmap.MainActivity;
-import com.emrullah.catmap.R;
-import com.emrullah.catmap.mesaj.MesajFotoAdapter;
-import com.emrullah.catmap.ui.main.ProfilSayfasiFragment;
+import com.beem.catmap.Kullanici;
+import com.beem.catmap.R;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -95,9 +91,9 @@ public class engellenenlerAdapter extends RecyclerView.Adapter<engellenenlerAdap
     }
 
     public static class engellenenViewHolder extends RecyclerView.ViewHolder{
-         CircleImageView recyclerFotoImageView;
-         TextView RecyclerkullaniciAdi;
-         Button engel;
+        CircleImageView recyclerFotoImageView;
+        TextView RecyclerkullaniciAdi;
+        Button engel;
 
         public engellenenViewHolder(@NonNull View itemView) {
             super(itemView);
