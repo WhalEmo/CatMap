@@ -70,6 +70,9 @@ import com.beem.catmap.YorumYanit.Yorum_Adapter;
 import com.beem.catmap.YorumYanit.Yorum_Model;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.YuklemeArayuzuFragment;
+import com.beem.catmap.mesaj.MesajFragment;
+import com.beem.catmap.sohbet.SohbetFragment;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -92,6 +95,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.beem.catmap.databinding.ActivityMapsBinding;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.CollectionReference;
@@ -170,7 +174,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isPanelVisible = false;
     ImageButton btnClose;
     private int screenWidth;
-    private View touchBlocker;
+    private BottomNavigationView bottom_navigation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -186,10 +190,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        SupportMapFragment mapFragment = new SupportMapFragment();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, mapFragment)
+                .commit();
+
+        mapFragment.getMapAsync(this);
+
+        altCubuk();
+        bottom_navigation=findViewById(R.id.bottom_navigation);
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
         btnShowFact=findViewById(R.id.btnShowFact);
         btnClose = findViewById(R.id.btnClosePanel);
-         touchBlocker = findViewById(R.id.touchBlocker);
         rightSlidingPanel = findViewById(R.id.rightSlidingPanel);
         TextView tvCatFactSliding = findViewById(R.id.tvCatFactSliding);
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -199,7 +212,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         btnShowFact.setOnClickListener(v -> {
             if (!isPanelVisible) {
-                // API çağrısı ve paneli aç
                 CatFactService.getRandomCatFact(this, new CatFactService.CatFactCallback() {
                     @Override
                     public void onSuccess(String translatedFact) {
@@ -226,15 +238,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .withEndAction(() -> {
                         tvCatFactSliding.setText("");
                         isPanelVisible = false;
-                        touchBlocker.setVisibility(View.GONE);
                     })
                     .start();
         });
         anaGorunum=findViewById(R.id.anaGorunum);
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         konumizni();
 
@@ -387,7 +395,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setDuration(300)
                 .start();
         isPanelVisible = true;
-        touchBlocker.setVisibility(View.VISIBLE);
     }
 
     // Paneli gizle (animasyonlu)
@@ -397,7 +404,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setDuration(300)
                 .start();
         isPanelVisible = false;
-        touchBlocker.setVisibility(View.GONE);
     }
 
     private void konumizni() {
@@ -524,9 +530,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,8f));
                             new Handler().postDelayed(() -> {
                                 yuklemeEkrani.setVisibility(View.GONE);
+                                bottom_navigation.setVisibility(View.VISIBLE);
                                 btnShowFact.setVisibility(View.VISIBLE);
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 16f), 2000, null);
-                            }, 1000);
+                            }, 500);
                             konumAlindi=false;
                             TarananKediler tarama =  new TarananKediler();
                             tarama.ButonGosterim(mMap,findViewById(android.R.id.content));
@@ -608,6 +615,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if(bottomSheetDialog.isShowing()){
             bottomSheetDialog.dismiss();
         }
+        System.out.println("kedi: "+ kediid);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("cats")
                 .document(kediid)
@@ -625,12 +633,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         LatLng konum = new LatLng(latitudee, longitudee);
                         if (Math.abs(latitude - latitudee) <= 0.009 && Math.abs(longitude - longitudee) <= 0.0113){
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(konum, 16f));
+                            System.out.println("ife girdi*");
                         }else {
+                            System.out.println("elsee girdi*");
                             if (mMap != null) {
+                                System.out.println("ife girdi**");
                                 Kediler kedi=new Kediler(kediId,isim,hakkindaa,latitudee,longitudee,fotoUrl.get(0),fotoUrl,YukleyenID);
                                 kediler.add(kedi);
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(konum, 16f));
                                 if (fotoUrl != null && !fotoUrl.isEmpty()) {
+                                    System.out.println("ife girdi3");
                                     picassoTarget = new Target() {
                                         @Override
                                         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
@@ -867,7 +879,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
             if (fragment instanceof ProfilSayfasiFragment) {
                 profilAlan.setVisibility(View.GONE);
                 anaGorunum.setVisibility(View.GONE);
@@ -1093,7 +1105,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kediYukleyenID);
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.container, fragment)
+                .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit();
     }
@@ -1186,7 +1198,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciID);
                 getSupportFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.container, fragment)
+                        .replace(R.id.fragment_container, fragment)
                         .addToBackStack(null)
                         .commit();
 
@@ -1195,7 +1207,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
             @Override
             public void onBackStackChanged() {
-                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.container);
+                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                 if (fragment instanceof ProfilSayfasiFragment) {
                     profilAlan.setVisibility(View.GONE);
                     anaGorunum.setVisibility(View.GONE);
@@ -1388,6 +1400,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        btnShowFact.setVisibility(View.VISIBLE);
+        markerKEY.clear();
+        markerlar.clear();
         mMap = googleMap;
         mMap.setOnMapLoadedCallback(() -> {
             Thread t = new Thread(() -> {
@@ -1464,6 +1479,49 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+    private void altCubuk(){
+        binding
+            .bottomNavigation.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            int id = item.getItemId();
+            String TAG = "";
+
+            if (id == R.id.haritagit) {
+                btnShowFact.setVisibility(View.VISIBLE);
+                TAG = "MAP_FRAGMENT_TAG";
+                selectedFragment = new SupportMapFragment();
+                ((SupportMapFragment) selectedFragment).getMapAsync(this);
+            } else if (id == R.id.profilim) {
+                btnShowFact.setVisibility(View.GONE);
+                TAG = "PROFILE";
+                selectedFragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
+            }
+            else if(id == R.id.sohbet){
+                btnShowFact.setVisibility(View.GONE);
+                TAG = "CHAT";
+                selectedFragment = new SohbetFragment(()->{
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container,new MesajFragment(this))
+                            .addToBackStack(null)
+                            .commit();
+                });
+            }else if(id == R.id.yuklekedi){
+                btnShowFact.setVisibility(View.GONE);
+                TAG = "YUKLE";
+                selectedFragment = new YuklemeArayuzuFragment();
+            }
+
+            if (selectedFragment != null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, selectedFragment, TAG)
+                        .addToBackStack(null)
+                        .commit();
+            }
+            return true;
+        });
     }
 
 }

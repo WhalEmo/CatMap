@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.MainActivity;
+import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.google.firebase.database.DataSnapshot;
@@ -96,12 +97,19 @@ public class MesajFragment extends Fragment {
                 new OnBackPressedCallback(true){
                     @Override
                     public void handleOnBackPressed() {
+                        if(requireActivity() instanceof MapsActivity){
+                            requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+                        }
                         mesajlasmaYonetici.DinleyiciKaldir();
                         mesajlasmaYonetici.setAlici(null);
                         mesajlasmaYonetici.setSohbetID(null);
                         requireActivity().getSupportFragmentManager().popBackStack();
                     }
                 });
+
+        if(requireActivity() instanceof MapsActivity){
+            requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
+        }
 
 
         mesajRecyclerView = view.findViewById(R.id.mesajRecyclerView);
@@ -273,7 +281,7 @@ public class MesajFragment extends Fragment {
     private void ProfilSayfasinaYonlendir(){
         FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.container, ProfilSayfasiFragment.newInstance(mesajlasmaYonetici.getAlici().getID()));
+        transaction.replace(R.id.fragment_container, ProfilSayfasiFragment.newInstance(mesajlasmaYonetici.getAlici().getID()));
         transaction.addToBackStack(null);
         transaction.commit();
     }

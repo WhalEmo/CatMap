@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.MainActivity;
+import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.facebook.shimmer.ShimmerFrameLayout;
 
@@ -43,6 +44,7 @@ public class SohbetFragment extends Fragment {
             shimmerLayout.setVisibility(View.GONE);
         });
 
+/*
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true){
             @Override
             public void handleOnBackPressed() {
@@ -53,6 +55,8 @@ public class SohbetFragment extends Fragment {
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
+
+ */
 
         return view;
     }

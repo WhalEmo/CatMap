@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/haritagit"
+        android:icon="@drawable/mapmenu"
+        android:title="Harita" />
+
+    <item
+        android:id="@+id/yuklekedi"
+        android:icon="@drawable/kediyuklemenu"
+        android:title="Kedi Yükle" />
+
+    <item
+        android:id="@+id/sohbet"
+        android:icon="@drawable/sohbetbuton"
+        android:title="Sohbet" />
+    <item
+        android:id="@+id/profilim"
+        android:icon="@drawable/profilmenu"
+        android:title="Profil" />
+
+</menu>

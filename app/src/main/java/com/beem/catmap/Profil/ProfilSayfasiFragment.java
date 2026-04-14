@@ -53,6 +53,7 @@ import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter;
 import com.beem.catmap.Profil.Takipler.TakiplerFragment;
+import com.beem.catmap.YuklemeArayuzuFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.mesaj.MesajlasmaYonetici;
 
@@ -60,7 +61,6 @@ import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
-import com.beem.catmap.YuklemeArayuzuActivity;
 import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -367,13 +367,14 @@ public class ProfilSayfasiFragment extends Fragment {
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (requireActivity() instanceof YuklemeArayuzuActivity&&!gonderiGeri) {
+                /*
+                if (requireActivity() instanceof YuklemeArayuzuFragment &&!gonderiGeri) {
                     View main = requireActivity().findViewById(R.id.main);
                     if (main != null) {
                         main.setVisibility(View.VISIBLE);
                     }
                     gonderiGeri=false;
-                }
+                }*/
 
                 // Eğer MapsActivity'deysek ve özel durumlar geçerliyse BottomSheet göster
                 if (requireActivity() instanceof MapsActivity && !takiptenDonuldu&&!gonderiGeri) {
@@ -736,7 +737,7 @@ public class ProfilSayfasiFragment extends Fragment {
                     requireActivity()
                             .getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.container, engellenenlerFragment)
+                            .replace(R.id.fragment_container, engellenenlerFragment)
                             .addToBackStack(null)
                             .commit();
 
@@ -770,7 +771,7 @@ public class ProfilSayfasiFragment extends Fragment {
             FragmentTransaction transaction = fm.beginTransaction();
 
             // Eski fragmenti gizle
-            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
             if (mevcutFragment != null) {
                 transaction.hide(mevcutFragment);
             }
@@ -783,7 +784,7 @@ public class ProfilSayfasiFragment extends Fragment {
             fragment.setArguments(bundle);
 
             transaction
-                    .replace(R.id.container, fragment) // replace = hide+remove+add
+                    .replace(R.id.fragment_container, fragment) // replace = hide+remove+add
                     .addToBackStack(null) // geri tuşu için back stack'e ekle
                     .commit();
         });
@@ -802,7 +803,7 @@ public class ProfilSayfasiFragment extends Fragment {
             FragmentTransaction transaction = fm.beginTransaction();
 
             // Mevcut fragmenti gizle (örneğin ProfilSayfasiFragment)
-            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
             if (mevcutFragment != null) {
                 transaction.hide(mevcutFragment);
             }
@@ -816,7 +817,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
             // Mevcut fragment yerine yenisi konuluyor
             transaction
-                    .replace(R.id.container, fragment) // replace = hide+remove+add
+                    .replace(R.id.fragment_container, fragment) // replace = hide+remove+add
                     .addToBackStack(null) // geri tuşu için back stack'e ekle
                     .commit();
         });
@@ -1003,7 +1004,7 @@ public class ProfilSayfasiFragment extends Fragment {
             MesajlasmaYonetici.getInstance().setAlici(alici);
             FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
             FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.container, new MesajFragment(requireContext()));
+            transaction.replace(R.id.fragment_container, new MesajFragment(requireContext()));
             transaction.addToBackStack(null);
             transaction.commit();
         });
@@ -1016,7 +1017,7 @@ public class ProfilSayfasiFragment extends Fragment {
         MesajlasmaYonetici.getInstance().setAlici(alici);
         FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.container, new MesajFragment(requireContext()));
+        transaction.replace(R.id.fragment_container, new MesajFragment(requireContext()));
         transaction.addToBackStack(null);
         transaction.commit();
     }

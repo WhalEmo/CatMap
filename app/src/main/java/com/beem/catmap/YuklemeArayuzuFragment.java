@@ -1,5 +1,7 @@
 package com.beem.catmap;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
@@ -11,6 +13,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.Manifest;
@@ -27,15 +30,17 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import java.io.File;
@@ -52,7 +57,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class YuklemeArayuzuActivity extends AppCompatActivity {
+public class YuklemeArayuzuFragment extends Fragment {
 
     private Uri photoUri;
     private File photoFile;
@@ -76,63 +81,70 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     FirebaseStorage storage = FirebaseStorage.getInstance();
     StorageReference storageRef = storage.getReference();
 
+    public YuklemeArayuzuFragment() {}
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.yukleme_arayuzu);
-        main=findViewById(R.id.main);
-        geciciFoto = findViewById(R.id.geciciFoto);
-        fotoPager = findViewById(R.id.fotoPager);
-        fotoAdapter = new FotoGeciciAdapter(this, secilenFotolar,null);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.yukleme_arayuzu, container, false);
+        main=view.findViewById(R.id.main);
+        geciciFoto = view.findViewById(R.id.geciciFoto);
+        fotoPager = view.findViewById(R.id.fotoPager);
+        fotoAdapter = new FotoGeciciAdapter(requireContext(), secilenFotolar,null);
         fotoPager.setAdapter(fotoAdapter);
 
-        kedininismi=findViewById(R.id.isimText);
-        kedininhakkindasi=findViewById(R.id.hakkindaText);
+        kedininismi=view.findViewById(R.id.isimText);
+        kedininhakkindasi=view.findViewById(R.id.hakkindaText);
         // FusedLocationProviderClient başlat
-        konumsaglayici = LocationServices.getFusedLocationProviderClient(this);
+        konumsaglayici = LocationServices.getFusedLocationProviderClient(requireContext());
         // Firestore Başlat
         db = FirebaseFirestore.getInstance();
-        mesaji = new UyariMesaji(this,false);
+        mesaji = new UyariMesaji(requireContext(),false);
 
         // reklam ayarlarına başla
         ReklamYukleme();
 
 
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+                setEnabled(false);
+                requireActivity().getOnBackPressedDispatcher().onBackPressed();
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), callback);
+
+        return view;
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(true);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
         CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         CevrimIciYonetimi.getInstance().setYuklemeEkraniGorunuyor(false);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
-    }
 
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
     ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
@@ -201,11 +213,11 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());//cekilen footgrafın ne zaman cekildigini gosterir
         String fileName = "JPEG_" + timeStamp + ".jpg";
 
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);//klasor yolunu tutuyor. klasore gitme yolunu bilen bi nesne
+        File storageDir = requireActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);//klasor yolunu tutuyor. klasore gitme yolunu bilen bi nesne
         //filepaths xml otomatik klasor olusturdu
         try {
             photoFile = File.createTempFile(fileName, ".jpg", storageDir);// dosya olustu
-            return FileProvider.getUriForFile(this, "com.beem.catmap.fileprovider", photoFile);
+            return FileProvider.getUriForFile(requireContext(), "com.beem.catmap.fileprovider", photoFile);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -215,7 +227,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     // 📌 Kamerayı açma metodu
     private void openCamera() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+        if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             photoUri = getPhotoFileUri();
             if (photoUri != null) {
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);//put extra kamera aktivitesinde cektigimiz fotoyu
@@ -232,9 +244,9 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     // 📌 Kamera butonuna tıklanınca çalışacak
     public void kameraacma(View view) {
        // Uygulamanın kamera iznine sahip olup olmadığını kontrol eder.
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
+            ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.CAMERA}, 101);
         } else {
             openCamera();
@@ -256,13 +268,13 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
     // 📌 Kullanıcının konumunu al
     private void getUserLocation() {
         //  kullanıcıdan izin iste
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 102);
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 102);
             return;
         }
 
         // 📍 Son bilinen konumu al
-        konumsaglayici.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+        konumsaglayici.getLastLocation().addOnSuccessListener(requireActivity(), new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
                 if (location != null) {
@@ -326,14 +338,14 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                         // burda reklamı ver
                         ReklamVer();
 
-                        View dialogView = LayoutInflater.from(this).inflate(R.layout.alert_dialog_tasarimi, null);
-                        AlertDialog dialog = new AlertDialog.Builder(this)
+                        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.alert_dialog_tasarimi, null);
+                        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                                 .setView(dialogView)
                                 .create();
                         dialogView.findViewById(R.id.btn_yes).setOnClickListener(v -> {
                             mesaji.YuklemeDurum("Ekleniyor...");
                             GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                                    YuklemeArayuzuActivity.this,
+                                    requireActivity(),
                                     documentReference.getId(),
                                     main,
                                     mesaji
@@ -383,10 +395,10 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
 
 
     private void ReklamYukleme(){
-        MobileAds.initialize(this, initializationStatus -> {});
+        MobileAds.initialize(requireContext(), initializationStatus -> {});
 
         AdRequest reklamIstek = new AdRequest.Builder().build();
-        InterstitialAd.load(this,
+        InterstitialAd.load(requireContext(),
                 "ca-app-pub-3940256099942544/1033173712", // sahte id
                 reklamIstek,
                 new InterstitialAdLoadCallback() {
@@ -422,7 +434,7 @@ public class YuklemeArayuzuActivity extends AppCompatActivity {
                 }
             });
 
-            reklamAD.show(YuklemeArayuzuActivity.this);
+            reklamAD.show(requireActivity());
         } else {
 
         }

@@ -55,19 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean GirisYapildi;
     private ImageView GirisYapButon;
     private ImageView KayitOlButon;
-    private ImageView KediKaydetButon;
-    private ImageView KediHaritaButon;
     private ImageView Goz;
     boolean AcikMi;
     private UyariMesaji uyariMesaji;
     private LinearLayout Profil;
-    private LinearLayout sohbetAlani;
     private ConstraintLayout GirisKayit;
-    private ConstraintLayout ustCubuk;
-    private TextView haritatext;
-    private TextView yuklemetext;
-    private View overlayView;
-    private ProgressBar progressBar;
 
 
     @Override
@@ -80,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             Profil=findViewById(R.id.profilAlani);
             GirisKayit=findViewById(R.id.icerik_layout);
+            /*
             getSupportFragmentManager().addOnBackStackChangedListener(() -> {
                 Fragment profilFragment = getSupportFragmentManager().findFragmentById(R.id.container);
                 if (profilFragment instanceof ProfilSayfasiFragment) {
@@ -90,39 +83,29 @@ public class MainActivity extends AppCompatActivity {
                     GirisKayit.setVisibility(View.VISIBLE);
                 }
             });
+
+             */
             return insets;
         });
-        ustCubuk = findViewById(R.id.ustCubuk);
-        sohbetAlani = findViewById(R.id.sohbetAlani);
         kullanici = new Kullanici();
         KayitOlButon = findViewById(R.id.kaydolid);
         GirisYapButon = findViewById(R.id.girisid);
-        KediHaritaButon = findViewById(R.id.haritaid);
-        KediKaydetButon = findViewById(R.id.yukleid);
-        haritatext = findViewById(R.id.haritatext);
-        yuklemetext = findViewById(R.id.yuklemetext);
-        overlayView=findViewById(R.id.overlayView);
-        progressBar=findViewById(R.id.progressBar);
         CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
         GirisYapildi = kayit.getBoolean("GirisYapildi",false);
-        FragmentAyarlari();
+       // FragmentAyarlari();
+        SohbetMesajAyarlari();
         if(GirisYapildi){
             kullanici.GetYerelKullanici(this);
-            System.out.println(kullanici.getAd());
             KayitOlButon.setVisibility(View.INVISIBLE);
             GirisYapButon.setVisibility(View.INVISIBLE);
             CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+            haritaSayfasi();
         }
         else{
-            ustCubuk.setVisibility(View.GONE);
-            KediKaydetButon.setVisibility(View.INVISIBLE);
-            KediHaritaButon.setVisibility(View.INVISIBLE);
-            haritatext.setVisibility(View.GONE);
-            yuklemetext.setVisibility(View.GONE);
             uyariMesaji = new UyariMesaji(this,false);
         }
-        SohbetMesajAyarlari();
+        /*
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
             if (currentFragment instanceof AnasayfaFragment) {
@@ -133,50 +116,15 @@ public class MainActivity extends AppCompatActivity {
                 sohbetAlani.setVisibility(View.GONE);
                 ustCubuk.setVisibility(View.GONE);
             }
-        });
-    }
-    private void showLoading(boolean isLoading) {
-        if (isLoading) {
-            progressBar.setVisibility(View.VISIBLE);
-            overlayView.setVisibility(View.VISIBLE);
-            // Arka planı da interaktif yapma (dokunulmaz yap)
-            getWindow().setFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-            overlayView.setVisibility(View.GONE);
-           getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        }
+        }); */
     }
 
-    public void profilSayfasinaGit(View view){
-        Profil.setVisibility(View.GONE);
-        GirisKayit.setVisibility(View.GONE);
-        ustCubuk.setVisibility(View.GONE);
-        ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.container, fragment)
-                    .addToBackStack(null) // geri tuşuyla geri gelmek için
-                    .commit();
-    }
-
-    public void yuklemeSayfasi(View view){
-        System.out.println("Yukleme Sayfasi gecildi");
-        CevrimIciYonetimi.getInstance().YuklemeArayuzAktivitiyeGecildi();
-        Intent intent = new Intent(MainActivity.this, YuklemeArayuzuActivity.class);
-        startActivity(intent);
-    }
-    public  void haritaSayfasi(View view){
-        showLoading(true);
+    public void haritaSayfasi(){
         CevrimIciYonetimi.getInstance().HaritaArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, MapsActivity.class);
         startActivity(intent);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            showLoading(false);
-        }, 2000);
     }
+
 
     @Override
     protected void onDestroy() {
@@ -271,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
                             CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
                             YerelKayit();
                             uyariMesaji.BasariliDurum("Giriş Başarılı...",1000);
+                            haritaSayfasi();
                         } else {
                             uyariMesaji.BasarisizDurum("Giriş Başarısız...",1000);
                         }
@@ -301,6 +250,7 @@ public class MainActivity extends AppCompatActivity {
         }
         System.out.println(kullanici.getAd());
         VeriTabaninaKayit();
+
     }
 
     public void SifremiUnuttum(View view){
@@ -378,6 +328,7 @@ public class MainActivity extends AppCompatActivity {
                                                             CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
                                                             YerelKayit();
                                                             uyariMesaji.BasariliDurum("Kayıt Başarılı...",1000);
+                                                            haritaSayfasi();
                                                         })
                                                         .addOnFailureListener(e ->{
                                                             uyariMesaji.BasarisizDurum("Kayıt Başarısız!",1000);
@@ -422,8 +373,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void ButonlariKaybet(){
-        KediHaritaButon.setTranslationY(-2000f);
-        KediKaydetButon.setTranslationY(-2000f);
         GirisYapButon.setEnabled(true);
         GirisYapButon.setClickable(true);
         GirisYapButon.animate()
@@ -438,37 +387,8 @@ public class MainActivity extends AppCompatActivity {
                 .setDuration(1000)
                 .setInterpolator(new AccelerateInterpolator())
                 .start();
-        KediHaritaButon.setVisibility(View.VISIBLE);
-        KediHaritaButon.animate()
-                .translationY(0f)
-                .setDuration(1000)
-                .setInterpolator(new AccelerateInterpolator())
-                .start();
-        KediKaydetButon.setVisibility(View.VISIBLE);
-        KediKaydetButon.animate()
-                .translationY(0f)
-                .setDuration(1000)
-                .setInterpolator(new AccelerateInterpolator())
-                .start();
-        ustCubuk.setVisibility(View.VISIBLE);
-        haritatext.setVisibility(View.VISIBLE);
-        yuklemetext.setVisibility(View.VISIBLE);
     }
 
-    public void Sohbet(View view){
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.container,new SohbetFragment(()->{
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.container,new MesajFragment(this))
-                            .addToBackStack(null)
-                            .commit();
-                }))
-                .addToBackStack(null)  // geri tuşuyla geri döner
-                .commit();
-        GirisKayit.setVisibility(View.GONE);
-    }
 
     /// bu metodda mesajlaşma ve sohbetteki başlatılmadan önce temel ayarlar yapılır
     private void SohbetMesajAyarlari(){
@@ -490,7 +410,7 @@ public class MainActivity extends AppCompatActivity {
             kullanici.setSonGorulme(System.currentTimeMillis());
         }
     }
-
+/*
     private void FragmentAyarlari(){
         sohbetAlani.setVisibility(View.VISIBLE);
         getSupportFragmentManager()
@@ -498,4 +418,6 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.container, new AnasayfaFragment())
                 .commit();
     }
+
+ */
 }

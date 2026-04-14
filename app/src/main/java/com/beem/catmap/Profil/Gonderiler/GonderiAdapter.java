@@ -51,7 +51,7 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
             FragmentManager fm = fragmentManager;
             FragmentTransaction transaction = fm.beginTransaction();
 
-            Fragment mevcutFragment = fm.findFragmentById(R.id.container);
+            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
             if (mevcutFragment != null) {
                 transaction.hide(mevcutFragment);
             }
@@ -65,7 +65,7 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
             );
 
             transaction
-                    .add(R.id.container, fragment)
+                    .add(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
         });

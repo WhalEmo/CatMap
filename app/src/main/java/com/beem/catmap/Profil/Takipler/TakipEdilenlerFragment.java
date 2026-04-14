@@ -62,7 +62,7 @@ public class TakipEdilenlerFragment extends Fragment {
             requireActivity()
                     .getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.container, fragment)
+                    .replace(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
 

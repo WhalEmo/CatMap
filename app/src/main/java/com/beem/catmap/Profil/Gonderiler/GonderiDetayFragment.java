@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -25,6 +26,7 @@ import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -156,22 +158,17 @@ public class GonderiDetayFragment extends Fragment {
         haritadaGorText.setOnClickListener(b -> {
             if (getActivity() instanceof MapsActivity) {
                 FragmentManager fm = requireActivity().getSupportFragmentManager();
-                int count = fm.getBackStackEntryCount();
-               for(int i=0;i<count;i++){
-                   requireActivity().getSupportFragmentManager().popBackStack();
-               }
-                    ((MapsActivity) getActivity()).HaritadaGor(kediid);
-            } else {
-                showLoading(true);
+                Fragment existingMapFragment = fm.findFragmentByTag("MAP_FRAGMENT_TAG");
+                FragmentTransaction transaction = fm.beginTransaction();
 
-                Intent intent = new Intent(requireContext(), MapsActivity.class);
-                intent.putExtra("kediId", kediid);
-                startActivity(intent);
-                requireActivity().overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
-
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    showLoading(false);
-                }, 2000);
+                if (existingMapFragment != null) {
+                    transaction.show(existingMapFragment);
+                } else {
+                    SupportMapFragment newMapFragment = SupportMapFragment.newInstance();
+                    transaction.replace(R.id.fragment_container, newMapFragment, "MAP_FRAGMENT_TAG");
+                }
+                transaction.commit();
+                ((MapsActivity) getActivity()).HaritadaGor(kediid);
             }
         });
         return view;
