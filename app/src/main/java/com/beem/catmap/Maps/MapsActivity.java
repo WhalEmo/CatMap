@@ -11,6 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -112,6 +113,7 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -191,14 +193,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        SupportMapFragment mapFragment = new SupportMapFragment();
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, mapFragment)
-                .commit();
 
-        mapFragment.getMapAsync(this);
-
-        altCubuk();
         bottom_navigation=findViewById(R.id.bottom_navigation);
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
         btnShowFact=findViewById(R.id.btnShowFact);
@@ -269,6 +264,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 //        SohbetMesajAyarlari();
+
+        altCubuk();
+        binding.bottomNavigation.setSelectedItemId(R.id.haritagit);
+
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            merkeziBackStackChangedListener(null);
+        });
 
         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
@@ -382,6 +384,61 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         adView.loadAd(adRequest);
 
     }
+
+    @Override
+    public void onBackPressed() {
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStack();
+        }
+        else if(rightSlidingPanel.getTranslationX() == 0){
+            rightSlidingPanel.animate()
+                    .translationX(screenWidth)
+                    .setDuration(300)
+                    .start();
+        }
+        else {
+            binding.bottomNavigation.setVisibility(View.VISIBLE);
+            if (binding.bottomNavigation.getSelectedItemId() != R.id.haritagit) {
+                binding.bottomNavigation.setSelectedItemId(R.id.haritagit);
+            } else {
+                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+                super.onBackPressed();
+            }
+        }
+    }
+
+
+    private void merkeziBackStackChangedListener(Fragment paramFragment){
+        Fragment currentFragment;
+        if(paramFragment == null){
+            currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        }
+        else{
+            currentFragment = paramFragment;
+        }
+            if (currentFragment == null) return;
+
+            String tag = currentFragment.getTag();
+            System.out.println("tag: " + tag);
+            boolean menuGozukmeli = Arrays.asList("MAP_FRAGMENT_TAG", "PROFILE", "CHAT", "YUKLE").contains(tag);
+            binding.bottomNavigation.setVisibility(menuGozukmeli ? View.VISIBLE : View.GONE);
+
+            binding.arrowContainer.setVisibility("MAP_FRAGMENT_TAG".equals(tag) ? View.VISIBLE : View.GONE);
+
+            if (!(currentFragment instanceof ProfilSayfasiFragment)) {
+                if (profilAlan != null) profilAlan.setVisibility(View.VISIBLE);
+                if (anaGorunum != null) anaGorunum.setVisibility(View.VISIBLE);
+
+                if (bottomSheetDialog != null && !bottomSheetDialog.isShowing() && isBackPressed) {
+                    bottomSheetDialog.show();
+                }
+            } else {
+                if (profilAlan != null) profilAlan.setVisibility(View.VISIBLE);
+                if (anaGorunum != null) anaGorunum.setVisibility(View.VISIBLE);
+            }
+    }
+
     public void sonTiklananMarkeriSil() {
         if (sonTiklananMarker != null) {
             sonTiklananMarker.remove();
@@ -482,19 +539,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
     }
 
-    @Override
-    public void onBackPressed() {
-        if (rightSlidingPanel.getTranslationX() == 0) {
-            rightSlidingPanel.animate()
-                    .translationX(screenWidth) // sağa geri kaydır
-                    .setDuration(300)
-                    .start();
-        } else {
-            // Panel kapalıysa normal geri işlemi yap
-            super.onBackPressed();
-        }
-        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
-    }
 
 
     private int dpDenPx(int dp) {
@@ -878,19 +922,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
-        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-            if (fragment instanceof ProfilSayfasiFragment) {
-                profilAlan.setVisibility(View.GONE);
-                anaGorunum.setVisibility(View.GONE);
-            } else {
-                profilAlan.setVisibility(View.VISIBLE);
-                anaGorunum.setVisibility(View.VISIBLE);
-                if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()&&isBackPressed==true) {
-                    bottomSheetDialog.show();
-                }
-            }
-        });
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -1204,29 +1235,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             }
         });
-        FragmentManager.OnBackStackChangedListener listener = new FragmentManager.OnBackStackChangedListener() {
-            @Override
-            public void onBackStackChanged() {
-                Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-                if (fragment instanceof ProfilSayfasiFragment) {
-                    profilAlan.setVisibility(View.GONE);
-                    anaGorunum.setVisibility(View.GONE);
-                } else {
-                    profilAlan.setVisibility(View.VISIBLE);
-                    anaGorunum.setVisibility(View.VISIBLE);
-
-                    if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
-                        bottomSheetDialog.show();
-                    }
-                    if (ikincibottom != null && !ikincibottom.isShowing()) {
-                        ikincibottom.show();
-                    }
-                    getSupportFragmentManager().removeOnBackStackChangedListener(this);
-                }
-            }
-        };
-        // Listener’ı ekle
-        getSupportFragmentManager().addOnBackStackChangedListener(listener);
 
         Set<String> cachedSet = CacheHelperYorum.loadBegenilenSet(this);
         Map<String, Integer> begeniMap = CacheHelperYorum.loadBegeniSayilariMap(this);
@@ -1481,47 +1489,73 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
-    private void altCubuk(){
-        binding
-            .bottomNavigation.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
+    private void altCubuk() {
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
+            FragmentManager fm = getSupportFragmentManager();
+            fm.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            FragmentTransaction transaction = fm.beginTransaction();
             String TAG = "";
-
             if (id == R.id.haritagit) {
-                btnShowFact.setVisibility(View.VISIBLE);
+                if (btnShowFact != null) btnShowFact.setVisibility(View.VISIBLE);
                 TAG = "MAP_FRAGMENT_TAG";
-                selectedFragment = new SupportMapFragment();
-                ((SupportMapFragment) selectedFragment).getMapAsync(this);
             } else if (id == R.id.profilim) {
-                btnShowFact.setVisibility(View.GONE);
+                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
                 TAG = "PROFILE";
-                selectedFragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-            }
-            else if(id == R.id.sohbet){
-                btnShowFact.setVisibility(View.GONE);
+            } else if (id == R.id.sohbet) {
+                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
                 TAG = "CHAT";
-                selectedFragment = new SohbetFragment(()->{
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container,new MesajFragment(this))
-                            .addToBackStack(null)
-                            .commit();
-                });
-            }else if(id == R.id.yuklekedi){
-                btnShowFact.setVisibility(View.GONE);
+            } else if (id == R.id.yuklekedi) {
+                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
                 TAG = "YUKLE";
-                selectedFragment = new YuklemeArayuzuFragment();
             }
 
-            if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment, TAG)
-                        .addToBackStack(null)
-                        .commit();
+            for (Fragment f : fm.getFragments()) {
+                if (f != null) {
+                    if (f.getTag() == null) {
+                        transaction.remove(f);
+                    } else if (!f.getTag().equals(TAG)) {
+                        transaction.hide(f);
+                    }
+                }
             }
+
+            Fragment targetFragment = fm.findFragmentByTag(TAG);
+
+            if (targetFragment == null) {
+                if (id == R.id.haritagit) {
+                    targetFragment = new SupportMapFragment();
+                    ((SupportMapFragment) targetFragment).getMapAsync(this);
+                } else if (id == R.id.profilim) {
+                    targetFragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
+                } else if (id == R.id.sohbet) {
+                    targetFragment = new SohbetFragment(() -> {
+                        getSupportFragmentManager()
+                                .beginTransaction()
+                                .replace(R.id.fragment_container, new MesajFragment(this))
+                                .addToBackStack(null)
+                                .commit();
+                    });
+                } else if (id == R.id.yuklekedi) {
+                    targetFragment = new YuklemeArayuzuFragment();
+                }
+                if (targetFragment != null) {
+                    transaction.add(R.id.fragment_container, targetFragment, TAG);
+                }
+            } else {
+                transaction.show(targetFragment);
+            }
+            transaction.commit();
+
+            merkeziBackStackChangedListener(targetFragment);
             return true;
         });
     }
+
+
+    public void setSelectedItemSpeacial(int position){
+        binding.bottomNavigation.setSelectedItemId(position);
+    }
+
 
 }

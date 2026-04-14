@@ -97,9 +97,6 @@ public class MesajFragment extends Fragment {
                 new OnBackPressedCallback(true){
                     @Override
                     public void handleOnBackPressed() {
-                        if(requireActivity() instanceof MapsActivity){
-                            requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
-                        }
                         mesajlasmaYonetici.DinleyiciKaldir();
                         mesajlasmaYonetici.setAlici(null);
                         mesajlasmaYonetici.setSohbetID(null);

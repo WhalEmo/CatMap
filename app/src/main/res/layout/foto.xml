@@ -44,14 +44,14 @@
         </FrameLayout>
     </androidx.cardview.widget.CardView>
 
-    <Button
+    <ImageButton
         android:id="@+id/silButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="top|end"
         android:layout_margin="40dp"
         android:layout_marginTop="40dp"
-        android:backgroundTint="#E53935"
+        android:src="@drawable/exit"
         android:text="X"
         android:visibility="gone"
         android:textColor="#FFFFFF"

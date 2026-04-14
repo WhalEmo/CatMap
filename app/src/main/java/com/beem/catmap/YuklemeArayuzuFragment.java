@@ -14,7 +14,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.Manifest;
 import android.location.Location;
@@ -64,6 +66,9 @@ public class YuklemeArayuzuFragment extends Fragment {
     private EditText kedininismi;
     private EditText kedininhakkindasi;
     private FusedLocationProviderClient konumsaglayici;
+    private Button kaydetButton;
+    private ImageButton fotoSec;
+    private ImageButton kameraAc;
     private FirebaseFirestore db;
     double latitude=0;
     double longitude=0;
@@ -94,6 +99,10 @@ public class YuklemeArayuzuFragment extends Fragment {
 
         kedininismi=view.findViewById(R.id.isimText);
         kedininhakkindasi=view.findViewById(R.id.hakkindaText);
+        kaydetButton=view.findViewById(R.id.kaydetmeButonu);
+        fotoSec=view.findViewById(R.id.dosya_id);
+        kameraAc=view.findViewById(R.id.kamera_id);
+        butonAyarlari();
         // FusedLocationProviderClient başlat
         konumsaglayici = LocationServices.getFusedLocationProviderClient(requireContext());
         // Firestore Başlat
@@ -177,7 +186,7 @@ public class YuklemeArayuzuFragment extends Fragment {
 
     // Galeriye gitmek için buton
 
-    public void yuklemebasma(View view) {
+    private void yuklemebasma() {
         // Galeriye gitmek için Intent başlatıyoruz
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // çoklu seçim
@@ -242,7 +251,7 @@ public class YuklemeArayuzuFragment extends Fragment {
     }
 
     // 📌 Kamera butonuna tıklanınca çalışacak
-    public void kameraacma(View view) {
+    private void kameraacma() {
        // Uygulamanın kamera iznine sahip olup olmadığını kontrol eder.
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -374,8 +383,19 @@ public class YuklemeArayuzuFragment extends Fragment {
     }
 
 
-    //butona basınca kaydetme
-    public void kaydet(View view) {
+    private void butonAyarlari(){
+        kaydetButton.setOnClickListener(v ->{
+            kaydet();
+        });
+        fotoSec.setOnClickListener(v ->{
+            yuklemebasma();
+        });
+        kameraAc.setOnClickListener(v ->{
+            kameraacma();
+        });
+    }
+
+    private void kaydet() {
         //anlık cekilmedityse yani dosyadan secildiyse adres girsin
          kediadi = kedininismi.getText().toString().trim();
          kedihakkinda = kedininhakkindasi.getText().toString().trim();

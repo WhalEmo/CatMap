@@ -5,6 +5,7 @@ import android.location.Location;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 
 import com.beem.catmap.Maps.MapKedi.Kediler;
 import com.beem.catmap.R;
@@ -29,6 +30,7 @@ public class TarananKediler {
     private ExtendedFloatingActionButton taramaButon;
     private ImageButton solOk;
     private ImageButton sagOk;
+    private RelativeLayout container;
     private LatLng BasilmaEkranMerkezi;
     private int indeks = 0;
     private ArrayList<Kediler> bulunanKediler;
@@ -41,6 +43,7 @@ public class TarananKediler {
         taramaButon = view.findViewById(R.id.btnScanArea);
         solOk = view.findViewById(R.id.btnLeftArrow);
         sagOk = view.findViewById(R.id.btnRightArrow);
+        container = view.findViewById(R.id.arrowContainer);
 
         LatLng[] ekranMerkezi = {map.getCameraPosition().target};
         map.setOnCameraIdleListener(()->{
@@ -57,6 +60,7 @@ public class TarananKediler {
 
             if (results[0] > 500) {
                 if (taramaButon.getVisibility() == View.GONE) {
+                    if(container.getVisibility() == View.GONE) container.setVisibility(View.VISIBLE);
                     taramaButon.show();
                 }
                 ekranMerkezi[0] = gecerliMerkez;

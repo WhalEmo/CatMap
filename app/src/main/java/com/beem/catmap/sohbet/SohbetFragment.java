@@ -44,19 +44,16 @@ public class SohbetFragment extends Fragment {
             shimmerLayout.setVisibility(View.GONE);
         });
 
-/*
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true){
             @Override
             public void handleOnBackPressed() {
-                if(requireActivity() instanceof MainActivity){
-                    ConstraintLayout ustCubuk = requireActivity().findViewById(R.id.ustCubuk);
-                    ustCubuk.setVisibility(View.VISIBLE);
+                if(requireActivity() instanceof MapsActivity){
+                    requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
                 }
                 requireActivity().getSupportFragmentManager().popBackStack();
             }
         });
 
- */
 
         return view;
     }

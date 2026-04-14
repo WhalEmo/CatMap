@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
@@ -77,7 +78,7 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
 
     public static class FotoHolder extends RecyclerView.ViewHolder{
         ImageView foto;
-        Button sil;
+        ImageButton sil;
         View yukleniyorOverlay;
         ProgressBar yukleniyorProgressBar;
         public FotoHolder(@NonNull View itemView) {

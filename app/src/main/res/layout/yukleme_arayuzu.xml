@@ -75,7 +75,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Kaydet"
-        android:onClick="kaydet"
         android:backgroundTint="#E287AB"
         android:textColor="#FFFFFF"
         android:textSize="16sp"

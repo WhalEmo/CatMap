@@ -157,18 +157,9 @@ public class GonderiDetayFragment extends Fragment {
         });
         haritadaGorText.setOnClickListener(b -> {
             if (getActivity() instanceof MapsActivity) {
-                FragmentManager fm = requireActivity().getSupportFragmentManager();
-                Fragment existingMapFragment = fm.findFragmentByTag("MAP_FRAGMENT_TAG");
-                FragmentTransaction transaction = fm.beginTransaction();
-
-                if (existingMapFragment != null) {
-                    transaction.show(existingMapFragment);
-                } else {
-                    SupportMapFragment newMapFragment = SupportMapFragment.newInstance();
-                    transaction.replace(R.id.fragment_container, newMapFragment, "MAP_FRAGMENT_TAG");
-                }
-                transaction.commit();
-                ((MapsActivity) getActivity()).HaritadaGor(kediid);
+                MapsActivity mapsActivity = (MapsActivity) getActivity();
+                mapsActivity.setSelectedItemSpeacial(R.id.haritagit);
+                mapsActivity.HaritadaGor(kediid);
             }
         });
         return view;
