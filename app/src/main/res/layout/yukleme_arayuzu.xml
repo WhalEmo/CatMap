@@ -28,14 +28,14 @@
         android:id="@+id/geciciFoto"
         android:layout_width="0dp"
         android:layout_height="250dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/yuklemefotosu"
+        android:scaleType="center"
+        android:background="@drawable/edittext_arkaplan"
+        android:src="@drawable/fotoyukle"
         android:contentDescription="Geçici Fotoğraf"
         app:layout_constraintTop_toTopOf="@+id/fotoPager"
         app:layout_constraintBottom_toBottomOf="@+id/fotoPager"
         app:layout_constraintStart_toStartOf="@+id/fotoPager"
         app:layout_constraintEnd_toEndOf="@+id/fotoPager" />
-
 
     <!-- 🐾 KEDİ İSMİ -->
     <EditText
