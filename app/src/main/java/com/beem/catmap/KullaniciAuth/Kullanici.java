@@ -5,8 +5,16 @@ import static android.content.Context.MODE_PRIVATE;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +45,31 @@ public class Kullanici {
         this.cevrimiciMi = cevrimiciMi;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public String getSonGorulme() {
-        Date tarih = new Date(sonGorulme);
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-        sdf.setTimeZone(TimeZone.getDefault());
-        return sdf.format(tarih);
+        LocalDateTime sonGirilmeVakti = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(sonGorulme), ZoneId.systemDefault());
+
+        LocalDateTime simdi = LocalDateTime.now();
+
+        long gunFarki = ChronoUnit.DAYS.between(sonGirilmeVakti.toLocalDate(), simdi.toLocalDate());
+        long saatFarki = ChronoUnit.HOURS.between(sonGirilmeVakti, simdi);
+
+        DateTimeFormatter saatFormat = DateTimeFormatter.ofPattern("HH:mm");
+
+        if (saatFarki < 24 && gunFarki == 0) {
+            return "Bugün " + sonGirilmeVakti.format(saatFormat);
+        }
+        else if (gunFarki == 1) {
+            return "Dün " + sonGirilmeVakti.format(saatFormat);
+        }
+        else if (gunFarki >= 2 && gunFarki <= 5) {
+            return gunFarki + " gün önce " + sonGirilmeVakti.format(saatFormat);
+        }
+        else {
+            DateTimeFormatter tamFormat = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
+            return sonGirilmeVakti.format(tamFormat);
+        }
     }
     public void setSonGorulme(long sonGorulme) {
         this.sonGorulme = sonGorulme;
