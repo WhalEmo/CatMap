@@ -5,11 +5,10 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 
-import com.beem.catmap.Kullanici;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.R;
-import com.beem.catmap.mesaj.MesajlasmaYonetici;
 import com.beem.catmap.mesaj.YanitMesaj;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;

@@ -26,10 +26,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
+import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici;
+import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.sohbet.SohbetYonetici;
-import com.beem.catmap.ui.main.ProfilSayfasiFragment;
+import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;

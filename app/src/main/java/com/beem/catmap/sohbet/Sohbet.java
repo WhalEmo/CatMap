@@ -1,6 +1,6 @@
 package com.beem.catmap.sohbet;
 
-import com.beem.catmap.Kullanici;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.mesaj.Mesaj;
 
 public class Sohbet {

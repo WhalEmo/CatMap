@@ -16,6 +16,8 @@ import android.widget.ImageView;
 import android.Manifest;
 import android.location.Location;
 
+import com.beem.catmap.Maps.FotoGeciciAdapter;
+import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;

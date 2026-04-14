@@ -1,6 +1,5 @@
 package com.beem.catmap.mesaj;
 
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -10,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.Kullanici;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.sohbet.SohbetYonetici;

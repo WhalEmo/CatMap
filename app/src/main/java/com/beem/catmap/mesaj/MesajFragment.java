@@ -39,7 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
-import com.beem.catmap.ui.main.ProfilSayfasiFragment;
+import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;

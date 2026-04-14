@@ -46,7 +46,7 @@
             android:value="AIzaSyA58fD4xQDaP2bi1ElUsk8x_LKfFuqpREI" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name=".Maps.MapsActivity"
             android:screenOrientation="portrait"
             android:theme="@style/MapsTheme"
             android:exported="true"
