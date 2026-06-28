@@ -10,6 +10,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -74,6 +77,41 @@ class CatRepository {
                 emptyList()
             }
         }
+    }
+
+    fun uploadCatImages(imageUris: List<Uri>): Flow<UploadProgressState> = callbackFlow {
+        if (imageUris.isEmpty()) {
+            trySend(UploadProgressState.Success(emptyList()))
+            close()
+            return@callbackFlow
+        }
+
+        val uploadedUrls = mutableListOf<String>()
+        val totalImages = imageUris.size
+
+        var totalBytesTransferred = 0L
+        var totalBytesExpected = 0L
+
+        imageUris.forEachIndexed { index, uri ->
+            val ref = storage.reference.child("cats/${UUID.randomUUID()}.jpg")
+            val uploadTask = ref.putFile(uri)
+
+            uploadTask.addOnProgressListener { snapshot ->
+                // Sadece bu resmin değil, genel yüklemenin yüzdesini hesaplıyoruz dayıcım
+                val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
+
+                // Toplam resmi hesaba katarak ortalama bir yüzde buluyoruz (Örn: 3 resimden ilki %100 olduysa genel ilerleme %33'tür)
+                val globalProgress = ((index * 100) + progress) / totalImages
+
+                // ViewModel'e anlık yüzdeyi ateşle!
+                trySend(UploadProgressState.Loading(globalProgress))
+            }.addOnCompleteListener {
+
+            }
+
+        }
+
+        awaitClose { /* Task iptal işlemleri gerekirse */ }
     }
 
     private suspend fun uploadImagesToStorage(imageUris: List<Uri>): List<String> = withContext(Dispatchers.IO) {

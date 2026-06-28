@@ -19,6 +19,8 @@ import com.beem.catmap.UyariMesaji
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.ui.camera.CameraFragment
 import com.beem.catmap.ui.camera.FilmStripAdapter // Mevcut yatay şerit adaptörün dayıcım
+import com.beem.catmap.ui.extensions.fadeIn
+import com.beem.catmap.ui.extensions.fadeOut
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.MobileAds
@@ -43,6 +45,8 @@ class YuklemeArayuzuFragment : Fragment() {
 
     private var interstitialAd: InterstitialAd? = null
 
+    private var premiumDialog: PremiumUploadDialog? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = YuklemeArayuzuBinding.inflate(inflater, container, false)
         return binding.root
@@ -63,11 +67,17 @@ class YuklemeArayuzuFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        binding.recyclerViewSelectedPhotos.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        binding.recyclerViewSelectedPhotos.apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
 
-        photoAdapter = UploadPhotosAdapter()
-        binding.recyclerViewSelectedPhotos.adapter = photoAdapter
+            photoAdapter = UploadPhotosAdapter()
+            adapter = photoAdapter
+
+            itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator().apply {
+                addDuration = 250
+                removeDuration = 250
+            }
+        }
     }
 
     private fun setupListeners() {
@@ -88,26 +98,28 @@ class YuklemeArayuzuFragment : Fragment() {
         }
     }
 
-    /**
-     * 🎯 REAKTİF STATE TAKİBİ: ViewModel ne derse arayüz anında o şekle bürünür
-     */
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
 
                 // 1. Fotoğraf listesi takibi ve Placeholder yönetimi
                 if (state.selectedImages.isNotEmpty()) {
-                    binding.layoutPlaceholder.visibility = View.GONE
-                    binding.recyclerViewSelectedPhotos.visibility = View.VISIBLE
+                    binding.layoutPlaceholder.fadeOut(200)
+                    binding.recyclerViewSelectedPhotos.fadeIn(250)
                     photoAdapter.updateList(state.selectedImages)
                 } else {
-                    binding.layoutPlaceholder.visibility = View.VISIBLE
-                    binding.recyclerViewSelectedPhotos.visibility = View.GONE
+                    binding.recyclerViewSelectedPhotos.fadeOut(200)
+                    binding.layoutPlaceholder.fadeIn(250)
                 }
 
-                // 2. Yükleniyor Durumu (Loading Progress)
                 if (state.isLoading) {
-                    messageManager.YuklemeDurum("Kedinin bilgileri ve fotoğrafları işleniyor...")
+                    if (premiumDialog == null) {
+                        premiumDialog = PremiumUploadDialog(requireContext())
+                        premiumDialog?.show()
+                    }
+                    premiumDialog?.updateProgress(state.uploadProgress)
+                } else{
+                    premiumDialog = null
                 }
 
                 // 3. Hata Durumu Yönetimi
