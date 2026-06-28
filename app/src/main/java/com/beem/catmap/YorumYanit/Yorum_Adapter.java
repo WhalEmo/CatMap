@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.beem.catmap.Klavye;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.MainActivity;
-import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
 
@@ -51,6 +50,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     private Set<String> begenilenYorumIDSeti = new HashSet<>();
     private Map<String, Integer> begeniSayisiMap = new HashMap<>();
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
+    private OnYorumAksiyonListener aksiyonListener;
 
     public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
         this.kullaniciAdiTiklamaListener = listener;
@@ -96,6 +96,11 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     public void setBegeniSayisiMap(Map<String, Integer> begeniMap) {
         this.begeniSayisiMap = begeniMap;
     }
+
+    public void setAksiyonListener(OnYorumAksiyonListener listener) {
+        this.aksiyonListener = listener;
+    }
+
     public void baslatZamanlayici() {
         zamanHandler.post(zamanRunnable);
     }
@@ -205,6 +210,12 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 yntadapter.hazirliklariYapBegenme(context, MainActivity.kullanici.getID(), yorum);
 
                 yntadapter.setKullaniciAdiTiklamaListener(kullaniciAdiTiklamaListener);
+
+                yntadapter.setOnYanitAksiyonListener((kullaniciAdi, yukleyenId, parentYorumIndeks, ayniButonaMiBasildi) -> {
+                    if (aksiyonListener != null) {
+                        aksiyonListener.onYanitlaTiklandi(kullaniciAdi, yukleyenId, parentYorumIndeks, ayniButonaMiBasildi);
+                    }
+                });
             }
 
             // Adapter'i bağla
@@ -269,70 +280,36 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.yanitlariGor.setOnClickListener(v -> {
             boolean gorunuyorMu = yorum.isYanitlarGorunuyor();
             yorum.setYanitlarGorunuyor(!gorunuyorMu);
-            notifyItemChanged(position); // 🔄 Bu onBindViewHolder'ı tetikler
+            notifyItemChanged(position);
         });
 
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
-            String kullaniciAdi=yorum.getKullaniciAdi();
-            String metin="@"+kullaniciAdi + " ";
-
-            SpannableString spannableString=new SpannableString(metin);
-            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
-            spannableString.setSpan(
-                    new ForegroundColorSpan(Color.BLUE),
-                    0,
-                    metin.length(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
-            ClickableSpan clickableSpan=new ClickableSpan() {
-                @Override
-                public void onClick(@NonNull View view) {
-                    if (kullaniciAdiTiklamaListener != null) {
-                        kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yorum.getYukleyenId());
-                    }
-                }
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setColor(Color.BLUE);
-                    ds.setUnderlineText(false);
-                }
-            };
-            spannableString.setSpan(clickableSpan, 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            MapsActivity.textt.setText(spannableString);
-            MapsActivity.textt.setMovementMethod(LinkMovementMethod.getInstance());
-
-            MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
-            MapsActivity.kimeyanit.setHint(yorum.getKullaniciAdi() + " 'e yanıt veriyorsun");
-            Klavye klavye=new Klavye(context);
             int eskiPozisyon = pozisyon;
-            if (pozisyon == position) {
-                // Aynı butona tıklandıysa: kapat
+            boolean ayniButonaMiBasildi = (eskiPozisyon == position);
+
+            if (ayniButonaMiBasildi) {
                 pozisyon = -1;
-                MapsActivity.yorumicin.setVisibility(View.GONE);
-                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
-                MapsActivity.ynticin.setVisibility(View.VISIBLE);
+                yorumindeks = -1;
             } else {
-                // Yeni yorum seçildi: göster
                 pozisyon = position;
                 yorumindeks = position;
-                MapsActivity.yorumicin.setVisibility(View.GONE);
-                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
-                MapsActivity.ynticin.setVisibility(View.VISIBLE);
-                new Handler().postDelayed(() -> {
-                    klavye.klavyeAc(MapsActivity.textt);
-                }, 250);
+                yorumList.get(position).setYanitlarGorunuyor(true);
             }
 
-            // notifyItemChanged pozisyonları güncelle
             if (eskiPozisyon != -1) {
                 notifyItemChanged(eskiPozisyon);
             }
             notifyItemChanged(position);
-            yorumList.get(position).setYanitlarGorunuyor(true);
 
+            if (aksiyonListener != null) {
+                aksiyonListener.onYanitlaTiklandi(
+                        yorum.getKullaniciAdi(),
+                        yorum.getYukleyenId(),
+                        position,
+                        ayniButonaMiBasildi
+                );
+            }
         });
 
 
