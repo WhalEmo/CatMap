@@ -1,19 +1,25 @@
 package com.beem.catmap.repository
 
+import android.net.Uri
 import android.util.Log
 import com.beem.catmap.models.CatModel
 import com.beem.catmap.models.CommentModel
+import com.firebase.geofire.GeoFireUtils
+import com.firebase.geofire.GeoLocation
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import kotlin.math.abs
 
 class CatRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val catsCollection = db.collection("cats")
+    private val storage = FirebaseStorage.getInstance()
 
     /**
      * Coroutines 'await()' kullanarak callback cehennemini yok ettik.
@@ -68,5 +74,49 @@ class CatRepository {
                 emptyList()
             }
         }
+    }
+
+    private suspend fun uploadImagesToStorage(imageUris: List<Uri>): List<String> = withContext(Dispatchers.IO) {
+        val downloadUrls = mutableListOf<String>()
+        imageUris.forEachIndexed { index, uri ->
+            val fileName = "fotoklasoru/${System.currentTimeMillis()}_${UUID.randomUUID()}_$index.jpg"
+            val storageRef = storage.reference.child(fileName)
+
+            storageRef.putFile(uri).await()
+
+            val downloadUrl = storageRef.downloadUrl.await().toString()
+            downloadUrls.add(downloadUrl)
+        }
+        downloadUrls
+    }
+
+    suspend fun uploadCatPost(
+        catName: String,
+        catAbout: String,
+        latitude: Double,
+        longitude: Double,
+        userId: String,
+        imageUris: List<Uri>
+    ): String = withContext(Dispatchers.IO) {
+        val uploadedPhotoUrls = uploadImagesToStorage(imageUris)
+        if (uploadedPhotoUrls.isEmpty()) {
+            throw Exception("Fotoğraflar yüklenemedi, URL listesi boş!")
+        }
+
+        val hash = GeoFireUtils.getGeoHashForLocation(GeoLocation(latitude, longitude))
+
+        val catData = hashMapOf(
+            "kediAdi" to catName,
+            "kediHakkinda" to catAbout,
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "geohash" to hash,
+            "photoUri" to uploadedPhotoUrls,
+            "YukleyenKullaniciID" to userId,
+            "createdAt" to System.currentTimeMillis()
+        )
+
+        val documentRef = catsCollection.add(catData).await()
+        documentRef.id
     }
 }

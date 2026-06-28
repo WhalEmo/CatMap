@@ -31,6 +31,11 @@ object ImageUploadManager {
         }
     }
 
+    fun setSelectedImages(uris: List<Uri>) {
+        clearImages()
+        addImages(uris)
+    }
+
     fun removeImage(uri: Uri) {
         if (_selectedImages.value.contains(uri)) {
             _selectedImages.update { currentList ->

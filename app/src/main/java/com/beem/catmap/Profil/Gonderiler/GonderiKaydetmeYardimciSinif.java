@@ -32,7 +32,7 @@ public class GonderiKaydetmeYardimciSinif {
                     ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
                     ((AppCompatActivity) activity).getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.container, fragment)
+                            .replace(R.id.fragment_container, fragment)
                             .addToBackStack(null)
                             .commit();
                     mesaji.BasariliDurum("Eklendi",1000);
