@@ -1,14 +1,7 @@
 package com.beem.catmap.YorumYanit;
 
-import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,11 +14,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-
-import com.beem.catmap.Klavye;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.MainActivity;
-import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
 
@@ -37,6 +27,7 @@ import java.util.Set;
 
 public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewHolder> {
 
+    private OnYanitAksiyonListener aksiyonListener;
     private ArrayList<Yanit_Model>yanitListe;
     public ArrayList<Yanit_Model> getYanitList() {
         return yanitListe;
@@ -53,6 +44,9 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         this.context = context;
         this.aitOlduguYorumIndeks = yorumIndeks;
         this.yorumID=yorumID;
+    }
+    public void setOnYanitAksiyonListener(OnYanitAksiyonListener listener) {
+        this.aksiyonListener = listener;
     }
     public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
         this.kullaniciAdiTiklamaListener = listener;
@@ -192,68 +186,30 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         }
 
 
-        holder.yanitlabutonu.setOnClickListener(cvp->{
-            String kullaniciAdi=yanit.getAdi();
-            String metin="@"+kullaniciAdi+ " ";
-
-            SpannableString spannableString=new SpannableString(metin);
-            // 1) Mavi renk kalıcı olsun diye ForegroundColorSpan uygula
-            spannableString.setSpan(
-                    new ForegroundColorSpan(Color.BLUE),
-                    0,
-                    metin.length(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
-            ClickableSpan clickableSpan=new ClickableSpan() {
-                @Override
-                public void onClick(@NonNull View view) {
-                    if (kullaniciAdiTiklamaListener != null) {
-                        kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yanit.getYanitiYukleyen());
-
-                    }
-
-                }
-
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setColor(Color.BLUE);
-                    ds.setUnderlineText(false);
-                }
-            };
-            spannableString.setSpan(clickableSpan, 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            MapsActivity.textt.setText(spannableString);
-            MapsActivity.textt.setMovementMethod(LinkMovementMethod.getInstance());
-
-            MapsActivity.textt.setSelection(MapsActivity.textt.getText().length());
-            MapsActivity.kimeyanit.setHint(yanit.getAdi() + " 'e yanıt veriyorsun");
-            Klavye klavye=new Klavye(context);
+        holder.yanitlabutonu.setOnClickListener(cvp -> {
             int eskiPozisyon = pozisyon;
-            if (pozisyon == position) {
-                // Aynı butona tıklandıysa: kapat
+            boolean ayniButonaMiBasildi = (eskiPozisyon == position);
+
+            if (ayniButonaMiBasildi) {
                 pozisyon = -1;
-                MapsActivity.yorumicin.setVisibility(View.GONE);
-                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
-                MapsActivity.ynticin.setVisibility(View.VISIBLE);
             } else {
-                // Yeni yorum seçildi: göster
                 pozisyon = position;
-                Yorum_Adapter.yorumindeks = aitOlduguYorumIndeks;
-                MapsActivity.yorumicin.setVisibility(View.GONE);
-                MapsActivity.carpiicin.setVisibility(View.VISIBLE);
-                MapsActivity.ynticin.setVisibility(View.VISIBLE);
-                new Handler().postDelayed(() -> {
-                    klavye.klavyeAc(MapsActivity.textt);
-                }, 250);
             }
 
-            // notifyItemChanged pozisyonları güncelle
             if (eskiPozisyon != -1) {
                 notifyItemChanged(eskiPozisyon);
             }
             if (position >= 0 && position < getItemCount()) {
                 notifyItemChanged(position);
+            }
+
+            if (aksiyonListener != null) {
+                aksiyonListener.onAltYanitlaTiklandi(
+                        yanit.getAdi(),
+                        yanit.getYanitiYukleyen(),
+                        aitOlduguYorumIndeks,
+                        ayniButonaMiBasildi
+                );
             }
         });
 

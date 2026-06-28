@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,10 @@ import android.location.Location;
 
 import com.beem.catmap.Maps.FotoGeciciAdapter;
 import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif;
+import com.beem.catmap.ui.camera.CameraFragment;
+import com.beem.catmap.ui.manager.ImageUploadManager;
+import com.firebase.geofire.GeoFireUtils;
+import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
@@ -123,8 +128,10 @@ public class YuklemeArayuzuFragment extends Fragment {
         };
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), callback);
 
+
         return view;
     }
+
 
     @Override
     public void onResume() {
@@ -155,67 +162,7 @@ public class YuklemeArayuzuFragment extends Fragment {
     }
 
 
-    // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
-    ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
 
-                    if (result.getData().getClipData() != null) {
-                        ClipData clipData = result.getData().getClipData();
-                        if(clipData.getItemCount() + secilenFotolar.size() > MAX_FOTO_SAYISI){
-                            mesaji.BasarisizDurum("En fazla " + MAX_FOTO_SAYISI +" fotoğraf seçebilirsiniz!",1000);
-                            return;
-                        }
-                        if(geciciFoto.getVisibility() != View.GONE){
-                            geciciFoto.setVisibility(View.GONE);
-                        }
-                        for (int i = 0; i < clipData.getItemCount(); i++) {
-                            Uri uri = clipData.getItemAt(i).getUri();
-                            secilenFotolar.add(uri);
-                        }
-                        fotoAdapter.notifyDataSetChanged();
-                    } else if (result.getData().getData() != null) {
-                        Uri uri = result.getData().getData();
-                        secilenFotolar.add(uri);
-                        fotoAdapter.notifyDataSetChanged();
-                    }
-                }
-            });
-
-
-    // Galeriye gitmek için buton
-
-    private void yuklemebasma() {
-        // Galeriye gitmek için Intent başlatıyoruz
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // çoklu seçim
-        intent.setType("image/*");
-        galleryLauncher.launch(intent);
-    }
-
-
-    // 📌 Kameraya gotur ve sonucu bas
-    ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == RESULT_OK) {
-                        if (photoUri != null) {
-                            if(secilenFotolar.size()>=MAX_FOTO_SAYISI){
-                                mesaji.BasarisizDurum("En fazla " + MAX_FOTO_SAYISI +" fotoğraf yükleyebilirsiniz!",1000);
-                                return;
-                            }
-                            if(geciciFoto.getVisibility()!=View.GONE){
-                                geciciFoto.setVisibility(View.GONE);
-                            }
-                            secilenFotolar.add(photoUri);
-                            fotoAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
-            });
 
     // 📌 Fotoğraf dosyası oluşturma
     private Uri getPhotoFileUri() {
@@ -233,45 +180,12 @@ public class YuklemeArayuzuFragment extends Fragment {
         }
     }
 
-    // 📌 Kamerayı açma metodu
     private void openCamera() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
-            photoUri = getPhotoFileUri();
-            if (photoUri != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);//put extra kamera aktivitesinde cektigimiz fotoyu
-                //yukleme aktivitisine gonderir
-                cameraLauncher.launch(takePictureIntent);
-            } else {
-                Log.e("CameraError", "Dosya oluşturulamadı!");
-            }
-        } else {
-            Log.e("CameraIntent", "Kamera uygulaması bulunamadı!");
-        }
-    }
-
-    // 📌 Kamera butonuna tıklanınca çalışacak
-    private void kameraacma() {
-       // Uygulamanın kamera iznine sahip olup olmadığını kontrol eder.
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.CAMERA}, 101);
-        } else {
-            openCamera();
-        }
-    }
-
-    // 📌 İzin sonucu işleme
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 101 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            openCamera();
-        }
-        if(requestCode == 102&&grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-            getUserLocation();
-        }
+        Fragment cameraFragment = new CameraFragment();
+        getParentFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, cameraFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     // 📌 Kullanıcının konumunu al
@@ -333,10 +247,12 @@ public class YuklemeArayuzuFragment extends Fragment {
         } else {
             // Firestore'a kaydedilecek veri yapısı
             Map<String, Object> catData = new HashMap<>();
+            String hash = GeoFireUtils.getGeoHashForLocation(new GeoLocation(latitude, longitude));
             catData.put("kediAdi", kediadi);
             catData.put("kediHakkinda", kedihakkinda);
             catData.put("latitude", latitude);
             catData.put("longitude", longitude);
+            catData.put("geohash", hash);
             catData.put("photoUri", fotoUrl);
             catData.put("YukleyenKullaniciID",MainActivity.kullanici.getID());
             db.collection("cats")
@@ -388,10 +304,10 @@ public class YuklemeArayuzuFragment extends Fragment {
             kaydet();
         });
         fotoSec.setOnClickListener(v ->{
-            yuklemebasma();
+
         });
         kameraAc.setOnClickListener(v ->{
-            kameraacma();
+            openCamera();
         });
     }
 

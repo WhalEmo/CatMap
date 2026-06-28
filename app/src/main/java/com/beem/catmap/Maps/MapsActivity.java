@@ -3,12 +3,15 @@ package com.beem.catmap.Maps;
 import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -32,12 +35,19 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.EditText;
@@ -73,7 +83,13 @@ import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.YuklemeArayuzuFragment;
 import com.beem.catmap.mesaj.MesajFragment;
+import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
+import com.beem.catmap.ui.manager.UiMessageManager;
+import com.beem.catmap.ui.manager.UiMessageState;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -99,6 +115,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
@@ -139,14 +156,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private View ikinci;
     private  BottomSheetDialog ikincibottom;
     private RecyclerView yorumlarRecyclerView;
-    public static LinearLayout yorumicin;
-    public static LinearLayout ynticin;
-    public static LinearLayout carpiicin;
+    public LinearLayout yorumicin;
+    public LinearLayout ynticin;
+    public LinearLayout carpiicin;
     private RelativeLayout yuklemeEkrani;
     private TextView bosyorum;
     private ImageButton iptalButton;
-    public  static EditText kimeyanit;
-    public static EditText textt;
+    public EditText kimeyanit;
+    public EditText textt;
     private  EditText TEXT;
     private ImageButton yorumbutton;
     private ImageButton yanıtbutton;
@@ -177,10 +194,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     ImageButton btnClose;
     private int screenWidth;
     private BottomNavigationView bottom_navigation;
+    private MapViewModel mapViewModel;
+    private int hedefYorumIndeks = -1;
+    private double sonCekilenLat = 0.0;
+    private double sonCekilenLng = 0.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, true);
+        window.setStatusBarColor(ContextCompat.getColor(this, R.color.catmap_background));
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(true);
+        }
+
+
         System.out.println(MainActivity.kullanici.getID());
         // Firestore cache ayarını yap
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
@@ -193,6 +224,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        mapViewModel = new ViewModelProvider(this).get(MapViewModel.class);
+
+        observeViewModel();
+        uiMessageManagerObserver();
+
+        FloatingActionButton fabCurrentLocation = findViewById(R.id.fabCurrentLocation);
+
+        fabCurrentLocation.setOnClickListener(v -> {
+            if (mMap != null && sonCekilenLat != 0.0 && sonCekilenLng != 0.0) {
+                LatLng currentLatLng = new LatLng(sonCekilenLat, sonCekilenLng);
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f));
+
+            } else {
+                Toast.makeText(MapsActivity.this, "Konum aranıyor, lütfen bekleyin...", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         bottom_navigation=findViewById(R.id.bottom_navigation);
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
@@ -424,7 +471,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             boolean menuGozukmeli = Arrays.asList("MAP_FRAGMENT_TAG", "PROFILE", "CHAT", "YUKLE").contains(tag);
             binding.bottomNavigation.setVisibility(menuGozukmeli ? View.VISIBLE : View.GONE);
 
-            binding.arrowContainer.setVisibility("MAP_FRAGMENT_TAG".equals(tag) ? View.VISIBLE : View.GONE);
+            binding.mapOverlayContainer.setVisibility("MAP_FRAGMENT_TAG".equals(tag) ? View.VISIBLE : View.GONE);
 
             if (!(currentFragment instanceof ProfilSayfasiFragment)) {
                 if (profilAlan != null) profilAlan.setVisibility(View.VISIBLE);
@@ -513,6 +560,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 }
             }
+        LocationEngine.INSTANCE.stopTracking();
 
     }
 
@@ -550,33 +598,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(foto, genislik, yukseklik, false);
         return BitmapDescriptorFactory.fromBitmap(resizedBitmap);
     }
-
-    Marker kullanici;
-    LatLng sydney;
     double latitude;
     double longitude;
     private boolean konumAlindi = false;
 
     public void konumbasma() {
         runOnUiThread(() -> {
-            sydney = new LatLng(MainActivity.kullanici.getLatitude(), MainActivity.kullanici.getLongitude());
-            kullanici = mMap.addMarker(new MarkerOptions().position(sydney).title("konum").icon(Duzenleme(70, BitmapFactory.decodeResource(getResources(), R.drawable.kullanimarker))));
-
             Handler handler = new Handler(Looper.getMainLooper());
             Runnable updateRunnable = new Runnable() {
                 @Override
                 public void run() {
                     // Güncel konumu al ve marker'ı güncelle
                     if (latitude != 0 && longitude != 0) {
-                        sydney = new LatLng(latitude, longitude);
-                        kullanici.setPosition(sydney);
                         if(konumAlindi){
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney,8f));
                             new Handler().postDelayed(() -> {
                                 yuklemeEkrani.setVisibility(View.GONE);
                                 bottom_navigation.setVisibility(View.VISIBLE);
                                 btnShowFact.setVisibility(View.VISIBLE);
-                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(sydney, 16f), 2000, null);
                             }, 500);
                             konumAlindi=false;
                             TarananKediler tarama =  new TarananKediler();
@@ -584,8 +622,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             tarama.Basildi(kediler,mMap,()->{
                                 resimlimarker();
                             },MapsActivity.this);
-                            tarama.SagOkBas(mMap);
-                            tarama.SolOkBas(mMap);
                         }
                         // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
                     }
@@ -855,7 +891,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
    private Bitmap fotoduzenle(Bitmap imageBitmap){
        View markerView = LayoutInflater.from(this).inflate(R.layout.marker_tasarim, null);
 
-       CircleImageView markerImage = markerView.findViewById(R.id.marker_image); // Eğer yuvarlak istiyorsan
+       CircleImageView markerImage = markerView.findViewById(R.id.marker_cat_image); // Eğer yuvarlak istiyorsan
        markerImage.setImageBitmap(imageBitmap);
 
        markerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -868,54 +904,48 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
    }
 
    ArrayList<Kediler>kediler=new ArrayList<>();
-    List<Target> targets = new ArrayList<>(); // Target'ları burada saklıyoruz
+    List<Target> targets = new ArrayList<>();
     ArrayList<Marker>markerlar=new ArrayList<>();
     HashMap<String, Object> markerKEY = new HashMap<>();
     public void resimlimarker() {
         runOnUiThread(() -> {
-        for (Kediler kedi : kediler) {
-            if(markerKEY.containsKey(kedi.getURL())){
-               continue;
-            }
-            if(kedi.isMarkerOlustuMu()){
-                continue;
-            }else{
+            for (Kediler kedi : kediler) {
+                if (markerKEY.containsKey(kedi.getURL()) || kedi.isMarkerOlustuMu()) {
+                    continue;
+                }
                 kedi.setMarkerOlustuMu(true);
+                markerKEY.put(kedi.getURL(), null);
+                Glide.with(MapsActivity.this)
+                        .asBitmap()
+                        .load(kedi.getURL())
+                        .override(100, 100)
+                        .centerCrop()
+                        .into(new CustomTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
+                                Bitmap customMarkerBitmap = fotoduzenle(resource);
+
+                                Marker marker = mMap.addMarker(new MarkerOptions()
+                                        .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
+                                        .position(kedy)
+                                        .title(kedi.getIsim()));
+
+                                markerlar.add(marker);
+                            }
+
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+
+                            @Override
+                            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                                Log.e("GLIDE", "Fotoğraf yüklenemedi: " + kedi.getURL());
+                                kedi.setMarkerOlustuMu(false);
+                                markerKEY.remove(kedi.getURL());
+                            }
+                        });
             }
-            Target target = new Target() {
-                @Override
-                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        LatLng kedy = new LatLng(kedi.getLatitude(), kedi.getLongitude());
-                        Bitmap customMarkerBitmap = fotoduzenle(bitmap);
-                        if(!markerKEY.containsKey(kedi.getURL())){
-                            Marker marker = mMap.addMarker(new MarkerOptions()
-                                    .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
-                                    .position(kedy)
-                                    .title(kedi.getIsim()));
-                            markerlar.add(marker);
-                            markerKEY.put(kedi.getURL(), null);
-                        }
-                }
-
-                @Override
-                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                    Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
-                }
-
-                @Override
-                public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                }
-            };
-
-            targets.add(target);
-            Picasso.get()
-                    .load(kedi.getURL())
-                    .resize(100, 100)
-                    .centerCrop()
-                    .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
-                    .into(target);
-           }
         });
     }
 
@@ -951,37 +981,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (!bottomSheetDialog.isShowing()) {
             bottomSheetDialog.show();
         }
-        /*
-       +
-       ymn // Önbellekten kontrol et"gt
-        if (fotoCache.containsKey(Url.toString())) {
-            if (!bottomSheetDialog.isShowing()) {
-                bottomSheetDialog.show();
-            }
-            return;bv
-        }
-        // Yoksa yükle ve önbelleğe kaydet
-        Target t = new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                fotoCache.put(Url.toString(), bitmap); // Önbelleğe ekle
-                if (!bottomSheetDialog.isShowing()) {
-                    bottomSheetDialog.show();
-                }
-            }
-
-            @Override
-            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Log.e("PİCASSO", "Fotoğraf yüklenemedi: " + e.getMessage());
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {}
-        };
-
-        // Çöp toplayıcıya kaptırmamak için Target'ı listeye ekle
-        targetListesi.add(t);
-        Picasso.get().load(Url).into(t);*/
     }
 
     String ID;
@@ -1218,6 +1217,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         yorumlar.clear();
         yorumAdapter = new Yorum_Adapter(yorumlar, this);
+        yorumAksiyonListener();
         yorumlarRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         yorumlarRecyclerView.setAdapter(yorumAdapter);
 
@@ -1332,27 +1332,33 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         yorumAdapter.yorumMuGeldi=true;
     }
 
+    public void yntgonder(View view) {
+        if (hedefYorumIndeks < 0 || hedefYorumIndeks >= yorumlar.size()) return;
 
-    public void yntgonder(View view){
-        if (Yorum_Adapter.yorumindeks < 0 || Yorum_Adapter.yorumindeks >= yorumlar.size()) return;
-        Yorum_Model yorumm=yorumlar.get(Yorum_Adapter.yorumindeks);
-        RecyclerView.ViewHolder holder = yorumlarRecyclerView.findViewHolderForAdapterPosition(Yorum_Adapter.yorumindeks);
-        if (holder != null) {
-            String yanitMetni = textt.getText().toString().trim();
-            Yanit_Model yanit=new Yanit_Model("geciciid",MainActivity.kullanici.getKullaniciAdi(),yanitMetni,null,MainActivity.kullanici.getID());
-           yorumm.getYanitlar().add(0,yanit);
+        Yorum_Model yorumm = yorumlar.get(hedefYorumIndeks);
+        String yanitMetni = textt.getText().toString().trim();
+
+        if (!yanitMetni.isEmpty()) {
+            Yanit_Model yanit = new Yanit_Model("geciciid", MainActivity.kullanici.getKullaniciAdi(), yanitMetni, null, MainActivity.kullanici.getID());
+            yorumm.getYanitlar().add(0, yanit);
             yorumm.setYanitYokMu(false);
-            yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks); // görünüm güncelle
-            if (!yanitMetni.isEmpty()) {
-                yorumID=yorumm.getYorumID();
-                DBekleYanit(ID, yorumID, yanitMetni,yanit,MainActivity.kullanici.getID());
-                textt.setText(""); // Yalnızca görünür olan EditText temizlenir
-                yanit.yanitMiGeldi=true;
-                Yorum_Adapter.yorumindeks = -1;
-            }
-        }
 
+            yorumAdapter.notifyItemChanged(hedefYorumIndeks);
+
+            DBekleYanit(ID, yorumm.getYorumID(), yanitMetni, yanit, MainActivity.kullanici.getID());
+
+            textt.setText("");
+            hedefYorumIndeks = -1;
+
+            carpiicin.setVisibility(View.GONE);
+            ynticin.setVisibility(View.GONE);
+            yorumicin.setVisibility(View.VISIBLE);
+
+            new Klavye(this).klavyeKapat(textt);
+        }
     }
+
+
     public void DBekle(String kediId,String yorumIcerik,String YukleyenId) {
         Map<String, Object> yorumData = new HashMap<>();
         yorumData.put("icerik", yorumIcerik);
@@ -1390,51 +1396,28 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .addOnFailureListener(e -> Log.e("Firestore", "Yanıt eklenemedi", e));
     }
 
-
-/*    private void SohbetMesajAyarlari(){
-        Context con = this;
-        MesajlasmaYonetici.getInstance().setSohbetButon(new SohbetButonListener() {
-            @Override
-            public void MesajlasmaFragmentStart() {
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container,new MesajFragment(con))
-                        .addToBackStack(null)
-                        .commit();
-            }
-        });
-    }*/
-
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         btnShowFact.setVisibility(View.VISIBLE);
         markerKEY.clear();
         markerlar.clear();
         mMap = googleMap;
+        LocationEngine.INSTANCE.startTracking(this, mMap);
         mMap.setOnMapLoadedCallback(() -> {
-            Thread t = new Thread(() -> {
-                konumalma();
-            });
-            t.start();
-            Thread t2=new Thread(()-> {
-                konumbasma();
-            });
-            t2.start();
-            new Thread(()->{
-                try {
-                    Thread.sleep(6000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                vericekme();
-                if (gosterilecekKediID != null) {
-                    HaritadaGor(gosterilecekKediID);
-                    gosterilecekKediID = null;
-                }
-            }).start();
-
+            if (gosterilecekKediID != null) {
+                HaritadaGor(gosterilecekKediID);
+                gosterilecekKediID = null;
+            }
         });
+        TarananKediler tarama = new TarananKediler();
+        tarama.ButonGosterim(mMap, findViewById(android.R.id.content));
+        mMap.setOnCameraIdleListener(() -> {
+            tarama.ButonGosterim(mMap, findViewById(android.R.id.content));
+        });
+        tarama.Basildi(kediler, mMap, () -> {
+            resimlimarker();
+        }, MapsActivity.this);
+
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
@@ -1446,7 +1429,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-      }
+    }
 
     @Override
     public void hideBottomSheet() {
@@ -1555,6 +1538,149 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public void setSelectedItemSpeacial(int position){
         binding.bottomNavigation.setSelectedItemId(position);
+    }
+
+
+    private void observeViewModel() {
+        mapViewModel.isLoading().observe(this, isLoading -> {
+            if (isLoading) {
+                yuklemeEkrani.setVisibility(View.VISIBLE);
+            } else {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    yuklemeEkrani.setVisibility(View.GONE);
+                    bottom_navigation.setVisibility(View.VISIBLE);
+                    if (btnShowFact != null) btnShowFact.setVisibility(View.VISIBLE);
+                }, 500);
+            }
+        });
+
+        mapViewModel.getErrorMessage().observe(this, errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+                Log.e("MVVM_HATA", errorMessage);
+            }
+        });
+
+        mapViewModel.getCatsList().observe(this, catModels -> {
+            if (catModels != null && !catModels.isEmpty()) {
+                kediler.clear();
+                for (CatModel model : catModels) {
+                    Kediler kedi = new Kediler(
+                            model.getId(),
+                            model.getKediAdi(),
+                            model.getKediHakkinda(),
+                            model.getLatitude(),
+                            model.getLongitude(),
+                            model.getMainPhotoUrl(),
+                            new ArrayList<>(model.getPhotoUri()),
+                            model.getYukleyenKullaniciID()
+                    );
+                    kediler.add(kedi);
+                }
+
+                resimlimarker();
+            }
+        });
+
+        LocationEngine.INSTANCE.getFetchDataEvent().observe(this, event -> {
+            if(event != null && mapViewModel != null){
+                mapViewModel.fetchCatsNearLocation(event.latitude, event.longitude);
+                sonCekilenLat = event.latitude;
+                sonCekilenLng = event.longitude;
+            }
+        });
+    }
+
+
+    private void yorumAksiyonListener(){
+        yorumAdapter.setAksiyonListener((kullaniciAdi, yukleyenId, position, ayniButonaMiBasildi) -> {
+            if (carpiicin == null || ynticin == null || yorumicin == null || textt == null || kimeyanit == null) return;
+
+            if (ayniButonaMiBasildi) {
+                hedefYorumIndeks = -1;
+
+                yorumicin.setVisibility(View.VISIBLE);
+                carpiicin.setVisibility(View.GONE);
+                ynticin.setVisibility(View.GONE);
+
+                // Klavyeyi kapat
+                Klavye klavye = new Klavye(MapsActivity.this);
+                klavye.klavyeKapat(textt);
+
+            } else {
+                hedefYorumIndeks = position;
+
+                String metin = "@" + kullaniciAdi + " ";
+                SpannableString spannableString = new SpannableString(metin);
+
+                // Mavi Renk
+                spannableString.setSpan(new ForegroundColorSpan(Color.BLUE), 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                // Tıklanabilirlik (Kullanıcı profiline gitme)
+                ClickableSpan clickableSpan = new ClickableSpan() {
+                    @Override
+                    public void onClick(@NonNull View view) {
+                        // Activity içinde olduğumuz için fragment geçişini direkt yapabiliriz
+                        if (bottomSheetDialog != null) bottomSheetDialog.hide();
+                        if (ikincibottom != null) ikincibottom.hide();
+
+                        ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(yukleyenId);
+                        getSupportFragmentManager().beginTransaction()
+                                .replace(R.id.fragment_container, fragment)
+                                .addToBackStack(null)
+                                .commit();
+                    }
+
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setColor(Color.BLUE);
+                        ds.setUnderlineText(false);
+                    }
+                };
+                spannableString.setSpan(clickableSpan, 0, metin.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                textt.setText(spannableString);
+                textt.setMovementMethod(LinkMovementMethod.getInstance());
+                textt.setSelection(textt.getText().length());
+                kimeyanit.setHint(kullaniciAdi + " 'e yanıt veriyorsun");
+
+                yorumicin.setVisibility(View.GONE);
+                carpiicin.setVisibility(View.VISIBLE);
+                ynticin.setVisibility(View.VISIBLE);
+
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    Klavye klavye = new Klavye(MapsActivity.this);
+                    klavye.klavyeAc(textt);
+                }, 250);
+            }
+        });
+    }
+
+    private void uiMessageManagerObserver(){
+        UiMessageManager.INSTANCE.getMessageEvent().observe(this, message -> {
+            if (message != null) {
+                if (message instanceof UiMessageState.Success) {
+                    String msg = ((UiMessageState.Success) message).getMessage();
+                    int duration = ((UiMessageState.Success) message).getDurationMs();
+                    // TODO: Yarın bir gün buraya senin "mesaji.BasariliDurum(msg, duration)" yapın entegre edilecek!
+                    android.widget.Toast.makeText(this, "[BAŞARI] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+
+                } else if (message instanceof com.beem.catmap.ui.manager.UiMessageState.Error) {
+                    String msg = ((com.beem.catmap.ui.manager.UiMessageState.Error) message).getMessage();
+                    // TODO: Buraya özel kırmızı premium hata barı gelecek!
+                    android.widget.Toast.makeText(this, "[HATA] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+
+                } else if (message instanceof com.beem.catmap.ui.manager.UiMessageState.Info) {
+                    String msg = ((com.beem.catmap.ui.manager.UiMessageState.Info) message).getMessage();
+                    // TODO: Buraya "Yükleniyor..." dönen şık loading barı gelecek!
+                    android.widget.Toast.makeText(this, "[BİLGİ] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+                }
+
+                // 🎯 İşlem bittiğinde mesajı sıfırlıyoruz ki cihaz dönünce tekrar tetiklenmesin
+                com.beem.catmap.ui.manager.UiMessageManager.INSTANCE.clear();
+            }
+        });
     }
 
 

@@ -1,0 +1,321 @@
+package com.beem.catmap.ui.camera
+
+import android.Manifest
+import android.content.ContentValues
+import android.content.pm.PackageManager
+import android.media.MediaActionSound
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.beem.catmap.R
+import com.beem.catmap.databinding.FragmentCameraBinding
+import com.beem.catmap.ui.manager.ImageUploadManager
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
+import com.bumptech.glide.Glide
+import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+class CameraFragment : Fragment() {
+
+    private var _binding: FragmentCameraBinding? = null
+    private val binding get() = _binding!!
+
+    private var imageCapture: ImageCapture? = null
+    private lateinit var cameraExecutor: ExecutorService
+    private var lensSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+    private lateinit var filmStripAdapter: FilmStripAdapter
+    private val viewModel: CameraViewModel by viewModels()
+
+    private val soundEffects = MediaActionSound()
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.all { it }) startCamera()
+        else {
+            UiMessageManager.emitMessage(UiMessageState.Error("Kamera izinleri eksik dayıcım!"))
+            parentFragmentManager.popBackStack()
+        }
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentCameraBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        soundEffects.load(MediaActionSound.SHUTTER_CLICK)
+
+        checkPermissionsAndStart()
+        setupUi()
+        observeViewModel()
+    }
+
+    private fun checkPermissionsAndStart() {
+        val permissions = mutableListOf(Manifest.permission.CAMERA).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.READ_MEDIA_IMAGES)
+            else add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        val missing = permissions.filter { ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isEmpty()) startCamera() else requestPermissionsLauncher.launch(missing.toTypedArray())
+    }
+
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        cameraProviderFuture.addListener({
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
+                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+            }
+            imageCapture = ImageCapture.Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(viewLifecycleOwner, lensSelector, preview, imageCapture)
+            } catch (exc: Exception) {
+                Log.e("CameraFragment", "Kamera başlatılamadı", exc)
+            }
+        }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    private fun setupUi() {
+        filmStripAdapter = FilmStripAdapter(
+            onImageClick = { uri -> viewModel.selectImageForPreview(uri) },
+            onImageDelete = { uri -> viewModel.removeImageFromStrip(uri) }
+        )
+
+        binding.recyclerViewFilmStrip.apply {
+            adapter = filmStripAdapter
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator().apply {
+                addDuration = 250
+                removeDuration = 250
+            }
+        }
+
+        binding.btnMenuApprove.setOnClickListener {
+            val currentState = viewModel.uiState.value
+            val activeUri = currentState.activePreviewUri
+
+            if (activeUri != null) {
+                if (currentState.activeImageSource == ImageSource.TEMP_CACHE) {
+                    viewModel.saveTempImageToGallery(requireContext(), activeUri, shouldKeepInStrip = true)
+                } else {
+                    viewModel.exitPreviewMode()
+                }
+            }
+        }
+
+        binding.btnMenuRemoveFromStrip.setOnClickListener {
+            showPreviewActionDialog()
+        }
+
+        binding.btnMenuDeleteFromDevice.setOnClickListener {
+            viewModel.uiState.value.activePreviewUri?.let { uri ->
+                viewModel.deleteImageFromDevice(requireContext().contentResolver, uri)
+            }
+        }
+
+        // Deklanşör
+        binding.btnCaptureLayout.setOnClickListener {
+            binding.btnCaptureLayout.animate().scaleX(0.86f).scaleY(0.86f).setDuration(70).withEndAction {
+                binding.btnCaptureLayout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
+                capturePhoto()
+            }.start()
+        }
+
+        // Kamera Çevir
+        binding.btnFlipCamera.setOnClickListener { flipBtn ->
+            flipBtn.animate().rotationBy(180f).setDuration(300).start()
+            lensSelector = if (lensSelector == CameraSelector.DEFAULT_BACK_CAMERA) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+            startCamera()
+        }
+
+        binding.btnGallery.setOnClickListener { GalleryBottomSheet().show(parentFragmentManager, "GalleryBottomSheet") }
+        binding.btnClose.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.btnConfirmAll.setOnClickListener { parentFragmentManager.popBackStack() }
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launchWhenStarted {
+            viewModel.uiState.collect { state ->
+                renderUiState(state)
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.uiEvent.collect { event ->
+                when (event) {
+                    is CameraUiEvent.ShowToast -> {
+                        if (event.isSuccess) UiMessageManager.emitMessage(UiMessageState.Success(event.message))
+                        else UiMessageManager.emitMessage(UiMessageState.Error(event.message))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun renderUiState(state: CameraUiState) {
+        filmStripAdapter.updateList(state.capturedImages)
+
+        binding.btnConfirmAll.visibility = if (state.capturedImages.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.btnCaptureLayout.isEnabled = state.capturedImages.size < 5
+
+        if (state.capturedImages.isNotEmpty()) {
+            binding.recyclerViewFilmStrip.smoothScrollToPosition(state.capturedImages.size - 1)
+        }
+
+        when (state.currentMode) {
+            CameraMode.LIVE_PREVIEW -> {
+                binding.ivInFragmentPreview.visibility = View.GONE
+                binding.layoutPreviewMenu.visibility = View.GONE
+
+                val accentColor = ContextCompat.getColor(requireContext(), R.color.catmap_accent)
+                binding.btnCapture.background.mutate().setColorFilter(accentColor, android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+            CameraMode.IMAGE_PREVIEW -> {
+                if (state.activePreviewUri != null) {
+                    binding.ivInFragmentPreview.visibility = View.VISIBLE
+                    Glide.with(this).load(state.activePreviewUri).into(binding.ivInFragmentPreview)
+                    binding.ivInFragmentPreview.alpha = 1f
+
+                    binding.layoutPreviewMenu.visibility = View.VISIBLE
+                    binding.layoutPreviewMenu.alpha = 1f
+
+                    val successColor = ContextCompat.getColor(requireContext(), R.color.catmap_success)
+                    binding.btnCapture.background.mutate().setColorFilter(successColor, android.graphics.PorterDuff.Mode.SRC_IN)
+                }
+            }
+        }
+    }
+
+    private fun capturePhoto() {
+        val imageCapture = imageCapture ?: return
+        soundEffects.play(MediaActionSound.SHUTTER_CLICK)
+
+        binding.viewFinder.alpha = 0.7f
+        binding.viewFinder.animate().alpha(1.0f).setDuration(150).start()
+
+        val cacheFile =
+            File(requireContext().cacheDir, "CatMap_Temp_${System.currentTimeMillis()}.jpg")
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(cacheFile).build()
+
+        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(requireContext()),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    val savedUri = Uri.fromFile(cacheFile)
+                    viewModel.onPhotoCaptured(savedUri)
+                }
+                override fun onError(exception: ImageCaptureException) {
+                    UiMessageManager.emitMessage(UiMessageState.Error("Fotoğraf çekilemedi."))
+                }
+            }
+        )
+    }
+
+    /*
+    private fun capturePhoto() {
+        val imageCapture = imageCapture ?: return
+
+        soundEffects.play(MediaActionSound.SHUTTER_CLICK)
+
+        binding.viewFinder.alpha = 0.7f
+        binding.viewFinder.animate().alpha(1.0f).setDuration(150).start()
+
+        val name = "CatMap_${System.currentTimeMillis()}"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CatMap")
+        }
+
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(requireContext().contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues).build()
+
+        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(requireContext()),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    outputFileResults.savedUri?.let { savedUri ->
+                        viewModel.onPhotoCaptured(savedUri)
+                        UiMessageManager.emitMessage(UiMessageState.Success("Fotoğraf başarıyla eklendi!"))
+                    }
+                }
+                override fun onError(exception: ImageCaptureException) {
+                    UiMessageManager.emitMessage(UiMessageState.Error("Fotoğraf çekilemedi: ${exception.message}"))
+                }
+            }
+        )
+    }
+
+     */
+
+
+    private fun showPreviewActionDialog() {
+        val dialogBinding = com.beem.catmap.databinding.DialogPreviewActionSheetBinding.inflate(layoutInflater)
+        val actionDialog = android.app.AlertDialog.Builder(requireContext(), com.beem.catmap.R.style.CatMapDialogTheme)
+            .setView(dialogBinding.root)
+            .create()
+
+        val currentState = viewModel.uiState.value
+        val activeUri = currentState.activePreviewUri ?: return
+
+        when(currentState.activeImageSource){
+            ImageSource.TEMP_CACHE -> {
+                dialogBinding.btnDialogSave.text = "Sadece Galeriye Kaydet"
+                dialogBinding.btnDialogSave.visibility = View.VISIBLE
+            }
+            ImageSource.GALERI -> {
+                dialogBinding.btnDialogSave.visibility = View.GONE
+            }
+        }
+
+        dialogBinding.btnDialogDelete.setOnClickListener {
+            viewModel.deleteImage(requireContext().contentResolver, activeUri)
+            actionDialog.dismiss()
+        }
+
+        // SADECE GALERİYE KAYDET: Sadece cache durumunda görünür ve tetiklenir
+        dialogBinding.btnDialogSave.setOnClickListener {
+            viewModel.saveTempImageToGallery(requireContext(), activeUri, shouldKeepInStrip = false)
+            actionDialog.dismiss()
+        }
+
+        // ÖNİZLEMEYE DEVAM ET
+        dialogBinding.btnDialogContinue.setOnClickListener {
+            actionDialog.dismiss()
+        }
+
+        actionDialog.show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        cameraExecutor.shutdown()
+        soundEffects.release()
+        _binding = null
+    }
+}
