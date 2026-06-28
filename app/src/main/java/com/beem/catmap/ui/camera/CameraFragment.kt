@@ -3,6 +3,8 @@ package com.beem.catmap.ui.camera
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Build
@@ -33,6 +35,7 @@ import com.bumptech.glide.Glide
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import androidx.core.graphics.toColorInt
 
 class CameraFragment : Fragment() {
 
@@ -105,7 +108,14 @@ class CameraFragment : Fragment() {
 
     private fun setupUi() {
         filmStripAdapter = FilmStripAdapter(
-            onImageClick = { uri -> viewModel.selectImageForPreview(uri) },
+            onImageClick = { uri ->
+                val imageSource = if (uri.path?.contains(requireContext().cacheDir.path) == true) {
+                    ImageSource.TEMP_CACHE
+                } else {
+                    ImageSource.GALERI
+                }
+                viewModel.selectImageForPreview(uri, imageSource)
+            },
             onImageDelete = { uri -> viewModel.removeImageFromStrip(uri) }
         )
 
@@ -135,11 +145,6 @@ class CameraFragment : Fragment() {
             showPreviewActionDialog()
         }
 
-        binding.btnMenuDeleteFromDevice.setOnClickListener {
-            viewModel.uiState.value.activePreviewUri?.let { uri ->
-                viewModel.deleteImageFromDevice(requireContext().contentResolver, uri)
-            }
-        }
 
         // Deklanşör
         binding.btnCaptureLayout.setOnClickListener {
@@ -183,10 +188,20 @@ class CameraFragment : Fragment() {
     private fun renderUiState(state: CameraUiState) {
         filmStripAdapter.updateList(state.capturedImages)
 
-        binding.btnConfirmAll.visibility = if (state.capturedImages.isNotEmpty()) View.VISIBLE else View.GONE
         binding.btnCaptureLayout.isEnabled = state.capturedImages.size < 5
 
-        if (state.capturedImages.isNotEmpty()) {
+        val hasImages =  state.capturedImages.isNotEmpty()
+
+        binding.btnConfirmAll.apply {
+            isClickable = hasImages
+            isFocusable = hasImages
+            imageTintList = ColorStateList.valueOf(
+                if (hasImages) ContextCompat.getColor(requireContext(), R.color.catmap_accent)
+                else ContextCompat.getColor(requireContext(), R.color.catmap_text_muted)
+            )
+        }
+
+        if (hasImages) {
             binding.recyclerViewFilmStrip.smoothScrollToPosition(state.capturedImages.size - 1)
         }
 
@@ -237,41 +252,6 @@ class CameraFragment : Fragment() {
             }
         )
     }
-
-    /*
-    private fun capturePhoto() {
-        val imageCapture = imageCapture ?: return
-
-        soundEffects.play(MediaActionSound.SHUTTER_CLICK)
-
-        binding.viewFinder.alpha = 0.7f
-        binding.viewFinder.animate().alpha(1.0f).setDuration(150).start()
-
-        val name = "CatMap_${System.currentTimeMillis()}"
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CatMap")
-        }
-
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(requireContext().contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues).build()
-
-        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(requireContext()),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    outputFileResults.savedUri?.let { savedUri ->
-                        viewModel.onPhotoCaptured(savedUri)
-                        UiMessageManager.emitMessage(UiMessageState.Success("Fotoğraf başarıyla eklendi!"))
-                    }
-                }
-                override fun onError(exception: ImageCaptureException) {
-                    UiMessageManager.emitMessage(UiMessageState.Error("Fotoğraf çekilemedi: ${exception.message}"))
-                }
-            }
-        )
-    }
-
-     */
 
 
     private fun showPreviewActionDialog() {

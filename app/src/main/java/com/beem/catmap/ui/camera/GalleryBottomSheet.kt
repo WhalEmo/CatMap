@@ -21,7 +21,10 @@ import com.beem.catmap.ui.manager.UiMessageState
 import androidx.core.view.isVisible
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GalleryBottomSheet : BottomSheetDialogFragment() {
 
@@ -38,11 +41,16 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        loadImagesFromDevice()
-
         binding.recyclerViewGallery.layoutManager = GridLayoutManager(requireContext(), 3)
         adapter = GalleryAdapter(allImagesFromDevice)
         binding.recyclerViewGallery.adapter = adapter
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val deviceImages = loadImagesFromDevice()
+            withContext(Dispatchers.Main) {
+                adapter.updateMainImages(deviceImages)
+            }
+        }
 
         lifecycleScope.launchWhenStarted {
             ImageUploadManager.selectedImages.collectLatest { centralUris ->
@@ -57,8 +65,9 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun loadImagesFromDevice() {
-        allImagesFromDevice.clear()
+
+    private fun loadImagesFromDevice(): List<String> {
+        val tempImageList = mutableListOf<String>()
         val projection = arrayOf(MediaStore.Images.Media._ID)
         val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
 
@@ -67,12 +76,13 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
             projection, null, null, sortOrder
         )?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-            while (cursor.moveToNext() && allImagesFromDevice.size < 60) {
+            while (cursor.moveToNext() && tempImageList.size < 60) {
                 val id = cursor.getLong(idColumn)
                 val contentUri = android.content.ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-                allImagesFromDevice.add(contentUri.toString())
+                tempImageList.add(contentUri.toString())
             }
         }
+        return tempImageList
     }
 
     private fun updateConfirmButton(count: Int) {
@@ -106,10 +116,15 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    inner class GalleryAdapter(private val images: List<String>) :
+    inner class GalleryAdapter(private var images: List<String>) :
         RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder>() {
 
         private var selectedUris = listOf<String>()
+
+        fun updateMainImages(newImages: List<String>) {
+            this.images = newImages
+            notifyDataSetChanged()
+        }
 
         fun updateSelectedList(newList: List<String>) {
             this.selectedUris = newList
