@@ -86,6 +86,8 @@ import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
+import com.beem.catmap.ui.navigation.FragmentProvider;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -211,6 +213,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             controller.setAppearanceLightStatusBars(true);
         }
 
+        SmartNavigationEngine.INSTANCE.init(
+                getSupportFragmentManager(),
+                R.id.fragment_container
+        );
 
         System.out.println(MainActivity.kullanici.getID());
         // Firestore cache ayarını yap
@@ -1476,61 +1482,57 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             FragmentManager fm = getSupportFragmentManager();
+
+            // Eski temizlik kuralın aynen kalıyor dayıcım
             fm.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-            FragmentTransaction transaction = fm.beginTransaction();
-            String TAG = "";
+
+            // Hedef tag'i belirliyoruz ve buton görünürlüklerini burada yönetiyoruz
+            final String finalTag;
             if (id == R.id.haritagit) {
                 if (btnShowFact != null) btnShowFact.setVisibility(View.VISIBLE);
-                TAG = "MAP_FRAGMENT_TAG";
+                finalTag = "MAP_FRAGMENT_TAG";
             } else if (id == R.id.profilim) {
                 if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                TAG = "PROFILE";
+                finalTag = "PROFILE";
             } else if (id == R.id.sohbet) {
                 if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                TAG = "CHAT";
+                finalTag = "CHAT";
             } else if (id == R.id.yuklekedi) {
                 if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                TAG = "YUKLE";
-            }
-
-            for (Fragment f : fm.getFragments()) {
-                if (f != null) {
-                    if (f.getTag() == null) {
-                        transaction.remove(f);
-                    } else if (!f.getTag().equals(TAG)) {
-                        transaction.hide(f);
-                    }
-                }
-            }
-
-            Fragment targetFragment = fm.findFragmentByTag(TAG);
-
-            if (targetFragment == null) {
-                if (id == R.id.haritagit) {
-                    targetFragment = new SupportMapFragment();
-                    ((SupportMapFragment) targetFragment).getMapAsync(this);
-                } else if (id == R.id.profilim) {
-                    targetFragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-                } else if (id == R.id.sohbet) {
-                    targetFragment = new SohbetFragment(() -> {
-                        getSupportFragmentManager()
-                                .beginTransaction()
-                                .replace(R.id.fragment_container, new MesajFragment(this))
-                                .addToBackStack(null)
-                                .commit();
-                    });
-                } else if (id == R.id.yuklekedi) {
-                    targetFragment = new YuklemeArayuzuFragment();
-                }
-                if (targetFragment != null) {
-                    transaction.add(R.id.fragment_container, targetFragment, TAG);
-                }
+                finalTag = "YUKLE";
             } else {
-                transaction.show(targetFragment);
+                return false;
             }
-            transaction.commit();
 
-            merkeziBackStackChangedListener(targetFragment);
+            SmartNavigationEngine.navigateTo(finalTag, new FragmentProvider() {
+                @Override
+                public Fragment createFragment(@NonNull String tag) {
+                    // Fragment ilk kez oluşturulurken senin o özel Java üretim kuralların çalışır dayıcım:
+                    if (tag.equals("MAP_FRAGMENT_TAG")) {
+                        SupportMapFragment mapFragment = new SupportMapFragment();
+                        mapFragment.getMapAsync(MapsActivity.this);
+                        return mapFragment;
+                    } else if (tag.equals("PROFILE")) {
+                        return ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
+                    } else if (tag.equals("CHAT")) {
+                        return new SohbetFragment(() -> {
+                            getSupportFragmentManager()
+                                    .beginTransaction()
+                                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                                    .replace(R.id.fragment_container, new MesajFragment(MapsActivity.this))
+                                    .addToBackStack(null)
+                                    .commit();
+                        });
+                    } else if (tag.equals("YUKLE")) {
+                        return new YuklemeArayuzuFragment();
+                    }
+                    return null;
+                }
+            }, targetFragment -> {
+                merkeziBackStackChangedListener(targetFragment);
+                return null;
+            });
+
             return true;
         });
     }

@@ -2,6 +2,7 @@ package com.beem.catmap.ui.upload
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.MainActivity
+import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
@@ -29,6 +31,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -102,65 +105,62 @@ class YuklemeArayuzuFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
 
-                // 1. Fotoğraf listesi takibi ve Placeholder yönetimi
-                if (state.selectedImages.isNotEmpty()) {
-                    binding.layoutPlaceholder.fadeOut(200)
-                    binding.recyclerViewSelectedPhotos.fadeIn(250)
-                    photoAdapter.updateList(state.selectedImages)
-                } else {
-                    binding.recyclerViewSelectedPhotos.fadeOut(200)
-                    binding.layoutPlaceholder.fadeIn(250)
-                }
+                handlePhotoListVisibility(state.selectedImages)
 
-                if (state.isLoading) {
+                if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
                     if (premiumDialog == null) {
-                        premiumDialog = PremiumUploadDialog(requireContext())
+                        premiumDialog = PremiumUploadDialog(
+                            context = requireContext(),
+                            onAnimationEnd = {
+                                viewModel.onProgressDialogDismissed()
+                            }
+                        )
                         premiumDialog?.show()
                     }
-                    premiumDialog?.updateProgress(state.uploadProgress)
-                } else{
+                    premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
+                } else {
                     premiumDialog = null
                 }
 
-                // 3. Hata Durumu Yönetimi
-                state.errorMessage?.let { errorMsg ->
-                    messageManager.BasarisizDurum(errorMsg, 1500)
-                }
+                if (state.isAllDone && state.createdDocumentId != null) {
+                    viewModel.resetState()
 
-                // 4. Başarı Durumu Yönetimi ve O Meşhur Onay Dialogu
-                if (state.isSuccess && state.createdDocumentId != null) {
-                    messageManager.BasariliDurum("Kedi haritaya başarıyla işlendi!", 1000)
-                    showAdIfAvailable()
+                    //showAdIfAvailable()
                     showPostSaveDialog(state.createdDocumentId)
-                    viewModel.resetState() // Formu ve durumu güvenle sıfırla
                     clearFormFields()
                 }
             }
         }
     }
 
+
+    private fun handlePhotoListVisibility(images: List<Uri>) {
+        if (images.isNotEmpty()) {
+            binding.layoutPlaceholder.fadeOut(200)
+            binding.recyclerViewSelectedPhotos.fadeIn(250)
+            photoAdapter.updateList(images)
+        } else {
+            binding.recyclerViewSelectedPhotos.fadeOut(200)
+            binding.layoutPlaceholder.fadeIn(250)
+        }
+    }
+
+
+
+
     private fun checkLocationPermissionAndUpload() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if(!LocationEngine.hasLocationPermission(requireContext())){
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 102)
             return
         }
-
-        messageManager.YuklemeDurum("Konum bilgisi alınıyor...")
-        locationClient.lastLocation.addOnSuccessListener(requireActivity()) { location ->
-            if (location != null) {
-                // Konum başarıyla alındığı an her şeyi ViewModel'e fırlatıyoruz dayıcım
-                viewModel.uploadCat(
-                    catName = binding.isimText.text.toString(),
-                    catAbout = binding.hakkindaText.text.toString(),
-                    latitude = location.latitude,
-                    longitude = location.longitude,
-                    userId = MainActivity.kullanici?.id ?: "" // Güvenli null kontrolü
-                )
-            } else {
-                messageManager.BasarisizDurum("Cihazın konum bilgisi okunamadı!", 1500)
-            }
-        }.addOnFailureListener {
-            messageManager.BasarisizDurum("Konum servisi hatası!", 1500)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val location = LocationEngine.getLastKnownLocation(requireContext())
+            viewModel.uploadCat(
+                catName = binding.isimText.text.toString(),
+                catAbout = binding.hakkindaText.text.toString(),
+                location = location,
+                userId = MainActivity.kullanici?.id ?: ""
+            )
         }
     }
 

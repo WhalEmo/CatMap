@@ -7,7 +7,10 @@ import androidx.appcompat.app.AlertDialog
 import com.beem.catmap.databinding.DialogPremiumUploadBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-class PremiumUploadDialog(context: Context) {
+class PremiumUploadDialog(
+    context: Context,
+    private val onAnimationEnd: () -> Unit
+) {
 
     private var dialog: AlertDialog? = null
     private val binding: DialogPremiumUploadBinding =
@@ -31,34 +34,74 @@ class PremiumUploadDialog(context: Context) {
             dialog?.show()
         }
     }
-
-    fun updateProgress(progress: Int) {
-        binding.dialogProgressBar.setProgress(progress, true)
-        binding.tvDialogStatus.text = "Bihter buluta uçuruluyor... %$progress"
-
-        // 🎯 KRİTİK UX DOKUNUŞU: Yükleme tamamlandığında yapılacak o asil kapanış resitali
-        if (progress >= 100) {
-            performSuccessAndDismissAnimation()
+    fun dismiss(){
+        if (dialog?.isShowing == true) {
+            dialog?.dismiss()
         }
     }
 
+
+    fun renderState(stage: UploadStage, progress: Int, errorMsg: String? = null) {
+        when (stage) {
+            UploadStage.FETCHING_LOCATION -> {
+                binding.dialogIconProgress.visibility = View.VISIBLE
+                binding.ivDialogSuccessCheck.visibility = View.GONE
+                binding.dialogProgressBar.visibility = View.GONE
+                binding.tvDialogStatus.text = "GPS uydularından konumunuz senkronize ediliyor... 📡"
+            }
+            UploadStage.UPLOADING_ASSETS -> {
+                binding.dialogProgressBar.visibility = View.VISIBLE
+                binding.dialogProgressBar.setProgress(progress, true)
+                binding.tvDialogStatus.text = "Fotoğraflar buluta uçuruluyor... %$progress 🐾"
+            }
+            UploadStage.SUCCESS -> {
+                performSuccessAndDismissAnimation()
+            }
+            UploadStage.ERROR -> {
+                performErrorAnimation(errorMsg ?: "Bir hata oluştu!")
+            }
+        }
+    }
+
+
     private fun performSuccessAndDismissAnimation() {
-        // 1. Dönen progress ikonunu gizle, başarı ikonunu patlat
         binding.dialogIconProgress.visibility = View.GONE
         binding.ivDialogSuccessCheck.visibility = View.VISIBLE
         binding.tvDialogStatus.text = "Haritaya başarıyla işlendi! 🐾"
         binding.dialogProgressBar.visibility = View.INVISIBLE
 
-        // 2. 800ms boyunca kullanıcının beynine 'Başarılı' sinyalini pürüzsüzce kazı (Perceived Success)
         binding.root.postDelayed({
-            // 3. Şak diye kapatma! Yumuşak bir Fade-Out animasyonuyla eriterek yok et
             dialog?.window?.decorView?.animate()
                 ?.alpha(0f)
                 ?.setDuration(300)
                 ?.withEndAction {
-                    dialog?.dismiss()
+                    this.dismiss()
+                    onAnimationEnd.invoke()
                 }
                 ?.start()
-        }, 800) // Tam 800ms auditor reçetesi
+        }, 800)
+    }
+
+    private fun performErrorAnimation(message: String) {
+        binding.dialogIconProgress.visibility = View.GONE
+        binding.ivDialogSuccessCheck.visibility = View.VISIBLE
+        binding.ivDialogSuccessCheck.setImageResource(android.R.drawable.ic_delete)
+        binding.tvDialogStatus.text = message
+        binding.dialogProgressBar.visibility = View.GONE
+
+        binding.root.postDelayed({
+            dismissWithAnimation()
+        }, 1800)
+    }
+
+    private fun dismissWithAnimation() {
+        dialog?.window?.decorView?.animate()
+            ?.alpha(0f)
+            ?.setDuration(300)
+            ?.withEndAction {
+                dialog?.dismiss()
+                onAnimationEnd.invoke()
+            }
+            ?.start()
     }
 }

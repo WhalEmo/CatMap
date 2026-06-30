@@ -79,39 +79,94 @@ class CatRepository {
         }
     }
 
-    fun uploadCatImages(imageUris: List<Uri>): Flow<UploadProgressState> = callbackFlow {
+
+    fun uploadCatPostWithProgress(
+        catName: String,
+        catAbout: String,
+        latitude: Double,
+        longitude: Double,
+        userId: String,
+        imageUris: List<Uri>
+    ): Flow<UploadProgressState> = callbackFlow {
+
         if (imageUris.isEmpty()) {
-            trySend(UploadProgressState.Success(emptyList()))
+            trySend(UploadProgressState.Error(Exception("En az bir kedi fotoğrafı yüklemelisiniz!")))
             close()
             return@callbackFlow
         }
 
         val uploadedUrls = mutableListOf<String>()
         val totalImages = imageUris.size
+        val hash = GeoFireUtils.getGeoHashForLocation(GeoLocation(latitude, longitude))
 
-        var totalBytesTransferred = 0L
-        var totalBytesExpected = 0L
+        // Firebase Storage'a resimleri sırayla yükleyen ve takibini yapan asenkron döngü
+        // Bu mantıkla her resim bittiğinde ana yüzdeyi güvenle yukarı tetikleriz
+        fun uploadImageAt(index: Int) {
+            if (index >= totalImages) {
+                // 🚀 TÜM RESİMLER BİTTİ: Şimdi Firestore'a kayıt zamanı
+                val catData = hashMapOf(
+                    "kediAdi" to catName,
+                    "kediHakkinda" to catAbout,
+                    "latitude" to latitude,
+                    "longitude" to longitude,
+                    "geohash" to hash,
+                    "photoUri" to uploadedUrls,
+                    "YukleyenKullaniciID" to userId,
+                    "createdAt" to System.currentTimeMillis()
+                )
 
-        imageUris.forEachIndexed { index, uri ->
-            val ref = storage.reference.child("cats/${UUID.randomUUID()}.jpg")
-            val uploadTask = ref.putFile(uri)
-
-            uploadTask.addOnProgressListener { snapshot ->
-                // Sadece bu resmin değil, genel yüklemenin yüzdesini hesaplıyoruz dayıcım
-                val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
-
-                // Toplam resmi hesaba katarak ortalama bir yüzde buluyoruz (Örn: 3 resimden ilki %100 olduysa genel ilerleme %33'tür)
-                val globalProgress = ((index * 100) + progress) / totalImages
-
-                // ViewModel'e anlık yüzdeyi ateşle!
-                trySend(UploadProgressState.Loading(globalProgress))
-            }.addOnCompleteListener {
-
+                catsCollection.add(catData)
+                    .addOnSuccessListener { documentRef ->
+                        // 🏆 BAŞARI: Firestore ID'sini arayüze pasla ve akışı pürüzsüzce kapat
+                        trySend(UploadProgressState.Success(documentRef.id))
+                        close()
+                    }
+                    .addOnFailureListener { e ->
+                        trySend(UploadProgressState.Error(e))
+                        close()
+                    }
+                return
             }
 
+            // Tekil resim yükleme hattı
+            val uri = imageUris[index]
+            val fileName = "fotoklasoru/${System.currentTimeMillis()}_${UUID.randomUUID()}_$index.jpg"
+            val storageRef = storage.reference.child(fileName)
+            val uploadTask = storageRef.putFile(uri)
+
+            uploadTask.addOnProgressListener { snapshot ->
+                if (snapshot.totalByteCount > 0) {
+                    // Bu resmin kendi içindeki doluluk yüzdesi
+                    val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
+
+                    // 🎯 AUDITOR MATRİSİ: Toplam resim sayısına göre genel ilerleme hesabı
+                    val globalProgress = ((index * 100) + progress) / totalImages
+
+                    // ViewModel'e anlık yüzdeyi %0 - %99 arası fırlat (Son %100'ü Firestore sonrasına saklıyoruz)
+                    val safeProgress = if (globalProgress >= 100) 99 else globalProgress
+                    trySend(UploadProgressState.Loading(safeProgress))
+                }
+            }.addOnSuccessListener {
+                // Resim bitti, indirme URL'ini alalım
+                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                    uploadedUrls.add(downloadUrl.toString())
+                    // Bir sonraki resmi yüklemeye geç
+                    uploadImageAt(index + 1)
+                }.addOnFailureListener { e ->
+                    trySend(UploadProgressState.Error(e))
+                    close()
+                }
+            }.addOnFailureListener { e ->
+                trySend(UploadProgressState.Error(e))
+                close()
+            }
         }
 
-        awaitClose { /* Task iptal işlemleri gerekirse */ }
+        // İlk resimden yüklemeyi başlat dayıcım
+        uploadImageAt(0)
+
+        // Emniyet kilidi: Akış kırılırsa task'ları durdurmak için
+        awaitClose { /* İptal gerekirse */ }
     }
 
     private suspend fun uploadImagesToStorage(imageUris: List<Uri>): List<String> = withContext(Dispatchers.IO) {
