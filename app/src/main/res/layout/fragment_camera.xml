@@ -13,6 +13,46 @@
         android:layout_height="match_parent"
         app:scaleType="fillCenter" />
 
+
+    <TextView
+        android:id="@+id/tvZoomRatio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="64dp"
+        android:gravity="center"
+        android:background="@drawable/bg_zoom_indicator"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="1.0x"
+        android:textColor="@color/catmap_text_light"
+        android:textSize="15sp"
+        android:fontFamily="sans-serif-medium"
+        android:fontFeatureSettings="tnum"
+        android:textStyle="bold"
+        android:elevation="12dp"
+        android:visibility="gone"
+        android:layout_marginBottom="12dp"
+        app:layout_constraintBottom_toTopOf="@+id/recyclerViewFilmStrip"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
+
+    <SeekBar
+        android:id="@+id/seekBarZoom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:max="100"
+        android:progress="0"
+        android:thumbTint="@color/white"
+        android:progressTint="@color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <ImageView
         android:id="@+id/ivInFragmentPreview"
         android:layout_width="match_parent"

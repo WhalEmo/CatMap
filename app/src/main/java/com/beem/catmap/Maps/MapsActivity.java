@@ -84,6 +84,7 @@ import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
+import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
 import com.beem.catmap.ui.navigation.FragmentProvider;
@@ -1659,28 +1660,36 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void uiMessageManagerObserver(){
+    private void uiMessageManagerObserver() {
         UiMessageManager.INSTANCE.getMessageEvent().observe(this, message -> {
             if (message != null) {
+                String msgText = "";
+                int iconRes = R.drawable.ic_check;
+                int strokeColor = getResources().getColor(R.color.catmap_success);
+                int durationMs = 3500;
+
                 if (message instanceof UiMessageState.Success) {
-                    String msg = ((UiMessageState.Success) message).getMessage();
-                    int duration = ((UiMessageState.Success) message).getDurationMs();
-                    // TODO: Yarın bir gün buraya senin "mesaji.BasariliDurum(msg, duration)" yapın entegre edilecek!
-                    android.widget.Toast.makeText(this, "[BAŞARI] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+                    msgText = ((UiMessageState.Success) message).getMessage();
+                    durationMs = ((UiMessageState.Success) message).getDurationMs();
+                    iconRes = R.drawable.ic_check; // Başarı tık ikonu
+                    strokeColor = getResources().getColor(R.color.catmap_success);
 
-                } else if (message instanceof com.beem.catmap.ui.manager.UiMessageState.Error) {
-                    String msg = ((com.beem.catmap.ui.manager.UiMessageState.Error) message).getMessage();
-                    // TODO: Buraya özel kırmızı premium hata barı gelecek!
-                    android.widget.Toast.makeText(this, "[HATA] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+                } else if (message instanceof UiMessageState.Error) {
+                    msgText = ((UiMessageState.Error) message).getMessage();
+                    durationMs = 5000;
+                    iconRes = R.drawable.ic_close; // Hata çarpı ikonu
+                    strokeColor = getResources().getColor(R.color.catmap_error);
 
-                } else if (message instanceof com.beem.catmap.ui.manager.UiMessageState.Info) {
-                    String msg = ((com.beem.catmap.ui.manager.UiMessageState.Info) message).getMessage();
-                    // TODO: Buraya "Yükleniyor..." dönen şık loading barı gelecek!
-                    android.widget.Toast.makeText(this, "[BİLGİ] " + msg, android.widget.Toast.LENGTH_SHORT).show();
+                } else if (message instanceof UiMessageState.Info) {
+                    msgText = ((UiMessageState.Info) message).getMessage();
+                    durationMs = 4000;
+                    iconRes = R.drawable.ic_gallery;
+                    strokeColor = getResources().getColor(R.color.catmap_text_muted);
                 }
 
-                // 🎯 İşlem bittiğinde mesajı sıfırlıyoruz ki cihaz dönünce tekrar tetiklenmesin
-                com.beem.catmap.ui.manager.UiMessageManager.INSTANCE.clear();
+                CatMapToastEngine.show(this, msgText, iconRes, strokeColor, durationMs);
+
+                UiMessageManager.INSTANCE.clear();
             }
         });
     }

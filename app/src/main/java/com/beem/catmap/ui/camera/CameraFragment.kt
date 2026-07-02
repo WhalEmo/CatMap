@@ -12,10 +12,14 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
+import androidx.camera.core.CameraControl
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -51,12 +55,21 @@ class CameraFragment : Fragment() {
 
     private val soundEffects = MediaActionSound()
 
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private var cameraControl: CameraControl? = null
+    private var cameraInfo: CameraInfo? = null
+
+    private var zoomHideRunnable: Runnable? = null
+    private var vibrator: android.os.Vibrator? = null
+
+    private val ZOOM_SENSITIVITY = 2.4f
+
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions.values.all { it }) startCamera()
         else {
-            UiMessageManager.emitMessage(UiMessageState.Error("Kamera izinleri eksik dayıcım!"))
+            UiMessageManager.emitMessage(UiMessageState.Error("Kamera izinleri eksik!"))
             parentFragmentManager.popBackStack()
         }
     }
@@ -71,6 +84,8 @@ class CameraFragment : Fragment() {
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         soundEffects.load(MediaActionSound.SHUTTER_CLICK)
+
+        vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
 
         checkPermissionsAndStart()
         setupUi()
@@ -99,7 +114,16 @@ class CameraFragment : Fragment() {
                 .build()
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(viewLifecycleOwner, lensSelector, preview, imageCapture)
+                val camera = cameraProvider.bindToLifecycle(
+                    viewLifecycleOwner,
+                    lensSelector,
+                    preview,
+                    imageCapture
+                )
+                cameraControl = camera.cameraControl
+                cameraInfo = camera.cameraInfo
+
+                setupZoomMechanics()
             } catch (exc: Exception) {
                 Log.e("CameraFragment", "Kamera başlatılamadı", exc)
             }
@@ -290,6 +314,71 @@ class CameraFragment : Fragment() {
         }
 
         actionDialog.show()
+    }
+
+
+    @android.annotation.SuppressLint("ClickableViewAccessibility", "DefaultLocale")
+    private fun setupZoomMechanics() {
+        val info = cameraInfo ?: return
+        val control = cameraControl ?: return
+
+        info.zoomState.observe(viewLifecycleOwner) { zoomState ->
+            val ratioText = String.format("%.1fx", zoomState.zoomRatio)
+            binding.tvZoomRatio.text = ratioText
+
+            if (zoomState.zoomRatio % 1.0f < 0.05f && zoomState.zoomRatio > 1.05f) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(android.os.VibrationEffect.createOneShot(8, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(8)
+                }
+            }
+        }
+
+        scaleGestureDetector = android.view.ScaleGestureDetector(requireContext(),
+            object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: android.view.ScaleGestureDetector): Boolean {
+                    val currentZoomRatio = info.zoomState.value?.zoomRatio ?: 1f
+                    val delta = 1.0f + (detector.scaleFactor - 1.0f) * ZOOM_SENSITIVITY
+                    val targetZoomRatio = currentZoomRatio * delta
+
+                    zoomHideRunnable?.let { binding.tvZoomRatio.removeCallbacks(it) }
+                    binding.tvZoomRatio.alpha = 1.0f
+                    binding.tvZoomRatio.visibility = View.VISIBLE
+
+                    control.setZoomRatio(targetZoomRatio)
+                    return true
+                }
+            }
+        )
+
+        binding.viewFinder.setOnTouchListener { v, event ->
+            scaleGestureDetector.onTouchEvent(event)
+
+            if (event.pointerCount > 1) {
+                return@setOnTouchListener true
+            }
+
+            if (event.action == android.view.MotionEvent.ACTION_UP) {
+                zoomHideRunnable?.let { binding.tvZoomRatio.removeCallbacks(it) }
+
+                zoomHideRunnable = Runnable {
+                    binding.tvZoomRatio.animate()
+                        .alpha(0f)
+                        .setDuration(400)
+                        .withEndAction {
+                            binding.tvZoomRatio.visibility = View.GONE
+                        }
+                        .start()
+                }
+
+                binding.tvZoomRatio.postDelayed(zoomHideRunnable, 1500)
+            }
+
+            v.onTouchEvent(event)
+            true
+        }
     }
 
     override fun onDestroyView() {
