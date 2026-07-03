@@ -5,6 +5,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -87,6 +88,7 @@ import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
+import com.beem.catmap.ui.navigation.CatMapNavigationEngine;
 import com.beem.catmap.ui.navigation.FragmentProvider;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
@@ -114,8 +116,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.beem.catmap.databinding.ActivityMapsBinding;
-import com.google.android.gms.tasks.Task;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -162,7 +162,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public LinearLayout yorumicin;
     public LinearLayout ynticin;
     public LinearLayout carpiicin;
-    private RelativeLayout yuklemeEkrani;
+    private ConstraintLayout yuklemeEkrani;
     private TextView bosyorum;
     private ImageButton iptalButton;
     public EditText kimeyanit;
@@ -180,7 +180,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private TextView yukleyenAdiText;
     private ImageView yukleyenPP;
     private LinearLayout profilAlan;
-    private RelativeLayout anaGorunum;
     private ImageView YrmgndrFotoImageView;
     private ImageView YntgndrFotoImageView;
     private URLye_Ulasma ulasma;
@@ -196,11 +195,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean isPanelVisible = false;
     ImageButton btnClose;
     private int screenWidth;
-    private BottomNavigationView bottom_navigation;
     private MapViewModel mapViewModel;
     private int hedefYorumIndeks = -1;
     private double sonCekilenLat = 0.0;
     private double sonCekilenLng = 0.0;
+
+    private CatMapNavigationEngine navigationEngine;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -236,6 +236,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         observeViewModel();
         uiMessageManagerObserver();
 
+        navigationEngine = new CatMapNavigationEngine(this, binding, fragment -> {
+            merkeziBackStackChangedListener(fragment);
+            return null;
+        });
+
+        navigationEngine.selectMapTabSilently();
+
         FloatingActionButton fabCurrentLocation = findViewById(R.id.fabCurrentLocation);
 
         fabCurrentLocation.setOnClickListener(v -> {
@@ -248,7 +255,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        bottom_navigation=findViewById(R.id.bottom_navigation);
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
         btnShowFact=findViewById(R.id.btnShowFact);
         btnClose = findViewById(R.id.btnClosePanel);
@@ -290,7 +296,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     })
                     .start();
         });
-        anaGorunum=findViewById(R.id.anaGorunum);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         konumizni();
@@ -319,8 +324,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 //        SohbetMesajAyarlari();
 
-        altCubuk();
-        binding.bottomNavigation.setSelectedItemId(R.id.haritagit);
 
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             merkeziBackStackChangedListener(null);
@@ -452,9 +455,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .start();
         }
         else {
-            binding.bottomNavigation.setVisibility(View.VISIBLE);
-            if (binding.bottomNavigation.getSelectedItemId() != R.id.haritagit) {
-                binding.bottomNavigation.setSelectedItemId(R.id.haritagit);
+            String currentScreen = SmartNavigationEngine.getCurrentFragmentTag();
+            if (currentScreen != null && !currentScreen.equals("MAP_FRAGMENT_TAG")) {
+                if (navigationEngine != null) {
+                    navigationEngine.selectMapTabSilently();
+                }
             } else {
                 CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
                 super.onBackPressed();
@@ -475,21 +480,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             String tag = currentFragment.getTag();
             System.out.println("tag: " + tag);
-            boolean menuGozukmeli = Arrays.asList("MAP_FRAGMENT_TAG", "PROFILE", "CHAT", "YUKLE").contains(tag);
-            binding.bottomNavigation.setVisibility(menuGozukmeli ? View.VISIBLE : View.GONE);
+            int menuGozukmeli = Arrays.asList("MAP_FRAGMENT_TAG", "PROFILE", "CHAT", "YUKLE").contains(tag)
+                    ? View.VISIBLE : View.GONE;
+            binding.bottomNavigation.setVisibility(menuGozukmeli);
+            binding.btnCaptureLayout.setVisibility(menuGozukmeli);
 
-            binding.mapOverlayContainer.setVisibility("MAP_FRAGMENT_TAG".equals(tag) ? View.VISIBLE : View.GONE);
+            int overlayVisibility = "MAP_FRAGMENT_TAG".equals(tag) ? View.VISIBLE : View.GONE;
 
+            if (binding.btnScanArea != null) {
+                if (overlayVisibility == View.GONE) {
+                    binding.btnScanArea.setVisibility(View.GONE);
+                }
+            }
+
+            if (binding.btnShowFact != null) {
+                binding.btnShowFact.setVisibility(overlayVisibility);
+            }
             if (!(currentFragment instanceof ProfilSayfasiFragment)) {
                 if (profilAlan != null) profilAlan.setVisibility(View.VISIBLE);
-                if (anaGorunum != null) anaGorunum.setVisibility(View.VISIBLE);
 
                 if (bottomSheetDialog != null && !bottomSheetDialog.isShowing() && isBackPressed) {
                     bottomSheetDialog.show();
                 }
             } else {
                 if (profilAlan != null) profilAlan.setVisibility(View.VISIBLE);
-                if (anaGorunum != null) anaGorunum.setVisibility(View.VISIBLE);
             }
     }
 
@@ -608,68 +622,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     double latitude;
     double longitude;
     private boolean konumAlindi = false;
-
-    public void konumbasma() {
-        runOnUiThread(() -> {
-            Handler handler = new Handler(Looper.getMainLooper());
-            Runnable updateRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    // Güncel konumu al ve marker'ı güncelle
-                    if (latitude != 0 && longitude != 0) {
-                        if(konumAlindi){
-                            new Handler().postDelayed(() -> {
-                                yuklemeEkrani.setVisibility(View.GONE);
-                                bottom_navigation.setVisibility(View.VISIBLE);
-                                btnShowFact.setVisibility(View.VISIBLE);
-                            }, 500);
-                            konumAlindi=false;
-                            TarananKediler tarama =  new TarananKediler();
-                            tarama.ButonGosterim(mMap,findViewById(android.R.id.content));
-                            tarama.Basildi(kediler,mMap,()->{
-                                resimlimarker();
-                            },MapsActivity.this);
-                        }
-                        // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-                    }
-
-                    // Tekrar 5 saniye sonra çalıştırmak için tekrar çağır
-                    handler.postDelayed(this, 500);  // 5000 ms = 5 saniye
-                }
-            };
-            // İlk başlatma
-            handler.post(updateRunnable);
-        });
-    }
-
-    private void konumalma(){
-        LocationRequest konumIstegi = LocationRequest.create()
-                .setInterval(5000)
-                .setFastestInterval(1000)
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        LocationSettingsRequest.Builder konumAyarlariIstegi = new LocationSettingsRequest.Builder()
-                .addAllLocationRequests(Collections.singleton(konumIstegi));
-
-        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
-        Task<LocationSettingsResponse> task = settingsClient.checkLocationSettings(konumAyarlariIstegi.build());
-
-        task.addOnSuccessListener(locationSettingsResponse -> {
-            konumalmaBaslat(konumIstegi);
-        });
-
-        task.addOnFailureListener(e -> {
-            if (e instanceof ResolvableApiException) {
-                try {
-                    ResolvableApiException resolvable = (ResolvableApiException) e;
-                    resolvable.startResolutionForResult(this, 2001);
-                    finish();
-                } catch (IntentSender.SendIntentException sendEx) {
-                    sendEx.printStackTrace();
-                }
-            }
-        });
-    }
 
     public void konumalmaBaslat(LocationRequest locationRequest) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -1138,7 +1090,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void yukleyenProfilineGit(View view) {
         bottomSheetDialog.hide(); // dismiss yok eder hide gizler
         profilAlan.setVisibility(View.GONE);//dıstaki keilippharket eden
-        anaGorunum.setVisibility(View.GONE);//MAPS
         ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kediYukleyenID);
         getSupportFragmentManager()
                 .beginTransaction()
@@ -1454,104 +1405,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-
-    private void KlavyeAyari(View rootView, LinearLayout YorumLinearLayout){
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
-            Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime()); // Klavye boyutu
-            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars()); // Sistem barları
-            boolean klavyeAcik = imeInsets.bottom > 0;
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) YorumLinearLayout.getLayoutParams();
-
-            int klavyeYuksekligi = imeInsets.bottom;
-            int sistemCubuğuYuksekligi = navInsets.bottom;
-
-            int netYukseklik = klavyeYuksekligi - sistemCubuğuYuksekligi;
-            if (netYukseklik < 0) netYukseklik = 0;
-
-            params.bottomMargin = klavyeAcik ? netYukseklik + dpToPx(4) : dpToPx(8);
-            YorumLinearLayout.setLayoutParams(params);
-            return insets;
-        });
-
-    }
-
     private int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
-    }
-
-    private void altCubuk() {
-        binding.bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            FragmentManager fm = getSupportFragmentManager();
-
-            // Eski temizlik kuralın aynen kalıyor dayıcım
-            fm.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-
-            // Hedef tag'i belirliyoruz ve buton görünürlüklerini burada yönetiyoruz
-            final String finalTag;
-            if (id == R.id.haritagit) {
-                if (btnShowFact != null) btnShowFact.setVisibility(View.VISIBLE);
-                finalTag = "MAP_FRAGMENT_TAG";
-            } else if (id == R.id.profilim) {
-                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                finalTag = "PROFILE";
-            } else if (id == R.id.sohbet) {
-                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                finalTag = "CHAT";
-            } else if (id == R.id.yuklekedi) {
-                if (btnShowFact != null) btnShowFact.setVisibility(View.GONE);
-                finalTag = "YUKLE";
-            } else {
-                return false;
-            }
-
-            SmartNavigationEngine.navigateTo(finalTag, new FragmentProvider() {
-                @Override
-                public Fragment createFragment(@NonNull String tag) {
-                    // Fragment ilk kez oluşturulurken senin o özel Java üretim kuralların çalışır dayıcım:
-                    if (tag.equals("MAP_FRAGMENT_TAG")) {
-                        SupportMapFragment mapFragment = new SupportMapFragment();
-                        mapFragment.getMapAsync(MapsActivity.this);
-                        return mapFragment;
-                    } else if (tag.equals("PROFILE")) {
-                        return ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-                    } else if (tag.equals("CHAT")) {
-                        return new SohbetFragment(() -> {
-                            getSupportFragmentManager()
-                                    .beginTransaction()
-                                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                                    .replace(R.id.fragment_container, new MesajFragment(MapsActivity.this))
-                                    .addToBackStack(null)
-                                    .commit();
-                        });
-                    } else if (tag.equals("YUKLE")) {
-                        return new YuklemeArayuzuFragment();
-                    }
-                    return null;
-                }
-            }, targetFragment -> {
-                merkeziBackStackChangedListener(targetFragment);
-                return null;
-            });
-
-            return true;
-        });
-    }
-
-
-    public void setSelectedItemSpeacial(int position){
-        binding.bottomNavigation.setSelectedItemId(position);
     }
 
 
     private void observeViewModel() {
         mapViewModel.isLoading().observe(this, isLoading -> {
             if (isLoading) {
+                Log.d("yukleme", "isLoading");
                 yuklemeEkrani.setVisibility(View.VISIBLE);
             } else {
+                Log.d("yukleme", "isLoading else");
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     yuklemeEkrani.setVisibility(View.GONE);
-                    bottom_navigation.setVisibility(View.VISIBLE);
+                    binding.bottomNavigation.setVisibility(View.VISIBLE);
+                    binding.btnCaptureLayout.setVisibility(View.VISIBLE);
                     if (btnShowFact != null) btnShowFact.setVisibility(View.VISIBLE);
                 }, 500);
             }

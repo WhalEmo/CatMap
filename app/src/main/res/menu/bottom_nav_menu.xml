@@ -7,14 +7,22 @@
         android:title="Harita" />
 
     <item
-        android:id="@+id/yuklekedi"
-        android:icon="@drawable/kediyuklemenu"
-        android:title="Kedi Yükle" />
+        android:id="@+id/upload"
+        android:icon="@drawable/ic_cat_menu"
+        android:title="Yükle" />
+
+    <item
+        android:id="@+id/camera_placeholder"
+        android:icon="@android:color/transparent"
+        android:title=""
+        android:checkable="false"
+        android:enabled="false" />
 
     <item
         android:id="@+id/sohbet"
         android:icon="@drawable/sohbetbuton"
         android:title="Sohbet" />
+
     <item
         android:id="@+id/profilim"
         android:icon="@drawable/profilmenu"

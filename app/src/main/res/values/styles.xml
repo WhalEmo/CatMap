@@ -9,11 +9,6 @@
     </style>
 
 
-    <style name="Theme.CatMap.BottomNavOverlay">
-        <item name="colorSecondaryContainer">@android:color/transparent</item>
-        <item name="colorControlHighlight">#1AF97316</item>
-    </style>
-
     <style name="CatMapGridImageShape">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">4dp</item>

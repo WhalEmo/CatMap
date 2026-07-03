@@ -32,7 +32,6 @@ public class TarananKediler {
     }
 
     private ExtendedFloatingActionButton taramaButon;
-    private RelativeLayout container;
     private LatLng BasilmaEkranMerkezi;
     private ArrayList<Kediler> bulunanKediler;
 
@@ -40,7 +39,6 @@ public class TarananKediler {
 
     public void ButonGosterim(GoogleMap map, View view) {
         taramaButon = view.findViewById(R.id.btnScanArea);
-        container = view.findViewById(R.id.mapOverlayContainer);
         final LatLng[] ekranMerkezi = {map.getCameraPosition().target};
 
         map.setOnCameraIdleListener(() -> {
@@ -52,7 +50,6 @@ public class TarananKediler {
 
             if (results[0] > 500) {
                 if (taramaButon.getVisibility() == View.GONE) {
-                    if (container.getVisibility() == View.GONE) container.setVisibility(View.VISIBLE);
                     taramaButon.show();
                 }
                 ekranMerkezi[0] = gecerliMerkez;
