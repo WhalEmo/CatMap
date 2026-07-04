@@ -262,7 +262,14 @@ class CameraFragment : Fragment() {
 
         val cacheFile =
             File(requireContext().cacheDir, "CatMap_Temp_${System.currentTimeMillis()}.jpg")
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(cacheFile).build()
+
+        val metaData = ImageCapture.Metadata().apply {
+            isReversedHorizontal = (lensSelector == CameraSelector.DEFAULT_FRONT_CAMERA)
+        }
+
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(cacheFile)
+            .setMetadata(metaData)
+            .build()
 
         imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(requireContext()),
             object : ImageCapture.OnImageSavedCallback {
