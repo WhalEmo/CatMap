@@ -219,7 +219,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 R.id.fragment_container
         );
 
-        System.out.println(MainActivity.kullanici.getID());
         // Firestore cache ayarını yap
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -251,7 +250,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f));
 
             } else {
-                Toast.makeText(MapsActivity.this, "Konum aranıyor, lütfen bekleyin...", Toast.LENGTH_SHORT).show();
+                UiMessageManager.INSTANCE.emitMessage(
+                        new UiMessageState.Info("Konum aranıyor, lütfen bekleyin...")
+                );
             }
         });
 

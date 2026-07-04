@@ -53,7 +53,9 @@ class CameraFragment : Fragment() {
     private lateinit var filmStripAdapter: FilmStripAdapter
     private val viewModel: CameraViewModel by viewModels()
 
-    private val soundEffects = MediaActionSound()
+    private val audioManager by lazy {
+        requireContext().getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+    }
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private var cameraControl: CameraControl? = null
@@ -82,8 +84,6 @@ class CameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         cameraExecutor = Executors.newSingleThreadExecutor()
-
-        soundEffects.load(MediaActionSound.SHUTTER_CLICK)
 
         vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
 
@@ -255,7 +255,8 @@ class CameraFragment : Fragment() {
 
     private fun capturePhoto() {
         val imageCapture = imageCapture ?: return
-        soundEffects.play(MediaActionSound.SHUTTER_CLICK)
+
+        audioManager.playSoundEffect(android.media.AudioManager.FX_KEY_CLICK)
 
         binding.viewFinder.alpha = 0.7f
         binding.viewFinder.animate().alpha(1.0f).setDuration(150).start()
@@ -391,7 +392,6 @@ class CameraFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         cameraExecutor.shutdown()
-        soundEffects.release()
         _binding = null
     }
 }

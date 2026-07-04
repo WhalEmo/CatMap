@@ -12,6 +12,7 @@ import com.beem.catmap.Profil.ProfilSayfasiFragment
 import com.beem.catmap.R
 import com.beem.catmap.databinding.ActivityMapsBinding
 import com.beem.catmap.sohbet.SohbetFragment
+import com.beem.catmap.ui.camera.CameraFragment
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -53,7 +54,7 @@ class CatMapNavigationEngine(
         binding.btnCaptureLayout.setOnClickListener {
             // Tok onay titreşimi (CONFIRMATION muadili)
             triggerHaptic(HapticFeedbackConstants.CONFIRM)
-            Toast.makeText(activity, "CatMap Akıllı Vizör Hub Devreye Girdi...", Toast.LENGTH_SHORT).show()
+            navigateTo("CAMERA")
         }
     }
 
@@ -88,6 +89,7 @@ class CatMapNavigationEngine(
                             .commit()
                     }
                     "YUKLE" -> YuklemeArayuzuFragment()
+                    "CAMERA" -> CameraFragment()
                     else -> null
                 }
             }

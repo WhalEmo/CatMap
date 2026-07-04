@@ -17,6 +17,7 @@ object SmartNavigationEngine {
         "CHAT" to 2,
         "PROFILE" to 3
     )
+    private val specialIndic = "CAMERA"
 
     @JvmStatic
     fun init(fragmentManager: FragmentManager, containerId: Int) {
@@ -35,7 +36,14 @@ object SmartNavigationEngine {
             val currentIndex = tabIndices[oldTag] ?: 0
             val targetIndex = tabIndices[tag] ?: 0
 
-            if (targetIndex > currentIndex) {
+            if(specialIndic.equals(tag)){
+                transaction.setCustomAnimations(
+                    R.anim.slide_up,
+                    R.anim.stay_still,
+                    R.anim.pop_stay_still,
+                    R.anim.slide_down
+                )
+            } else if (targetIndex > currentIndex) {
                 transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             } else {
                 transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
