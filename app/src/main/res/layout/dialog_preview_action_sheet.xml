@@ -7,7 +7,7 @@
     android:layout_margin="24dp"
     app:cardCornerRadius="24dp"
     app:cardElevation="8dp"
-    app:cardBackgroundColor="@android:color/white"
+    app:cardBackgroundColor="?attr/colorSurface"
     app:strokeWidth="0dp">
 
     <LinearLayout
@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Önizlemedeki fotoğraf\nsilinsin mi?"
-            android:textColor="@color/catmap_primary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="18sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -34,14 +34,15 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#E2E8F0" />
+            android:alpha="0.15"
+            android:background="?attr/colorOutline" />
 
         <TextView
             android:id="@+id/btnDialogDelete"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:text="Sil"
-            android:textColor="@color/catmap_error"
+            android:textColor="?attr/colorError"
             android:textSize="16sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -52,14 +53,15 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#E2E8F0" />
+            android:alpha="0.15"
+            android:background="?attr/colorOutline" />
 
         <TextView
             android:id="@+id/btnDialogSave"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:text="Fotoğrafı Kaydet"
-            android:textColor="@color/catmap_accent"
+            android:textColor="?attr/colorSecondary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -70,14 +72,15 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#E2E8F0" />
+            android:alpha="0.15"
+            android:background="?attr/colorOutline" />
 
         <TextView
             android:id="@+id/btnDialogContinue"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:text="Önizlemeye devam et"
-            android:textColor="@color/catmap_text_muted"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="16sp"
             android:gravity="center"
             android:background="?attr/selectableItemBackground"

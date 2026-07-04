@@ -8,39 +8,50 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <style name="CatMapDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+    <style name="CatMapDialogTheme" parent="Theme.AppCompat.Light.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
 
     <style name="Theme.CatMap" parent="Theme.Material3.DayNight.NoActionBar">
+
         <item name="colorPrimary">@color/catmap_primary</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorContainer">#FAFAFA</item>
+        <item name="colorOnPrimary">@color/catmap_text_light</item>
+        <item name="colorPrimaryContainer">@color/catmap_surface_white</item>
+        <item name="colorOnPrimaryContainer">@color/catmap_primary_dark</item>
 
-        <item name="colorAccent">@color/catmap_accent</item>
         <item name="colorSecondary">@color/catmap_accent</item>
-        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorOnSecondary">@color/catmap_text_light</item>
+        <item name="colorSecondaryContainer">@color/catmap_accent_alpha_15</item>
+        <item name="colorOnSecondaryContainer">@color/catmap_accent</item>
+        <item name="colorAccent">@color/catmap_accent</item>
 
-        <item name="colorSecondaryContainer">#26FF6F00</item>
+        <item name="android:windowBackground">@color/catmap_background</item>
+        <item name="colorSurface">@color/catmap_surface_white</item>
+        <item name="colorOnSurface">@color/catmap_text_dark</item>
 
-        <item name="android:windowBackground">#FAFAFA</item>
-        <item name="colorSurface">#FFFFFF</item>
-        <item name="colorOnSurface">#222222</item>
+        <item name="colorSurfaceVariant">@color/catmap_background</item>
+        <item name="colorOnSurfaceVariant">@color/catmap_text_muted</item>
+        <item name="colorOutline">@color/catmap_border</item>
 
-        <item name="android:statusBarColor">#FAFAFA</item>
+        <item name="colorError">@color/catmap_error</item>
+
+        <item name="android:statusBarColor">@color/catmap_background</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
-        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">@color/catmap_surface_white</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
 
         <item name="textInputStyle">@style/Widget.CatMap.TextInputLayout</item>
         <item name="materialButtonStyle">@style/Widget.CatMap.Button</item>
+        <item name="elevationOverlayEnabled">false</item>
     </style>
 
     <style name="Theme.CatMap.BottomNavOverlay" parent="">
         <item name="colorSecondaryContainer">@android:color/transparent</item>
         <item name="colorControlHighlight">#1AF97316</item>
 
-        <item name="itemRippleColor">@android:color/transparent</item>
+        <item name="itemRippleColor">#1AF97316</item>
     </style>
 
     <style name="Widget.CatMap.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
