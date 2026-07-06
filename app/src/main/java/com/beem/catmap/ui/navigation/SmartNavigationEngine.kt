@@ -1,83 +1,84 @@
 package com.beem.catmap.ui.navigation
 
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import com.beem.catmap.R
+import java.util.Stack
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 object SmartNavigationEngine {
 
-    private var fragmentManager: FragmentManager? = null
-    private var containerId: Int = 0
-    @JvmStatic var currentFragmentTag: String? = "MAP_FRAGMENT_TAG"
+    private val _navigationState = MutableStateFlow<NavigationState>(NavigationState.Initial)
+    val navigationState: StateFlow<NavigationState> = _navigationState.asStateFlow()
+
+    private val backStack = Stack<Screen>()
+    private var uiBridge: CatMapNavigationEngine? = null
+
+
+
+    @get:JvmName("getInternalCurrentScreen")
+    @JvmStatic
+    var currentScreen: Screen = Screen.MAP
         private set
 
-    private val tabIndices = mapOf(
-        "MAP_FRAGMENT_TAG" to 0,
-        "YUKLE" to 1,
-        "CHAT" to 2,
-        "PROFILE" to 3
-    )
-    private val specialIndic = "CAMERA"
+    private var currentNode: Screen = Screen.MAP
 
     @JvmStatic
-    fun init(fragmentManager: FragmentManager, containerId: Int) {
-        this.fragmentManager = fragmentManager
-        this.containerId = containerId
-        this.currentFragmentTag = "MAP_FRAGMENT_TAG"
+    fun init(uiBridge: CatMapNavigationEngine) {
+        this.uiBridge = uiBridge
+        backStack.clear()
+        backStack.push(Screen.MAP)
+        currentScreen = Screen.MAP
+        currentNode = Screen.MAP
+        emitCurrentState(Screen.MAP, NavigationTrigger.INITIAL)
     }
 
     @JvmStatic
-    fun navigateTo(tag: String, provider: FragmentProvider, onTransitionComplete: (Fragment) -> Unit) {
-        val fm = fragmentManager ?: return
-        val transaction = fm.beginTransaction()
+    fun navigateTo(targetScreen: Screen) {
+        if (currentScreen == targetScreen) return
 
-        val oldTag = currentFragmentTag
-        if (oldTag != null && oldTag != tag) {
-            val currentIndex = tabIndices[oldTag] ?: 0
-            val targetIndex = tabIndices[tag] ?: 0
-
-            if(specialIndic.equals(tag)){
-                transaction.setCustomAnimations(
-                    R.anim.slide_up,
-                    R.anim.stay_still,
-                    R.anim.pop_stay_still,
-                    R.anim.slide_down
-                )
-            } else if (targetIndex > currentIndex) {
-                transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-            } else {
-                transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
-            }
-        }
-
-        for (f in fm.fragments) {
-            if (f != null && f.tag != null && f.tag != tag) {
-                transaction.hide(f)
-            }
-        }
-
-        var targetFragment = fm.findFragmentByTag(tag)
-
-        if (targetFragment == null) {
-            targetFragment = provider.createFragment(tag)
-            if (targetFragment != null) {
-                transaction.add(containerId, targetFragment, tag)
-            }
+        if (targetScreen.isNode){
+            backStack.clear()
+            backStack.push(targetScreen)
         } else {
-            transaction.show(targetFragment)
+            backStack.push(targetScreen)
         }
 
-        transaction.commitAllowingStateLoss()
-        currentFragmentTag = tag
 
-        targetFragment?.let { onTransitionComplete.invoke(it) }
+        currentScreen = targetScreen
+        currentNode = if(currentScreen.isNode) currentScreen else currentNode
+        emitCurrentState(targetScreen, NavigationTrigger.FORWARD)
     }
 
     @JvmStatic
-    fun clearEngine() {
-        fragmentManager = null
-        currentFragmentTag = null
+    fun navigateBack() {
+        if (backStack.size > 1) {
+            backStack.pop()
+            val previous = backStack.peek()
+            if(previous.isNode){
+                backStack.clear()
+                backStack.push(previous)
+                currentNode = previous
+            }
+            currentScreen = previous
+            emitCurrentState(previous, NavigationTrigger.BACKWARD)
+        } else {
+            backStack.clear()
+            backStack.push(currentNode)
+            currentScreen = currentNode
+            emitCurrentState(currentScreen, NavigationTrigger.INITIAL)
+        }
     }
 
-    fun getCurrentTag(): String? = currentFragmentTag
+    private fun emitCurrentState(screen: Screen, trigger: NavigationTrigger) {
+        screen.menuId?.let { id ->
+            uiBridge?.updateUISilently(id)
+        }
+        _navigationState.value = NavigationState.Active(screen, trigger)
+    }
+
+
+    @JvmStatic
+    fun getCurrentScreen(): Screen {
+        return currentScreen
+    }
 }

@@ -8,25 +8,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.app.AlertDialog;
-import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -57,7 +51,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
@@ -85,11 +78,14 @@ import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
+import com.beem.catmap.ui.camera.CameraFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
 import com.beem.catmap.ui.navigation.CatMapNavigationEngine;
+import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
+import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
 import com.bumptech.glide.Glide;
@@ -97,15 +93,11 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -128,13 +120,13 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -143,6 +135,8 @@ import java.util.Map;
 import java.util.Set;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback , BottomSheetController {
@@ -201,6 +195,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private double sonCekilenLng = 0.0;
 
     private CatMapNavigationEngine navigationEngine;
+    private CatMapNavigationRenderer navigationRenderer;
+
+    private final FragmentProvider fragmentProvider = new FragmentProvider() {
+        @Nullable
+        @Override
+        public Fragment createFragment(@NonNull String tag) {
+            Screen screen = Screen.Companion.fromTag(tag);
+            return switch (screen) {
+                case MAP -> {
+                    SupportMapFragment mapFragment = new SupportMapFragment();
+                    mapFragment.getMapAsync(MapsActivity.this);
+                    yield mapFragment;
+                }
+                case UPLOAD -> new YuklemeArayuzuFragment();
+                case CAMERA -> new CameraFragment();
+                case CHAT -> getSohbetFragment();
+                case PROFILE -> new ProfilSayfasiFragment();
+            };
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -214,11 +228,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             controller.setAppearanceLightStatusBars(true);
         }
 
-        SmartNavigationEngine.INSTANCE.init(
-                getSupportFragmentManager(),
-                R.id.fragment_container
-        );
-
         // Firestore cache ayarını yap
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -230,17 +239,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        navigationEngine = new CatMapNavigationEngine(this, binding);
+        navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);
+        SmartNavigationEngine.init(navigationEngine);
+
         mapViewModel = new ViewModelProvider(this).get(MapViewModel.class);
 
         observeViewModel();
         uiMessageManagerObserver();
 
-        navigationEngine = new CatMapNavigationEngine(this, binding, fragment -> {
-            merkeziBackStackChangedListener(fragment);
-            return null;
-        });
 
-        navigationEngine.selectMapTabSilently();
 
         FloatingActionButton fabCurrentLocation = findViewById(R.id.fabCurrentLocation);
 
@@ -325,10 +333,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 //        SohbetMesajAyarlari();
 
-
-        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            merkeziBackStackChangedListener(null);
-        });
 
         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
@@ -445,26 +449,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onBackPressed() {
-        FragmentManager fm = getSupportFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            fm.popBackStack();
-        }
-        else if(rightSlidingPanel.getTranslationX() == 0){
+        // 🎯 1. ÖNCELİK: Eğer sağdaki panel (sliding panel) ekranda açıksa, önce onu kapat!
+        if (rightSlidingPanel != null && rightSlidingPanel.getTranslationX() == 0) {
             rightSlidingPanel.animate()
                     .translationX(screenWidth)
                     .setDuration(300)
                     .start();
+            return; // İşlem bitti, aşağı akma usta.
         }
-        else {
-            String currentScreen = SmartNavigationEngine.getCurrentFragmentTag();
-            if (currentScreen != null && !currentScreen.equals("MAP_FRAGMENT_TAG")) {
-                if (navigationEngine != null) {
-                    navigationEngine.selectMapTabSilently();
-                }
-            } else {
-                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
-                super.onBackPressed();
-            }
+
+        // 🎯 2. ÖNCELİK: Reaktif Motorun Hafızasını Sorgula!
+        Screen currentScreen = SmartNavigationEngine.getCurrentScreen();
+
+        if (currentScreen != Screen.MAP) {
+            // Eğer haritada değilsek (Kamera, Upload, Chat vs. bir yerdeysek), motora "Geri Git" emrini ver!
+            // Motor arkadaki Stack'ten bir önceki ekranı şak diye çekip ekrana pürüzsüzce basacak.
+            SmartNavigationEngine.navigateBack();
+        } else {
+            // 🎯 3. ÖNCELİK: Zaten Haritadaysak ve geri basıldıysa uygulamadan güvenle çıkış lojiğini çalıştır.
+            CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
+            super.onBackPressed();
         }
     }
 
@@ -1564,5 +1568,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    private Fragment getSohbetFragment(){
+        return new SohbetFragment(()->{
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                    .replace(R.id.fragment_container, new MesajFragment(getApplicationContext()))
+                    .addToBackStack(null)
+                    .commit();
+        });
+    }
 
 }

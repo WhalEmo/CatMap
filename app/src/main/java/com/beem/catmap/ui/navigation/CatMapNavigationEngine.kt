@@ -2,28 +2,17 @@ package com.beem.catmap.ui.navigation
 
 import android.view.HapticFeedbackConstants
 import android.view.View
-import android.widget.Toast
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
-import com.beem.catmap.MainActivity
-import com.beem.catmap.Maps.MapsActivity
-import com.beem.catmap.Profil.ProfilSayfasiFragment
-import com.beem.catmap.R
 import com.beem.catmap.databinding.ActivityMapsBinding
-import com.beem.catmap.sohbet.SohbetFragment
-import com.beem.catmap.ui.camera.CameraFragment
-import com.beem.catmap.ui.upload.YuklemeArayuzuFragment
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import java.lang.ref.WeakReference
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
-    private val binding: ActivityMapsBinding,
-    private val onFragmentChanged: (Fragment) -> Unit
+    private val binding: ActivityMapsBinding
 ) {
     private val activityRef = WeakReference(activity)
+    private var isUpdatingSilently = false
 
     init {
         setupNavigation()
@@ -32,84 +21,41 @@ class CatMapNavigationEngine(
 
     private fun setupNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
-            triggerHaptic(HapticFeedbackConstants.CLOCK_TICK)
+            if (isUpdatingSilently) return@setOnItemSelectedListener true
 
-            val targetTag = when (item.itemId) {
-                R.id.haritagit -> "MAP_FRAGMENT_TAG"
-                R.id.upload -> "YUKLE"
-                R.id.sohbet -> "CHAT"
-                R.id.profilim -> "PROFILE"
-                else -> return@setOnItemSelectedListener false
-            }
-
-            navigateTo(targetTag)
+            val targetScreen = Screen.fromMenuId(item.itemId)
+            SmartNavigationEngine.navigateTo(targetScreen)
             true
         }
     }
 
-    // 🚀 2. ÖZEL KAZANDIRILAN INSTAGRAM TARZI AKILLI VİZÖR TETİKLEYİCİSİ
     private fun setupCaptureHub() {
-        val activity = activityRef.get() ?: return
-
         binding.btnCaptureLayout.setOnClickListener {
-            // Tok onay titreşimi (CONFIRMATION muadili)
             triggerHaptic(HapticFeedbackConstants.CONFIRM)
-            navigateTo("CAMERA")
+            SmartNavigationEngine.navigateTo(Screen.CAMERA)
         }
     }
 
-    // 🧭 KOTLIN TABANLI DÜZLEŞTİRİLMİŞ NAVİGASYON KÖPRÜSÜ
-    private fun navigateTo(tag: String) {
-        val activity = activityRef.get() ?: return
+    fun updateUISilently(@IdRes selectedMenuId: Int) {
+        val screen = Screen.fromMenuId(selectedMenuId)
 
-        val fm = activity.supportFragmentManager
-        fm.popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-
-        // Bilgi butonunu haritaya bağlama lojiği
-        val btnShowFact = activity.findViewById<View>(R.id.btnShowFact)
-        btnShowFact?.visibility = if (tag == "MAP_FRAGMENT_TAG") View.VISIBLE else View.GONE
-
-        SmartNavigationEngine.navigateTo(tag, object : FragmentProvider {
-            override fun createFragment(targetTag: String): Fragment? {
-                return when (targetTag) {
-                    "MAP_FRAGMENT_TAG" -> {
-                        SupportMapFragment().apply {
-                            if (activity is OnMapReadyCallback) {
-                                getMapAsync(activity)
-                            }
-                        }
-                    }
-                    "PROFILE" -> ProfilSayfasiFragment.newInstance(MainActivity.kullanici.id)
-                    "CHAT" -> SohbetFragment {
-                        activity.supportFragmentManager
-                            .beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                            .replace(R.id.fragment_container, com.beem.catmap.mesaj.MesajFragment(activity as MapsActivity))
-                            .addToBackStack(null)
-                            .commit()
-                    }
-                    "YUKLE" -> YuklemeArayuzuFragment()
-                    "CAMERA" -> CameraFragment()
-                    else -> null
-                }
-            }
-        }) { targetFragment ->
-            onFragmentChanged.invoke(targetFragment)
+        if (screen.tabIndex >= 0) {
+            binding.bottomNavigation.visibility = View.VISIBLE
+        } else {
+            binding.bottomNavigation.visibility = View.GONE
         }
-    }
 
-    // 🎨 ANDROID STANDARTLARINA UYGUN AKILLI SEÇİCİ (Ucube döngüler silindi dayıcım!)
-    fun updateUI(@IdRes selectedMenuId: Int) {
-        // Android'in yerleşik seçicisini uyandırarak renkleri ve durumları otomatik yönetmesini sağlıyoruz
-        if (binding.bottomNavigation.selectedItemId != selectedMenuId) {
+        val currentSelectedId = binding.bottomNavigation.selectedItemId
+
+        if (currentSelectedId != selectedMenuId) {
+            isUpdatingSilently = true
             binding.bottomNavigation.selectedItemId = selectedMenuId
+            isUpdatingSilently = false
         }
     }
 
-    // 🎯 SESSİZCE HARİTAYA DÖNDÜRME SİSTEMİ (OnBackPressed İçin)
     fun selectMapTabSilently() {
-        navigateTo("MAP_FRAGMENT_TAG")
-        updateUI(R.id.haritagit)
+        updateUISilently(com.beem.catmap.R.id.haritagit)
     }
 
     private fun triggerHaptic(feedbackConstant: Int) {

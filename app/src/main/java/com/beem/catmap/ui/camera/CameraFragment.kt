@@ -40,6 +40,8 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
+import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.SmartNavigationEngine
 
 class CameraFragment : Fragment() {
 
@@ -56,6 +58,7 @@ class CameraFragment : Fragment() {
     private val audioManager by lazy {
         requireContext().getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
     }
+
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private var cameraControl: CameraControl? = null
@@ -186,8 +189,21 @@ class CameraFragment : Fragment() {
         }
 
         binding.btnGallery.setOnClickListener { GalleryBottomSheet().show(parentFragmentManager, "GalleryBottomSheet") }
-        binding.btnClose.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.btnConfirmAll.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.btnClose.setOnClickListener {
+            SmartNavigationEngine.navigateBack()
+        }
+        binding.btnConfirmAll.setOnClickListener {
+            val currentState = viewModel.uiState.value
+            if (currentState.capturedImages.isNotEmpty()) {
+
+                SmartNavigationEngine.navigateTo(Screen.UPLOAD)
+
+            } else {
+                UiMessageManager.emitMessage(
+                    UiMessageState.Error("Lütfen önce en az bir fotoğraf çekin!")
+                )
+            }
+        }
     }
 
     private fun observeViewModel() {
