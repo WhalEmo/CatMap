@@ -5,7 +5,10 @@ import android.view.View
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import com.beem.catmap.databinding.ActivityMapsBinding
+import com.beem.catmap.ui.extensions.fadeIn
+import com.beem.catmap.ui.extensions.fadeOut
 import java.lang.ref.WeakReference
+import androidx.core.view.isVisible
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
@@ -36,26 +39,48 @@ class CatMapNavigationEngine(
         }
     }
 
-    fun updateUISilently(@IdRes selectedMenuId: Int) {
-        val screen = Screen.fromMenuId(selectedMenuId)
+    fun updateUISilently(screen: Screen) {
 
-        if (screen.tabIndex >= 0) {
-            binding.bottomNavigation.visibility = View.VISIBLE
-        } else {
-            binding.bottomNavigation.visibility = View.GONE
-        }
+        if(screen.isNode) menuShow() else menuHide()
 
-        val currentSelectedId = binding.bottomNavigation.selectedItemId
+        if (screen == Screen.MAP) mapItemViewFadeIn() else mapItemViewFadeOut()
 
-        if (currentSelectedId != selectedMenuId) {
-            isUpdatingSilently = true
-            binding.bottomNavigation.selectedItemId = selectedMenuId
-            isUpdatingSilently = false
+        screen.menuId?.let { selectedMenuId ->
+            val currentSelectedId = binding.bottomNavigation.selectedItemId
+            if (currentSelectedId != selectedMenuId) {
+                isUpdatingSilently = true
+                binding.bottomNavigation.selectedItemId = selectedMenuId
+                isUpdatingSilently = false
+            }
         }
     }
 
+    private fun menuShow(){
+        binding.bottomNavigation.fadeIn()
+        binding.btnCaptureLayout.fadeIn()
+    }
+
+    private fun menuHide(){
+        binding.bottomNavigation.fadeOut()
+        binding.btnCaptureLayout.fadeOut()
+    }
+
+    private fun mapItemViewFadeIn(){
+        val isMapLoadingVisible = binding.yuklemeekran.isVisible
+        if (!isMapLoadingVisible) {
+            binding.fabCurrentLocation.fadeIn()
+            binding.btnShowFact.fadeIn()
+        }
+    }
+
+    private fun mapItemViewFadeOut(){
+        binding.btnScanArea.fadeOut()
+        binding.fabCurrentLocation.fadeOut()
+        binding.btnShowFact.fadeOut()
+    }
+
     fun selectMapTabSilently() {
-        updateUISilently(com.beem.catmap.R.id.haritagit)
+        updateUISilently(Screen.MAP)
     }
 
     private fun triggerHaptic(feedbackConstant: Int) {

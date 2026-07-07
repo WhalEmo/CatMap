@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.navigation
 
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -29,11 +30,12 @@ class CatMapNavigationRenderer(
             .launchIn(activity.lifecycleScope)
     }
 
+
     private fun render(targetScreen: Screen, trigger: NavigationTrigger) {
         val fm = activity.supportFragmentManager
         val transaction = fm.beginTransaction()
 
-        val oldScreen = SmartNavigationEngine.getCurrentScreen()
+        val oldScreen = SmartNavigationEngine.getOldScreen() ?: SmartNavigationEngine.getCurrentScreen()
 
         // 🎯 DÜZELTİLDİ: Tüm animasyon kararlarını trigger'a göre alt metotlara devrettik usta!
         when (trigger) {
@@ -52,23 +54,28 @@ class CatMapNavigationRenderer(
                         transaction.hide(f)
                     }
                 } else {
-                    transaction.remove(f)
+                    transaction.detach(f)
                 }
             }
         }
 
-        var targetFragment = fm.findFragmentByTag(targetScreen.tag)
-        if (targetFragment == null) {
-            targetFragment = provider.createFragment(targetScreen.tag)
-            if (targetFragment != null) {
-                transaction.add(containerId, targetFragment, targetScreen.tag)
+        val targetFragment = fm.findFragmentByTag(targetScreen.tag)
+
+        when{
+            targetFragment == null -> {
+                provider.createFragment(targetScreen.tag)?.let {
+                    transaction.add(containerId, it, targetScreen.tag)
+                }
             }
-        } else {
-            transaction.show(targetFragment)
+            else -> {
+                transaction.attach(targetFragment)
+                transaction.show(targetFragment)
+            }
         }
 
         transaction.commitAllowingStateLoss()
     }
+
 
     private fun renderInitialAnimation(transaction: FragmentTransaction) {
         // İlk açılışta animasyona gerek yok, harita direkt sahneye asilce otursun
@@ -78,16 +85,25 @@ class CatMapNavigationRenderer(
         if (targetScreen == Screen.CAMERA) {
             transaction.setCustomAnimations(R.anim.slide_up, R.anim.stay_still, R.anim.pop_stay_still, R.anim.slide_down)
         } else if (targetScreen.tabIndex > oldScreen.tabIndex) {
+            Log.d("Yon", "Sağdan gelecem")
             transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
         } else {
+            Log.d("Yon", "Soldan gelecem")
             transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
         }
     }
 
     private fun renderBackwardAnimation(transaction: FragmentTransaction, oldScreen: Screen, targetScreen: Screen) {
         if (oldScreen == Screen.CAMERA) {
-            transaction.setCustomAnimations(R.anim.stay_still, R.anim.slide_down)
+            Log.d("Yon", "backward camera ${oldScreen.tag} - ${targetScreen.tag}")
+            transaction.setCustomAnimations(
+                R.anim.stay_still,
+                R.anim.slide_down,
+                R.anim.stay_still,
+                R.anim.slide_down
+            )
         } else {
+            Log.d("Yon", "backward ${oldScreen.tag} - ${targetScreen.tag}")
             transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
         }
     }

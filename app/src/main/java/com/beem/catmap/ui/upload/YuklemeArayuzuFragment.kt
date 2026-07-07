@@ -23,6 +23,8 @@ import com.beem.catmap.ui.camera.CameraFragment
 import com.beem.catmap.ui.camera.FilmStripAdapter // Mevcut yatay şerit adaptörün dayıcım
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
+import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.MobileAds
@@ -192,10 +194,7 @@ class YuklemeArayuzuFragment : Fragment() {
     }
 
     private fun openCameraFragment() {
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, CameraFragment())
-            .addToBackStack(null)
-            .commit()
+        SmartNavigationEngine.navigateTo(Screen.CAMERA)
     }
 
     private fun setupBackPressed() {

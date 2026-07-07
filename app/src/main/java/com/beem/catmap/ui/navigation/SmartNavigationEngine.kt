@@ -20,6 +20,8 @@ object SmartNavigationEngine {
     var currentScreen: Screen = Screen.MAP
         private set
 
+    private var oldScreen: Screen? = null
+
     private var currentNode: Screen = Screen.MAP
 
     @JvmStatic
@@ -35,6 +37,8 @@ object SmartNavigationEngine {
     @JvmStatic
     fun navigateTo(targetScreen: Screen) {
         if (currentScreen == targetScreen) return
+
+        oldScreen = currentScreen
 
         if (targetScreen.isNode){
             backStack.clear()
@@ -59,20 +63,20 @@ object SmartNavigationEngine {
                 backStack.push(previous)
                 currentNode = previous
             }
+            oldScreen = currentScreen
             currentScreen = previous
             emitCurrentState(previous, NavigationTrigger.BACKWARD)
         } else {
             backStack.clear()
             backStack.push(currentNode)
+            oldScreen = currentScreen
             currentScreen = currentNode
             emitCurrentState(currentScreen, NavigationTrigger.INITIAL)
         }
     }
 
     private fun emitCurrentState(screen: Screen, trigger: NavigationTrigger) {
-        screen.menuId?.let { id ->
-            uiBridge?.updateUISilently(id)
-        }
+        uiBridge?.updateUISilently(screen)
         _navigationState.value = NavigationState.Active(screen, trigger)
     }
 
@@ -80,5 +84,9 @@ object SmartNavigationEngine {
     @JvmStatic
     fun getCurrentScreen(): Screen {
         return currentScreen
+    }
+
+    fun getOldScreen(): Screen? {
+        return oldScreen
     }
 }
