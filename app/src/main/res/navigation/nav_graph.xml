@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://tools.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/fragment_map">
+
+    <fragment
+        android:id="@+id/fragment_map"
+        android:name="com.beem.catmap.ui.map.CatMapFragment"
+        android:label="Harita">
+        <action
+            android:id="@+id/action_map_to_camera"
+            app:destination="@id/dialog_camera" />
+        <action
+            android:id="@+id/action_map_to_profile"
+            app:destination="@id/fragment_profile" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_yukle"
+        android:name="com.beem.catmap.ui.upload.YuklemeArayuzuFragment"
+        android:label="Yükleniyor...">
+        <action
+            android:id="@+id/action_yukle_to_map"
+            app:destination="@id/fragment_map" />
+        <action
+            android:id="@+id/action_yukle_to_camera"
+            app:destination="@id/dialog_camera" />
+    </fragment>
+
+    <dialog
+        android:id="@+id/dialog_camera"
+        android:name="com.beem.catmap.ui.camera.CameraFragment"
+        android:label="Kamera"
+        tools:layout="@layout/fragment_camera">
+        <action
+            android:id="@+id/action_camera_to_yukle"
+            app:destination="@id/fragment_yukle" />
+    </dialog>
+
+    <fragment
+        android:id="@+id/fragment_chat"
+        android:name="com.beem.catmap.sohbet.SohbetFragment"
+        android:label="Sohbet" />
+
+    <fragment
+        android:id="@+id/fragment_profile"
+        android:name="com.beem.catmap.Profil.ProfilSayfasiFragment"
+        android:label="Profil" />
+
+</navigation>

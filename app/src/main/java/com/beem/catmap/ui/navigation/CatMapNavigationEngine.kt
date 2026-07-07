@@ -9,6 +9,7 @@ import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import java.lang.ref.WeakReference
 import androidx.core.view.isVisible
+import androidx.navigation.Navigation
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
@@ -33,10 +34,6 @@ class CatMapNavigationEngine(
     }
 
     private fun setupCaptureHub() {
-        binding.btnCaptureLayout.setOnClickListener {
-            triggerHaptic(HapticFeedbackConstants.CONFIRM)
-            SmartNavigationEngine.navigateTo(Screen.CAMERA)
-        }
     }
 
     fun updateUISilently(screen: Screen) {
