@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.navigation
 
+import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.annotation.IdRes
@@ -9,6 +10,8 @@ import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import java.lang.ref.WeakReference
 import androidx.core.view.isVisible
+import com.beem.catmap.MainActivity
+import com.beem.catmap.Profil.ProfilSayfasiFragment
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
@@ -27,7 +30,12 @@ class CatMapNavigationEngine(
             if (isUpdatingSilently) return@setOnItemSelectedListener true
 
             val targetScreen = Screen.fromMenuId(item.itemId)
-            SmartNavigationEngine.navigateTo(targetScreen)
+            SmartNavigationEngine.navigateTo(
+                targetScreen = targetScreen,
+                args = if (targetScreen == Screen.PROFILE)
+                    ProfilSayfasiFragment.newArgs(MainActivity.kullanici.id) else null,
+                key = null
+            )
             true
         }
     }

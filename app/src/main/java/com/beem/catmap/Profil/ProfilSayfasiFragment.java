@@ -3,6 +3,8 @@ package com.beem.catmap.Profil;
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.handleBackPressWithEngine;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -62,6 +64,8 @@ import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -120,6 +124,8 @@ public class ProfilSayfasiFragment extends Fragment {
     private View overlay;
     private ProgressBar progressBar;
    private SwipeRefreshLayout swipeRefreshLayout;
+
+    private static final String KEY_YUKLEYEN_ID = "yukleyenID";
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -247,6 +253,9 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
     private void TakipTakipciSayilariUI() {
+        Log.d("PROFILE", "yukleyenID değeri nedir? -> " + yukleyenID);
+        Log.d("PROFILE", "MainActivity.kullanici nesnesi null mı? -> " + (MainActivity.kullanici == null));
+        Log.d("PROFILE", "MainActivity.kullanici.getId() nesnesi null mı? -> " + (MainActivity.kullanici.getID() == null));
         if(yukleyenID.equals(MainActivity.kullanici.getID())) {
             SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
             Long cacheTakipedilen = sp.getLong("cache_takip", 0L);
@@ -297,15 +306,26 @@ public class ProfilSayfasiFragment extends Fragment {
     public static ProfilSayfasiFragment newInstance(String yukleyenID) {
         ProfilSayfasiFragment fragment = new ProfilSayfasiFragment();
         Bundle args = new Bundle();
-        args.putString("yukleyenID", yukleyenID);
+        args.putString(KEY_YUKLEYEN_ID, yukleyenID);
         fragment.setArguments(args);
         return fragment;
     }
+
+    public static Bundle newArgs(String yukleyenID){
+        Bundle args = new Bundle();
+        args.putString(KEY_YUKLEYEN_ID, yukleyenID);
+        return args;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            yukleyenID = getArguments().getString("yukleyenID");
+            yukleyenID = getArguments().getString(KEY_YUKLEYEN_ID);
+        }
+
+        if (yukleyenID == null && MainActivity.kullanici != null) {
+            yukleyenID = MainActivity.kullanici.getID();
         }
         mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     }
@@ -316,6 +336,12 @@ public class ProfilSayfasiFragment extends Fragment {
         if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
             swipeRefreshLayout.setRefreshing(false);
         }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        handleBackPressWithEngine(this);
     }
 
     @Nullable
@@ -364,37 +390,6 @@ public class ProfilSayfasiFragment extends Fragment {
         showLoading(true);
 
         uyariMesaji=new UyariMesaji(requireContext(),true);
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                /*
-                if (requireActivity() instanceof YuklemeArayuzuFragment &&!gonderiGeri) {
-                    View main = requireActivity().findViewById(R.id.main);
-                    if (main != null) {
-                        main.setVisibility(View.VISIBLE);
-                    }
-                    gonderiGeri=false;
-                }*/
-
-                // Eğer MapsActivity'deysek ve özel durumlar geçerliyse BottomSheet göster
-                if (requireActivity() instanceof MapsActivity && !takiptenDonuldu&&!gonderiGeri) {
-                    if (requireActivity() instanceof BottomSheetController) {
-                        ((BottomSheetController) requireActivity()).showBottomSheet();
-                        View main = requireActivity().findViewById(R.id.main);
-                        if (main != null) {
-                            main.setVisibility(View.GONE);
-                        }
-
-                    }
-                    takiptenDonuldu = false;
-                    gonderiGeri=false;
-                }
-
-
-                setEnabled(false); // callback'in devreden çıkması için
-                getParentFragmentManager().popBackStack();
-            }
-        });
         mViewModel.setYukleyenID(yukleyenID);
         TakipTakipciSayilariUI();
         mViewModel.takipEdilenSayisiLiveData().observe(getViewLifecycleOwner(), takipEdilenSayisi -> {
@@ -409,6 +404,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+           Log.d("NAV_BACK_DEDEKTOR",yukleyenID + "yükleyen id benim");
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
            gonderilerBaslikTextView.setVisibility(View.VISIBLE);
@@ -506,6 +502,7 @@ public class ProfilSayfasiFragment extends Fragment {
                BottomSheetAc();
            });
        }else {
+           Log.d("NAV_BACK_DEDEKTOR",yukleyenID + "yükleyen id başkasına ait");
            mViewModel.benimEngellediklerimiiGetir();
            ObserveDataSınıfı.observeOnce(mViewModel.BenimEngellediklerimLiveData(), getViewLifecycleOwner(), engelliler -> {
                if (engelliler.contains(yukleyenID)) {
@@ -767,26 +764,11 @@ public class ProfilSayfasiFragment extends Fragment {
                 ((BottomSheetController) requireActivity()).hideBottomSheet();
             }
 
-            FragmentManager fm = getParentFragmentManager();
-            FragmentTransaction transaction = fm.beginTransaction();
-
-            // Eski fragmenti gizle
-            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
-            if (mevcutFragment != null) {
-                transaction.hide(mevcutFragment);
-            }
-
-            // Yeni fragment oluştur
-            TakiplerFragment fragment = new TakiplerFragment();
             Bundle bundle = new Bundle();
-            bundle.putString("yukleyenID", Id);
+            bundle.putString(KEY_YUKLEYEN_ID, Id);
             bundle.putInt("startPage", 0); // 0 = Takipçiler
-            fragment.setArguments(bundle);
 
-            transaction
-                    .replace(R.id.fragment_container, fragment) // replace = hide+remove+add
-                    .addToBackStack(null) // geri tuşu için back stack'e ekle
-                    .commit();
+            SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, bundle, "FOLLOWERS" + Id);
         });
     }
 
@@ -799,27 +781,10 @@ public class ProfilSayfasiFragment extends Fragment {
                 ((BottomSheetController) requireActivity()).hideBottomSheet();
             }
 
-            FragmentManager fm = getParentFragmentManager();
-            FragmentTransaction transaction = fm.beginTransaction();
-
-            // Mevcut fragmenti gizle (örneğin ProfilSayfasiFragment)
-            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
-            if (mevcutFragment != null) {
-                transaction.hide(mevcutFragment);
-            }
-
-            // Yeni fragment oluşturuluyor
-            TakiplerFragment fragment = new TakiplerFragment();
             Bundle bundle = new Bundle();
-            bundle.putString("yukleyenID", Id);
+            bundle.putString(KEY_YUKLEYEN_ID, Id);
             bundle.putInt("startPage", 1); // 1 = Takipler (Takip edilenler)
-            fragment.setArguments(bundle);
-
-            // Mevcut fragment yerine yenisi konuluyor
-            transaction
-                    .replace(R.id.fragment_container, fragment) // replace = hide+remove+add
-                    .addToBackStack(null) // geri tuşu için back stack'e ekle
-                    .commit();
+            SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, bundle, "FOLLOWING" + Id);
         });
     }
 

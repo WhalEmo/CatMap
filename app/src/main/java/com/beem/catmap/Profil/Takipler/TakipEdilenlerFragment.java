@@ -16,6 +16,8 @@ import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -58,13 +60,18 @@ public class TakipEdilenlerFragment extends Fragment {
         veriCekTakipedilenler(id);
 
         adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
-            ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId); // 👈 burada kullandık
+            //ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId); // 👈 burada kullandık
+            Bundle args = ProfilSayfasiFragment.newArgs(kullaniciId);
+            SmartNavigationEngine.navigateTo(Screen.OTHER_PROFILE, args, kullaniciId);
+            /*
             requireActivity()
                     .getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
+
+             */
 
         });
 

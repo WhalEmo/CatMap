@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.navigation
 
+import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
@@ -24,14 +25,19 @@ class CatMapNavigationRenderer(
         SmartNavigationEngine.navigationState
             .onEach { state ->
                 if (state is NavigationState.Active) {
-                    render(state.screen, state.trigger)
+                    render(
+                        targetScreen = state.screen,
+                        trigger = state.trigger,
+                        newArgs = state.args,
+                        targetScreenId = state.screenId
+                    )
                 }
             }
             .launchIn(activity.lifecycleScope)
     }
 
 
-    private fun render(targetScreen: Screen, trigger: NavigationTrigger) {
+    private fun render(targetScreen: Screen, trigger: NavigationTrigger, newArgs: Bundle, targetScreenId: String) {
         val fm = activity.supportFragmentManager
         val transaction = fm.beginTransaction()
 
@@ -47,24 +53,34 @@ class CatMapNavigationRenderer(
         // 🛡️ Node Koruma ve Detay Ekran Temizliği
         val validTags = Screen.entries.map { it.tag }
         for (f in fm.fragments) {
-            if (f != null && f.tag != null && validTags.contains(f.tag)) {
-                val screen = Screen.fromTag(f.tag)
-                if (screen.isNode) {
-                    if (f.tag != targetScreen.tag) {
-                        transaction.hide(f)
+            if (f != null && f.tag != null) {
+                val baseTag = f.tag?.split("_")[0]
+
+                if (validTags.contains(baseTag)) {
+                    if (f.tag != targetScreenId) {
+                        val screen = Screen.fromTag(baseTag)
+                        if (screen.isNode) {
+                            if (f.tag != targetScreen.tag) {
+                                transaction.hide(f)
+                            }
+                        } else {
+                            transaction.detach(f)
+                        }
                     }
-                } else {
-                    transaction.detach(f)
                 }
             }
         }
 
-        val targetFragment = fm.findFragmentByTag(targetScreen.tag)
+        val targetFragment = fm.findFragmentByTag(targetScreenId)
 
         when{
             targetFragment == null -> {
-                provider.createFragment(targetScreen.tag)?.let {
-                    transaction.add(containerId, it, targetScreen.tag)
+                provider.createFragment(targetScreen.tag)?.let { newFragment ->
+                    if (!newArgs.isEmpty) {
+                        newFragment.arguments = newArgs
+                    }
+
+                    transaction.add(containerId, newFragment, targetScreenId)
                 }
             }
             else -> {

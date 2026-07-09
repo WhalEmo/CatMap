@@ -1,5 +1,7 @@
 package com.beem.catmap.Maps;
 
+import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.setupFragment;
+
 import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
@@ -65,6 +67,8 @@ import com.beem.catmap.Maps.MapKedi.Kediler;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif;
+import com.beem.catmap.Profil.Takipler.TakiplerFragment;
+import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
 import com.beem.catmap.UyariMesaji;
@@ -136,8 +140,6 @@ import java.util.Map;
 import java.util.Set;
 
 import de.hdodenhof.circleimageview.CircleImageView;
-import kotlin.Unit;
-import kotlin.jvm.functions.Function0;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback , BottomSheetController {
@@ -210,10 +212,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     yield mapFragment;
                 }
                 case UPLOAD -> new YuklemeArayuzuFragment();
+                case OTHER_PROFILE -> setupFragment(new ProfilSayfasiFragment());
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new SohbetFragment();
-                case PROFILE -> new ProfilSayfasiFragment();
+                case PROFILE -> setupFragment(new ProfilSayfasiFragment());
                 case MESSAGE -> new MesajFragment();
+                case BLOCKED_USERS -> new engellenenlerFragmnet();
+                case FOLLOWERS -> setupFragment(new TakiplerFragment()) ;
             };
         }
     };
@@ -252,6 +257,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         navigationEngine = new CatMapNavigationEngine(this, binding);
         navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);
         SmartNavigationEngine.init(navigationEngine);
+
+        SmartNavigationEngine.registerActivityCallbacks(
+                () -> {
+                    if (rightSlidingPanel != null && rightSlidingPanel.getTranslationX() == 0) {
+                        rightSlidingPanel.animate()
+                                .translationX(screenWidth)
+                                .setDuration(300)
+                                .start();
+                        return true;
+                    }
+                    return false;
+                },
+                () -> {
+                    return null;
+                }
+        );
 
         mapViewModel = new ViewModelProvider(this).get(MapViewModel.class);
 
@@ -457,30 +478,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-    @Override
-    public void onBackPressed() {
-        // 🎯 1. ÖNCELİK: Eğer sağdaki panel (sliding panel) ekranda açıksa, önce onu kapat!
-        if (rightSlidingPanel != null && rightSlidingPanel.getTranslationX() == 0) {
-            rightSlidingPanel.animate()
-                    .translationX(screenWidth)
-                    .setDuration(300)
-                    .start();
-            return; // İşlem bitti, aşağı akma usta.
-        }
-
-        // 🎯 2. ÖNCELİK: Reaktif Motorun Hafızasını Sorgula!
-        Screen currentScreen = SmartNavigationEngine.getCurrentScreen();
-
-        if (currentScreen != Screen.MAP) {
-            // Eğer haritada değilsek (Kamera, Upload, Chat vs. bir yerdeysek), motora "Geri Git" emrini ver!
-            // Motor arkadaki Stack'ten bir önceki ekranı şak diye çekip ekrana pürüzsüzce basacak.
-            SmartNavigationEngine.navigateBack();
-        } else {
-            // 🎯 3. ÖNCELİK: Zaten Haritadaysak ve geri basıldıysa uygulamadan güvenle çıkış lojiğini çalıştır.
-            CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi();
-            super.onBackPressed();
-        }
-    }
 
 
     private void merkeziBackStackChangedListener(Fragment paramFragment){

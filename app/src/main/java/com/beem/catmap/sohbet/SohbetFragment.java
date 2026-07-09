@@ -54,7 +54,11 @@ public class SohbetFragment extends Fragment {
 
         adapter.setOnSohbetClickListener(sohbet ->{
             if (getActivity() instanceof MapsActivity) {
-                SmartNavigationEngine.navigateTo(Screen.MESSAGE);
+                SmartNavigationEngine.navigateTo(
+                        Screen.MESSAGE,
+                        null,
+                        sohbet.getSohbetID()
+                );
             }
         });
     }

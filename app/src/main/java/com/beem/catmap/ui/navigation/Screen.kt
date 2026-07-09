@@ -8,8 +8,11 @@ enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, v
     UPLOAD("YUKLE", 1, R.id.upload, true),
     CHAT("CHAT", 2, R.id.sohbet, true),
     PROFILE("PROFILE", 3, R.id.profilim, true),
+    OTHER_PROFILE("OTHER_PROFILE", -1, null),
     CAMERA("CAMERA", -1, null),
-    MESSAGE("MESSAGE", -1, null);
+    MESSAGE("MESSAGE", -1, null),
+    BLOCKED_USERS("BLOCKED_USERS", -1, null),
+    FOLLOWERS("FOLLOWERS", -1, null);
 
     companion object {
         fun fromTag(tag: String?): Screen = entries.find { it.tag == tag } ?: MAP
