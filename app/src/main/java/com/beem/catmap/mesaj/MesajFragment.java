@@ -2,6 +2,8 @@ package com.beem.catmap.mesaj;
 
 import static android.app.Activity.RESULT_OK;
 
+import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.handleBackPressWithEngine;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
@@ -79,11 +81,15 @@ public class MesajFragment extends Fragment {
     private boolean engellendim;
     private boolean engelledim;
 
-    public static MesajFragment newInstance(Context context){
-        return new MesajFragment(context);
+    public MesajFragment(){
     }
-    public MesajFragment(Context context){
-        this.context = context;
+
+    @Override
+    public void onViewCreated(@androidx.annotation.NonNull View view, @androidx.annotation.Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        context = requireContext();
+
+        handleBackPressWithEngine(this);
     }
 
     @Nullable
@@ -93,16 +99,6 @@ public class MesajFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.mesajlasma, container, false);
 
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                new OnBackPressedCallback(true){
-                    @Override
-                    public void handleOnBackPressed() {
-                        mesajlasmaYonetici.DinleyiciKaldir();
-                        mesajlasmaYonetici.setAlici(null);
-                        mesajlasmaYonetici.setSohbetID(null);
-                        requireActivity().getSupportFragmentManager().popBackStack();
-                    }
-                });
 
         if(requireActivity() instanceof MapsActivity){
             requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);

@@ -1004,7 +1004,7 @@ public class ProfilSayfasiFragment extends Fragment {
             MesajlasmaYonetici.getInstance().setAlici(alici);
             FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
             FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.fragment_container, new MesajFragment(requireContext()));
+            transaction.replace(R.id.fragment_container, new MesajFragment());
             transaction.addToBackStack(null);
             transaction.commit();
         });
@@ -1017,7 +1017,7 @@ public class ProfilSayfasiFragment extends Fragment {
         MesajlasmaYonetici.getInstance().setAlici(alici);
         FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, new MesajFragment(requireContext()));
+        transaction.replace(R.id.fragment_container, new MesajFragment());
         transaction.addToBackStack(null);
         transaction.commit();
     }

@@ -21,13 +21,20 @@ import java.util.ArrayList;
 public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetViewHolder> {
     private ArrayList<Sohbet> sohbetArrayList;
     private Context context;
-    private Runnable MesajFragment;
 
+    private OnSohbetClickListener clickListener;
 
-    public SohbetAdapter(ArrayList<Sohbet> sohbetArrayList, Context context, Runnable MesajFragment) {
+    public interface OnSohbetClickListener {
+        void onSohbetClick(Sohbet sohbet);
+    }
+
+    public SohbetAdapter(ArrayList<Sohbet> sohbetArrayList, Context context) {
         this.sohbetArrayList = sohbetArrayList;
         this.context = context;
-        this.MesajFragment = MesajFragment;
+    }
+
+    public void setOnSohbetClickListener(OnSohbetClickListener listener) {
+        this.clickListener = listener;
     }
 
     @NonNull
@@ -56,7 +63,10 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
             MesajlasmaYonetici.getInstance().setSohbetID(sohbet.getSohbetID());
             MesajlasmaYonetici.getInstance().DinleyiciKaldir();
             SohbetYonetici.getInstance().DinleyicileriKaldir(sohbetArrayList);
-            this.MesajFragment.run();
+
+            if (clickListener != null) {
+                clickListener.onSohbetClick(sohbet);
+            }
         });
 
         if(sohbet.getOkunmamisMesajSayisi() != 0){

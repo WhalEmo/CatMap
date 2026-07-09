@@ -29,6 +29,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -210,14 +211,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
                 case UPLOAD -> new YuklemeArayuzuFragment();
                 case CAMERA -> new CameraFragment();
-                case CHAT -> getSohbetFragment();
+                case CHAT -> new SohbetFragment();
                 case PROFILE -> new ProfilSayfasiFragment();
+                case MESSAGE -> new MesajFragment();
             };
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            Log.e("CRASH_DETECTOR", "Uygulama fena patladı dayıcım! İşte hatan: ", throwable);
+
+            Process.killProcess(Process.myPid());
+            System.exit(10);
+        });
+
         super.onCreate(savedInstanceState);
         Window window = getWindow();
         WindowCompat.setDecorFitsSystemWindows(window, true);
@@ -1565,17 +1575,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 UiMessageManager.INSTANCE.clear();
             }
-        });
-    }
-
-    private Fragment getSohbetFragment(){
-        return new SohbetFragment(()->{
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                    .replace(R.id.fragment_container, new MesajFragment(getApplicationContext()))
-                    .addToBackStack(null)
-                    .commit();
         });
     }
 
