@@ -13,7 +13,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -87,6 +86,7 @@ import com.beem.catmap.ui.camera.CameraFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
+import com.beem.catmap.ui.map.CatMapFragment;
 import com.beem.catmap.ui.navigation.CatMapNavigationEngine;
 import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
@@ -184,7 +184,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private TextView begeniSayisiTextView;
     private ImageView GonderiEkleButton;
     private UyariMesaji mesaji;
-    private Marker sonTiklananMarker;
+    public Marker sonTiklananMarker;
     String gosterilecekKediID;
     private MainViewModel mViewModel;
     private ImageView btnShowFact;
@@ -206,11 +206,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         public Fragment createFragment(@NonNull String tag) {
             Screen screen = Screen.Companion.fromTag(tag);
             return switch (screen) {
-                case MAP -> {
-                    SupportMapFragment mapFragment = new SupportMapFragment();
-                    mapFragment.getMapAsync(MapsActivity.this);
-                    yield mapFragment;
-                }
+                case MAP -> new CatMapFragment();
                 case UPLOAD -> new YuklemeArayuzuFragment();
                 case OTHER_PROFILE -> setupFragment(new ProfilSayfasiFragment());
                 case CAMERA -> new CameraFragment();
@@ -280,6 +276,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         uiMessageManagerObserver();
 
 
+        /*
 
         FloatingActionButton fabCurrentLocation = findViewById(R.id.fabCurrentLocation);
 
@@ -294,6 +291,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 );
             }
         });
+
+         */
 
         yuklemeEkrani = findViewById(R.id.yuklemeekran);
         btnShowFact=findViewById(R.id.btnShowFact);
@@ -469,15 +468,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }, 250);
         });
         gosterilecekKediID = getIntent().getStringExtra("kediId");
+        /*
         if (gosterilecekKediID != null) {
             HaritadaGor(gosterilecekKediID);
         }
+        */
          /// REKLAM
         AdRequest adRequest = new AdRequest.Builder().build();
         adView.loadAd(adRequest);
 
     }
-
 
 
     private void merkeziBackStackChangedListener(Fragment paramFragment){
@@ -602,10 +602,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onResume();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
         CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+        /*
             if (KediSilmeDurumu.getInstance().isSilindiMi()) {
                 vericekme();
                 KediSilmeDurumu.getInstance().setSilindiMi(false); // sıfırla
         }
+
+         */
     }
     @Override
     protected void onStop() {
@@ -662,6 +665,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         konumAlindi = true;
     }
     private Target picassoTarget;
+    /*
     public void HaritadaGor(String kediid) {
         if(bottomSheetDialog.isShowing()){
             bottomSheetDialog.dismiss();
@@ -731,8 +735,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Log.e("HaritadaGor", "Firestore hatası: ", e);
                 });
     }
+    */
 
-
+    /*
     public void vericekme() {
         db.collection("cats").get().addOnSuccessListener(queryDocumentSnapshots -> {
             for (DocumentSnapshot satir : queryDocumentSnapshots) {
@@ -801,6 +806,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
    }
+
+     */
    private void GonderiBegenisiEkleme(String kediId){
        DocumentReference ref = db.collection("users").document(MainActivity.kullanici.getID());
        DocumentReference kediRef = db.collection("cats").document(kediId);
@@ -878,6 +885,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     List<Target> targets = new ArrayList<>();
     ArrayList<Marker>markerlar=new ArrayList<>();
     HashMap<String, Object> markerKEY = new HashMap<>();
+    /*
     public void resimlimarker() {
         runOnUiThread(() -> {
             for (Kediler kedi : kediler) {
@@ -919,6 +927,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
     }
+    */
 
     private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
@@ -1368,6 +1377,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        /*
         btnShowFact.setVisibility(View.VISIBLE);
         markerKEY.clear();
         markerlar.clear();
@@ -1399,6 +1409,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+         */
+        Log.d("MIGRATION_LOG", "Aktivite onMapReady boşa çıkarıldı, ipler Fragment'ta.");
     }
 
     @Override
@@ -1462,7 +1474,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     kediler.add(kedi);
                 }
 
-                resimlimarker();
+                //resimlimarker();
             }
         });
 

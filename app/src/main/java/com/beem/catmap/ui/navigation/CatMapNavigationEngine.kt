@@ -76,14 +76,12 @@ class CatMapNavigationEngine(
     private fun mapItemViewFadeIn(){
         val isMapLoadingVisible = binding.yuklemeekran.isVisible
         if (!isMapLoadingVisible) {
-            binding.fabCurrentLocation.fadeIn()
             binding.btnShowFact.fadeIn()
         }
     }
 
     private fun mapItemViewFadeOut(){
         binding.btnScanArea.fadeOut()
-        binding.fabCurrentLocation.fadeOut()
         binding.btnShowFact.fadeOut()
     }
 
