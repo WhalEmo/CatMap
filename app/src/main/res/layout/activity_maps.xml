@@ -19,39 +19,6 @@
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
 
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/btnScanArea"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="56dp"
-        android:text="Bu Alanı Tara"
-        android:textColor="@color/catmap_primary"
-        android:fontFamily="sans-serif-medium"
-        app:backgroundTint="@color/catmap_surface_translucent"
-        app:icon="@drawable/ic_refresh_minimal"
-        app:iconTint="@color/catmap_primary"
-        app:elevation="4dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btnShowFact"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="56dp"
-        android:layout_marginEnd="24dp"
-        app:backgroundTint="@color/catmap_surface_translucent"
-        app:tint="@color/catmap_primary"
-        app:elevation="4dp"
-        app:fabSize="mini"
-        android:src="@drawable/ic_info_outline"
-        android:contentDescription="Kedi Bilgisi"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"

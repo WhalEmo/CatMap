@@ -111,14 +111,27 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         mMap!!.setOnMarkerClickListener { marker ->
             if (marker.title != "konum") {
-                if (activity is MapsActivity) {
-                    (activity as MapsActivity).sonTiklananMarker = marker
-                    (activity as MapsActivity).kedibilgisigetirme(marker.position)
+                val cat = findCat(marker.position)
+
+                cat?.let {
+                    if (activity is MapsActivity) {
+                        (activity as MapsActivity).sonTiklananMarker = marker
+                        // Metodun parametresi Kediler nesnesi bekleyecek şekilde güncellendi usta
+                        (activity as MapsActivity).kedibilgisigetirme(it)
+                    }
                 }
             }
             true
         }
 
+    }
+
+    private fun findCat(location: LatLng): Kediler? {
+        return kediler.firstOrNull { cat ->
+            val epsilon = 0.000001
+            Math.abs(cat.latitude - location.latitude) < epsilon &&
+                    Math.abs(cat.longitude - location.longitude) < epsilon
+        }
     }
 
     private fun setupClickListeners() {
