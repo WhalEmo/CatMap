@@ -161,7 +161,7 @@ public class GonderiDetayFragment extends Fragment {
                 MapsActivity mapsActivity = (MapsActivity) getActivity();
                 Log.d("update", "onCreateView: haritada gör");
                 //mapsActivity.setSelectedItemSpeacial(R.id.haritagit);
-                mapsActivity.HaritadaGor(kediid);
+                //mapsActivity.HaritadaGor(kediid);
             }
         });
         return view;
