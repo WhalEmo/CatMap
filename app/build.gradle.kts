@@ -4,14 +4,15 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
     id("com.google.gms.google-services")
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace = "com.emrullah.catmap"
+    namespace = "com.beem.catmap"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.emrullah.catmap"
+        applicationId = "com.beem.catmap"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -37,6 +38,9 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
     tasks.withType<JavaCompile> {
         options.compilerArgs.add("-Xlint:deprecation")
     }
@@ -60,7 +64,8 @@ dependencies {
     implementation("com.facebook.shimmer:shimmer:0.5.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
-
+    implementation("androidx.fragment:fragment-ktx:1.8.1")
+    implementation("androidx.activity:activity-ktx:1.9.0")
 
     implementation("com.android.volley:volley:1.2.1")
 
@@ -70,6 +75,8 @@ dependencies {
     implementation("com.facebook.shimmer:shimmer:0.5.0")
 
     implementation("com.google.android.gms:play-services-ads:23.0.0")
+    implementation(libs.core.ktx)
+    implementation(libs.androidx.constraintlayout)
 
 
     testImplementation(libs.junit)
@@ -90,4 +97,18 @@ dependencies {
 
     implementation(libs.google.play.core)
 
+
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
+
+    implementation("com.firebase:geofire-android-common:3.2.0")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    val navVersion = "2.8.5"
+    implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
+    implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 }

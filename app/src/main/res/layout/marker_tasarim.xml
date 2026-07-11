@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="0dp">
-
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/marker_image"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:src="@drawable/arkaplan"
-        android:scaleType="centerCrop"
-        android:layout_marginBottom="0dp"/>
+    android:background="@android:color/transparent">
 
     <ImageView
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:src="@drawable/markerkedy" />
-</LinearLayout>
+        android:id="@+id/marker_bg"
+        android:layout_width="64dp"
+        android:layout_height="76dp"
+        android:src="@drawable/ic_cat_pin_bg"
+        android:scaleType="fitCenter" />
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/marker_cat_image"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="9dp"
+        android:src="@drawable/marker_cat_placeholder"
+        app:civ_border_width="2dp"
+        app:civ_border_color="#FFFFFF" />
+
+</FrameLayout>

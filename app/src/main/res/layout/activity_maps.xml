@@ -1,216 +1,160 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
-    tools:context=".MapsActivity">
-    <RelativeLayout
-        android:id="@+id/anaGorunum"
-        android:visibility="visible"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    tools:context=".Maps.MapsActivity">
 
-    <fragment
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- Yükleme ekranı -->
-    <RelativeLayout
-        android:id="@+id/yuklemeekran"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <ImageView
-            android:id="@+id/backgroundImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/haritayuklemearkaplan" />
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:indeterminateTint="#13216E" />
-
-        <TextView
-            android:id="@+id/loadingText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/progressBar"
-            android:layout_centerHorizontal="true"
-            android:layout_margin="8dp"
-            android:layout_marginTop="16dp"
-            android:padding="8dp"
-            android:shadowColor="#80000000"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="3"
-            android:text="Harita Yükleniyor..."
-            android:textColor="#13216E"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <!-- Extended FAB tam ortalanmış -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragment_container"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:navGraph="@navigation/nav_graph"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
 
 
-        <RelativeLayout
-            android:id="@+id/arrowContainer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-                android:id="@+id/btnScanArea"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:layout_centerHorizontal="true"
-                android:layout_alignParentTop="true"
-                android:letterSpacing="0.03"
-                android:paddingStart="28dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="28dp"
-                android:paddingBottom="14dp"
-                android:text="Bu Alanı Tara"
-                android:textColor="@android:color/white"
-                android:textStyle="bold"
-                android:visibility="gone"
-                app:backgroundTint="#13216E"
-                app:elevation="8dp"
-                app:icon="@drawable/dalga_efekti"
-                app:iconTint="@android:color/white"
-                app:rippleColor="#332B5EA3" />
-            <ImageView
-                android:id="@+id/btnShowFact"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:visibility="gone"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true"
-                android:layout_margin="30dp"
-                android:src="@drawable/kitty"
-                android:background="@null"
-                android:contentDescription="Kedi Bilgisi Göster" />
-
-
-            <ImageButton
-                android:id="@+id/btnLeftArrow"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:layout_marginStart="16dp"
-                android:background="@drawable/ok_buton_ap"
-                android:contentDescription="Sola Giden Ok"
-                android:elevation="6dp"
-                android:src="@drawable/sol_ok"
-                android:visibility="invisible"
-                map:tint="#FFFFFF" />
-
-            <ImageButton
-                android:id="@+id/btnRightArrow"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="16dp"
-                android:background="@drawable/ok_buton_ap"
-                android:contentDescription="Sağa Giden Ok"
-                android:elevation="6dp"
-                android:src="@drawable/sag_ok"
-                android:visibility="invisible"
-                map:tint="#FFFFFF" />
-
-        </RelativeLayout>
-        <View
-            android:id="@+id/touchBlocker"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#00000000"
-            android:visibility="gone" />
-
-    </RelativeLayout>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:menu="@menu/bottom_nav_menu"
+        android:theme="@style/Theme.CatMap.BottomNavOverlay"
+        app:backgroundTint="@color/catmap_surface_white"
+        app:itemIconTint="@color/bottom_nav_colors"
+        app:itemTextColor="@color/bottom_nav_colors"
+        app:elevation="8dp"
+        app:labelVisibilityMode="labeled" />
 
     <FrameLayout
-        android:id="@+id/container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/transparent"
-        tools:context=".Profil_Sayfasi" />
+        android:id="@+id/btnCaptureLayout"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="32dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="16dp"
+        android:visibility="gone"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintBottom_toBottomOf="@id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="@id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="@id/bottom_navigation">
+
+        <View
+            android:id="@+id/btnCapture"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_instagram_capture_inner" />
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:backgroundTint="@color/catmap_primary"
+            android:background="@drawable/camera" />
+    </FrameLayout>
+
+    <View
+        android:id="@+id/viewDimScrim"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <FrameLayout
         android:id="@+id/rightSlidingPanel"
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:background="@drawable/panel_background"
-        android:elevation="12dp"
-        android:translationX="580dp"
-        android:padding="16dp">
+        android:elevation="24dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:translationY="30dp"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:layout_height="match_parent"
+            android:padding="16dp">
+
             <ImageButton
                 android:id="@+id/btnClosePanel"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_gravity="end"
-                android:translationY="-10dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@null"
                 android:src="@drawable/kirmizi_hata"
-                android:contentDescription="Paneli Kapat" />
+                android:contentDescription="Paneli Kapat"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <ImageView
                 android:id="@+id/imgKedi"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:translationY="-10dp"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_marginTop="16dp"
                 android:src="@drawable/cats"
                 android:contentDescription="Kedi resmi"
                 android:scaleType="centerCrop"
-                android:layout_gravity="center_horizontal"/>  <!-- Gerekirse -->
+                app:layout_constraintTop_toBottomOf="@id/btnClosePanel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <TextView
                 android:id="@+id/panelTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="🐾 Bilgi 🐾 "
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#13216E"
-                android:gravity="center"
-                android:paddingBottom="8dp"/>
+                android:textColor="@color/catmap_primary"
+                app:layout_constraintTop_toBottomOf="@id/imgKedi"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <TextView
                 android:id="@+id/tvCatFactSliding"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="24dp"
                 android:text="Kedi bilgisi burada gözükecek"
                 android:textSize="16sp"
-                android:textColor="#333333"
+                android:textColor="@color/catmap_text_dark"
                 android:lineSpacingExtra="4dp"
-                android:gravity="center"/>
+                android:gravity="center_horizontal"
+                app:layout_constraintTop_toBottomOf="@id/panelTitle"
+                app:layout_constraintBottom_toTopOf="@+id/adView"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
             <com.google.android.gms.ads.AdView
                 android:id="@+id/adView"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
                 ads:adSize="BANNER"
-                ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
+                ads:adUnitId="ca-app-pub-3940256099942544/6300978111"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-        </LinearLayout>
-
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </FrameLayout>
 
-</FrameLayout>
-
+</androidx.constraintlayout.widget.ConstraintLayout>

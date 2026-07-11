@@ -7,4 +7,21 @@
         <item name="android:windowMinWidthMinor">90%</item>
         <item name="android:textColor">#212121</item>
     </style>
+
+
+    <style name="CatMapGridImageShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <style name="CatMapThumbImageShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
+
+    <style name="CatMapPremiumThumbShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
 </resources>

@@ -1,14 +1,75 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:android="http://schemas.android.com/apk/res/android">
+
     <style name="Base.Theme.CatMap" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
+
     <style name="MapsTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <style name="Theme.CatMap" parent="Base.Theme.CatMap" />
+    <style name="CatMapDialogTheme" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.CatMap" parent="Theme.Material3.DayNight.NoActionBar">
+
+        <item name="colorPrimary">@color/catmap_primary</item>
+        <item name="colorOnPrimary">@color/catmap_text_light</item>
+        <item name="colorPrimaryContainer">@color/catmap_surface_white</item>
+        <item name="colorOnPrimaryContainer">@color/catmap_primary_dark</item>
+
+        <item name="colorSecondary">@color/catmap_accent</item>
+        <item name="colorOnSecondary">@color/catmap_text_light</item>
+        <item name="colorSecondaryContainer">@color/catmap_accent_alpha_15</item>
+        <item name="colorOnSecondaryContainer">@color/catmap_accent</item>
+        <item name="colorAccent">@color/catmap_accent</item>
+
+        <item name="android:windowBackground">@color/catmap_background</item>
+        <item name="colorSurface">@color/catmap_surface_white</item>
+        <item name="colorOnSurface">@color/catmap_text_dark</item>
+
+        <item name="colorSurfaceVariant">@color/catmap_background</item>
+        <item name="colorOnSurfaceVariant">@color/catmap_text_muted</item>
+        <item name="colorOutline">@color/catmap_border</item>
+
+        <item name="colorError">@color/catmap_error</item>
+
+        <item name="android:statusBarColor">@color/catmap_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:navigationBarColor">@color/catmap_surface_white</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+
+        <item name="textInputStyle">@style/Widget.CatMap.TextInputLayout</item>
+        <item name="materialButtonStyle">@style/Widget.CatMap.Button</item>
+        <item name="elevationOverlayEnabled">false</item>
+    </style>
+
+    <style name="Theme.CatMap.BottomNavOverlay" parent="">
+        <item name="colorSecondaryContainer">@android:color/transparent</item>
+        <item name="colorControlHighlight">#1AF97316</item>
+
+        <item name="itemRippleColor">#1AF97316</item>
+    </style>
+
+    <style name="Widget.CatMap.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="boxStrokeColor">@color/selector_text_input_stroke</item>
+        <item name="hintTextColor">@color/catmap_accent</item>
+        <item name="android:textColorHint">#A0A0A0</item>
+    </style>
+
+    <style name="Widget.CatMap.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">14dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:fontFamily">sans-serif-condensed-bold</item>
+    </style>
 
 </resources>

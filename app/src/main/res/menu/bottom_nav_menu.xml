@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/fragment_map"
+        android:icon="@drawable/mapmenu"
+        android:title="Harita" />
+
+    <item
+        android:id="@+id/fragment_yukle"
+        android:icon="@drawable/ic_cat_menu"
+        android:title="Yükle" />
+
+    <item
+        android:id="@+id/camera_placeholder"
+        android:icon="@android:color/transparent"
+        android:title=""
+        android:checkable="false"
+        android:enabled="false" />
+
+    <item
+        android:id="@+id/fragment_chat"
+        android:icon="@drawable/sohbetbuton"
+        android:title="Sohbet" />
+
+    <item
+        android:id="@+id/fragment_profile"
+        android:icon="@drawable/profilmenu"
+        android:title="Profil" />
+
+</menu>

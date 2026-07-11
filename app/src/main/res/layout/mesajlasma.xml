@@ -72,6 +72,7 @@
 
     <LinearLayout
         android:id="@+id/mesaj_gonder_layout"
+        android:visibility="gone"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -128,6 +129,24 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/engelKaldir"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ENGELİ KALDIR"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_engel_kaldir"
+                android:gravity="center"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="16dp"
+                android:letterSpacing="0.05"
+                android:textAllCaps="true"
+                android:visibility="gone"
+                android:elevation="2dp"
+                />
 
             <EditText
                 android:id="@+id/mesajEditText"
