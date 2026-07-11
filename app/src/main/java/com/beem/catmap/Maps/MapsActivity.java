@@ -132,14 +132,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import de.hdodenhof.circleimageview.CircleImageView;
 
 
 public class MapsActivity extends AppCompatActivity implements BottomSheetController {
 
     private ActivityMapsBinding binding;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private FusedLocationProviderClient fusedLocationClient;
     private BottomSheetDialog bottomSheetDialog;
     private View bottomSheetView;
     private TextView isim, hakkinda;
@@ -151,7 +149,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     public LinearLayout yorumicin;
     public LinearLayout ynticin;
     public LinearLayout carpiicin;
-    private ConstraintLayout yuklemeEkrani;
     private TextView bosyorum;
     private ImageButton iptalButton;
     public EditText kimeyanit;
@@ -262,10 +259,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         uiMessageManagerObserver();
 
-
-        yuklemeEkrani = findViewById(R.id.yuklemeekran);
-        btnClose = findViewById(R.id.btnClosePanel);
         rightSlidingPanel = findViewById(R.id.rightSlidingPanel);
+        btnClose = findViewById(R.id.btnClosePanel);
         TextView tvCatFactSliding = findViewById(R.id.tvCatFactSliding);
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -283,7 +278,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     .start();
         });
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         konumizni();
 
         mesaji=new UyariMesaji(this,true);
@@ -458,7 +452,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     1001);
         } else {
-            Toast.makeText(this, "Konum izni zaten verilmiş.", Toast.LENGTH_SHORT).show();
+            UiMessageManager.INSTANCE.emitMessage(new UiMessageState.Info("Konum izni zaten verilmiş."));
         }
     }
 

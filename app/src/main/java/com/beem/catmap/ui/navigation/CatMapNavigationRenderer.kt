@@ -3,6 +3,7 @@ package com.beem.catmap.ui.navigation
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -50,21 +51,23 @@ class CatMapNavigationRenderer(
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
         }
 
-        // 🛡️ Node Koruma ve Detay Ekran Temizliği
+        for (f in fm.fragments) {
+            f.fragmentLog("BEFORE")
+        }
+
         val validTags = Screen.entries.map { it.tag }
         for (f in fm.fragments) {
             if (f != null && f.tag != null) {
-                val baseTag = f.tag?.split("_")[0]
+                val baseTag = f.tag?.extractBaseTag()
 
                 if (validTags.contains(baseTag)) {
                     if (f.tag != targetScreenId) {
                         val screen = Screen.fromTag(baseTag)
                         if (screen.isNode) {
-                            if (f.tag != targetScreen.tag) {
-                                transaction.hide(f)
-                            }
+                            transaction.hide(f)
                         } else {
-                            transaction.detach(f)
+                            f.view?.clearAnimation()
+                            transaction.remove(f)
                         }
                     }
                 }
@@ -81,15 +84,25 @@ class CatMapNavigationRenderer(
                     }
 
                     transaction.add(containerId, newFragment, targetScreenId)
+
+                    newFragment.fragmentLog("CREATE FRAGMENT")
                 }
             }
             else -> {
-                transaction.attach(targetFragment)
+                if (targetFragment.isDetached) {
+                    transaction.attach(targetFragment)
+                }
                 transaction.show(targetFragment)
+
+                targetFragment.fragmentLog("CACHE FRAGMENT")
             }
         }
 
         transaction.commitAllowingStateLoss()
+
+        for (f in fm.fragments) {
+            f.fragmentLog("AFTER")
+        }
     }
 
 

@@ -1,6 +1,7 @@
 package com.beem.catmap.Profil.Takipler;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,6 +57,7 @@ public class TakipcilerFragment extends Fragment {
         // ID'yi alıyoruz
         if (getArguments() != null) {
             id = getArguments().getString("profilID");
+            Log.d("FIRESTORE_KORUMA", "TakipcilerFragment'a gelen ID: " + id);
         } else {
             id = MainActivity.kullanici.getID(); // Yedek olarak kendi ID'miz
         }
@@ -80,6 +82,10 @@ public class TakipcilerFragment extends Fragment {
 
     }
     public void veriCekTakipciler(String Id){
+        if (Id == null || Id.trim().isEmpty()) {
+            Log.e("FIRESTORE_KORUMA", "Kaptan: Takipçi çekilecek kullanıcı ID'si null geldi, sorgu iptal edildi!");
+            return;
+        }
         progressBar.setVisibility(View.VISIBLE);
         db.collection("users")
                 .document(Id)

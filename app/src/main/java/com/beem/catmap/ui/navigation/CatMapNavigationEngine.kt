@@ -74,18 +74,9 @@ class CatMapNavigationEngine(
     }
 
     private fun mapItemViewFadeIn(){
-        val isMapLoadingVisible = binding.yuklemeekran.isVisible
-        if (!isMapLoadingVisible) {
-            //binding.btnShowFact.fadeIn()
-        }
     }
 
     private fun mapItemViewFadeOut(){
-        /*
-        binding.btnScanArea.fadeOut()
-        binding.btnShowFact.fadeOut()
-
-         */
     }
 
     fun selectMapTabSilently() {

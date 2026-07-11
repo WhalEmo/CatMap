@@ -20,3 +20,41 @@ fun setupFragment(fragment: Fragment): Fragment{
     }
     return fragment
 }
+
+fun Fragment.fragmentLog(durum: String) {
+    val tagStr = this.tag ?: "TAG_YOK"
+    val className = this::class.java.simpleName
+
+    val argsStr = this.arguments?.let { bundle ->
+        bundle.keySet().joinToString(", ") { key -> "$key=${bundle.get(key)}" }
+    } ?: "Argüman Yok"
+
+    val stateReport = buildString {
+        append("Added: ${this@fragmentLog.isAdded} | ")
+        append("Visible: ${this@fragmentLog.isVisible} | ")
+        append("Resumed: ${this@fragmentLog.isResumed} | ")
+        append("Hidden: ${this@fragmentLog.isHidden} | ")
+        append("Detached: ${this@fragmentLog.isDetached}")
+    }
+
+    Log.d("NAV_BACK_DEDEKTOR", "╔═════════ 📊 FRAGMENT RAPORU ($durum) ═════════")
+    Log.d("NAV_BACK_DEDEKTOR", "║ 📦 Sınıf: $className")
+    Log.d("NAV_BACK_DEDEKTOR", "║ 🏷️ Tag  : $tagStr")
+    Log.d("NAV_BACK_DEDEKTOR", "║ 🩺 Durum: $stateReport")
+    Log.d("NAV_BACK_DEDEKTOR", "║ 🔑 Veriler: [$argsStr]")
+    Log.d("NAV_BACK_DEDEKTOR", "╚════════════════════════════════════════════════")
+}
+
+fun String.extractBaseTag(): String {
+    val matchingEnum = Screen.entries.firstOrNull { this.startsWith(it.tag) }
+    if (matchingEnum != null) {
+        return matchingEnum.tag
+    }
+
+    val lastUnderScoreIndex = this.lastIndexOf("_")
+    return if (lastUnderScoreIndex != -1) {
+        this.substring(0, lastUnderScoreIndex)
+    } else {
+        this
+    }
+}

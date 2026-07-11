@@ -116,7 +116,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 cat?.let {
                     if (activity is MapsActivity) {
                         (activity as MapsActivity).sonTiklananMarker = marker
-                        // Metodun parametresi Kediler nesnesi bekleyecek şekilde güncellendi usta
                         (activity as MapsActivity).kedibilgisigetirme(it)
                     }
                 }
