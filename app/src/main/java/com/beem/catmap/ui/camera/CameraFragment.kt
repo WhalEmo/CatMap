@@ -44,6 +44,7 @@ import java.util.concurrent.Executors
 import androidx.fragment.app.DialogFragment
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 
 class CameraFragment : DialogFragment() {
 
@@ -93,6 +94,8 @@ class CameraFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        handleBackPressWithEngine()
 
         dialog?.setCanceledOnTouchOutside(false)
         dialog?.setCancelable(true)
@@ -214,7 +217,10 @@ class CameraFragment : DialogFragment() {
         }
 
         binding.btnGallery.setOnClickListener {
-
+            if (isAdded && isResumed) {
+                val gallerySheet = GalleryBottomSheet()
+                gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
+            }
         }
         binding.btnClose.setOnClickListener {
             SmartNavigationEngine.navigateBack()

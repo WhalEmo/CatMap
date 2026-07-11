@@ -49,6 +49,16 @@ public class GonderiDetayFragment extends Fragment {
     private Long begeni;
     private String kediid;
 
+    public static Bundle newBundle(ArrayList<String> fotoListesi, String kediAdi, String aciklama, Long begeni,String kediid) {
+        Bundle args = new Bundle();
+        args.putStringArrayList(ARG_FOTO_LIST, fotoListesi);
+        args.putString(ARG_KEDI_ADI, kediAdi);
+        args.putString(ARG_ACIKLAMA, aciklama);
+        args.putLong(ARG_BEGENİ, begeni != null ? begeni : 0L);
+        args.putString(ARG_KEDIID,kediid);
+        return args;
+    }
+
     public static GonderiDetayFragment newInstance(ArrayList<String> fotoListesi, String kediAdi, String aciklama, Long begeni,String kediid) {
         GonderiDetayFragment fragment = new GonderiDetayFragment();
         Bundle args = new Bundle();

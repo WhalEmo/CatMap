@@ -5,7 +5,6 @@ import static android.content.Context.MODE_PRIVATE;
 
 import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.handleBackPressWithEngine;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -54,16 +53,12 @@ import com.beem.catmap.KullaniciAuth.HesapSil;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter;
-import com.beem.catmap.Profil.Takipler.TakiplerFragment;
-import com.beem.catmap.YuklemeArayuzuFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.mesaj.MesajlasmaYonetici;
 
 import com.beem.catmap.BottomSheetController;
-import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
-import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.facebook.shimmer.ShimmerFrameLayout;
@@ -157,17 +152,56 @@ public class ProfilSayfasiFragment extends Fragment {
         ft.attach(this).commitNow();  // Hemen tekrar attach et
     }
 
+    private void fragmentiYenidenYukle_v2() {
+        if (mViewModel != null && yukleyenID != null) {
+            // 1. Önce kullanıcıya yükleniyor loader'ını asilce göster
+            showLoading(true);
+
+            // 2. FragmentManager'a dokunmadan, sadece Firestore/Cache metotlarını tetikle usta
+            mViewModel.setYukleyenID(yukleyenID);
+            TakipTakipciSayilariUI();
+            HakkindaUI();
+            KullaniciAdiUI();
+            mViewModel.GonderiSayisiniCek(yukleyenID);
+
+            // 3. Gönderileri yeniden çek ve işlem bittiğinde swipe refresh dairesini pürüzsüzce kapat usta
+            mViewModel.GonderiCekme(yukleyenID, uyariMesaji, new GonderiYuklemeListener() {
+                @Override
+                public void onTumGonderilerYuklendi() {
+                    showLoading(false); // Progress'i kapat
+                    if (swipeRefreshLayout != null) {
+                        swipeRefreshLayout.setRefreshing(false); // Refresh animasyonunu durdur
+                    }
+                }
+            });
+        } else {
+            // Eğer her ihtimale karşı bir null durumu varsa emniyet kemerini kapat usta
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }
+    }
+
 
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
 
         if (!hidden) {
-            // 🚀 BURASI ÇALIŞIR DAYICIM!
-            // Fragment gizlilikten çıktı, şu an kullanıcının gözünün önünde parlıyor.
-            Log.d("NAV_BACK_DEDEKTOR", "Kaptan: Bu ekran hafızadan show edildi, verileri tazeleme vakti!");
+            Log.d("NAV_VIEW_DEDEKTOR", "🔒 HEDEF EKRAN GERİ GELDİ: Pelerini kaldırıyoruz usta!");
 
-            // Örn: Firestore dinleyicilerini veya sayıcıları burada yeniden tetikleyebilirsin.
+            // 🚀 BOMBAYI İMHA EDİYORUZ:
+            // Hafızadan show edildiğinde ana ekranı zorla GÖRÜNÜR yap usta!
+            if (myConstraintLayout != null) {
+                myConstraintLayout.setVisibility(View.VISIBLE);
+            }
+
+            // Shimmer ve Loading'i de her ihtimale karşı temizle arkadan sırıtmasınlar:
+            if (shimmerLayout != null) {
+                shimmerLayout.stopShimmer();
+                shimmerLayout.setVisibility(View.GONE);
+            }
+            fragmentiYenidenYukle_v2();
         }
     }
 
@@ -395,7 +429,7 @@ public class ProfilSayfasiFragment extends Fragment {
          swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            fragmentiYenidenYukle();  // Aşağıda tanımlayacağımız yöntem
+            fragmentiYenidenYukle_v2();  // Aşağıda tanımlayacağımız yöntem
         });
 
 
@@ -744,14 +778,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
             popupMenu.setOnMenuItemClickListener(item -> {
                 if(item.getItemId()==R.id.Engellenenler){
-                    Fragment engellenenlerFragment = new engellenenlerFragmnet();
-                    requireActivity()
-                            .getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, engellenenlerFragment)
-                            .addToBackStack(null)
-                            .commit();
-
+                    SmartNavigationEngine.navigateTo(Screen.BLOCKED_USERS);
                     return true;
                 }
                 else if(item.getItemId()==R.id.HesabiKapat){

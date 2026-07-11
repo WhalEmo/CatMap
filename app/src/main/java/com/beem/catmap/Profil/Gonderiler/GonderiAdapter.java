@@ -1,5 +1,6 @@
 package com.beem.catmap.Profil.Gonderiler;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.R;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -48,6 +51,8 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
 
         holder.itemView.setOnClickListener(v -> {
             gerigitti=true;
+
+            /*
             FragmentManager fm = fragmentManager;
             FragmentTransaction transaction = fm.beginTransaction();
 
@@ -55,19 +60,22 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
             if (mevcutFragment != null) {
                 transaction.hide(mevcutFragment);
             }
+            */
 
-            Fragment fragment = GonderiDetayFragment.newInstance(
+            Bundle args = GonderiDetayFragment.newBundle(
                     new ArrayList<>(gonderi.getFotoUrlListesi()),
                     gonderi.getKediAdi(),
                     gonderi.getAciklama(),
                     gonderi.getBegeniSayisi(),
                     gonderi.getKediID()
             );
+            SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.getKediID());
 
+            /*
             transaction
                     .add(R.id.fragment_container, fragment)
                     .addToBackStack(null)
-                    .commit();
+                    .commit(); */
         });
 
         Picasso.get()

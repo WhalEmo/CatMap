@@ -3,6 +3,8 @@ package com.beem.catmap.Profil.engellenenler;
 
 
 
+import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.handleBackPressWithEngine;
+
 import androidx.lifecycle.ViewModelProvider;
 
 import android.app.AlertDialog;
@@ -43,6 +45,12 @@ public class engellenenlerFragmnet extends Fragment {
         super.onCreate(savedInstanceState);
         mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         uyari=new UyariMesaji(requireContext(),true);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        handleBackPressWithEngine(this);
     }
 
     @Nullable

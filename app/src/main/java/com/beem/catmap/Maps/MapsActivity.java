@@ -62,6 +62,7 @@ import com.beem.catmap.Maps.MapKedi.KediSilmeDurumu;
 import com.beem.catmap.Maps.MapKedi.Kediler;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
+import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
 import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif;
 import com.beem.catmap.Profil.Takipler.TakiplerFragment;
 import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
@@ -198,7 +199,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case PROFILE -> setupFragment(new ProfilSayfasiFragment());
                 case MESSAGE -> new MesajFragment();
                 case BLOCKED_USERS -> new engellenenlerFragmnet();
-                case FOLLOWERS -> setupFragment(new TakiplerFragment()) ;
+                case FOLLOWERS -> setupFragment(new TakiplerFragment());
+                case POST -> setupFragment(new GonderiDetayFragment());
             };
         }
     };

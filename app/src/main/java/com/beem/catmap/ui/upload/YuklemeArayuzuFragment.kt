@@ -21,6 +21,7 @@ import com.beem.catmap.UyariMesaji
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.ui.camera.CameraFragment
 import com.beem.catmap.ui.camera.FilmStripAdapter // Mevcut yatay şerit adaptörün dayıcım
+import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import com.beem.catmap.ui.navigation.Screen
@@ -91,15 +92,15 @@ class YuklemeArayuzuFragment : Fragment() {
             checkLocationPermissionAndUpload()
         }
 
-        // Kamera Aç Butonu
         binding.kameraId.setOnClickListener {
             openCameraFragment()
         }
 
-        // Galeriden Seç Butonu (Bizim o canavar alt sayfayı patlatır)
         binding.dosyaId.setOnClickListener {
-            val gallerySheet = com.beem.catmap.ui.camera.GalleryBottomSheet()
-            gallerySheet.show(parentFragmentManager, "GalleryBottomSheet")
+            if (isAdded && isResumed) {
+                val gallerySheet = GalleryBottomSheet()
+                gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
+            }
         }
     }
 

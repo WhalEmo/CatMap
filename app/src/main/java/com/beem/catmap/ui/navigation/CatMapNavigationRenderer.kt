@@ -69,7 +69,7 @@ class CatMapNavigationRenderer(
                             transaction.hide(f)
                         } else {
                             f.view?.clearAnimation()
-                            transaction.remove(f)
+                            transaction.hide(f)
                         }
                     }
                 }
