@@ -35,16 +35,13 @@
 
         <Button
             android:id="@+id/engel"
-            android:layout_width="150dp"
+            android:layout_width="130dp"
             android:layout_height="40dp"
             android:visibility="visible"
-            android:enabled="false"
             android:backgroundTint="#FF7F7F"
             android:textColor="#000000"
             android:textAllCaps="false"
             android:text="Engeli Kaldır" />
-
-
     </LinearLayout>
 
 </LinearLayout>
