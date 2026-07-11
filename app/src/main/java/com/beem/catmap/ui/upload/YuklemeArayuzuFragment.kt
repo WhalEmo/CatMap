@@ -12,7 +12,6 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.MainActivity
@@ -195,8 +194,7 @@ class YuklemeArayuzuFragment : Fragment() {
     }
 
     private fun openCameraFragment() {
-        Navigation.findNavController(requireActivity(), R.id.fragment_container)
-            .navigate(R.id.action_yukle_to_camera)
+        SmartNavigationEngine.navigateTo(Screen.CAMERA)
     }
 
     private fun setupBackPressed() {

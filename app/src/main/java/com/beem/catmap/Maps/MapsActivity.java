@@ -7,17 +7,12 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
-import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -28,8 +23,6 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -188,6 +181,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     private double sonCekilenLat = 0.0;
     private double sonCekilenLng = 0.0;
 
+    private CatMapNavigationEngine navigationEngine;
+    private CatMapNavigationRenderer navigationRenderer;
+
     private final FragmentProvider fragmentProvider = new FragmentProvider() {
         @Nullable
         @Override
@@ -238,99 +234,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.fragment_container);
-        NavController navController = navHostFragment != null ? navHostFragment.getNavController() : null;
-
-        if (navController != null) {
-            navController.addOnDestinationChangedListener((nController, destination, arguments) -> {
-                if (destination.getId() == R.id.fragment_map) {
-
-                    // 1. Ana NavHostFragment'ı güvenli hattan buluyoruz
-                    Fragment navHost = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-
-                    if (navHost != null) {
-                        // 2. NavHost'un içindeki aktif fragment listesini çekiyoruz
-                        List<Fragment> fragments = navHost.getChildFragmentManager().getFragments();
-
-                        // 🎯 KUTSAL KALKAN: Listenin ilk elemanı GERÇEKTEN CatMapFragment mı diye bakıyoruz usta!
-                        if (!fragments.isEmpty() && fragments.get(0) instanceof CatMapFragment) {
-
-                            // Sadece ve sadece eminsek cast işlemini yapıyoruz, asla patlamaz!
-                            CatMapFragment mapFragment = (CatMapFragment) fragments.get(0);
-
-                            // Callback'i bağla, harita pürüzsüzce uyansın!
-                            mapFragment.getMapAsync(MapsActivity.this);
-                        }
-                    }
-                }
-            });
-
-            binding.bottomNavigation.setOnItemSelectedListener(item -> {
-
-                // Şu an ekranda aktif olan sekmenin ID'sini (grafikteki ID'sini) alıyoruz
-                int currentDestinationId = navController.getCurrentDestination() != null ?
-                        navController.getCurrentDestination().getId() : -1;
-
-                // Kullanıcının TIKLADIĞI sekmenin ID'sini alıyoruz
-                int selectedMenuItemId = item.getItemId();
-
-                // 🎯 EĞER AYNI SEKMEDEYSEK, animasyon yapma, kullanıcıyı yorma!
-                if (currentDestinationId == selectedMenuItemId) return false;
-
-                // 🧠 ZEKİ ANİMASYON MATEMATİĞİ BURADA BAŞLIYOR USTA!
-                // Menüdeki sekmelerin sırasını (index) kıyaslayarak yönü belirliyoruz:
-
-                // Harita ID'si (Grafikte '@id/fragment_map' neyse)
-                int mapIndex = navController.getGraph().findNode(R.id.fragment_map) != null ? 0 : -1;
-                // Yükleme ID'si (Grafikte '@id/fragment_yukle' neyse)
-                int uploadIndex = navController.getGraph().findNode(R.id.fragment_yukle) != null ? 1 : -1;
-                // Sohbet ID'si (Grafikte '@id/fragment_chat' neyse)
-                int chatIndex = navController.getGraph().findNode(R.id.fragment_chat) != null ? 2 : -1;
-                // Profil ID'si (Grafikte '@id/fragment_profile' neyse)
-                int profileIndex = navController.getGraph().findNode(R.id.fragment_profile) != null ? 3 : -1;
-
-                // Tıklanan ve mevcut fragment'ın index'lerini buluyoruz
-                int currentIndex = -1;
-                int targetIndex = -1;
-
-                // (Bu kıyaslamayı senin grafikteki ID'lere göre jilet gibi yap usta)
-                if (currentDestinationId == R.id.fragment_map) currentIndex = mapIndex;
-                else if (currentDestinationId == R.id.fragment_yukle) currentIndex = uploadIndex;
-                else if (currentDestinationId == R.id.fragment_chat) currentIndex = chatIndex;
-                else if (currentDestinationId == R.id.fragment_profile) currentIndex = profileIndex;
-
-                if (selectedMenuItemId == R.id.fragment_map) targetIndex = mapIndex;
-                else if (selectedMenuItemId == R.id.fragment_yukle) targetIndex = uploadIndex;
-                else if (selectedMenuItemId == R.id.fragment_chat) targetIndex = chatIndex;
-                else if (selectedMenuItemId == R.id.fragment_profile) targetIndex = profileIndex;
-
-                // Varsayılan animasyon yönümüz (Sağa doğru ViewPager hissi)
-                int enterAnim = R.anim.slide_in_right;
-                int exitAnim = R.anim.slide_out_left;
-
-                // 🎯 KUTSAL KIYASLAMA: Eğer soldaki bir sekmeye tıkladıysak (Index küçüldüyse)
-                // Animasyonu tam tersine çeviriyoruz (Sola doğru ViewPager hissi)!
-                if (targetIndex != -1 && currentIndex != -1 && targetIndex < currentIndex) {
-                    enterAnim = R.anim.slide_in_left;  // Soldan asilce girsin
-                    exitAnim = R.anim.slide_out_right; // Mevcut ekran sağdan çıksın
-                }
-
-                // 3. Karar verdiğimiz dinamik animasyonları NavOptions ile mühürleyip fırlatıyoruz usta!
-                NavOptions navOptions = new NavOptions.Builder()
-                        .setLaunchSingleTop(true)
-                        .setRestoreState(true) // Haritayı vs. RAM'de mermer gibi korur
-                        .setEnterAnim(enterAnim)
-                        .setExitAnim(exitAnim)
-                        .setPopEnterAnim(enterAnim == R.anim.slide_in_right ? R.anim.slide_in_left : R.anim.slide_in_right)
-                        .setPopExitAnim(enterAnim == R.anim.slide_in_right ? R.anim.slide_out_right : R.anim.slide_out_left)
-                        .setPopUpTo(navController.getGraph().getStartDestinationId(), false, true)
-                        .build();
-
-                navController.navigate(selectedMenuItemId, null, navOptions);
-                return true;
-            });
-        }
+        navigationEngine = new CatMapNavigationEngine(this, binding);
+        navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);
+        SmartNavigationEngine.init(navigationEngine);
 
         SmartNavigationEngine.registerActivityCallbacks(
                 () -> {
@@ -394,7 +300,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             }
         });
 
-        setupCaptureHub();
 
         begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         isim = bottomSheetView.findViewById(R.id.isimgosterme);
@@ -870,13 +775,15 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     public void yukleyenProfilineGit(View view) {
         bottomSheetDialog.hide();
         if (profilAlan != null) profilAlan.setVisibility(View.GONE);
-
-        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.fragment_container);
-        if (navHostFragment != null) {
+        if (kediYukleyenID != null && !kediYukleyenID.isEmpty()) {
             Bundle args = new Bundle();
             args.putString("kullaniciId", kediYukleyenID);
-            navHostFragment.getNavController().navigate(R.id.action_map_to_profile, args);
+            SmartNavigationEngine.navigateTo(
+                    Screen.OTHER_PROFILE,
+                    args,
+                    kediYukleyenID
+            );
+
         }
     }
 

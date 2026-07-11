@@ -41,10 +41,9 @@ import com.bumptech.glide.Glide
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import androidx.core.graphics.toColorInt
 import androidx.fragment.app.DialogFragment
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.Navigation
+import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.SmartNavigationEngine
 
 class CameraFragment : DialogFragment() {
 
@@ -214,17 +213,16 @@ class CameraFragment : DialogFragment() {
             startCamera()
         }
 
-        binding.btnGallery.setOnClickListener { GalleryBottomSheet().show(parentFragmentManager, "GalleryBottomSheet") }
+        binding.btnGallery.setOnClickListener {
+
+        }
         binding.btnClose.setOnClickListener {
-            dismiss()
+            SmartNavigationEngine.navigateBack()
         }
         binding.btnConfirmAll.setOnClickListener {
             val currentState = viewModel.uiState.value
             if (currentState.capturedImages.isNotEmpty()) {
-
-                Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                    .navigate(R.id.action_camera_to_yukle)
-
+                SmartNavigationEngine.navigateTo(Screen.UPLOAD)
             } else {
                 UiMessageManager.emitMessage(
                     UiMessageState.Error("Lütfen önce en az bir fotoğraf çekin!")

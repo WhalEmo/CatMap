@@ -51,9 +51,11 @@ class CatMapNavigationRenderer(
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
         }
 
+        /*
         for (f in fm.fragments) {
             f.fragmentLog("BEFORE")
         }
+        */
 
         val validTags = Screen.entries.map { it.tag }
         for (f in fm.fragments) {
@@ -100,9 +102,12 @@ class CatMapNavigationRenderer(
 
         transaction.commitAllowingStateLoss()
 
+        /*
         for (f in fm.fragments) {
             f.fragmentLog("AFTER")
         }
+
+         */
     }
 
 

@@ -157,6 +157,20 @@ public class ProfilSayfasiFragment extends Fragment {
         ft.attach(this).commitNow();  // Hemen tekrar attach et
     }
 
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+
+        if (!hidden) {
+            // 🚀 BURASI ÇALIŞIR DAYICIM!
+            // Fragment gizlilikten çıktı, şu an kullanıcının gözünün önünde parlıyor.
+            Log.d("NAV_BACK_DEDEKTOR", "Kaptan: Bu ekran hafızadan show edildi, verileri tazeleme vakti!");
+
+            // Örn: Firestore dinleyicilerini veya sayıcıları burada yeniden tetikleyebilirsin.
+        }
+    }
+
     // Galeriye gitmek ve secmek için ActivityResultContracts kullanalım
     ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
