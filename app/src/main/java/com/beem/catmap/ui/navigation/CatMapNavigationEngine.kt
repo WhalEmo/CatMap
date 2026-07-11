@@ -41,10 +41,6 @@ class CatMapNavigationEngine(
     }
 
     private fun setupCaptureHub() {
-        binding.btnCaptureLayout.setOnClickListener {
-            triggerHaptic(HapticFeedbackConstants.CONFIRM)
-            SmartNavigationEngine.navigateTo(Screen.CAMERA)
-        }
     }
 
     fun updateUISilently(screen: Screen) {

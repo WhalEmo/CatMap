@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Build
@@ -15,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
@@ -40,10 +42,11 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
-import com.beem.catmap.ui.navigation.Screen
-import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import androidx.fragment.app.DialogFragment
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.Navigation
 
-class CameraFragment : Fragment() {
+class CameraFragment : DialogFragment() {
 
     private var _binding: FragmentCameraBinding? = null
     private val binding get() = _binding!!
@@ -79,6 +82,11 @@ class CameraFragment : Fragment() {
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NORMAL, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         return binding.root
@@ -86,6 +94,10 @@ class CameraFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        dialog?.setCanceledOnTouchOutside(false)
+        dialog?.setCancelable(true)
+
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
@@ -93,6 +105,20 @@ class CameraFragment : Fragment() {
         checkPermissionsAndStart()
         setupUi()
         observeViewModel()
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        dialog?.window?.let { window ->
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+
+            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+            window.setWindowAnimations(android.R.style.Animation_Activity)
+        }
     }
 
     private fun checkPermissionsAndStart() {
@@ -190,13 +216,14 @@ class CameraFragment : Fragment() {
 
         binding.btnGallery.setOnClickListener { GalleryBottomSheet().show(parentFragmentManager, "GalleryBottomSheet") }
         binding.btnClose.setOnClickListener {
-            SmartNavigationEngine.navigateBack()
+            dismiss()
         }
         binding.btnConfirmAll.setOnClickListener {
             val currentState = viewModel.uiState.value
             if (currentState.capturedImages.isNotEmpty()) {
 
-                SmartNavigationEngine.navigateTo(Screen.UPLOAD)
+                Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                    .navigate(R.id.action_camera_to_yukle)
 
             } else {
                 UiMessageManager.emitMessage(
