@@ -9,8 +9,17 @@
 </p>
 
 <p align="center">
-  An open-source Android application that transforms everyday cat encounters into a shared, location-based community experience.
+  An open-source Android application for discovering, photographing, and sharing cats on an interactive map.
 </p>
+
+<p align="center">
+Discover nearby cats • Capture memorable moments • Share with the community
+</p>
+
+<p align="center">
+Android • Firebase • Google Maps • CameraX • MVVM
+</p>
+
 
 <p align="center">
 
@@ -78,13 +87,17 @@ CatMap allows users to say:
 
 ## Features
 
-CatMap provides a complete location-based social experience designed for cat enthusiasts.
+CatMap brings together interactive mapping, mobile photography, real-time communication and cloud services into a single Android application designed for cat lovers.
 
-| Authentication | Maps    | Camera  |
-| -------------- | ------- | ------- |
-| Register       | Nearby  | CameraX |
-| Login          | Marker  | Gallery |
-| Reset          | GeoFire | Upload  |
+| Feature             | Description                                                        |
+| ------------------- | ------------------------------------------------------------------ |
+| **Authentication**  | User registration, login and password recovery.                    |
+| **Interactive Map** | Explore nearby cats using Google Maps and GeoFire.                 |
+| **Photography**     | Capture and upload photos with CameraX.                            |
+| **Community**       | Profiles, comments, follows and cat posts.                         |
+| **Realtime Chat**   | Instant one-to-one messaging.                                      |
+| **Cloud Backend**   | Firebase Authentication, Firestore, Storage and Realtime Database. |
+
 
 ## Technology Stack
 
@@ -104,64 +117,7 @@ CatMap provides a complete location-based social experience designed for cat ent
 | Min SDK | 24 |
 | Target SDK | 34 |
 
-### User Account
-
-- Secure registration with Firebase Authentication
-- Login and logout
-- Password reset
-- Persistent user sessions
-
----
-
-### Interactive Map
-
-- Google Maps integration
-- Explore cat sightings around your location
-- Dynamic map markers
-- Marker detail pages
-- Nearby cat discovery powered by GeoFire
-
----
-
-### Camera & Media
-
-- Native CameraX integration
-- Capture photos directly inside the application
-- Select images from gallery
-- Upload multiple photos
-- Firebase Storage integration
-
----
-
-### Social Experience
-
-- Real-time messaging system
-- User profiles
-- Community interaction
-- Personal posts
-- Follow system
-
----
-
-### Cat Posts
-
-- Publish new cat sightings
-- Attach multiple images
-- Store exact map location
-- Community visibility
-- Marker based exploration
-
----
-
-### Backend Services
-
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Storage
-- Firebase Realtime Database
-- Google Maps SDK
-
----
+CatMap is built using modern Android development tools with a strong focus on scalability, maintainability and modular architecture.
 
 ## Application Preview
 
@@ -175,19 +131,41 @@ Share them with the community.
 
 ---
 
-| Discover | Capture |
+| <p align="center">Discover</p> | <p align="center">Capture</p> |
 |-----------|----------|
-| <img src="docs/screenshots/map_view.jpeg" width="80%"> | <img src="docs/screenshots/camera_view.jpeg" width="80%"> |
+| <p align="center"><img src="docs/screenshots/map_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/camera_view.jpeg" width="80%"></p> |
 
-| Share | Connect |
+| <p align="center">Share</p> | <p align="center">Connect</p> |
 |---------|---------|
-| <img src="docs/screenshots/upload_view.jpeg" width="80%"> | <img src="docs/screenshots/chat_view.jpeg" width="80%"> |
+| <p align="center"><img src="docs/screenshots/upload_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/chat_view.jpeg" width="80%"></p> |
 
-| Profile | Details |
+| <p align="center">Profile</p> | <p align="center">Details</p> |
 |-----------|----------|
-| <img src="docs/screenshots/profile_view.jpeg" width="80%"> | <img src="docs/screenshots/marker_detail_view.jpeg" width="80%"> |
+| <p align="center"><img src="docs/screenshots/profile_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/marker_detail_view.jpeg" width="80%"></p> |
 
 ---
+
+## Project Structure
+
+The project is organized into feature-based modules and shared infrastructure layers to improve maintainability and scalability.
+
+```text
+app
+├── auth/                # User authentication
+├── maps/                # Google Maps & location features
+├── chat/                # Realtime messaging
+├── profile/             # User profiles and social features
+├── models/              # Data models
+├── repository/          # Data access layer
+├── comments/            # Comments and replies
+└── ui/
+    ├── camera/          # CameraX implementation
+    ├── navigation/      # Navigation engine
+    ├── upload/          # Post publishing
+    ├── manager/         # Shared managers
+    ├── map/             # Map UI components
+    └── extensions/      # Kotlin extensions
+```
 
 ## Architecture
 
@@ -239,8 +217,8 @@ This architecture allows UI components to remain independent from backend implem
 
 | Name | Role |
 |------|------|
-| **Emrullah Uygun** | Android Developer |
 | **Beyza Nur Takça** | Lead Android Developer |
+| **Emrullah Uygun** | Android Developer |
 
 ---
 
