@@ -1,58 +1,251 @@
-# 🐾 CatMap
+<p align="center">
+  <img src="docs/assets/banner.png" alt="CatMap Banner" width="100%">
+</p>
 
-CatMap is an open-source Android application that allows users to capture and share cat photos with their geographic locations. Built with modern Android technologies, the project focuses on providing a clean, intuitive user experience while following maintainable software architecture principles.
+<h1 align="center">CatMap</h1>
 
----
+<p align="center">
+  <strong>Where Every Cat Finds Its Place.</strong>
+</p>
 
-# ✨ Features
+<p align="center">
+  An open-source Android application that transforms everyday cat encounters into a shared, location-based community experience.
+</p>
 
-* 📍 **Location-Based Sharing** – Attach geographic coordinates to each shared photo and display them on an interactive map.
-* 📷 **Camera Integration** – Capture high-quality photos using CameraX.
-* ☁️ **Cloud Storage** – Upload and manage images securely with Firebase Storage.
-* 🎨 **Modern UI** – Built entirely with Jetpack Compose and Material 3.
-* 🧩 **Reusable Components** – Designed with reusable UI components and clean project organization.
-* ⚡ **Reactive State Management** – Provides a responsive user experience through state-driven UI updates.
+<p align="center">
 
----
+![Android](https://img.shields.io/badge/Android-API%2024+-34A853?logo=android&logoColor=white)
 
-# 🛠️ Tech Stack
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 
-| Category         | Technology                  |
-| ---------------- | --------------------------- |
-| Language         | Kotlin                      |
-| UI               | Jetpack Compose, Material 3 |
-| Camera           | CameraX                     |
-| Maps             | Google Maps SDK             |
-| Backend          | Firebase Storage            |
-| Architecture     | Clean Architecture          |
-| State Management | Reactive UI State           |
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 
----
+![Firebase](https://img.shields.io/badge/Firebase-Backend-FFCA28?logo=firebase&logoColor=black)
 
-# 🏗️ Architecture
+![Google Maps](https://img.shields.io/badge/Google%20Maps-SDK-4285F4?logo=googlemaps&logoColor=white)
 
-CatMap follows a modular and maintainable architecture inspired by Clean Architecture principles. The project separates UI, business logic, and data layers to improve readability, scalability, and long-term maintainability.
+![Architecture](https://img.shields.io/badge/Architecture-MVVM-2563EB)
 
-Key architectural goals include:
+![License](https://img.shields.io/github/license/WhalEmo/CatMap)
 
-* Separation of concerns
-* Reusable components
-* Reactive UI updates
-* Easy maintenance and future scalability
+</p>
 
 ---
 
-# 👥 Contributors
+## Table of Contents
 
-This project is collaboratively developed and maintained by:
-
-* **Beyza Nur Takça** — [@Beyzatkc](https://github.com/Beyzatkc)
-* **Emrullah Uygun** — [@WhalEmo](https://github.com/WhalEmo)
+- [Overview](#overview)
+- [Why CatMap?](#why-catmap)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Application Preview](#application-preview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Engineering Highlights](#engineering-highlights)
+- [Roadmap](#roadmap)
+- [Contributors](#contributors)
+- [License](#license)
 
 ---
 
-# 📄 License
+## Overview
 
-This project is licensed under the MIT License.
+CatMap is an open-source Android platform built for cat lovers who want to discover, document, and share cats through an interactive map.
 
-See the **LICENSE** file for more information.
+Instead of leaving memorable encounters as forgotten photos in a gallery, CatMap turns each sighting into a location-aware community post.
+
+The application combines Google Maps, CameraX, Firebase Authentication, Cloud Firestore, Firebase Storage, and a real-time messaging system to create a social experience centered around location and photography.
+
+The project follows the MVVM architectural pattern and focuses on maintainability, modularity, and modern Android development practices.
+
+## Why CatMap?
+
+Every day, countless cats are encountered in streets, campuses, neighborhoods, and parks. Most of these encounters disappear as isolated photos stored on personal devices.
+
+CatMap transforms these moments into a shared community experience.
+
+By combining location services, photography, and social interaction, the application allows every cat sighting to become part of a collaborative map maintained by the community.
+
+Instead of asking:
+
+> "I saw a cat today."
+
+CatMap allows users to say:
+
+> "I shared its story with everyone."
+
+
+## Features
+
+CatMap provides a complete location-based social experience designed for cat enthusiasts.
+
+| Authentication | Maps    | Camera  |
+| -------------- | ------- | ------- |
+| Register       | Nearby  | CameraX |
+| Login          | Marker  | Gallery |
+| Reset          | GeoFire | Upload  |
+
+## Technology Stack
+
+| Category | Technology |
+|-----------|------------|
+| Language | Kotlin + Java |
+| UI | XML |
+| Architecture | MVVM |
+| Backend | Firebase |
+| Database | Firestore |
+| Storage | Firebase Storage |
+| Authentication | Firebase Auth |
+| Maps | Google Maps SDK |
+| Camera | CameraX |
+| Async | Coroutines |
+| Build | Gradle KTS |
+| Min SDK | 24 |
+| Target SDK | 34 |
+
+### User Account
+
+- Secure registration with Firebase Authentication
+- Login and logout
+- Password reset
+- Persistent user sessions
+
+---
+
+### Interactive Map
+
+- Google Maps integration
+- Explore cat sightings around your location
+- Dynamic map markers
+- Marker detail pages
+- Nearby cat discovery powered by GeoFire
+
+---
+
+### Camera & Media
+
+- Native CameraX integration
+- Capture photos directly inside the application
+- Select images from gallery
+- Upload multiple photos
+- Firebase Storage integration
+
+---
+
+### Social Experience
+
+- Real-time messaging system
+- User profiles
+- Community interaction
+- Personal posts
+- Follow system
+
+---
+
+### Cat Posts
+
+- Publish new cat sightings
+- Attach multiple images
+- Store exact map location
+- Community visibility
+- Marker based exploration
+
+---
+
+### Backend Services
+
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- Firebase Realtime Database
+- Google Maps SDK
+
+---
+
+## Application Preview
+
+CatMap is designed around a simple user journey.
+
+Discover nearby cats.
+
+Capture memorable moments.
+
+Share them with the community.
+
+---
+
+| Discover | Capture |
+|-----------|----------|
+| <img src="docs/screenshots/map_view.jpeg" width="80%"> | <img src="docs/screenshots/camera_view.jpeg" width="80%"> |
+
+| Share | Connect |
+|---------|---------|
+| <img src="docs/screenshots/upload_view.jpeg" width="80%"> | <img src="docs/screenshots/chat_view.jpeg" width="80%"> |
+
+| Profile | Details |
+|-----------|----------|
+| <img src="docs/screenshots/profile_view.jpeg" width="80%"> | <img src="docs/screenshots/marker_detail_view.jpeg" width="80%"> |
+
+---
+
+## Architecture
+
+CatMap follows the **MVVM (Model–View–ViewModel)** architectural pattern.
+
+The application separates presentation logic, business logic, and data access into dedicated layers, making the project easier to understand and maintain.
+
+```text
+Presentation Layer
+        │
+        ▼
+    ViewModels
+        │
+        ▼
+   Repository Layer
+        │
+        ├──────── Firebase Authentication
+        ├──────── Cloud Firestore
+        ├──────── Firebase Storage
+        ├──────── Google Maps SDK
+        └──────── GeoFire
+```
+
+This architecture allows UI components to remain independent from backend implementations while improving scalability and code organization.
+
+
+## Roadmap
+
+- [x] Authentication
+- [x] Google Maps
+- [x] CameraX
+- [x] Firebase Storage
+- [x] Realtime Chat
+- [x] Profile System
+- [x] Nearby Cats
+
+### Next Version
+
+- [ ] Jetpack Compose
+- [ ] StateFlow
+- [ ] Complete Kotlin Migration
+- [ ] Improved Navigation Engine
+- [ ] Clean Architecture
+- [ ] Unit Tests
+- [ ] Dark Theme
+
+
+## Contributors
+
+| Name | Role |
+|------|------|
+| **Emrullah Uygun** | Android Developer |
+| **Beyza Nur Takça** | Lead Android Developer |
+
+---
+
+<p align="center">
+
+Built with Kotlin, Java, Firebase and ❤️ for the cat community.
+
+</p>
