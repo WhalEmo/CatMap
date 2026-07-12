@@ -131,15 +131,15 @@ Share them with the community.
 
 ---
 
-| <p align="center">Discover</p> | <p align="center">Capture</p> |
+| <p align="center">**Discover**</p> | <p align="center">**Capture**</p> |
 |-----------|----------|
 | <p align="center"><img src="docs/screenshots/map_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/camera_view.jpeg"></p> |
 
-| <p align="center">Share</p> | <p align="center">Connect</p> |
+| <p align="center">**Share**</p> | <p align="center">**Connect**</p> |
 |---------|---------|
 | <p align="center"><img src="docs/screenshots/upload_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/chat_view.jpeg"></p> |
 
-| <p align="center">Profile</p> | <p align="center">Details</p> |
+| <p align="center">**Profile**</p> | <p align="center">**Details**</p> |
 |-----------|----------|
 | <p align="center"><img src="docs/screenshots/profile_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/marker_detail_view.jpeg"></p> |
 
@@ -166,6 +166,16 @@ app
     ├── map/             # Map UI components
     └── extensions/      # Kotlin extensions
 ```
+
+| Package | Responsibility |
+|---------|----------------|
+| `auth` | User authentication and account management |
+| `maps` | Google Maps integration and location features |
+| `chat` | Realtime messaging infrastructure |
+| `profile` | User profile and social interactions |
+| `repository` | Data access and Firebase communication |
+| `models` | Application data models |
+| `ui` | Shared UI components and navigation |
 
 ## Architecture
 
