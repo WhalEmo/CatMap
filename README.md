@@ -48,10 +48,10 @@ Android • Firebase • Google Maps • CameraX • MVVM
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Application Preview](#application-preview)
-- [Architecture](#architecture)
 - [Project Structure](#project-structure)
+- [Architecture](#architecture)
 - [Getting Started](#getting-started)
-- [Engineering Highlights](#engineering-highlights)
+- [Lessons Learned](#lessons-learned)
 - [Roadmap](#roadmap)
 - [Contributors](#contributors)
 - [License](#license)
@@ -134,14 +134,17 @@ Share them with the community.
 | <p align="center">**Discover**</p> | <p align="center">**Capture**</p> |
 |-----------|----------|
 | <p align="center"><img src="docs/screenshots/map_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/camera_view.jpeg"></p> |
+| <p align="center">Explore nearby cats shared by the community.</p> | <p align="center">Take high-quality photos using CameraX.</p> |
 
 | <p align="center">**Share**</p> | <p align="center">**Connect**</p> |
 |---------|---------|
 | <p align="center"><img src="docs/screenshots/upload_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/chat_view.jpeg"></p> |
+| <p align="center">Publish your cat sightings with precise location.</p> | <p align="center">Start real-time conversations with other users.</p> |
 
 | <p align="center">**Profile**</p> | <p align="center">**Details**</p> |
 |-----------|----------|
 | <p align="center"><img src="docs/screenshots/profile_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/marker_detail_view.jpeg"></p> |
+| <p align="center">Manage your posts and personal profile.</p> | <p align="center">View detailed information about every cat marker.</p> |
 
 ---
 
@@ -184,23 +187,81 @@ CatMap follows the **MVVM (Model–View–ViewModel)** architectural pattern.
 The application separates presentation logic, business logic, and data access into dedicated layers, making the project easier to understand and maintain.
 
 ```text
-Presentation Layer
-        │
-        ▼
-    ViewModels
-        │
-        ▼
-   Repository Layer
-        │
-        ├──────── Firebase Authentication
-        ├──────── Cloud Firestore
-        ├──────── Firebase Storage
-        ├──────── Google Maps SDK
-        └──────── GeoFire
+            UI Layer
+    (Activity / Fragment / XML)
+              │
+              ▼
+          ViewModel
+              │
+              ▼
+          Repository
+              │
+      ┌───────┼────────┬───────────┐
+      ▼       ▼        ▼           ▼
+ Firebase  Firestore Storage Google Maps
+   Auth
+              │
+              ▼
+           GeoFire
 ```
 
 This architecture allows UI components to remain independent from backend implementations while improving scalability and code organization.
 
+## Getting Started
+
+Follow these instructions to set up the project on your local machine for development and testing.
+
+### Prerequisites
+
+Ensure you have the following installed before proceeding:
+* **Android Studio** (Latest version recommended)
+* **Java Development Kit (JDK)** 17 or higher
+* A **Firebase** Account
+* A **Google Cloud Platform** Account (for Maps SDK)
+
+### Installation
+
+1. Clone the repository.
+
+```bash
+git clone https://github.com/WhalEmo/CatMap.git
+```
+
+2. Open the project in Android Studio.
+
+3. Create a Firebase project.
+
+4. Download `google-services.json`.
+
+5. Place `google-services.json` inside the `app/` directory.
+
+6. Enable:
+   - Authentication
+   - Cloud Firestore
+   - Firebase Storage
+   - Realtime Database
+
+7. Create a Google Maps API Key.
+
+8. Add your Maps API key to `local.properties` or your preferred secrets configuration.
+
+9. Sync Gradle.
+
+10. Run the application.
+
+## Lessons Learned
+
+Developing CatMap provided valuable experience in modern Android application architecture and mobile software engineering.
+
+Key lessons learned throughout the project include:
+
+- MVVM significantly improves maintainability.
+- Navigation architecture should be designed before feature implementation.
+- Kotlin-only development simplifies project consistency.
+- StateFlow would be preferred over LiveData for modern state management.
+- Jetpack Compose would be the preferred UI toolkit for future development.
+
+If CatMap were started again today, it would adopt a Compose-first architecture, a cleaner repository layer and a redesigned navigation engine.
 
 ## Roadmap
 
@@ -221,6 +282,8 @@ This architecture allows UI components to remain independent from backend implem
 - [ ] Clean Architecture
 - [ ] Unit Tests
 - [ ] Dark Theme
+- [ ] CI/CD Pipeline
+- [ ] Offline Mode
 
 
 ## Contributors
@@ -237,3 +300,7 @@ This architecture allows UI components to remain independent from backend implem
 Built with Kotlin, Java, Firebase and ❤️ for the cat community.
 
 </p>
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for more information.
