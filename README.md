@@ -133,15 +133,15 @@ Share them with the community.
 
 | <p align="center">Discover</p> | <p align="center">Capture</p> |
 |-----------|----------|
-| <p align="center"><img src="docs/screenshots/map_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/camera_view.jpeg" width="80%"></p> |
+| <p align="center"><img src="docs/screenshots/map_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/camera_view.jpeg"></p> |
 
 | <p align="center">Share</p> | <p align="center">Connect</p> |
 |---------|---------|
-| <p align="center"><img src="docs/screenshots/upload_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/chat_view.jpeg" width="80%"></p> |
+| <p align="center"><img src="docs/screenshots/upload_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/chat_view.jpeg"></p> |
 
 | <p align="center">Profile</p> | <p align="center">Details</p> |
 |-----------|----------|
-| <p align="center"><img src="docs/screenshots/profile_view.jpeg" width="80%"></p> | <p align="center"><img src="docs/screenshots/marker_detail_view.jpeg" width="80%"></p> |
+| <p align="center"><img src="docs/screenshots/profile_view.jpeg"></p> | <p align="center"><img src="docs/screenshots/marker_detail_view.jpeg"></p> |
 
 ---
 
