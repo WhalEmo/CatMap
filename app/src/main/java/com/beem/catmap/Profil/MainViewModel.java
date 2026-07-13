@@ -119,17 +119,24 @@ public class MainViewModel extends ViewModel {
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
+        Log.d("PROFILE_PHOTO_FLOW", "set value geçildi");
+
         db.collection("users")
                 .document(kullaniciId)
-                .addSnapshotListener((documentSnapshot, error) -> {
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         String url = documentSnapshot.getString("profilFotoUrl");
                         _Url.postValue(url);
-                        if(MainActivity.kullanici.getID().equals(kullaniciId)){
-                            SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-                            sp.edit().putString("profil_url", url).apply();
-                        }
+                        Log.d("PROFILE_PHOTO_FLOW", "documentSnapshot.getString(\"profilFotoUrl\"); "+ url);
+                        ProfileCacheManager.INSTANCE.saveProfileUrl(context, kullaniciId, url);
+                    } else {
+                        _Url.postValue(null);
                     }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("PROFILE_PHOTO_FLOW", "Hata oluştu", e);
+                    _Url.postValue(null);
                 });
     }
 
@@ -150,8 +157,7 @@ public class MainViewModel extends ViewModel {
                             .addOnSuccessListener(aVoid -> {
                                 Log.d("FirestoreUpdate", "Profil fotoğrafı URL'si başarıyla güncellendi.");
                                 // SharedPreferences'e kaydet
-                                SharedPreferences sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-                                sp.edit().putString("profil_url", url).apply();
+                                ProfileCacheManager.INSTANCE.saveProfileUrl(context, MainActivity.kullanici.getID(), url);
                             })
                             .addOnFailureListener(e -> {
                                 Log.e("FirestoreUpdate", "Profil fotoğrafı URL'si güncellenemedi!", e);

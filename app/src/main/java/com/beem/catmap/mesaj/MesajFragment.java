@@ -43,6 +43,8 @@ import com.beem.catmap.MainActivity;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -126,7 +128,7 @@ public class MesajFragment extends Fragment {
             mesajlasmaYonetici.DinleyiciKaldir();
             mesajlasmaYonetici.setAlici(null);
             mesajlasmaYonetici.setSohbetID(null);
-            requireActivity().getSupportFragmentManager().popBackStack();
+            SmartNavigationEngine.navigateBack();
         });
 
         //profil işlemleri
@@ -145,8 +147,12 @@ public class MesajFragment extends Fragment {
         adapter.setGoster(new Runnable() {      /// burası MesajFotoGosterFragment ı çalıştırıyor
             @Override
             public void run() {
-                MesajFotoGosterFragment fragment = new MesajFotoGosterFragment();
-                fragment.show(requireActivity().getSupportFragmentManager(), "mesajFotoGoster");
+                if (isAdded() && isResumed()) {
+                    if (getChildFragmentManager().findFragmentByTag(Screen.MESSAGE_PHOTO_PREVIEW.getTag()) == null) {
+                        MesajFotoGosterFragment fragment = new MesajFotoGosterFragment();
+                        fragment.show(getChildFragmentManager(), Screen.MESSAGE_PHOTO_PREVIEW.getTag());
+                    }
+                }
             }
         });
         StandartMesajGonderme();
@@ -272,11 +278,12 @@ public class MesajFragment extends Fragment {
 
 
     private void ProfilSayfasinaYonlendir(){
-        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, ProfilSayfasiFragment.newInstance(mesajlasmaYonetici.getAlici().getID()));
-        transaction.addToBackStack(null);
-        transaction.commit();
+        Bundle args = ProfilSayfasiFragment.newArgs(mesajlasmaYonetici.getAlici().getID());
+        SmartNavigationEngine.navigateTo(
+                Screen.OTHER_PROFILE,
+                args,
+                mesajlasmaYonetici.getAlici().getID()
+        );
     }
 
     private void GaleriyeYonlendir(){

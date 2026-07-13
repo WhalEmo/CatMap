@@ -26,6 +26,8 @@ import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 
 
 import java.util.ArrayList;
@@ -91,13 +93,12 @@ public class engellenenlerFragmnet extends Fragment {
         });
 
         adapter.setOnadClickListener(kullaniciId -> {
-            ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId);
-            requireActivity()
-                    .getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
-                    .addToBackStack(null)
-                    .commit();
+            Bundle args = ProfilSayfasiFragment.newArgs(kullaniciId);
+            SmartNavigationEngine.navigateTo(
+                    Screen.OTHER_PROFILE,
+                    args,
+                    kullaniciId
+            );
         });
         return view;
     }

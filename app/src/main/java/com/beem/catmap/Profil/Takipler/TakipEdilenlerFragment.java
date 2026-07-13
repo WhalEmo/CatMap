@@ -63,16 +63,6 @@ public class TakipEdilenlerFragment extends Fragment {
             //ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId); // 👈 burada kullandık
             Bundle args = ProfilSayfasiFragment.newArgs(kullaniciId);
             SmartNavigationEngine.navigateTo(Screen.OTHER_PROFILE, args, kullaniciId);
-            /*
-            requireActivity()
-                    .getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
-                    .addToBackStack(null)
-                    .commit();
-
-             */
-
         });
 
 

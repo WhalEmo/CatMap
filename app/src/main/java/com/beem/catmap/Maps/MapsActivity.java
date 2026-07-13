@@ -77,6 +77,7 @@ import com.beem.catmap.YorumYanit.Yorum_Adapter;
 import com.beem.catmap.YorumYanit.Yorum_Model;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.mesaj.MesajFotoGosterFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
@@ -88,6 +89,7 @@ import com.beem.catmap.ui.map.CatMapFragment;
 import com.beem.catmap.ui.navigation.CatMapNavigationEngine;
 import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
@@ -201,6 +203,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case BLOCKED_USERS -> new engellenenlerFragmnet();
                 case FOLLOWERS -> setupFragment(new TakiplerFragment());
                 case POST -> setupFragment(new GonderiDetayFragment());
+                case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
             };
         }
     };
@@ -595,31 +598,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
    }
 
 
-   ArrayList<Kediler>kediler=new ArrayList<>();
-    List<Target> targets = new ArrayList<>();
     ArrayList<Marker>markerlar=new ArrayList<>();
-    HashMap<String, Object> markerKEY = new HashMap<>();
 
-    private boolean isBackPressed = false;
     public void tiklanan_markerdaki_kedi(String ad, String hakkindasi, Uri Url,Kediler kedi,String YukleyenId) {
         profilAlan=bottomSheetView.findViewById(R.id.profilAlani);
-        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                isBackPressed = true;
-                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                    getSupportFragmentManager().popBackStack();
-                    // Geri tuş işlemi bittikten sonra flag sıfırlama (küçük gecikme ile)
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        isBackPressed = false;
-                    }, 100);
-                } else {
-                    finish();
-                }
-                // Sıfırlama burada olabilir ama dikkat et, bazen burada sıfırlarsan flag erken sıfırlanır.
-            }
-        };
-        getOnBackPressedDispatcher().addCallback(this, callback);
         YukleyenKullaniciDBgetir(YukleyenId);
         isim.setText(ad);
         hakkinda.setText(hakkindasi);
@@ -728,7 +710,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                                                             mesaji.BasarisizDurum("Bu kedi zaten gönderilerinizde var!", 2000);
                                                         } else {
                                                             GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                                                                    MapsActivity.this,
                                                                     kediID,
                                                                     null,
                                                                     mesaji
@@ -776,16 +757,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
     public void yukleyenProfilineGit(View view) {
         bottomSheetDialog.hide();
-        if (profilAlan != null) profilAlan.setVisibility(View.GONE);
+        //if (profilAlan != null) profilAlan.setVisibility(View.GONE);
         if (kediYukleyenID != null && !kediYukleyenID.isEmpty()) {
-            Bundle args = new Bundle();
-            args.putString("kullaniciId", kediYukleyenID);
-            SmartNavigationEngine.navigateTo(
-                    Screen.OTHER_PROFILE,
-                    args,
-                    kediYukleyenID
-            );
-
+            NavigationHelper.navigateToProfile(kediYukleyenID);
         }
     }
 
@@ -875,13 +849,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             public void onKullaniciAdiTiklandi(String kullaniciID) {
                 bottomSheetDialog.hide();
                 ikincibottom.hide();
-                ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciID);
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, fragment)
-                        .addToBackStack(null)
-                        .commit();
-
+                NavigationHelper.navigateToProfile(
+                        kullaniciID
+                );
             }
         });
 
@@ -1100,11 +1070,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                         if (bottomSheetDialog != null) bottomSheetDialog.hide();
                         if (ikincibottom != null) ikincibottom.hide();
 
-                        ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(yukleyenId);
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.fragment_container, fragment)
-                                .addToBackStack(null)
-                                .commit();
+                        NavigationHelper.navigateToProfile(
+                                yukleyenId
+                        );
                     }
 
                     @Override
@@ -1166,5 +1134,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             }
         });
     }
+
 
 }

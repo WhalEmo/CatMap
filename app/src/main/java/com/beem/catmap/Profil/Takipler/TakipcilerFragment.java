@@ -67,15 +67,6 @@ public class TakipcilerFragment extends Fragment {
         adapter.setKullaniciAdiTiklamaListener(kullaniciId -> {
             Bundle args = ProfilSayfasiFragment.newArgs(kullaniciId);
             SmartNavigationEngine.navigateTo(Screen.OTHER_PROFILE, args, kullaniciId);
-
-            /*
-            ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(kullaniciId);
-            requireActivity()
-                    .getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, fragment)
-                    .addToBackStack(null)
-                    .commit();*/
         });
 
         return view;

@@ -1,14 +1,13 @@
 package com.beem.catmap.ui.upload
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
-import androidx.core.app.ActivityCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -19,8 +18,6 @@ import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
-import com.beem.catmap.ui.camera.CameraFragment
-import com.beem.catmap.ui.camera.FilmStripAdapter // Mevcut yatay şerit adaptörün dayıcım
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -34,7 +31,6 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -70,6 +66,13 @@ class YuklemeArayuzuFragment : Fragment() {
         observeUiState()
         setupBackPressed()
         loadInterstitialAd()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if(!hidden) {
+            if (!binding.main.isVisible) binding.main.visibility = View.VISIBLE
+        }
     }
 
     private fun setupRecyclerView() {
@@ -177,7 +180,7 @@ class YuklemeArayuzuFragment : Fragment() {
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
             com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                requireActivity(), docId, binding.main, messageManager
+                docId, binding.main, messageManager
             )
             dialog.dismiss()
         }
@@ -203,7 +206,7 @@ class YuklemeArayuzuFragment : Fragment() {
             override fun handleOnBackPressed() {
                 CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                 isEnabled = false
-                requireActivity().onBackPressedDispatcher.onBackPressed()
+                SmartNavigationEngine.navigateBack()
             }
         })
     }

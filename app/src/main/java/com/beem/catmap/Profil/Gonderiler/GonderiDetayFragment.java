@@ -27,6 +27,7 @@ import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -131,7 +132,7 @@ public class GonderiDetayFragment extends Fragment {
                                     .setPositiveButton("Evet", (dialog, which) -> {
                                         mViewModel.kullaniciyaGonderiSil(kediid,uyari);
                                         mViewModel.gonderiSil(kediid);
-                                        requireActivity().getSupportFragmentManager().popBackStack();
+                                        SmartNavigationEngine.navigateBack();
                                         popupMenu.dismiss();
                                     })
                                     .setNegativeButton("Hayır", (dialog, which) -> dialog.dismiss())
@@ -149,7 +150,7 @@ public class GonderiDetayFragment extends Fragment {
                                                if (getActivity() instanceof MapsActivity) {
                                                    ((MapsActivity) getActivity()).sonTiklananMarkeriSil();
                                                }
-                                               requireActivity().getSupportFragmentManager().popBackStack();
+                                               SmartNavigationEngine.navigateBack();
                                         });
                                         popupMenu.dismiss();
                                     })

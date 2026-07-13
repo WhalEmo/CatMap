@@ -162,6 +162,7 @@ public class ProfilSayfasiFragment extends Fragment {
             TakipTakipciSayilariUI();
             HakkindaUI();
             KullaniciAdiUI();
+            profilePhotoRefresh(yukleyenID);
             mViewModel.GonderiSayisiniCek(yukleyenID);
 
             // 3. Gönderileri yeniden çek ve işlem bittiğinde swipe refresh dairesini pürüzsüzce kapat usta
@@ -179,6 +180,53 @@ public class ProfilSayfasiFragment extends Fragment {
             if (swipeRefreshLayout != null) {
                 swipeRefreshLayout.setRefreshing(false);
             }
+        }
+    }
+
+    private void profilePhotoRefresh(String targetId) {
+        profilResmiImageView.setImageResource(R.drawable.kullanici);
+        Picasso.get().cancelRequest(profilResmiImageView);
+
+        if (targetId == null || targetId.isEmpty()) return;
+
+        String cacheURL = ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), targetId);
+
+        if (cacheURL != null) {
+            logProfileFlow(cacheURL, targetId, cacheURL, "refresh ifi", targetId);
+            Picasso.get()
+                    .load(cacheURL)
+                    .networkPolicy(NetworkPolicy.OFFLINE)
+                    .placeholder(R.drawable.kullanici)
+                    .into(profilResmiImageView, new com.squareup.picasso.Callback() {
+                        @Override
+                        public void onSuccess() {
+                            // Cache pürüzsüz geldi
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            // Cache patlarsa online yükle
+                            Picasso.get()
+                                    .load(cacheURL)
+                                    .fit()
+                                    .centerCrop()
+                                    .placeholder(R.drawable.kullanici)
+                                    .into(profilResmiImageView);
+                        }
+                    });
+        } else {
+            // 🚀 ESKİ HATA DÜZELTİLDİ: Artık sabit MainActivity.kullanici değil, hedef ID gidiyor!
+            mViewModel.profilFotoUrlGetirVeCachele(requireContext(), targetId);
+            ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+                if (guncelPP != null) {
+                    logProfileFlow(cacheURL, targetId, guncelPP, "refresh else", targetId);
+                    Picasso.get()
+                            .load(guncelPP)
+                            .fit()
+                            .centerCrop()
+                            .placeholder(R.drawable.kullanici)
+                            .into(profilResmiImageView);
+                }
+            });
         }
     }
 
@@ -458,9 +506,9 @@ public class ProfilSayfasiFragment extends Fragment {
            gonderilerBaslikTextView.setVisibility(View.VISIBLE);
            takipEtButonu.setVisibility(View.GONE);
            sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
-           SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-           String cacheURL = sp.getString("profil_url", null);
+           String cacheURL = ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), yukleyenID);
            if (cacheURL != null) {
+               logProfileFlow(cacheURL, yukleyenID, cacheURL, "main ama ifde", yukleyenID);
                Picasso.get()
                        .load(cacheURL)
                        .networkPolicy(NetworkPolicy.OFFLINE)
@@ -485,6 +533,7 @@ public class ProfilSayfasiFragment extends Fragment {
                mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());
                ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
                    if (guncelPP != null) {
+                       logProfileFlow(cacheURL, yukleyenID, guncelPP, "main kullanıcı ama elsede", yukleyenID);
                        Picasso.get()
                                .load(guncelPP)
                                .fit()
@@ -639,8 +688,10 @@ public class ProfilSayfasiFragment extends Fragment {
                showLoading(false);
            });
 
+           Log.d("PROFILE_PHOTO_FLOW", "mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);");
            mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);
            ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+               ProfileCacheManager.INSTANCE.saveProfileUrl(requireContext(), yukleyenID, guncelPP);
                if (guncelPP != null) {
                    Picasso.get()
                            .load(guncelPP)
@@ -649,6 +700,7 @@ public class ProfilSayfasiFragment extends Fragment {
                            .placeholder(R.drawable.kullanici)
                            .into(profilResmiImageView);
                } else {
+                   Log.d("PROFILE_PHOTO_FLOW", "else set edildi profilResmiImageView.setImageResource(R.drawable.kullanici); - " + guncelPP);
                    profilResmiImageView.setImageResource(R.drawable.kullanici);
                }
            });
@@ -930,8 +982,7 @@ public class ProfilSayfasiFragment extends Fragment {
        KullaniciAdi.setText(mevcutKullaniciAdi.trim());
        KullaniciAdi.setSelection(mevcutKullaniciAdi.length());
 
-        SharedPreferences sp=requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
-        String cacheURL=sp.getString("profil_url", null);
+        String cacheURL= ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), MainActivity.kullanici.getID());
         if (cacheURL != null) {
             Picasso.get()
                     .load(cacheURL)
@@ -1003,16 +1054,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
     private void SohbetButonCalistir(){ // -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
         sohbetButon.setOnClickListener(v->{
-            MesajlasmaYonetici.getInstance().DinleyiciKaldir();
-
-            Kullanici alici = new Kullanici();
-            alici.setID(yukleyenID);
-            MesajlasmaYonetici.getInstance().setAlici(alici);
-            FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.fragment_container, new MesajFragment());
-            transaction.addToBackStack(null);
-            transaction.commit();
+            SohbetGecis();
         });
     }
     private void SohbetGecis(){// -> burda buton ile mesajlaşma fragmentı çalıştırdım aşkım
@@ -1021,11 +1063,12 @@ public class ProfilSayfasiFragment extends Fragment {
         Kullanici alici = new Kullanici();
         alici.setID(yukleyenID);
         MesajlasmaYonetici.getInstance().setAlici(alici);
-        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, new MesajFragment());
-        transaction.addToBackStack(null);
-        transaction.commit();
+
+        SmartNavigationEngine.navigateTo(
+                Screen.MESSAGE,
+                null,
+                yukleyenID
+        );
     }
 
     private void CikisYap(){
@@ -1120,4 +1163,39 @@ public class ProfilSayfasiFragment extends Fragment {
         dialog.show();
     }
 
+
+    private void logProfileFlow(String cacheUrl, String userId, String url, String tag, String cacheKey) {
+        boolean isCacheUrlNull = cacheUrl == null;
+        boolean isLiveUrlNull = url == null;
+        boolean isUserIdNull = userId == null;
+        boolean isCacheKeyNull = cacheKey == null;
+
+        String cleanTag = tag != null ? tag.toUpperCase() : "UNKNOWN";
+
+        Log.d("PROFILE_PHOTO_FLOW", "=========================== " + cleanTag + " ============================");
+        Log.d("PROFILE_PHOTO_FLOW", "🔍 [PROFIL AKIŞI] -> Hedef Kullanıcı ID: " + (isUserIdNull ? "NULL!" : userId));
+        Log.d("PROFILE_PHOTO_FLOW", "🔑 SharedPreferences Key: " + (isCacheKeyNull ? "❌ NULL İSTİSNASI!" : cacheKey));
+
+        // 📦 Cihaz Hafızası (Cache) Durumu
+        if (isCacheUrlNull) {
+            Log.d("PROFILE_PHOTO_FLOW", "💾 Cihaz Hafızası (Cache): ❌ BOŞ (Null) -> Veri internetten istenecek.");
+        } else {
+            Log.d("PROFILE_PHOTO_FLOW", "💾 Cihaz Hafızası (Cache): 🟢 DOLU (Mevcut) -> Link: " + cacheUrl);
+        }
+
+        // 🌐 Canlı Veri / Firebase Durumu
+        if (isLiveUrlNull) {
+            Log.d("PROFILE_PHOTO_FLOW", "🌐 Firestore / Canlı Veri: ⏳ Henüz veri dönmedi veya URL yok.");
+        } else {
+            Log.d("PROFILE_PHOTO_FLOW", "🌐 Firestore / Canlı Veri: ✅ YENİ VERİ GELDİ -> Link: " + url);
+
+            // Sinsi bir durum: Cache'teki veri ile internetten gelen veri aynı mı?
+            if (!isCacheUrlNull && url.equals(cacheUrl)) {
+                Log.d("PROFILE_PHOTO_FLOW", "🔄 Durum Analizi: Hafızadaki resim ile gelen resim AYNI. Ekran titremeyecek.");
+            } else if (!isCacheUrlNull) {
+                Log.d("PROFILE_PHOTO_FLOW", "⚡ Durum Analizi: ⚠️ RESİM DEĞİŞMİŞ! Eski cache güncellenecek.");
+            }
+        }
+        Log.d("PROFILE_PHOTO_FLOW", "=======================================================");
+    }
 }

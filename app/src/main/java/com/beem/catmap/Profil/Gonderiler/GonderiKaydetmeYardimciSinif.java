@@ -1,16 +1,15 @@
 package com.beem.catmap.Profil.Gonderiler;
 
-import android.app.Activity;
+import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
-import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
+import com.beem.catmap.ui.navigation.Screen;
+import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
@@ -20,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GonderiKaydetmeYardimciSinif {
-    public static void kullaniciyaGonderiKaydet(Activity activity, String kediID, ConstraintLayout main, UyariMesaji mesaji){
+    public static void kullaniciyaGonderiKaydet(String kediID, ConstraintLayout main, UyariMesaji mesaji){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
         Map<String, Object> yeniKedi = new HashMap<>();
@@ -28,13 +27,11 @@ public class GonderiKaydetmeYardimciSinif {
         yeniKedi.put("tarih", Timestamp.now());
         kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
                 .addOnSuccessListener(aVoid -> {
-                    if (main != null) main.setVisibility(View.GONE);
-                    ProfilSayfasiFragment fragment = ProfilSayfasiFragment.newInstance(MainActivity.kullanici.getID());
-                    ((AppCompatActivity) activity).getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, fragment)
-                            .addToBackStack(null)
-                            .commit();
+                    Bundle args = ProfilSayfasiFragment.newArgs(MainActivity.kullanici.getID());
+                    SmartNavigationEngine.navigateTo(
+                            Screen.PROFILE,
+                            args
+                    );
                     mesaji.BasariliDurum("Eklendi",1000);
                 })
                 .addOnFailureListener(e -> {

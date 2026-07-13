@@ -72,19 +72,6 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             Profil=findViewById(R.id.profilAlani);
             GirisKayit=findViewById(R.id.icerik_layout);
-            /*
-            getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-                Fragment profilFragment = getSupportFragmentManager().findFragmentById(R.id.container);
-                if (profilFragment instanceof ProfilSayfasiFragment) {
-                    Profil.setVisibility(View.GONE);
-                    GirisKayit.setVisibility(View.GONE);
-                } else {
-                    Profil.setVisibility(View.VISIBLE);
-                    GirisKayit.setVisibility(View.VISIBLE);
-                }
-            });
-
-             */
             return insets;
         });
         kullanici = new Kullanici();
@@ -105,18 +92,6 @@ public class MainActivity extends AppCompatActivity {
         else{
             uyariMesaji = new UyariMesaji(this,false);
         }
-        /*
-        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
-            if (currentFragment instanceof AnasayfaFragment) {
-                sohbetAlani.setVisibility(View.VISIBLE);
-                ustCubuk.setVisibility(View.VISIBLE);
-                FragmentAyarlari();
-            } else {
-                sohbetAlani.setVisibility(View.GONE);
-                ustCubuk.setVisibility(View.GONE);
-            }
-        }); */
     }
 
     public void haritaSayfasi(){
@@ -410,14 +385,4 @@ public class MainActivity extends AppCompatActivity {
             kullanici.setSonGorulme(System.currentTimeMillis());
         }
     }
-/*
-    private void FragmentAyarlari(){
-        sohbetAlani.setVisibility(View.VISIBLE);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.container, new AnasayfaFragment())
-                .commit();
-    }
-
- */
 }
