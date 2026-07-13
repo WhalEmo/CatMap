@@ -385,16 +385,22 @@ public class ProfilSayfasiFragment extends Fragment {
         }
     }
     private void KullaniciAdiUI(){
+        print("KullaniciAdiUI");
       if(yukleyenID.equals(MainActivity.kullanici.getID())){
           SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit", MODE_PRIVATE);
           String cacheKAd = sp.getString("KullaniciAdi", null);
           kullaniciadi.setText(cacheKAd.trim());
            isim=kullaniciadi.getText().toString();
       }else{
+          mViewModel.kullaniciAdi().removeObservers(getViewLifecycleOwner());
           mViewModel.KullaniciAdiGetirDB(yukleyenID);
-          ObserveDataSınıfı.observeOnce(mViewModel.kullaniciAdi(), getViewLifecycleOwner(), isim -> {
-              kullaniciadi.setText(isim);
-              isim=kullaniciadi.getText().toString();
+          print("mViewModel.KullaniciAdiGetirDB(yukleyenID); - " + yukleyenID);
+          mViewModel.kullaniciAdi().observe(getViewLifecycleOwner(), isim -> {
+              print(isim);
+              if (isim != null) {
+                  kullaniciadi.setText(isim);
+                  isim = kullaniciadi.getText().toString();
+              }
           });
       }
 
@@ -1197,5 +1203,10 @@ public class ProfilSayfasiFragment extends Fragment {
             }
         }
         Log.d("PROFILE_PHOTO_FLOW", "=======================================================");
+    }
+
+    private void print(String message){
+        String safeMessage = (message != null) ? message : "null_value";
+        Log.d("PROFILE_PRINT", safeMessage);
     }
 }

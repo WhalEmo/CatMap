@@ -471,6 +471,10 @@ public class MainViewModel extends ViewModel {
                 });
     }
     public void KullaniciAdiGetirDB(String KullaniciId){
+        if (_kullaniciAdi != null) {
+            _kullaniciAdi.setValue(null);
+        }
+
         db.collection("users")
                 .document(KullaniciId)
                 .get()
