@@ -282,8 +282,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         konumizni();
 
+        ViewGroup mainRoot = findViewById(R.id.maps_main_root);
+
         mesaji=new UyariMesaji(this,true);
-        bottomSheetView = getLayoutInflater().inflate(R.layout.markerdaki_kediyi_gosterme, null);
+        bottomSheetView = getLayoutInflater().inflate(R.layout.markerdaki_kediyi_gosterme, mainRoot, false);
         bottomSheetDialog = new BottomSheetDialog(this);
         bottomSheetDialog.setContentView(bottomSheetView);
 
@@ -319,7 +321,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
 
 
-        ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,null);
+        ikinci= getLayoutInflater().inflate(R.layout.yorum_gosterme,mainRoot, false);
         ikincibottom=new BottomSheetDialog(this);
         ikincibottom.setContentView(ikinci);
 
