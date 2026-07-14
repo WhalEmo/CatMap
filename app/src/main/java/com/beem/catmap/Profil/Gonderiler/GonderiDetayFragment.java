@@ -9,11 +9,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -85,6 +88,31 @@ public class GonderiDetayFragment extends Fragment {
     }
 
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (getActivity() != null) {
+            Window window = getActivity().getWindow();
+
+            window.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.catmap_surface_white));
+
+            WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(window, window.getDecorView());
+            controller.setAppearanceLightStatusBars(true);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (getActivity() != null) {
+            Window window = getActivity().getWindow();
+
+            window.setStatusBarColor(ContextCompat.getColor(requireContext(), R.color.catmap_background));
+
+            WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(window, window.getDecorView());
+            controller.setAppearanceLightStatusBars(false);
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -95,7 +123,7 @@ public class GonderiDetayFragment extends Fragment {
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
-        TextView haritadaGorText=view.findViewById(R.id.haritadaGorText);
+        //TextView haritadaGorText=view.findViewById(R.id.haritadaGorText);
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
         showLoading(true);
@@ -167,6 +195,7 @@ public class GonderiDetayFragment extends Fragment {
                 GonderiMenu.setVisibility(View.GONE);
             }
         });
+            /*
         haritadaGorText.setOnClickListener(b -> {
             if (getActivity() instanceof MapsActivity) {
                 MapsActivity mapsActivity = (MapsActivity) getActivity();
@@ -175,6 +204,8 @@ public class GonderiDetayFragment extends Fragment {
                 //mapsActivity.HaritadaGor(kediid);
             }
         });
+
+             */
         return view;
     }
     private void showLoading(boolean isLoading) {
