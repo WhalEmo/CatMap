@@ -114,6 +114,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             catManager.ButonGosterim(mMap!!, binding.root)
         }
 
+
         mMap!!.setOnMarkerClickListener { marker ->
             if (marker.title != "konum") {
                 val cat = findCat(marker.position)
@@ -171,19 +172,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun observeViewModel() {
-        mapViewModel?.isLoading?.observe(viewLifecycleOwner) { isLoading ->
-            if (isLoading) {
-                binding.yuklemeekran.visibility = View.VISIBLE
-            } else {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    _binding?.let {
-                        binding.yuklemeekran.visibility = View.GONE
-                        binding.btnShowFact.visibility = View.VISIBLE
-                    }
-                }, 500)
-            }
-        }
-
         mapViewModel?.catsList?.observe(viewLifecycleOwner) { catModels ->
             if (catModels != null && catModels.isNotEmpty()) {
                 kediler.clear()
@@ -215,6 +203,35 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mapViewModel?.loadingState?.collect { state ->
+                    when (state) {
+                        is LoadingState.Idle -> {
+                            binding.mapLoadingProgress.visibility = View.GONE
+                            binding.loadingPill.animate().alpha(0f).setDuration(400).withEndAction {
+                                binding.loadingPill.visibility = View.GONE
+                            }.start()
+                        }
+                        is LoadingState.Loading -> {
+                            if (state.type == LoadingType.MAP_FETCH) {
+                                binding.mapLoadingProgress.visibility = View.VISIBLE
+                            } else {
+                                binding.loadingPill.apply {
+                                    visibility = View.VISIBLE
+                                    alpha = 0f
+                                    animate().alpha(1f).setDuration(300).start()
+                                }
+                                binding.tvLoadingMessage.text = state.message
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
     }
 
 
