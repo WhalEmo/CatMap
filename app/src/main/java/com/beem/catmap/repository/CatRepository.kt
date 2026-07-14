@@ -24,10 +24,6 @@ class CatRepository {
     private val catsCollection = db.collection("cats")
     private val storage = FirebaseStorage.getInstance()
 
-    /**
-     * Coroutines 'await()' kullanarak callback cehennemini yok ettik.
-     * Bu fonksiyon sadece veriyi çeker ve UI'a (ViewModel'a) temiz bir List döndürür.
-     */
     suspend fun getAllCats(): List<CatModel> {
         return try {
             val snapshot = catsCollection.get().await()
@@ -169,47 +165,23 @@ class CatRepository {
         awaitClose { /* İptal gerekirse */ }
     }
 
-    private suspend fun uploadImagesToStorage(imageUris: List<Uri>): List<String> = withContext(Dispatchers.IO) {
-        val downloadUrls = mutableListOf<String>()
-        imageUris.forEachIndexed { index, uri ->
-            val fileName = "fotoklasoru/${System.currentTimeMillis()}_${UUID.randomUUID()}_$index.jpg"
-            val storageRef = storage.reference.child(fileName)
 
-            storageRef.putFile(uri).await()
+    suspend fun findCatById(catId: String): CatModel? {
+        return try {
+            val documentSnapshot = catsCollection.document(catId).get().await()
 
-            val downloadUrl = storageRef.downloadUrl.await().toString()
-            downloadUrls.add(downloadUrl)
+            if (documentSnapshot.exists()) {
+                val cat = documentSnapshot.toObject(CatModel::class.java)
+
+                cat?.copy(id = documentSnapshot.id)
+            } else {
+                Log.w("CatRepository", "Kedi bulunamadı! ID: $catId")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("CatRepository", "Kedi detayı çekilirken hata (ID: $catId): ${e.message}")
+            null
         }
-        downloadUrls
     }
 
-    suspend fun uploadCatPost(
-        catName: String,
-        catAbout: String,
-        latitude: Double,
-        longitude: Double,
-        userId: String,
-        imageUris: List<Uri>
-    ): String = withContext(Dispatchers.IO) {
-        val uploadedPhotoUrls = uploadImagesToStorage(imageUris)
-        if (uploadedPhotoUrls.isEmpty()) {
-            throw Exception("Fotoğraflar yüklenemedi, URL listesi boş!")
-        }
-
-        val hash = GeoFireUtils.getGeoHashForLocation(GeoLocation(latitude, longitude))
-
-        val catData = hashMapOf(
-            "kediAdi" to catName,
-            "kediHakkinda" to catAbout,
-            "latitude" to latitude,
-            "longitude" to longitude,
-            "geohash" to hash,
-            "photoUri" to uploadedPhotoUrls,
-            "YukleyenKullaniciID" to userId,
-            "createdAt" to System.currentTimeMillis()
-        )
-
-        val documentRef = catsCollection.add(catData).await()
-        documentRef.id
-    }
 }

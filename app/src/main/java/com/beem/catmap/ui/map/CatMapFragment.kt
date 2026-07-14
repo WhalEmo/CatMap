@@ -13,7 +13,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
 import com.beem.catmap.Maps.CatFactService
 import com.beem.catmap.Maps.LocationEngine
@@ -23,6 +26,7 @@ import com.beem.catmap.Maps.MapsActivity
 import com.beem.catmap.Maps.TarananKediler
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCatMapBinding
+import com.beem.catmap.models.CatModel
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.bumptech.glide.Glide
@@ -38,6 +42,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import de.hdodenhof.circleimageview.CircleImageView
+import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 
@@ -183,11 +188,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             if (catModels != null && catModels.isNotEmpty()) {
                 kediler.clear()
                 for (model in catModels) {
-                    val kedi = Kediler(
-                        model.id, model.kediAdi, model.kediHakkinda,
-                        model.latitude, model.longitude, model.mainPhotoUrl,
-                        ArrayList(model.photoUri), model.YukleyenKullaniciID
-                    )
+                    val kedi = modelToKediler(model)
                     kediler.add(kedi)
                 }
                 resimlimarker()
@@ -201,6 +202,68 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 sonCekilenLat = event.latitude
                 sonCekilenLng = event.longitude
             }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mapViewModel?.zoomToCatEvent?.collect { cat ->
+                    kediler.add(
+                        modelToKediler(cat)
+                    )
+                    buildMarker(cat)
+                    focusOnCatOnMap(cat)
+                }
+            }
+        }
+    }
+
+
+    private fun focusOnCatOnMap(cat: CatModel) {
+        if (mMap == null) return
+        val location = LatLng(cat.latitude, cat.longitude)
+        mMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 17f))
+
+    }
+
+    private fun modelToKediler(model: CatModel): Kediler {
+        return Kediler(
+            model.id, model.kediAdi, model.kediHakkinda,
+            model.latitude, model.longitude, model.mainPhotoUrl,
+            ArrayList(model.photoUri), model.YukleyenKullaniciID
+        )
+    }
+
+    private fun buildMarker(cat: CatModel) {
+        if (activity == null || !isAdded) return
+        requireActivity().runOnUiThread {
+            if (markerKEY.containsKey(cat.mainPhotoUrl)) return@runOnUiThread
+            markerKEY[cat.mainPhotoUrl] = null
+            Glide.with(this)
+                .asBitmap()
+                .load(cat.mainPhotoUrl)
+                .override(100, 100)
+                .centerCrop()
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                    override fun onLoadFailed(errorDrawable: Drawable?) {
+                        markerKEY.remove(cat.mainPhotoUrl)
+                    }
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        if (mMap == null) return
+                        val kedy = LatLng(cat.latitude, cat.longitude)
+                        val customMarkerBitmap = fotoduzenle(resource)
+                        val marker = mMap!!.addMarker(
+                            MarkerOptions()
+                                .icon(BitmapDescriptorFactory.fromBitmap(customMarkerBitmap))
+                                .position(kedy)
+                                .title(cat.id)
+                        )
+                        marker?.let { markerlar.add(it) }
+                    }
+                })
         }
     }
 

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.models.CatModel
 import com.beem.catmap.repository.CatRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class MapViewModel : ViewModel() {
@@ -21,6 +23,9 @@ class MapViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> get() = _errorMessage
 
+    private val _zoomToCatEvent = MutableSharedFlow<CatModel>(replay = 0, extraBufferCapacity = 1)
+    val zoomToCatEvent = _zoomToCatEvent.asSharedFlow()
+
     fun fetchAllCats() {
         if (_catsList.value != null && _catsList.value!!.isNotEmpty()) {
             return
@@ -35,6 +40,22 @@ class MapViewModel : ViewModel() {
                     _catsList.postValue(cats)
                 } else {
                     _errorMessage.postValue("Haritada hiç kedi bulunamadı.")
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("Bağlantı hatası: ${e.message}")
+            } finally {
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
+    fun requestZoomToCat(catId: String) {
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            try {
+                val cat = repository.findCatById(catId)
+                cat?.let {
+                    _zoomToCatEvent.emit(it)
                 }
             } catch (e: Exception) {
                 _errorMessage.postValue("Bağlantı hatası: ${e.message}")

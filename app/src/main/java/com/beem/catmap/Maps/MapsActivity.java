@@ -412,11 +412,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             }, 250);
         });
         gosterilecekKediID = getIntent().getStringExtra("kediId");
-        /*
-        if (gosterilecekKediID != null) {
-            HaritadaGor(gosterilecekKediID);
-        }
-        */
          /// REKLAM
         AdRequest adRequest = new AdRequest.Builder().build();
         adView.loadAd(adRequest);

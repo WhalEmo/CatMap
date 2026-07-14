@@ -15,6 +15,8 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
@@ -26,12 +28,16 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.beem.catmap.Maps.FotoYuklemeListener;
 import com.beem.catmap.Maps.MapKedi.KediSilmeDurumu;
 import com.beem.catmap.MainActivity;
+import com.beem.catmap.Maps.MapKedi.Kediler;
+import com.beem.catmap.Maps.MapViewModel;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
+import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -46,6 +52,8 @@ public class GonderiDetayFragment extends Fragment {
     private static final String ARG_BEGENİ="begeni";
     private static final String ARG_KEDIID="kediid";
     UyariMesaji uyari;
+
+    private MapViewModel mapViewModel;
 
     private ArrayList<String> fotoListesi;
     private String kediAdi;
@@ -63,17 +71,6 @@ public class GonderiDetayFragment extends Fragment {
         return args;
     }
 
-    public static GonderiDetayFragment newInstance(ArrayList<String> fotoListesi, String kediAdi, String aciklama, Long begeni,String kediid) {
-        GonderiDetayFragment fragment = new GonderiDetayFragment();
-        Bundle args = new Bundle();
-        args.putStringArrayList(ARG_FOTO_LIST, fotoListesi);
-        args.putString(ARG_KEDI_ADI, kediAdi);
-        args.putString(ARG_ACIKLAMA, aciklama);
-        args.putLong(ARG_BEGENİ, begeni != null ? begeni : 0L);
-        args.putString(ARG_KEDIID,kediid);
-        fragment.setArguments(args);
-        return fragment;
-    }
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,7 +120,6 @@ public class GonderiDetayFragment extends Fragment {
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
-        //TextView haritadaGorText=view.findViewById(R.id.haritadaGorText);
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
         showLoading(true);
@@ -195,19 +191,25 @@ public class GonderiDetayFragment extends Fragment {
                 GonderiMenu.setVisibility(View.GONE);
             }
         });
-            /*
-        haritadaGorText.setOnClickListener(b -> {
-            if (getActivity() instanceof MapsActivity) {
-                MapsActivity mapsActivity = (MapsActivity) getActivity();
-                Log.d("update", "onCreateView: haritada gör");
-                //mapsActivity.setSelectedItemSpeacial(R.id.haritagit);
-                //mapsActivity.HaritadaGor(kediid);
-            }
-        });
-
-             */
         return view;
     }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        mapViewModel = new ViewModelProvider(requireActivity()).get(MapViewModel.class);
+
+        MaterialButton haritadaGorButton = view.findViewById(R.id.haritadaGorButon);
+
+        haritadaGorButton.setOnClickListener(b -> {
+            if (kediid != null && !kediid.trim().isEmpty()) {
+                SmartNavigationEngine.navigateTo(Screen.MAP);
+                mapViewModel.requestZoomToCat(kediid);
+            }
+        });
+    }
+
     private void showLoading(boolean isLoading) {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
