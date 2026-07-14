@@ -119,7 +119,9 @@ public class MainViewModel extends ViewModel {
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
-        Log.d("PROFILE_PHOTO_FLOW", "set value geçildi");
+        if (_Url != null) {
+            _Url.setValue(null);
+        }
 
         db.collection("users")
                 .document(kullaniciId)
@@ -127,15 +129,14 @@ public class MainViewModel extends ViewModel {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         String url = documentSnapshot.getString("profilFotoUrl");
-                        _Url.postValue(url);
-                        Log.d("PROFILE_PHOTO_FLOW", "documentSnapshot.getString(\"profilFotoUrl\"); "+ url);
+                        String photoUrl = url != null && !url.isEmpty() ? url : ProfileCacheManager.VALUE_EMPTY;
+                        _Url.postValue(photoUrl);
                         ProfileCacheManager.INSTANCE.saveProfileUrl(context, kullaniciId, url);
                     } else {
                         _Url.postValue(null);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("PROFILE_PHOTO_FLOW", "Hata oluştu", e);
                     _Url.postValue(null);
                 });
     }

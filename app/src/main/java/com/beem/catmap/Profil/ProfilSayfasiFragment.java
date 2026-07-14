@@ -184,6 +184,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
     private void profilePhotoRefresh(String targetId) {
+        print("profilePhotoRefresh(String targetId) - " + targetId);
         profilResmiImageView.setImageResource(R.drawable.kullanici);
         Picasso.get().cancelRequest(profilResmiImageView);
 
@@ -192,7 +193,7 @@ public class ProfilSayfasiFragment extends Fragment {
         String cacheURL = ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), targetId);
 
         if (cacheURL != null) {
-            logProfileFlow(cacheURL, targetId, cacheURL, "refresh ifi", targetId);
+            print("cache 196");
             Picasso.get()
                     .load(cacheURL)
                     .networkPolicy(NetworkPolicy.OFFLINE)
@@ -214,17 +215,24 @@ public class ProfilSayfasiFragment extends Fragment {
                         }
                     });
         } else {
-            // 🚀 ESKİ HATA DÜZELTİLDİ: Artık sabit MainActivity.kullanici değil, hedef ID gidiyor!
+            mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
             mViewModel.profilFotoUrlGetirVeCachele(requireContext(), targetId);
-            ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+            mViewModel.UrlLiveData().observe(getViewLifecycleOwner(), guncelPP -> {
+                print(guncelPP);
                 if (guncelPP != null) {
-                    logProfileFlow(cacheURL, targetId, guncelPP, "refresh else", targetId);
-                    Picasso.get()
-                            .load(guncelPP)
-                            .fit()
-                            .centerCrop()
-                            .placeholder(R.drawable.kullanici)
-                            .into(profilResmiImageView);
+                    if (!guncelPP.trim().isEmpty() && !guncelPP.equals(ProfileCacheManager.VALUE_EMPTY)) {
+                        Picasso.get()
+                                .load(guncelPP)
+                                .fit()
+                                .centerCrop()
+                                .placeholder(R.drawable.kullanici)
+                                .into(profilResmiImageView);
+                        mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
+                    } else {
+                        print("Firestore'da resim yok, varsayılan görsel set edildi.");
+                        profilResmiImageView.setImageResource(R.drawable.kullanici);
+                    }
+                    mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
                 }
             });
         }
@@ -514,7 +522,9 @@ public class ProfilSayfasiFragment extends Fragment {
            sohbetButon.setVisibility(View.GONE); // -> burası ben ekledim aşkım kendi profilimize bakarken sohbet butonunu gizledim<3
            String cacheURL = ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), yukleyenID);
            if (cacheURL != null) {
+               print("if (cacheURL != null) { 521");
                logProfileFlow(cacheURL, yukleyenID, cacheURL, "main ama ifde", yukleyenID);
+               print(cacheURL);
                Picasso.get()
                        .load(cacheURL)
                        .networkPolicy(NetworkPolicy.OFFLINE)
@@ -523,10 +533,12 @@ public class ProfilSayfasiFragment extends Fragment {
                            @Override
                            public void onSuccess() {
                                // Cache’den başarıyla yüklendi, başka bir şey yapmaya gerek yok
+                               print("onSuccess() 531");
                            }
                            @Override
                            public void onError(Exception e) {
                                // Cache’den yüklenemezseinternetten yükle
+                               print("onError(Exception e) { 537");
                                Picasso.get()
                                        .load(cacheURL)
                                        .fit()
@@ -536,18 +548,27 @@ public class ProfilSayfasiFragment extends Fragment {
                            }
                        });
            } else {
+               mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
                mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());
-               ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+               print("mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());");
+               mViewModel.UrlLiveData().observe(getViewLifecycleOwner(), guncelPP -> {
+                   print(guncelPP);
+                   print("551");
                    if (guncelPP != null) {
                        logProfileFlow(cacheURL, yukleyenID, guncelPP, "main kullanıcı ama elsede", yukleyenID);
-                       Picasso.get()
-                               .load(guncelPP)
-                               .fit()
-                               .centerCrop()
-                               .placeholder(R.drawable.kullanici)
-                               .into(profilResmiImageView);
-                   } else {
-                       profilResmiImageView.setImageResource(R.drawable.kullanici);
+                       if (!guncelPP.trim().isEmpty() && !guncelPP.equals(ProfileCacheManager.VALUE_EMPTY)) {
+                           Picasso.get()
+                                   .load(guncelPP)
+                                   .fit()
+                                   .centerCrop()
+                                   .placeholder(R.drawable.kullanici)
+                                   .into(profilResmiImageView);
+                           mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
+                       } else {
+                           print("Firestore'da resim yok, varsayılan görsel set edildi.");
+                           profilResmiImageView.setImageResource(R.drawable.kullanici);
+                       }
+                       mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
                    }
                });
            }
@@ -693,21 +714,22 @@ public class ProfilSayfasiFragment extends Fragment {
                }
                showLoading(false);
            });
-
-           Log.d("PROFILE_PHOTO_FLOW", "mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);");
+           mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
            mViewModel.profilFotoUrlGetirVeCachele(requireContext(),yukleyenID);
-           ObserveDataSınıfı.observeOnce(mViewModel.UrlLiveData(), getViewLifecycleOwner(), guncelPP -> {
+           mViewModel.UrlLiveData().observe(getViewLifecycleOwner(), guncelPP -> {
                ProfileCacheManager.INSTANCE.saveProfileUrl(requireContext(), yukleyenID, guncelPP);
                if (guncelPP != null) {
-                   Picasso.get()
-                           .load(guncelPP)
-                           .fit()
-                           .centerCrop()
-                           .placeholder(R.drawable.kullanici)
-                           .into(profilResmiImageView);
-               } else {
-                   Log.d("PROFILE_PHOTO_FLOW", "else set edildi profilResmiImageView.setImageResource(R.drawable.kullanici); - " + guncelPP);
-                   profilResmiImageView.setImageResource(R.drawable.kullanici);
+                   if (!guncelPP.equals(ProfileCacheManager.VALUE_EMPTY)) {
+                       Picasso.get()
+                               .load(guncelPP)
+                               .fit()
+                               .centerCrop()
+                               .placeholder(R.drawable.kullanici)
+                               .into(profilResmiImageView);
+                   } else {
+                       profilResmiImageView.setImageResource(R.drawable.kullanici);
+                   }
+                   mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
                }
            });
 
