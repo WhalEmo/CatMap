@@ -1,18 +1,13 @@
 package com.beem.catmap.Profil.Gonderiler;
 
 import android.app.AlertDialog;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -20,15 +15,12 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.beem.catmap.Maps.FotoYuklemeListener;
 import com.beem.catmap.Maps.MapKedi.KediSilmeDurumu;
 import com.beem.catmap.MainActivity;
-import com.beem.catmap.Maps.MapKedi.Kediler;
 import com.beem.catmap.Maps.MapViewModel;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
@@ -36,7 +28,6 @@ import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -44,8 +35,6 @@ import java.util.ArrayList;
 
 public class GonderiDetayFragment extends Fragment {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private View overlay;
-    private ProgressBar progressBar;
     private static final String ARG_FOTO_LIST = "fotoListesi";
     private static final String ARG_KEDI_ADI = "kediAdi";
     private static final String ARG_ACIKLAMA = "aciklama";
@@ -115,19 +104,15 @@ public class GonderiDetayFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false);
         MainViewModel mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-        progressBar = view.findViewById(R.id.progressBar);
-        overlay = view.findViewById(R.id.overlayView);
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
-        showLoading(true);
 
         viewPager.setAdapter(new FotoAdapter(fotoListesi, new FotoYuklemeListener() {
             @Override
             public void onTumFotograflarYuklendi() {
-                showLoading(false); // ProgressBar burada kapanır
             }
         }));
 
@@ -210,18 +195,4 @@ public class GonderiDetayFragment extends Fragment {
         });
     }
 
-    private void showLoading(boolean isLoading) {
-        if (isLoading) {
-            progressBar.setVisibility(View.VISIBLE);
-            overlay.setVisibility(View.VISIBLE);
-            // Arka planı da interaktif yapma (dokunulmaz yap)
-            getActivity().getWindow().setFlags(
-                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-            overlay.setVisibility(View.GONE);
-            getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        }
-    }
 }

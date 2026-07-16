@@ -213,19 +213,4 @@
         </ScrollView>
     </LinearLayout>
 
-    <View
-        android:id="@+id/overlayView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000"
-        android:visibility="gone" />
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_gravity="center"
-        android:indeterminate="true"
-        android:visibility="gone" />
-
 </FrameLayout>

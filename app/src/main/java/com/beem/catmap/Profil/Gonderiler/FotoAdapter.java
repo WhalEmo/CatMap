@@ -1,7 +1,10 @@
 package com.beem.catmap.Profil.Gonderiler;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -33,30 +36,52 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
     @Override
     public void onBindViewHolder(@NonNull FotoViewHolder holder, int position) {
         String url = fotoUrlListesi.get(position);
+
+
+        if (holder.imageView.getTag() instanceof ObjectAnimator) {
+            ((ObjectAnimator) holder.imageView.getTag()).cancel();
+        }
+        holder.imageView.animate().cancel();
+        holder.imageView.setAlpha(0f);
+        holder.imageView.setBackgroundResource(R.drawable.cat_pulse_placeholder);
+
+        ObjectAnimator pulseAnim = ObjectAnimator.ofFloat(holder.imageView, "alpha", 0.4f, 1f);
+        pulseAnim.setDuration(800);
+        pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
+        pulseAnim.setRepeatMode(ValueAnimator.REVERSE);
+        pulseAnim.setInterpolator(new DecelerateInterpolator());
+
+        holder.imageView.setTag(pulseAnim);
+
+        pulseAnim.start();
+
         Picasso.get()
                 .load(url)
                 .fit()
                 .centerCrop()
-                .placeholder(R.drawable.kullanici)
                 .into(holder.imageView, new com.squareup.picasso.Callback() {
                     @Override
                     public void onSuccess() {
-                        yuklenenFotoSayisi++;
-                        if (yuklenenFotoSayisi == fotoUrlListesi.size()) {
-                            if (listener != null) {
-                                listener.onTumFotograflarYuklendi();
-                            }
-                        }
+                        pulseAnim.cancel();
+
+                        holder.imageView.setAlpha(0f);
+
+                        holder.imageView.animate()
+                                .alpha(1f)
+                                .setDuration(450)
+                                .setInterpolator(new DecelerateInterpolator())
+                                .withEndAction(() -> {
+                                    holder.imageView.setBackground(null);
+                                })
+                                .start();
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        yuklenenFotoSayisi++;
-                        if (yuklenenFotoSayisi == fotoUrlListesi.size()) {
-                            if (listener != null) {
-                                listener.onTumFotograflarYuklendi();
-                            }
-                        }
+                        pulseAnim.cancel();
+                        holder.imageView.setAlpha(1f);
+
+                        holder.imageView.setImageResource(R.drawable.kullanici);
                     }
                 });
     }
@@ -71,7 +96,7 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
 
         public FotoViewHolder(@NonNull View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.fotoImageView);
+            imageView = itemView.findViewById(R.id.postImageView);
         }
     }
 }
