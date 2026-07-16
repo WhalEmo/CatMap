@@ -40,6 +40,17 @@
             android:value="AIzaSyA58fD4xQDaP2bi1ElUsk8x_LKfFuqpREI" />
 
         <activity
+            android:name=".ui.splash.SplashActivity"
+            android:theme="@style/Theme.CatMap.Splash"
+            android:screenOrientation="portrait"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".Maps.MapsActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.CatMap"
@@ -57,12 +68,9 @@
 
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.CatMap"
             android:screenOrientation="portrait"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
     </application>
 

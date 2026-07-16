@@ -22,6 +22,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
@@ -64,7 +65,39 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
+
         super.onCreate(savedInstanceState);
+
+        SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
+        GirisYapildi = kayit.getBoolean("GirisYapildi",false);
+        kullanici = new Kullanici();
+        SohbetMesajAyarlari();
+        if(GirisYapildi){
+            setContentView(R.layout.activity_splash);
+
+            View splashLogo = findViewById(R.id.imgSplashLogo);
+            if (splashLogo != null) {
+                splashLogo.setAlpha(0f);
+                splashLogo.setScaleX(0.95f);
+                splashLogo.setScaleY(0.95f);
+                splashLogo.animate()
+                        .alpha(1f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(500)
+                        .setInterpolator(new AccelerateInterpolator())
+                        .start();
+            }
+
+            kullanici.GetYerelKullanici(this);
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
+
+            new Handler(Looper.getMainLooper()).postDelayed(this::haritaSayfasi, 1500);
+
+            return;
+        }
+
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -74,24 +107,12 @@ public class MainActivity extends AppCompatActivity {
             GirisKayit=findViewById(R.id.icerik_layout);
             return insets;
         });
-        kullanici = new Kullanici();
         KayitOlButon = findViewById(R.id.kaydolid);
         GirisYapButon = findViewById(R.id.girisid);
+
         CevrimIciYonetimi.getInstance().setAnasayfaGorunuyor(true);
-        SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
-        GirisYapildi = kayit.getBoolean("GirisYapildi",false);
-       // FragmentAyarlari();
-        SohbetMesajAyarlari();
-        if(GirisYapildi){
-            kullanici.GetYerelKullanici(this);
-            KayitOlButon.setVisibility(View.INVISIBLE);
-            GirisYapButon.setVisibility(View.INVISIBLE);
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
-            haritaSayfasi();
-        }
-        else{
-            uyariMesaji = new UyariMesaji(this,false);
-        }
+
+        uyariMesaji = new UyariMesaji(this,false);
     }
 
     public void haritaSayfasi(){

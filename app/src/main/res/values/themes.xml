@@ -3,6 +3,14 @@
     <style name="Base.Theme.CatMap" parent="Theme.Material3.DayNight.NoActionBar">
     </style>
 
+    <style name="Theme.CatMap.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/catmap_background</item>
+
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_logo</item>
+
+        <item name="postSplashScreenTheme">@style/Theme.CatMap</item>
+    </style>
+
     <style name="MapsTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:windowNoTitle">true</item>
