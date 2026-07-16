@@ -28,6 +28,7 @@ import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -186,6 +187,12 @@ public class GonderiDetayFragment extends Fragment {
         mapViewModel = new ViewModelProvider(requireActivity()).get(MapViewModel.class);
 
         MaterialButton haritadaGorButton = view.findViewById(R.id.haritadaGorButon);
+
+        MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
+
+        toolbar.setNavigationOnClickListener(v -> {
+            SmartNavigationEngine.navigateBack();
+        });
 
         haritadaGorButton.setOnClickListener(b -> {
             if (kediid != null && !kediid.trim().isEmpty()) {

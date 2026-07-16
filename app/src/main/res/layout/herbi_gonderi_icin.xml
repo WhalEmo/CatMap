@@ -20,9 +20,12 @@
             app:elevation="0dp">
 
             <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/catmap_surface_white">
+                android:background="@color/catmap_surface_white"
+                app:navigationIcon="?attr/homeAsUpIndicator"
+                app:navigationIconTint="@color/catmap_text_primary">
 
                 <TextView
                     android:id="@+id/gonderiBaslik"

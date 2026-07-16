@@ -92,6 +92,12 @@ public class MesajFragment extends Fragment {
         context = requireContext();
 
         handleBackPressWithEngine(this);
+
+        ImageButton backButton = view.findViewById(R.id.btnBack);
+
+        backButton.setOnClickListener(v -> {
+            SmartNavigationEngine.navigateBack();
+        });
     }
 
     @Nullable

@@ -41,6 +41,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -154,10 +155,8 @@ public class ProfilSayfasiFragment extends Fragment {
 
     private void fragmentiYenidenYukle_v2() {
         if (mViewModel != null && yukleyenID != null) {
-            // 1. Önce kullanıcıya yükleniyor loader'ını asilce göster
             showLoading(true);
 
-            // 2. FragmentManager'a dokunmadan, sadece Firestore/Cache metotlarını tetikle usta
             mViewModel.setYukleyenID(yukleyenID);
             TakipTakipciSayilariUI();
             HakkindaUI();
@@ -165,18 +164,16 @@ public class ProfilSayfasiFragment extends Fragment {
             profilePhotoRefresh(yukleyenID);
             mViewModel.GonderiSayisiniCek(yukleyenID);
 
-            // 3. Gönderileri yeniden çek ve işlem bittiğinde swipe refresh dairesini pürüzsüzce kapat usta
             mViewModel.GonderiCekme(yukleyenID, uyariMesaji, new GonderiYuklemeListener() {
                 @Override
                 public void onTumGonderilerYuklendi() {
-                    showLoading(false); // Progress'i kapat
+                    showLoading(false);
                     if (swipeRefreshLayout != null) {
-                        swipeRefreshLayout.setRefreshing(false); // Refresh animasyonunu durdur
+                        swipeRefreshLayout.setRefreshing(false);
                     }
                 }
             });
         } else {
-            // Eğer her ihtimale karşı bir null durumu varsa emniyet kemerini kapat usta
             if (swipeRefreshLayout != null) {
                 swipeRefreshLayout.setRefreshing(false);
             }
@@ -490,9 +487,8 @@ public class ProfilSayfasiFragment extends Fragment {
 
          swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            fragmentiYenidenYukle_v2();  // Aşağıda tanımlayacağımız yöntem
-        });
+        // Aşağıda tanımlayacağımız yöntem
+        swipeRefreshLayout.setOnRefreshListener(this::fragmentiYenidenYukle_v2);
 
 
         gonderiRecyclerView = view.findViewById(R.id.gonderiRecyclerView);
@@ -512,6 +508,12 @@ public class ProfilSayfasiFragment extends Fragment {
                 takipciSayisiTextView.setText(String.valueOf(takipciSayisi));
         });
 
+        ImageButton btnBack =  view.findViewById(R.id.btnBack);
+
+        btnBack.setVisibility(View.GONE);
+        btnBack.setOnClickListener(v -> {
+            SmartNavigationEngine.navigateBack();
+        });
 
        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
            Log.d("NAV_BACK_DEDEKTOR",yukleyenID + "yükleyen id benim");
@@ -648,6 +650,8 @@ public class ProfilSayfasiFragment extends Fragment {
 
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.GONE);
+
+           btnBack.setVisibility(View.VISIBLE);
 
            SohbetButonCalistir(); // -> burda butonun onClick listenırını  aktifleştirdim aşkım
 

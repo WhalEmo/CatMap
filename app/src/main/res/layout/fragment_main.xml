@@ -424,4 +424,15 @@
         android:indeterminate="true"
         style="?android:attr/progressBarStyleLarge"
         android:layout_marginTop="16dp" />
+
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="8dp"
+        android:layout_gravity="top|start"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Geri Dön"
+        android:src="?attr/homeAsUpIndicator"
+        app:tint="#000000" />
 </FrameLayout>
