@@ -10,7 +10,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -163,6 +165,54 @@ class CatRepository {
 
         // Emniyet kilidi: Akış kırılırsa task'ları durdurmak için
         awaitClose { /* İptal gerekirse */ }
+    }
+
+
+    suspend fun fetchCatsInArea(latitude: Double, longitude: Double, radiusInMeters: Double = 5000.0): List<CatModel> {
+        return try {
+            val center = GeoLocation(latitude, longitude)
+
+            val bounds = GeoFireUtils.getGeoHashQueryBounds(center, radiusInMeters)
+
+            coroutineScope {
+                val deferredQueries = bounds.map { b ->
+                    async {
+                        catsCollection
+                            .orderBy("geohash")
+                            .startAt(b.startHash)
+                            .endAt(b.endHash)
+                            .get()
+                            .await()
+                    }
+                }
+
+                val snapshots = deferredQueries.map { it.await() }
+                val tempCatsList = mutableListOf<CatModel>()
+
+                for (snap in snapshots) {
+                    for (doc in snap.documents) {
+                        val lat = doc.getDouble("latitude") ?: continue
+                        val lng = doc.getDouble("longitude") ?: continue
+
+                        val docLocation = GeoLocation(lat, lng)
+                        val distanceInM = GeoFireUtils.getDistanceBetween(docLocation, center)
+
+                        if (distanceInM <= radiusInMeters) {
+                            val cat = doc.toObject(CatModel::class.java)
+                            cat?.let {
+                                val finalizedCat = it.copy(id = doc.id)
+                                tempCatsList.add(finalizedCat)
+                            }
+                        }
+                    }
+                }
+
+                tempCatsList.distinctBy { it.id }
+            }
+        } catch (e: Exception) {
+            Log.e("CatRepository", "Alan taranırken hata oluştu: ${e.message}")
+            emptyList()
+        }
     }
 
 

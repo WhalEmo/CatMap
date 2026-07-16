@@ -23,7 +23,6 @@ import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.Maps.MapKedi.Kediler
 import com.beem.catmap.Maps.MapViewModel
 import com.beem.catmap.Maps.MapsActivity
-import com.beem.catmap.Maps.TarananKediler
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCatMapBinding
 import com.beem.catmap.models.CatModel
@@ -45,6 +44,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
+import androidx.core.view.isGone
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -63,6 +63,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var sonCekilenLng = 0.0
     private var screenWidth = 0
     private var isPanelVisible = false
+
+    private var lastScannedLocation: LatLng? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -105,13 +107,26 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         LocationEngine.startTracking(requireContext(), mMap!!)
 
-        val catManager = TarananKediler()
-        catManager.ButonGosterim(mMap!!, binding.root)
+        lastScannedLocation = mMap!!.cameraPosition.target
 
-        catManager.Basildi(kediler, mMap!!, { resimlimarker() }, requireContext())
 
         mMap!!.setOnCameraIdleListener {
-            catManager.ButonGosterim(mMap!!, binding.root)
+            val currentCenter = googleMap.cameraPosition.target
+
+            lastScannedLocation?.let { sonMerkez ->
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    sonMerkez.latitude, sonMerkez.longitude,
+                    currentCenter.latitude, currentCenter.longitude,
+                    results
+                )
+
+                if (results[0] > 500f) {
+                    if (binding.btnScanArea.isGone) {
+                        binding.btnScanArea.show()
+                    }
+                }
+            }
         }
 
 
@@ -167,7 +182,17 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
-        // Paneli Kapat Butonu
+        binding.btnScanArea.setOnClickListener {
+            mMap?.let { map ->
+                val currentCenter = map.cameraPosition.target
+
+                binding.btnScanArea.hide()
+                lastScannedLocation = currentCenter
+
+                mapViewModel?.scanCatsInArea(currentCenter.latitude, currentCenter.longitude)
+            }
+        }
+
         binding.btnClosePanel.setOnClickListener { hidePanel() }
     }
 

@@ -96,4 +96,47 @@ class MapViewModel : ViewModel() {
         }
     }
 
+    fun scanCatsInArea(latitude: Double, longitude: Double) {
+        viewModelScope.launch {
+            _loadingState.value = LoadingState.Loading(
+                message = "Çevredeki Kediler Taranıyor...",
+                type = LoadingType.MAP_FETCH
+            )
+
+            try {
+                val cats = repository.fetchCatsInArea(latitude, longitude)
+
+                if (cats.isNotEmpty()) {
+                    _catsList.postValue(cats)
+
+                    val centerLat = latitude
+                    val centerLng = longitude
+
+                    val closestCat = cats.minByOrNull { cat ->
+                        val results = FloatArray(1)
+                        android.location.Location.distanceBetween(
+                            centerLat, centerLng,
+                            cat.latitude, cat.longitude,
+                            results
+                        )
+                        results[0]
+                    }
+
+                    closestCat?.let {
+                        _zoomToCatEvent.emit(it)
+                    }
+
+                    UiMessageManager.emitMessage(UiMessageState.Success("${cats.size} sevimli dostumuz bulundu!"))
+                } else {
+                    UiMessageManager.emitMessage(UiMessageState.Info("Bu yakınlarda henüz taranmış kedi bulunmuyor."))
+                }
+
+            } catch (e: Exception) {
+                UiMessageManager.emitMessage(UiMessageState.Error("Tarama esnasında bir hata oluştu."))
+            } finally {
+                _loadingState.value = LoadingState.Idle
+            }
+        }
+    }
+
 }
