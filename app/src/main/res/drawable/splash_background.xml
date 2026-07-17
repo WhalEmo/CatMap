@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <color android:color="@color/catmap_background" />
+    </item>
+
+    <item
+        android:gravity="center"
+        android:bottom="80dp">
+        <bitmap
+            android:src="@drawable/ic_splash_screen"
+            android:mipMap="true"
+            android:filter="true" />
+    </item>
+
+    <item
+        android:gravity="center"
+        android:top="220dp">
+        <bitmap
+            android:src="@drawable/ic_splash_screen_text"
+            android:mipMap="true"
+            android:filter="true" />
+    </item>
+
+</layer-list>
