@@ -57,6 +57,7 @@ import android.Manifest;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.Klavye;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Maps.MapKedi.KediSilmeDurumu;
 import com.beem.catmap.Maps.MapKedi.Kediler;
@@ -235,6 +236,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.setFirestoreSettings(settings);
+
+        if (MainActivity.kullanici == null) MainActivity.kullanici = new Kullanici();
+        MainActivity.kullanici.GetYerelKullanici(this);
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());

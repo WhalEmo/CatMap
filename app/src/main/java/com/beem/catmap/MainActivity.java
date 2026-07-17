@@ -65,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
-
         super.onCreate(savedInstanceState);
 
         SharedPreferences kayit = getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
@@ -74,26 +72,10 @@ public class MainActivity extends AppCompatActivity {
         kullanici = new Kullanici();
         SohbetMesajAyarlari();
         if(GirisYapildi){
-            setContentView(R.layout.activity_splash);
-
-            View splashLogo = findViewById(R.id.imgSplashLogo);
-            if (splashLogo != null) {
-                splashLogo.setAlpha(0f);
-                splashLogo.setScaleX(0.95f);
-                splashLogo.setScaleY(0.95f);
-                splashLogo.animate()
-                        .alpha(1f)
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(500)
-                        .setInterpolator(new AccelerateInterpolator())
-                        .start();
-            }
 
             kullanici.GetYerelKullanici(this);
             CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici);
-
-            new Handler(Looper.getMainLooper()).postDelayed(this::haritaSayfasi, 1500);
+            haritaSayfasi();
 
             return;
         }
@@ -119,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
         CevrimIciYonetimi.getInstance().HaritaArayuzAktivitiyeGecildi();
         Intent intent = new Intent(MainActivity.this, MapsActivity.class);
         startActivity(intent);
+        overridePendingTransition(0, 0);
+        finish();
     }
 
 
