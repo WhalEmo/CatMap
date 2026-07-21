@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.location.Location
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -51,6 +52,7 @@ import java.util.HashMap
 import androidx.core.view.isGone
 import com.beem.catmap.data.local.LocationCacheManager
 import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.CameraPosition
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -65,9 +67,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private val markerlar = ArrayList<Marker>()
     private val markerKEY = HashMap<String, Any?>()
 
-    private var lastGpsLocation: LatLng? = null
+    private var lastGpsLocation: Location? = null
     private var screenWidth = 0
     private var isPanelVisible = false
+    private var isTrackingUser = false
 
     private var lastScannedLocation: LatLng? = null
 
@@ -120,6 +123,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         lastScannedLocation = mMap!!.cameraPosition.target
 
+        mMap!!.setOnCameraMoveStartedListener { reason ->
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                if (isTrackingUser) {
+                    stopTrackingMode()
+                }
+            }
+        }
+
 
         mMap!!.setOnCameraIdleListener {
             val currentCenter = googleMap.cameraPosition.target
@@ -167,9 +178,12 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private fun setupClickListeners() {
         binding.fabCurrentLocation.setOnClickListener {
-            if (mMap != null && lastGpsLocation!!.latitude != 0.0 && lastGpsLocation!!.longitude != 0.0) {
-                val currentLatLng = LatLng(lastGpsLocation!!.latitude, lastGpsLocation!!.longitude)
-                mMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
+            if (lastGpsLocation != null && mMap != null) {
+                if (!isTrackingUser) {
+                    startTrackingMode()
+                } else {
+                    stopTrackingMode()
+                }
             } else {
                 UiMessageManager.emitMessage(UiMessageState.Info("Konum aranıyor, lütfen bekleyin..."))
             }
@@ -224,8 +238,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 mapViewModel!!.checkAndFetchCatsIfMoved(event.latitude, event.longitude)
 
                 lastGpsLocation = event
-                updateMyLocationMarker(event)
+
+                val currentLatLng = LatLng(event.latitude, event.longitude)
+                updateMyLocationMarker(currentLatLng)
                 LocationCacheManager.saveLastLocation(LatLng(event.latitude, event.longitude))
+
+                if (isTrackingUser) {
+                    updateCameraForTracking(event, animate = true)
+                }
             }
         }
 
@@ -374,6 +394,51 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         val canvas = Canvas(returnedBitmap)
         markerView.draw(canvas)
         return returnedBitmap
+    }
+
+    private fun startTrackingMode() {
+        isTrackingUser = true
+        binding.fabCurrentLocation.setImageResource(R.drawable.ic_location_puck)
+
+        lastGpsLocation?.let { loc ->
+            updateCameraForTracking(loc, animate = true)
+        }
+    }
+
+    private fun stopTrackingMode() {
+        if (!isTrackingUser) return
+        isTrackingUser = false
+        binding.fabCurrentLocation.setImageResource(R.drawable.ic_location_puck)
+
+        mMap?.let { map ->
+            val currentPos = map.cameraPosition
+            val newCamPos = CameraPosition.Builder(currentPos)
+                .tilt(0f)
+                .bearing(currentPos.bearing)
+                .build()
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(newCamPos), 500, null)
+        }
+    }
+
+    private fun updateCameraForTracking(location: Location, animate: Boolean = true) {
+        val map = mMap ?: return
+        val currentLatLng = LatLng(location.latitude, location.longitude)
+        val bearing = if (location.hasBearing()) location.bearing else map.cameraPosition.bearing
+
+        Log.d("BEARING", "has bearing ${location.hasBearing()} - $bearing")
+
+        val cameraPosition = CameraPosition.Builder()
+            .target(currentLatLng)
+            .zoom(18f)
+            .tilt(45f)
+            .bearing(bearing)
+            .build()
+
+        if (animate) {
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 800, null)
+        } else {
+            map.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+        }
     }
 
     private fun updateMyLocationMarker(latLng: LatLng) {
