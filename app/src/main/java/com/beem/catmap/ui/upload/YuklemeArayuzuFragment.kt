@@ -18,6 +18,7 @@ import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
@@ -166,7 +167,7 @@ class YuklemeArayuzuFragment : Fragment() {
                 catName = binding.isimText.text.toString(),
                 catAbout = binding.hakkindaText.text.toString(),
                 location = location,
-                userId = MainActivity.kullanici?.id ?: ""
+                userId = UserSession.userId
             )
         }
     }
@@ -236,7 +237,7 @@ class YuklemeArayuzuFragment : Fragment() {
         super.onResume()
         CevrimIciYonetimi.getInstance().apply {
             setYuklemeEkraniGorunuyor(true)
-            CevrimIciCalistir(MainActivity.kullanici)
+            CevrimIciCalistir(UserSession.user)
         }
     }
 
@@ -244,7 +245,7 @@ class YuklemeArayuzuFragment : Fragment() {
         super.onPause()
         CevrimIciYonetimi.getInstance().apply {
             setYuklemeEkraniGorunuyor(false)
-            CevrimIciCalistir(MainActivity.kullanici)
+            CevrimIciCalistir(UserSession.user)
         }
     }
 

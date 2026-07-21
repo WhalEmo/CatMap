@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
+import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.R;
 import com.beem.catmap.mesaj.YanitMesaj;
@@ -50,13 +51,13 @@ public class SohbetYonetici {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for(DataSnapshot sohbet: snapshot.getChildren()){
                     String sohbetID = sohbet.getKey();
-                    if(sohbetID.split("_")[0].equals(MainActivity.kullanici.getID())){
+                    if(sohbetID.split("_")[0].equals(UserSession.INSTANCE.getUserId())){
                         Kullanici alici = new Kullanici();
                         alici.setID(sohbetID.split("_")[1]);
                         Sohbet sohbet1 = new Sohbet(sohbetID, alici, new Mesaj());
                         sohbetArrayList.add(sohbet1);
                     }
-                    if(sohbetID.split("_")[1].equals(MainActivity.kullanici.getID())){
+                    if(sohbetID.split("_")[1].equals(UserSession.INSTANCE.getUserId())){
                         Kullanici alici = new Kullanici();
                         alici.setID(sohbetID.split("_")[0]);
                         Sohbet sohbet1 = new Sohbet(sohbetID, alici,null);
@@ -310,7 +311,7 @@ public class SohbetYonetici {
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()) {
                     Boolean engellendinMiVal = snapshot.child(sohbet.getAlici().getID()).getValue(Boolean.class);
-                    Boolean engelledinMiVal = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    Boolean engelledinMiVal = snapshot.child(UserSession.INSTANCE.getUserId()).getValue(Boolean.class);
 
                     boolean engellendinMi = engellendinMiVal != null && engellendinMiVal;
                     boolean engelledinMi = engelledinMiVal != null && engelledinMiVal;

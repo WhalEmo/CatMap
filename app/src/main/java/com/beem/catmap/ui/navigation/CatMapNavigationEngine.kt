@@ -12,6 +12,7 @@ import java.lang.ref.WeakReference
 import androidx.core.view.isVisible
 import com.beem.catmap.MainActivity
 import com.beem.catmap.Profil.ProfilSayfasiFragment
+import com.beem.catmap.data.local.UserSession
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
@@ -33,7 +34,7 @@ class CatMapNavigationEngine(
             SmartNavigationEngine.navigateTo(
                 targetScreen = targetScreen,
                 args = if (targetScreen == Screen.PROFILE)
-                    ProfilSayfasiFragment.newArgs(MainActivity.kullanici.id) else null,
+                    ProfilSayfasiFragment.newArgs(UserSession.userId) else null,
                 key = null
             )
             true

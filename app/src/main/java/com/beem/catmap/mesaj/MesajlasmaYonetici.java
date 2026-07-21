@@ -10,7 +10,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.sohbet.SohbetYonetici;
@@ -35,7 +34,7 @@ public class MesajlasmaYonetici {
     private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference("mesajlar");
 
     private String sohbetID;
-    private Kullanici gonderen = MainActivity.kullanici;
+    private Kullanici gonderen = UserSession.INSTANCE.getUser();
     private Kullanici alici;
     private static MesajlasmaYonetici yonetici;
     private ChildEventListener dinleyici;
@@ -629,8 +628,8 @@ public class MesajlasmaYonetici {
 
 
     public void MesajlasmaEngelle(String engellenenId){
-        sohbetIDOlustur(MainActivity.kullanici.getID(),engellenenId,engellenensohbetID->{
-            EngelAlanKontrolu(engellenensohbetID,MainActivity.kullanici.getID());
+        sohbetIDOlustur(UserSession.INSTANCE.getUserId(), engellenenId,engellenensohbetID->{
+            EngelAlanKontrolu(engellenensohbetID,UserSession.INSTANCE.getUserId());
             EngelAlanKontrolu(engellenensohbetID,"anaMesaj");
             EngelAlanKontrolu(engellenensohbetID,"gunMesaj");
             EngelAlanKontrolu(engellenensohbetID,"silMesaj");
@@ -640,7 +639,7 @@ public class MesajlasmaYonetici {
         });
     }
     public void MesajlasmaEngellemeKaldir(String engellenenId){
-        sohbetIDOlustur(MainActivity.kullanici.getID(),engellenenId,engellenensohbetID->{
+        sohbetIDOlustur(UserSession.INSTANCE.getUserId(),engellenenId,engellenensohbetID->{
             mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.getID()).setValue(false);
 
         });
