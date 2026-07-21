@@ -43,6 +43,7 @@ import com.beem.catmap.MainActivity;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.database.DataSnapshot;
@@ -83,6 +84,8 @@ public class MesajFragment extends Fragment {
     private boolean engellendim;
     private boolean engelledim;
 
+    private UserRepository userRepository;
+
     public MesajFragment(){
     }
 
@@ -98,6 +101,8 @@ public class MesajFragment extends Fragment {
         backButton.setOnClickListener(v -> {
             SmartNavigationEngine.navigateBack();
         });
+
+        userRepository = UserRepository.Companion.getInstance(requireContext());
     }
 
     @Nullable
@@ -312,7 +317,7 @@ public class MesajFragment extends Fragment {
                         else if(data.getData() != null){
                             MesajFotoGonderYonetici.getInstance().UriEkle(data.getData());
                         }
-                        MesajFotoGonderYonetici.getInstance().GondericiStart(adapter);
+                        MesajFotoGonderYonetici.getInstance().GondericiStart(adapter, requireContext());
                     }
                 }
         );
@@ -395,10 +400,8 @@ public class MesajFragment extends Fragment {
             @Override
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()) {
-                    System.out.println(MesajlasmaYonetici.getInstance().getAlici().getID());
-                    System.out.println(MainActivity.kullanici.getID());
                     Boolean  engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
-                    Boolean  engelledinMi = snapshot.child(MainActivity.kullanici.getID()).getValue(Boolean.class);
+                    Boolean  engelledinMi = snapshot.child(userRepository.getCurrentUserId()).getValue(Boolean.class);
                     engellendim = engellendinMi != null && engellendinMi;
                     engelledim = engelledinMi != null && engelledinMi;
                     mesajlasmaYonetici.setEngelledim(engelledim);
@@ -425,7 +428,7 @@ public class MesajFragment extends Fragment {
         };
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("mesajlar");
         if(mesajlasmaYonetici.getSohbetID()==null){
-            mesajlasmaYonetici.sohbetIDOlustur(MainActivity.kullanici.getID(),mesajlasmaYonetici.getAlici().getID(), id->{
+            mesajlasmaYonetici.sohbetIDOlustur(userRepository.getCurrentUserId(),mesajlasmaYonetici.getAlici().getID(), id->{
                 ref.child(id)
                         .child("engelliMi")
                         .addListenerForSingleValueEvent(event);

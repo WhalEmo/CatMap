@@ -1,0 +1,85 @@
+package com.beem.catmap.data.local
+
+import android.content.Context
+import android.content.SharedPreferences
+import com.beem.catmap.KullaniciAuth.Kullanici
+
+
+class UserSessionManager private constructor(context: Context) {
+
+    private val prefs: SharedPreferences = context.applicationContext.getSharedPreferences(
+        PREF_NAME,
+        Context.MODE_PRIVATE
+    )
+
+    companion object {
+        private const val PREF_NAME = "KullaniciKayit"
+
+        // Key Tanımlamaları
+        private const val KEY_ID = "ID"
+        private const val KEY_AD = "Ad"
+        private const val KEY_SOYAD = "Soyad"
+        private const val KEY_EMAIL = "Email"
+        private const val KEY_USERNAME = "KullaniciAdi"
+        private const val KEY_PASSWORD = "Sifre"
+        private const val KEY_IS_LOGGED_IN = "GirisYapildi"
+        private const val KEY_FOTO_URL = "FotoUrl"
+
+        @Volatile
+        private var INSTANCE: UserSessionManager? = null
+
+        fun getInstance(context: Context): UserSessionManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: UserSessionManager(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
+
+    /**
+     * Kullanıcıyı yerel disk belleğine mühürler
+     */
+    fun saveUserSession(kullanici: Kullanici) {
+        prefs.edit().apply {
+            putString(KEY_ID, kullanici.id)
+            putString(KEY_AD, kullanici.ad)
+            putString(KEY_SOYAD, kullanici.soyad)
+            putString(KEY_EMAIL, kullanici.email)
+            putString(KEY_USERNAME, kullanici.kullaniciAdi)
+            putString(KEY_PASSWORD, kullanici.sifre)
+            putString(KEY_FOTO_URL, kullanici.fotoUrl)
+            putBoolean(KEY_IS_LOGGED_IN, true)
+            apply() // Disk yazımını arka planda asenkron yapar
+        }
+    }
+
+    /**
+     * Diskten kayıtlı kullanıcıyı çekip nesneye dönüştürür
+     */
+    fun getUserSession(): Kullanici? {
+        if (!isLoggedIn()) return null
+
+        return Kullanici().apply {
+            id = prefs.getString(KEY_ID, "") ?: ""
+            ad = prefs.getString(KEY_AD, "") ?: ""
+            soyad = prefs.getString(KEY_SOYAD, "") ?: ""
+            email = prefs.getString(KEY_EMAIL, "") ?: ""
+            kullaniciAdi = prefs.getString(KEY_USERNAME, "") ?: ""
+            sifre = prefs.getString(KEY_PASSWORD, "") ?: ""
+            fotoUrl = prefs.getString(KEY_FOTO_URL, "") ?: ""
+        }
+    }
+
+    /**
+     * Kullanıcı oturum açmış mı kontrolü
+     */
+    fun isLoggedIn(): Boolean {
+        return prefs.getBoolean(KEY_IS_LOGGED_IN, false)
+    }
+
+    /**
+     * Çıkış Yap (Logout) - Yerel veriyi sıfırlar
+     */
+    fun clearSession() {
+        prefs.edit().clear().apply()
+    }
+}

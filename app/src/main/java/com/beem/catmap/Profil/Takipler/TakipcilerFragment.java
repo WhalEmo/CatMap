@@ -17,6 +17,7 @@ import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -54,12 +55,14 @@ public class TakipcilerFragment extends Fragment {
         adapter=new Kullanicilar_adapter(requireContext(),kullaniciList,viewModel);
 
         recyclerView.setAdapter(adapter);
+
+        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
         // ID'yi alıyoruz
         if (getArguments() != null) {
             id = getArguments().getString("profilID");
             Log.d("FIRESTORE_KORUMA", "TakipcilerFragment'a gelen ID: " + id);
-        } else {
-            id = MainActivity.kullanici.getID(); // Yedek olarak kendi ID'miz
+        } else if(userRepository.isUserLoggedIn()) {
+            id = userRepository.getCurrentUserId(); // Yedek olarak kendi ID'miz
         }
 
         veriCekTakipciler(id);

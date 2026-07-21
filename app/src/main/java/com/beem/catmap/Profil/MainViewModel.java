@@ -2,12 +2,14 @@ package com.beem.catmap.Profil;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -18,6 +20,7 @@ import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.Gonderiler.Gonderi;
 import com.beem.catmap.UyariMesaji;
+import com.beem.catmap.data.repository.UserRepository;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
@@ -35,6 +38,8 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
+    private UserRepository userRepository;
+
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
     public MutableLiveData<Long>_takipEdilenSayisi=new MutableLiveData<>();
@@ -113,9 +118,14 @@ public class MainViewModel extends ViewModel {
     }
 
 
-    public MainViewModel() {
+    public MainViewModel(@NonNull Application application) {
         takipDurumlariniBirlestir();
         db = FirebaseFirestore.getInstance();
+        userRepository = UserRepository.Companion.getInstance(application);
+    }
+
+    private String getCurrentUserId() {
+        return userRepository.getCurrentUser().getID();
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
@@ -153,12 +163,12 @@ public class MainViewModel extends ViewModel {
 
                     FirebaseFirestore.getInstance()
                             .collection("users")
-                            .document(MainActivity.kullanici.getID())
+                            .document(getCurrentUserId())
                             .update("profilFotoUrl", url)
                             .addOnSuccessListener(aVoid -> {
                                 Log.d("FirestoreUpdate", "Profil fotoğrafı URL'si başarıyla güncellendi.");
                                 // SharedPreferences'e kaydet
-                                ProfileCacheManager.INSTANCE.saveProfileUrl(context, MainActivity.kullanici.getID(), url);
+                                ProfileCacheManager.INSTANCE.saveProfileUrl(context, getCurrentUserId(), url);
                             })
                             .addOnFailureListener(e -> {
                                 Log.e("FirestoreUpdate", "Profil fotoğrafı URL'si güncellenemedi!", e);
@@ -174,10 +184,10 @@ public class MainViewModel extends ViewModel {
         List<String> beniEngelleyenler = _beniEngelleyenler.getValue();
 
         if ((benimEngellediklerim != null && benimEngellediklerim.contains(TakipEttiginId)) ||
-                (beniEngelleyenler != null && beniEngelleyenler.contains(MainActivity.kullanici.getID()))) {
+                (beniEngelleyenler != null && beniEngelleyenler.contains(getCurrentUserId()))) {
             return;
         }
-        DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        DocumentReference mevcutKullaniciRef = db.collection("users").document(getCurrentUserId());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakipEttiginId);
 
         db.runTransaction(transaction -> {
@@ -202,7 +212,7 @@ public class MainViewModel extends ViewModel {
             DocumentSnapshot takipEdilenDocSnap = transaction.get(takipEdilenDocRef);
 
             // Kontrol için mevcut takipçi dokümanı alma
-            DocumentReference takipciDocRef = takipcilerSubCol.document(MainActivity.kullanici.getID());
+            DocumentReference takipciDocRef = takipcilerSubCol.document(getCurrentUserId());
             DocumentSnapshot takipciDocSnap = transaction.get(takipciDocRef);
 
             boolean takipEklendi = false;
@@ -247,7 +257,7 @@ public class MainViewModel extends ViewModel {
 
     public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(getCurrentUserId())
                 .collection("takipEdilenler")
                 .document(bakilanId)
                 .get()
@@ -261,7 +271,7 @@ public class MainViewModel extends ViewModel {
     }
     public void beniTakipEdiyorMu(String kullaniciId) {
         db.collection("users")
-                .document(MainActivity.kullanici.getID()) // BENİM kullanıcı dokümanım
+                .document(getCurrentUserId()) // BENİM kullanıcı dokümanım
                 .collection("takipciler")
                 .document(kullaniciId)
                 .get()
@@ -276,7 +286,7 @@ public class MainViewModel extends ViewModel {
 
 
     public void TakiptenCikarma(String TakiptenCiktiginId){
-        DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        DocumentReference mevcutKullaniciRef = db.collection("users").document(getCurrentUserId());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakiptenCiktiginId);
 
         db.runTransaction(transaction -> {
@@ -301,7 +311,7 @@ public class MainViewModel extends ViewModel {
             DocumentSnapshot takipEdilenDocSnap = transaction.get(takipEdilenDocRef);
 
             // Takipçi dokümanı referansı
-            DocumentReference takipciDocRef = takipcilerSubCol.document(MainActivity.kullanici.getID());
+            DocumentReference takipciDocRef = takipcilerSubCol.document(getCurrentUserId());
             DocumentSnapshot takipciDocSnap = transaction.get(takipciDocRef);
 
             boolean takiptenCikildi = false;
@@ -334,7 +344,7 @@ public class MainViewModel extends ViewModel {
         });
     }
     public void TakipcidenCikarma(String takipciID) {
-        DocumentReference mevcutKullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        DocumentReference mevcutKullaniciRef = db.collection("users").document(getCurrentUserId());
         DocumentReference takipciRef = db.collection("users").document(takipciID);
 
         db.runTransaction(transaction -> {
@@ -356,7 +366,7 @@ public class MainViewModel extends ViewModel {
             DocumentReference takipciDocRef = takipcilerSubCol.document(takipciID);
             DocumentSnapshot takipciDocSnap = transaction.get(takipciDocRef);
 
-            DocumentReference takipEdilenDocRef = takipEdilenlerSubCol.document(MainActivity.kullanici.getID());
+            DocumentReference takipEdilenDocRef = takipEdilenlerSubCol.document(getCurrentUserId());
             DocumentSnapshot takipEdilenDocSnap = transaction.get(takipEdilenDocRef);
 
             boolean takipciSilindi = false;
@@ -395,7 +405,7 @@ public class MainViewModel extends ViewModel {
         veri.put("Hakkinda", hakkindasi);
         FirebaseFirestore.getInstance()
                 .collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(getCurrentUserId())
                 .update(veri)
                 .addOnSuccessListener(documentReference  ->{
                     // SharedPreferences'e kaydet
@@ -454,10 +464,12 @@ public class MainViewModel extends ViewModel {
                 .addOnSuccessListener(c->{
                     if(c.isEmpty()){
                         db.collection("users")
-                                .document(MainActivity.kullanici.getID())
+                                .document(getCurrentUserId())
                                 .update("KullaniciAdi",kullaniciAdi)
                                 .addOnSuccessListener(b->{
-                                    MainActivity.kullanici.setKullaniciAdi(kullaniciAdi);
+                                    Kullanici k = userRepository.getCurrentUser();
+                                    k.setKullaniciAdi(kullaniciAdi);
+                                    userRepository.setCurrentUser(k);
 
                                     SharedPreferences sp = context.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
                                     sp.edit().putString("KullaniciAdi",kullaniciAdi).apply();
@@ -522,7 +534,7 @@ public class MainViewModel extends ViewModel {
         });
     }
     public void benimEngellediklerimiiGetir(){
-        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        DocumentReference kullaniciRef = db.collection("users").document(getCurrentUserId());
 
         kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
@@ -675,7 +687,7 @@ public class MainViewModel extends ViewModel {
 
     public void kullaniciyaGonderiSil(String kediID,UyariMesaji mesaji) {
         mesaji.YuklemeDurum("Gönderi siliniyor");
-        DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+        DocumentReference kullaniciRef = db.collection("users").document(getCurrentUserId());
         kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
             List<Map<String, Object>> gonderilenKediler = (List<Map<String, Object>>) documentSnapshot.get("GonderilenKediler");
 

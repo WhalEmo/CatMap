@@ -54,6 +54,7 @@ import com.beem.catmap.KullaniciAuth.HesapSil;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.mesaj.MesajlasmaYonetici;
 
@@ -122,6 +123,8 @@ public class ProfilSayfasiFragment extends Fragment {
    private SwipeRefreshLayout swipeRefreshLayout;
 
     private static final String KEY_YUKLEYEN_ID = "yukleyenID";
+
+    private UserRepository userRepository;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -354,10 +357,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
 
     private void TakipTakipciSayilariUI() {
-        Log.d("PROFILE", "yukleyenID değeri nedir? -> " + yukleyenID);
-        Log.d("PROFILE", "MainActivity.kullanici nesnesi null mı? -> " + (MainActivity.kullanici == null));
-        Log.d("PROFILE", "MainActivity.kullanici.getId() nesnesi null mı? -> " + (MainActivity.kullanici.getID() == null));
-        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+        if(yukleyenID.equals(userRepository.getCurrentUserId())) {
             SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
             Long cacheTakipedilen = sp.getLong("cache_takip", 0L);
             Long cacheTakipci = sp.getLong("cache_takipci", 0L);
@@ -365,19 +365,19 @@ public class ProfilSayfasiFragment extends Fragment {
             takipEdilenSayisiTextView.setText(cacheTakipedilen.toString());
             takipciSayisiTextView.setText(cacheTakipci.toString());
 
-            mViewModel.TakipTakipciSayisi(MainActivity.kullanici.getID(), requireContext());
+            mViewModel.TakipTakipciSayisi(userRepository.getCurrentUserId(), requireContext());
         }else{
             mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
         }
     }
     private void HakkindaUI(){
-        if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+        if(yukleyenID.equals(userRepository.getCurrentUserId())) {
             SharedPreferences sp = requireContext().getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE);
             String cacheHakkinda = sp.getString("Hakkinda", null);
             if (cacheHakkinda != null) {
                 bioTextView.setText(cacheHakkinda.trim());
             } else {
-                mViewModel.HakkindaGetir(MainActivity.kullanici.getID());
+                mViewModel.HakkindaGetir(userRepository.getCurrentUserId());
                 ObserveDataSınıfı.observeOnce(mViewModel.hakkinda(), getViewLifecycleOwner(), guncel -> {
                     bioTextView.setText(guncel);
                 });
@@ -391,7 +391,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
     private void KullaniciAdiUI(){
         print("KullaniciAdiUI");
-      if(yukleyenID.equals(MainActivity.kullanici.getID())){
+      if(yukleyenID.equals(userRepository.getCurrentUserId())){
           SharedPreferences sp = requireContext().getSharedPreferences("KullaniciKayit", MODE_PRIVATE);
           String cacheKAd = sp.getString("KullaniciAdi", null);
           kullaniciadi.setText(cacheKAd.trim());
@@ -427,12 +427,15 @@ public class ProfilSayfasiFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        userRepository = UserRepository.Companion.getInstance(requireContext());
+
         if (getArguments() != null) {
             yukleyenID = getArguments().getString(KEY_YUKLEYEN_ID);
         }
 
-        if (yukleyenID == null && MainActivity.kullanici != null) {
-            yukleyenID = MainActivity.kullanici.getID();
+        if (yukleyenID == null && userRepository.isUserLoggedIn()) {
+            yukleyenID = userRepository.getCurrentUser().getID();
         }
         mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     }
@@ -515,7 +518,7 @@ public class ProfilSayfasiFragment extends Fragment {
             SmartNavigationEngine.navigateBack();
         });
 
-       if(yukleyenID.equals(MainActivity.kullanici.getID())) {
+       if(yukleyenID.equals(userRepository.getCurrentUserId())) {
            Log.d("NAV_BACK_DEDEKTOR",yukleyenID + "yükleyen id benim");
            PPmenuButton.setVisibility(View.VISIBLE);
            ProfilDuzenleme.setVisibility(View.VISIBLE);
@@ -551,8 +554,7 @@ public class ProfilSayfasiFragment extends Fragment {
                        });
            } else {
                mViewModel.UrlLiveData().removeObservers(getViewLifecycleOwner());
-               mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());
-               print("mViewModel.profilFotoUrlGetirVeCachele(requireContext(), MainActivity.kullanici.getID());");
+               mViewModel.profilFotoUrlGetirVeCachele(requireContext(), userRepository.getCurrentUserId());
                mViewModel.UrlLiveData().observe(getViewLifecycleOwner(), guncelPP -> {
                    print(guncelPP);
                    print("551");
@@ -577,16 +579,16 @@ public class ProfilSayfasiFragment extends Fragment {
            HakkindaUI();
            KullaniciAdiUI();
            ucNokta();
-           takipciGorme(MainActivity.kullanici.getID());
-           takipleriGorme(MainActivity.kullanici.getID());
-           mViewModel.GonderiSayisiniCek(MainActivity.kullanici.getID());
+           takipciGorme(userRepository.getCurrentUserId());
+           takipleriGorme(userRepository.getCurrentUserId());
+           mViewModel.GonderiSayisiniCek(userRepository.getCurrentUserId());
            mViewModel.GonderiSayisi().observe(getViewLifecycleOwner(), sayi -> {
                if (sayi != null) {
                    gonderiSayisiTextView.setText(sayi.toString());
                }
            });
 
-           mViewModel.GonderiCekme(MainActivity.kullanici.getID(),uyariMesaji,new GonderiYuklemeListener() {
+           mViewModel.GonderiCekme(userRepository.getCurrentUserId(),uyariMesaji,new GonderiYuklemeListener() {
                @Override
                public void onTumGonderilerYuklendi() {
                    showLoading(false);
@@ -640,7 +642,7 @@ public class ProfilSayfasiFragment extends Fragment {
 
            mViewModel.EngellileriGetir(yukleyenID);
            ObserveDataSınıfı.observeOnce(mViewModel.BeniEngelleyenlerLiveData(), getViewLifecycleOwner(), engelliler -> {
-               if (engelliler.contains(MainActivity.kullanici.getID())) {
+               if (engelliler.contains(userRepository.getCurrentUserId())) {
                    myConstraintLayout.setVisibility(View.GONE);
                    engelLayout.setVisibility(View.VISIBLE);
                    PPmenuButton.setVisibility(View.VISIBLE);
@@ -789,7 +791,7 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setMessage("Bu kullanıcıyı engellemek istiyor musunuz?")
                                 .setPositiveButton("Evet", (dialog, which) -> {
                                     uyari.YuklemeDurum("Engelleniyor...");
-                                    mViewModel.engelle(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
+                                    mViewModel.engelle(yukleyenID, userRepository.getCurrentUserId(),uyariMesaji);
                                     mViewModel.TakiptenCikarma(yukleyenID);
                                     mViewModel.TakipcidenCikarma(yukleyenID);
                                     mViewModel.TakipTakipciSayisi(yukleyenID, requireContext());
@@ -815,7 +817,7 @@ public class ProfilSayfasiFragment extends Fragment {
                                 .setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?")
                                 .setPositiveButton("Evet", (dialog, which) -> {
                                     uyari.YuklemeDurum("Engel kaldırılıyor...");
-                                    mViewModel.engelKaldir(yukleyenID, MainActivity.kullanici.getID(),uyariMesaji);
+                                    mViewModel.engelKaldir(yukleyenID, userRepository.getCurrentUserId(),uyariMesaji);
                                     mViewModel.TakipTakipciSayisi(yukleyenID,requireContext());
                                     takipciSayisiTextView.setClickable(true);
                                     takipEdilenSayisiTextView.setClickable(true);
@@ -1014,7 +1016,7 @@ public class ProfilSayfasiFragment extends Fragment {
        KullaniciAdi.setText(mevcutKullaniciAdi.trim());
        KullaniciAdi.setSelection(mevcutKullaniciAdi.length());
 
-        String cacheURL= ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), MainActivity.kullanici.getID());
+        String cacheURL= ProfileCacheManager.INSTANCE.getProfileUrl(requireContext(), userRepository.getCurrentUserId());
         if (cacheURL != null) {
             Picasso.get()
                     .load(cacheURL)
@@ -1111,9 +1113,11 @@ public class ProfilSayfasiFragment extends Fragment {
 
             builder.setPositiveButton("EVET", (dialog, which) -> {
 
-                CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(MainActivity.kullanici);
+                if (userRepository.isUserLoggedIn()) {
+                    CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(userRepository.getCurrentUser());
+                }
                 MesajlasmaYonetici.getInstance().MesajlasmaYonetimiDurdur();
-                MainActivity.kullanici = new Kullanici();
+                userRepository.logout();
 
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -1128,11 +1132,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 ShreadSil("begenilenSet");
                 ShreadSil("begeniSayilariMap");
 
-                Intent intent = new Intent(requireContext(), MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-
-                getActivity().finish();
+                SmartNavigationEngine.navigateTo(Screen.AUTH);
 
             });
 
@@ -1159,12 +1159,13 @@ public class ProfilSayfasiFragment extends Fragment {
         builder.setPositiveButton("EVET", (dialog, which) -> {
             UyariMesaji uyari = new UyariMesaji(requireContext(),false);
             uyari.YuklemeDurum("Hesap siliniyor...");
-            HesapSil hesapSil = new HesapSil();
+            HesapSil hesapSil = new HesapSil(requireContext());
             hesapSil.HesapSilmeBaslat(()->{
-
-                CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(MainActivity.kullanici);
+                if (userRepository.isUserLoggedIn()) {
+                    CevrimIciYonetimi.getInstance().CevrimIciYonetimiDurdur(userRepository.getCurrentUser());
+                }
                 MesajlasmaYonetici.getInstance().MesajlasmaYonetimiDurdur();
-                MainActivity.kullanici = new Kullanici();
+                userRepository.logout();
 
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -1179,10 +1180,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 ShreadSil("begenilenSet");
                 ShreadSil("begeniSayilariMap");
                 uyari.BasariliDurum("Hesap silindi",1000);
-                Intent intent = new Intent(requireContext(), MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                getActivity().finish();
+                SmartNavigationEngine.navigateTo(Screen.AUTH);
             });
 
         });

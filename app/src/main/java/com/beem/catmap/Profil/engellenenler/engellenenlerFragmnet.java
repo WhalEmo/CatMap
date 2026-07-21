@@ -26,6 +26,7 @@ import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 
@@ -76,13 +77,15 @@ public class engellenenlerFragmnet extends Fragment {
             adapter.notifyDataSetChanged();
         });
 
+        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+
         adapter.setOnEngelClickListener(kullanici -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
             builder.setTitle(kullanici.getKullaniciAdi());
             builder.setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?");
 
             builder.setPositiveButton("Evet", (dialog, which) -> {
-                mViewModel.engelKaldir(kullanici.getID(), MainActivity.kullanici.getID(), uyari);
+                mViewModel.engelKaldir(kullanici.getID(), userRepository.getCurrentUserId(), uyari);
                 adapter.remove(kullanici);
             });
 

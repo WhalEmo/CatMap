@@ -78,10 +78,12 @@ import com.beem.catmap.YorumYanit.Yorum_Adapter;
 import com.beem.catmap.YorumYanit.Yorum_Model;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.mesaj.MesajFotoGosterFragment;
 import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.models.CatModel;
 import com.beem.catmap.sohbet.SohbetFragment;
+import com.beem.catmap.ui.auth.AuthFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
@@ -188,6 +190,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     private CatMapNavigationEngine navigationEngine;
     private CatMapNavigationRenderer navigationRenderer;
 
+    private UserRepository userRepository;
+
     private final FragmentProvider fragmentProvider = new FragmentProvider() {
         @Nullable
         @Override
@@ -205,13 +209,17 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case FOLLOWERS -> setupFragment(new TakiplerFragment());
                 case POST -> setupFragment(new GonderiDetayFragment());
                 case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
+                case AUTH -> setupFragment(new AuthFragment());
             };
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        userRepository = UserRepository.Companion.getInstance(getApplicationContext());
+
         setTheme(R.style.Theme_CatMap);
+
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             Log.e("CRASH_DETECTOR", "Uygulama fena patladı dayıcım! İşte hatan: ", throwable);
 
@@ -237,15 +245,18 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.setFirestoreSettings(settings);
 
-        if (MainActivity.kullanici == null) MainActivity.kullanici = new Kullanici();
-        MainActivity.kullanici.GetYerelKullanici(this);
-
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         navigationEngine = new CatMapNavigationEngine(this, binding);
         navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);
         SmartNavigationEngine.init(navigationEngine);
+
+        if (userRepository.isUserLoggedIn()) {
+            SmartNavigationEngine.navigateTo(Screen.MAP);
+        } else {
+            SmartNavigationEngine.navigateTo(Screen.AUTH);
+        }
 
         SmartNavigationEngine.registerActivityCallbacks(
                 () -> {
@@ -365,8 +376,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         YrmgndrFotoImageView=ikinci.findViewById(R.id.YrmgndrFotoImageView);
         YntgndrFotoImageView=ikinci.findViewById(R.id.YntgndrFotoImageView);
         ulasma=new URLye_Ulasma();
-        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YrmgndrFotoImageView);
-        ulasma.IDdenUrlyeUlasma(MainActivity.kullanici.getID(),YntgndrFotoImageView);
+        ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(),YrmgndrFotoImageView);
+        ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(),YntgndrFotoImageView);
         BegenileriCek();
 
         textt.addTextChangedListener(new TextWatcher() {
@@ -484,9 +495,12 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         super.onDestroy();
         bittimi = false;
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
-        MainActivity.kullanici.setLatitude(latitude);
-        MainActivity.kullanici.setLongitude(longitude);
+        if (userRepository != null && userRepository.isUserLoggedIn()) {
+            Kullanici user = userRepository.getCurrentUser();
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(user);
+            user.setLatitude(latitude);
+            user.setLongitude(longitude);
+        }
             if (yorumAdapter != null) {
                 yorumAdapter.durdurZamanlayici();
                 ArrayList<Yorum_Model> yorumlar = yorumAdapter.getYorumList();
@@ -505,26 +519,19 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onResume() {
         super.onResume();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
-        /*
-            if (KediSilmeDurumu.getInstance().isSilindiMi()) {
-                vericekme();
-                KediSilmeDurumu.getInstance().setSilindiMi(false); // sıfırla
-        }
-
-         */
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
     }
     @Override
     protected void onStop() {
         super.onStop();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
     }
     @Override
     protected void onPause() {
         super.onPause();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        CevrimIciYonetimi.getInstance().CevrimIciCalistir(MainActivity.kullanici);
+        CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
     }
 
 
@@ -542,7 +549,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     double longitude;
 
    private void GonderiBegenisiEkleme(String kediId){
-       DocumentReference ref = db.collection("users").document(MainActivity.kullanici.getID());
+       DocumentReference ref = db.collection("users").document(userRepository.getCurrentUserId());
        DocumentReference kediRef = db.collection("cats").document(kediId);
        ref.update("begendigiGonderiler", FieldValue.arrayUnion(kediId))
                .addOnSuccessListener(aVoid -> {
@@ -554,7 +561,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                });
    }
    private void GonderiBegenisiKaldirma(String kediId){
-       DocumentReference ref = db.collection("users").document(MainActivity.kullanici.getID());
+       DocumentReference ref = db.collection("users").document(userRepository.getCurrentUserId());
        DocumentReference kediRef = db.collection("cats").document(kediId);
        ref.update("begendigiGonderiler", FieldValue.arrayRemove(kediId))
                .addOnSuccessListener(aVoid -> {
@@ -566,7 +573,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                });
    }
    private void BegenileriCek() {
-       DocumentReference kullaniciRef = db.collection("users").document(MainActivity.kullanici.getID());
+       DocumentReference kullaniciRef = db.collection("users").document(userRepository.getCurrentUserId());
        kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
            if (documentSnapshot.exists()) {
                ArrayList<String> liste = (ArrayList<String>) documentSnapshot.get("begendigiGonderiler");
@@ -674,7 +681,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                         }
 
                         // Eğer kendi profilimizse
-                        if (YId.equals(MainActivity.kullanici.getID())) {
+                        if (YId.equals(userRepository.getCurrentUserId())) {
                             if (mViewModel == null) {
                                 mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
                             }
@@ -711,6 +718,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                                                             mesaji.BasarisizDurum("Bu kedi zaten gönderilerinizde var!", 2000);
                                                         } else {
                                                             GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
+                                                                    this,
                                                                     kediID,
                                                                     null,
                                                                     mesaji
@@ -865,7 +873,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             yorumAdapter.notifyItemChanged(Yorum_Adapter.yorumindeks);
             //yorumAdapter.notifyDataSetChanged();
         }, 100);
-        begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, MainActivity.kullanici.getID(), yorumAdapter);
+        begeniKodYoneticisi.KullanicininBegendigiYorumalar(this, userRepository.getCurrentUserId(), yorumAdapter);
 
         yorumAdapter.baslatZamanlayici();
         isLastPage = false;
@@ -947,7 +955,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
 
     public void yorumgonder(View view){
-        DBekle(ID,TEXT.getText().toString(),MainActivity.kullanici.getID());
+        DBekle(ID,TEXT.getText().toString(),userRepository.getCurrentUserId());
         TEXT.setText("");
         yorumAdapter.yorumMuGeldi=true;
     }
@@ -959,13 +967,13 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         String yanitMetni = textt.getText().toString().trim();
 
         if (!yanitMetni.isEmpty()) {
-            Yanit_Model yanit = new Yanit_Model("geciciid", MainActivity.kullanici.getKullaniciAdi(), yanitMetni, null, MainActivity.kullanici.getID());
+            Yanit_Model yanit = new Yanit_Model("geciciid", userRepository.getCurrentUser().getKullaniciAdi(), yanitMetni, null, userRepository.getCurrentUserId());
             yorumm.getYanitlar().add(0, yanit);
             yorumm.setYanitYokMu(false);
 
             yorumAdapter.notifyItemChanged(hedefYorumIndeks);
 
-            DBekleYanit(ID, yorumm.getYorumID(), yanitMetni, yanit, MainActivity.kullanici.getID());
+            DBekleYanit(ID, yorumm.getYorumID(), yanitMetni, yanit, userRepository.getCurrentUserId());
 
             textt.setText("");
             hedefYorumIndeks = -1;
@@ -983,7 +991,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         Map<String, Object> yorumData = new HashMap<>();
         yorumData.put("icerik", yorumIcerik);
         yorumData.put("zaman", FieldValue.serverTimestamp());
-        yorumData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi()); // FirebaseAuth'tan alınabilir
+        yorumData.put("kullanici_adi", userRepository.getCurrentUser().getKullaniciAdi()); // FirebaseAuth'tan alınabilir
         yorumData.put("Yukleyen_ID",YukleyenId);
 
         FirebaseFirestore.getInstance()
@@ -999,7 +1007,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         Map<String, Object> yanittData = new HashMap<>();
         yanittData.put("yaniticerik", yorumIcerik);
         yanittData.put("yanitzaman", FieldValue.serverTimestamp());
-        yanittData.put("kullanici_adi", MainActivity.kullanici.getKullaniciAdi());
+        yanittData.put("kullanici_adi", userRepository.getCurrentUser().getKullaniciAdi());
         yanittData.put("YanitiYukleyenID",YntyukleyenId);
 
         FirebaseFirestore.getInstance()

@@ -1,8 +1,10 @@
 package com.beem.catmap.KullaniciAuth;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 
 import com.beem.catmap.MainActivity;
+import com.beem.catmap.data.repository.UserRepository;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.AuthCredential;
@@ -29,9 +31,17 @@ public class HesapSil {
     private ArrayList<String> takipciler = new ArrayList<>();
     private ArrayList<Map<String, Object>> yuklenenKediler;
 
+    private UserRepository userRepository;
+    private Kullanici currentUser;
+
+    public HesapSil(Context context) {
+        this.userRepository = UserRepository.Companion.getInstance(context);
+        this.currentUser = userRepository.getCurrentUser();
+    }
+
     public void HesapSilmeBaslat(Runnable onFinish) {
         Task<Void> takipEdilenlerTask = db.collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(currentUser.getID())
                 .collection("takipEdilenler")
                 .get()
                 .continueWithTask(task ->{
@@ -45,7 +55,7 @@ public class HesapSil {
                 });
 
         Task<Void> takipcilerTask = db.collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(currentUser.getID())
                 .collection("takipciler")
                 .get()
                 .continueWithTask(task -> {
@@ -59,7 +69,7 @@ public class HesapSil {
                 });
 
         Task<Void> kedilerTask = db.collection("users")
-                .document(MainActivity.kullanici.getID())
+                .document(currentUser.getID())
                 .get()
                 .continueWithTask(task -> {
                     if (task.isSuccessful() && task.getResult().exists()) {
@@ -75,6 +85,7 @@ public class HesapSil {
                 .addOnSuccessListener(tasks -> {
                     MesajlariSil(() -> {
                         HesabiSil(() -> {
+                            userRepository.logout();
                             onFinish.run();
                         });
                     });
@@ -89,7 +100,7 @@ public class HesapSil {
             silinecekler.add(db.collection("users")
                     .document(takipEdilen)
                     .collection("takipciler")
-                    .document(MainActivity.kullanici.getID())
+                    .document(currentUser.getID())
                     .delete());
         }
         return Tasks.whenAll(silinecekler);
@@ -101,7 +112,7 @@ public class HesapSil {
             silinecekler.add(db.collection("users")
                     .document(takipci)
                     .collection("takipEdilenler")
-                    .document(MainActivity.kullanici.getID())
+                    .document(currentUser.getID())
                     .delete());
         }
         return Tasks.whenAll(silinecekler);
@@ -126,7 +137,7 @@ public class HesapSil {
                         if (idler.length == 2) {
                             String id1 = idler[0];
                             String id2 = idler[1];
-                            if (id1.equals(MainActivity.kullanici.getID()) || id2.equals(MainActivity.kullanici.getID())) {
+                            if (id1.equals(currentUser.getID()) || id2.equals(currentUser.getID())) {
                                 ref.child(child.getKey()).removeValue();
                             }
                         }
@@ -142,13 +153,13 @@ public class HesapSil {
     private void HesabiSil(Runnable onFinish){
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-        AuthCredential credential = EmailAuthProvider.getCredential(MainActivity.kullanici.getEmail(), MainActivity.kullanici.getSifre());
+        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), currentUser.getSifre());
 
         user.reauthenticate(credential).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 user.delete().addOnCompleteListener(task1 -> {
                     if (task1.isSuccessful()) {
-                        db.collection("users").document(MainActivity.kullanici.getID()).delete().addOnCompleteListener(task2 -> {
+                        db.collection("users").document(currentUser.getID()).delete().addOnCompleteListener(task2 -> {
                             if (task2.isSuccessful()) {
                                 onFinish.run();
                             }

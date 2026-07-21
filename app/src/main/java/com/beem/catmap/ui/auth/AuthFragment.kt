@@ -17,10 +17,10 @@ import androidx.fragment.app.Fragment
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.MainActivity
-import com.beem.catmap.Maps.MapsActivity
+
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
+import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.databinding.ActivityMainBinding
 import com.beem.catmap.databinding.GirispencereBinding
 import com.beem.catmap.databinding.KaydolpencereBinding
@@ -97,31 +97,31 @@ class AuthFragment : Fragment() {
         }
 
         uyariMesaji.YuklemeDurum("Giriş Yapılıyor...")
-        val kullanici = MainActivity.kullanici ?: Kullanici().also { MainActivity.kullanici = it }
-        kullanici.kullaniciAdi = username
-        kullanici.sifre = password
+        val user = Kullanici(username, password)
 
         db.collection("users")
             .whereEqualTo("KullaniciAdi", username)
             .get()
             .addOnSuccessListener { query ->
+                if (!isAdded) return@addOnSuccessListener
+
                 if (query.isEmpty) {
                     uyariMesaji.BasarisizDurum("Kullanıcı adı bulunamadı!", 1000)
                     return@addOnSuccessListener
                 }
 
                 val doc = query.documents[0]
-                kullanici.ad = doc.getString("Ad")
-                kullanici.soyad = doc.getString("Soyad")
-                kullanici.email = doc.getString("Email")
-                kullanici.setID(doc.id)
+                user.ad = doc.getString("Ad")
+                user.soyad = doc.getString("Soyad")
+                user.email = doc.getString("Email")
+                user.setID(doc.id)
 
                 val ynt = DogrulamaKodYonetici()
-                ynt.girisYap(kullanici.email, kullanici.sifre) { basarili ->
+                ynt.girisYap(user.email, user.sifre) { basarili ->
                     if (basarili) {
                         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                        CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici)
-                        saveUserLocallyAndNavigate()
+                        CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
+                        saveUserLocallyAndNavigate(user)
                         uyariMesaji.BasariliDurum("Giriş Başarılı...", 1000)
                     } else {
                         uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
@@ -151,22 +151,22 @@ class AuthFragment : Fragment() {
     }
 
     private fun handleRegister(registerBinding: KaydolpencereBinding) {
-        val kullanici = MainActivity.kullanici ?: Kullanici().also { MainActivity.kullanici = it }
-        kullanici.ad = registerBinding.adEditText.text.toString().trim()
-        kullanici.soyad = registerBinding.soyadEditText.text.toString().trim()
-        kullanici.email = registerBinding.emailEditText.text.toString().trim()
-        kullanici.kullaniciAdi = registerBinding.usernameEditText.text.toString().trim()
-        kullanici.sifre = registerBinding.passwordEditText.text.toString().trim()
+        val user = Kullanici()
+        user.ad = registerBinding.adEditText.text.toString().trim()
+        user.soyad = registerBinding.soyadEditText.text.toString().trim()
+        user.email = registerBinding.emailEditText.text.toString().trim()
+        user.kullaniciAdi = registerBinding.usernameEditText.text.toString().trim()
+        user.sifre = registerBinding.passwordEditText.text.toString().trim()
 
-        if (!kullanici.KullaniciIs()) {
+        if (!user.KullaniciIs()) {
             uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun", 1000)
             return
         }
-        if (!Patterns.EMAIL_ADDRESS.matcher(kullanici.email).matches()) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(user.email).matches()) {
             uyariMesaji.BasarisizDurum("Lütfen geçerli bir email adresi giriniz!", 1000)
             return
         }
-        if (kullanici.sifre.length < 5) {
+        if (user.sifre.length < 5) {
             uyariMesaji.BasarisizDurum("Lütfen şifreyi en az 5 haneli giriniz!", 1000)
             return
         }
@@ -174,36 +174,42 @@ class AuthFragment : Fragment() {
         uyariMesaji.YuklemeDurum("Kayıt Yapılıyor...")
 
         db.collection("users")
-            .whereEqualTo("Email", kullanici.email)
+            .whereEqualTo("Email", user.email)
             .get()
             .addOnSuccessListener { sonuc ->
+                if (!isAdded) return@addOnSuccessListener
+
                 if (!sonuc.isEmpty) {
                     uyariMesaji.BasarisizDurum("Email ile daha önce kayıt yapılmış.", 1000)
                 } else {
                     db.collection("users")
-                        .whereEqualTo("KullaniciAdi", kullanici.kullaniciAdi)
+                        .whereEqualTo("KullaniciAdi", user.kullaniciAdi)
                         .get()
                         .addOnSuccessListener { cevap ->
+                            if (!isAdded) return@addOnSuccessListener
+
                             if (!cevap.isEmpty) {
                                 uyariMesaji.BasarisizDurum("Bu kullanıcı adı ile daha önce kayıt yapılmış.", 1000)
                             } else {
                                 val ynt = DogrulamaKodYonetici()
-                                ynt.kaydetSifreEmail(kullanici.email, kullanici.sifre) { basarili ->
+                                ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
                                     if (basarili) {
                                         db.collection("users")
-                                            .add(kullanici.KullaniciData())
+                                            .add(user.KullaniciData())
                                             .addOnSuccessListener { docRef ->
-                                                kullanici.setID(docRef.id)
+                                                if (!isAdded) return@addOnSuccessListener
+
+                                                user.setID(docRef.id)
                                                 CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                                                CevrimIciYonetimi.getInstance().CevrimIciCalistir(kullanici)
-                                                saveUserLocallyAndNavigate()
+                                                CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
+                                                saveUserLocallyAndNavigate(user)
                                                 uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
                                             }
                                             .addOnFailureListener {
-                                                uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
+                                                if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
                                             }
                                     } else {
-                                        Toast.makeText(requireContext(), "Email veya şifre kaydı başarısız", Toast.LENGTH_SHORT).show()
+                                        if (isAdded) Toast.makeText(requireContext(), "Email veya şifre kaydı başarısız", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -251,19 +257,8 @@ class AuthFragment : Fragment() {
         isPasswordVisible = !isPasswordVisible
     }
 
-    private fun saveUserLocallyAndNavigate() {
-        val prefs = requireActivity().getSharedPreferences("KullaniciKayit", Context.MODE_PRIVATE)
-        val k = MainActivity.kullanici
-        prefs.edit().apply {
-            putString("ID", k?.getID())
-            putString("Ad", k?.ad)
-            putString("Soyad", k?.soyad)
-            putString("Email", k?.email)
-            putString("KullaniciAdi", k?.kullaniciAdi)
-            putString("Sifre", k?.sifre)
-            putBoolean("GirisYapildi", true)
-            apply()
-        }
+    private fun saveUserLocallyAndNavigate(user: Kullanici) {
+        UserRepository.getInstance(requireContext()).setCurrentUser(user)
         dialog?.dismiss()
         animateButtonsOut()
 

@@ -26,10 +26,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.Klavye;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
+import com.beem.catmap.data.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,6 +53,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     private Map<String, Integer> begeniSayisiMap = new HashMap<>();
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
     private OnYorumAksiyonListener aksiyonListener;
+    private UserRepository userRepository;
 
     public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
         this.kullaniciAdiTiklamaListener = listener;
@@ -125,6 +128,12 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
         Yorum_Model yorum=yorumList.get(position);
+
+        if (userRepository == null) {
+            userRepository = UserRepository.Companion.getInstance(context);
+        }
+        Kullanici currentUser = userRepository.getCurrentUser();
+
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
@@ -158,21 +167,21 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
         holder.kalpImageView.setOnClickListener(v->{
             if ("begeniYok".equals(holder.kalpImageView.getTag())) {
-                begeniKodYoneticisi.YorumBegenme(yorum, MainActivity.kullanici.getID(),context,this);
+                begeniKodYoneticisi.YorumBegenme(yorum, currentUser.getID(), context,this);
                 holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
                 kalpAnimasyonuYap(holder.kalpImageView);
                 holder.kalpImageView.setTag("begenildi");
                 begenilenYorumIDSeti.add(yorum.getYorumID());
 
             }else{
-                begeniKodYoneticisi.YorumBegeniKladirma(yorum,MainActivity.kullanici.getID(),context,this);
+                begeniKodYoneticisi.YorumBegeniKladirma(yorum,currentUser.getID(),context,this);
                 holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
                 holder.kalpImageView.setTag("begeniYok");
                 begenilenYorumIDSeti.remove(yorum.getYorumID());
             }
         });
 
-        if (MainActivity.kullanici.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
+        if (currentUser.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
             if(yorumMuGeldi==true){
                 holder.menuButonu.setVisibility(View.GONE);
                 holder.getYanitlarYukleniyorLayout2.setVisibility(View.VISIBLE);
@@ -207,7 +216,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,position,yorum.getYorumID());
                 yorum.setYanitAdapter(yntadapter);
                 yntadapter.baslatZamanlayici();
-                yntadapter.hazirliklariYapBegenme(context, MainActivity.kullanici.getID(), yorum);
+                yntadapter.hazirliklariYapBegenme(context, currentUser.getID(), yorum);
 
                 yntadapter.setKullaniciAdiTiklamaListener(kullaniciAdiTiklamaListener);
 

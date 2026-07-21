@@ -14,10 +14,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
+import com.beem.catmap.data.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +41,7 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
     private Set<String>begenilenYanitIdSeti=new HashSet<>();
     private Map<String, Integer> begeniSayisiYanitMap = new HashMap<>();
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
+    private UserRepository userRepository;
 
     public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context, int yorumIndeks,String yorumID) {
         this.yanitListe = yanitListe;
@@ -124,6 +128,13 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
     @Override
     public void onBindViewHolder(@NonNull Yanit_Adapter.YanitViewHolder holder, int position) {
         Yanit_Model yanit=yanitListe.get(position);
+
+        if (userRepository == null) {
+            userRepository = UserRepository.Companion.getInstance(context);
+        }
+
+        Kullanici currentUser = userRepository.getCurrentUser();
+
         holder.kullaniciAditext.setText(yanit.getAdi());
         holder.yanitText.setText(yanit.getYaniticerik());
         holder.yanitTarihiText.setText(yanit.duzenlenmisTarih());
@@ -150,14 +161,14 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         Begeni_Kod_Yoneticisi_Yanit begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yanit();
         holder.kalpImageViewYnt.setOnClickListener(v->{
             if ("begeniYok".equals(holder.kalpImageViewYnt.getTag())) {
-                begeniKodYoneticisi.YanitBegenme(yorumID,yanit, MainActivity.kullanici.getID(),context,this);
+                begeniKodYoneticisi.YanitBegenme(yorumID,yanit, currentUser.getID(),context,this);
                 holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_24);
                 kalpAnimasyonuYap(holder.kalpImageViewYnt);
                 holder.kalpImageViewYnt.setTag("begenildi");
                 begenilenYanitIdSeti.add(yanit.getYanitId());
 
             }else{
-                begeniKodYoneticisi.YanitBegeniKaldirma(yorumID,yanit,MainActivity.kullanici.getID(),context,this);
+                begeniKodYoneticisi.YanitBegeniKaldirma(yorumID,yanit,currentUser.getID(),context,this);
                 holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_border_24);
                 holder.kalpImageViewYnt.setTag("begeniYok");
                 begenilenYanitIdSeti.remove(yanit.getYanitId());
@@ -165,7 +176,7 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         });
 
 
-        if (MainActivity.kullanici.getKullaniciAdi().equals(yanit.getAdi())) {
+        if (currentUser.getKullaniciAdi().equals(yanit.getAdi())) {
             if(yanit.yanitMiGeldi==true){
                 holder.menuButonu.setVisibility(View.GONE);
                 holder.getYanitlarYukleniyorLayout2ynt.setVisibility(View.VISIBLE);

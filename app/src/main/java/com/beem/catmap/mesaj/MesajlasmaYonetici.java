@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
+import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.sohbet.SohbetYonetici;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -471,7 +472,7 @@ public class MesajlasmaYonetici {
             adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
             return;
         }
-        if(!mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
+        if(!mesaj.getGonderici().equals(UserSession.INSTANCE.getUserId())) {
             mesajlar.child(sohbetID).child("anaMesaj").child(mesaj.getMesajID()).child("goruldu").setValue(true)
                     .addOnSuccessListener(basarili -> {
                         System.out.println("calisiyor");

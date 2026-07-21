@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
+import com.beem.catmap.data.repository.UserRepository;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -47,12 +48,13 @@ public class MesajFotoGonderYonetici {
         fotografUrileri.add(foto);
     }
 
-    public void GondericiStart(MesajAdapter adapter){
-        FotolariStorageKaydet(adapter);
+    public void GondericiStart(MesajAdapter adapter, Context context){
+        FotolariStorageKaydet(adapter, context);
     }
 
-    private void FotolariStorageKaydet(MesajAdapter adapter){
-        Mesaj mesaj = new Mesaj(MainActivity.kullanici.getID(),System.currentTimeMillis(),"gecici",false);
+    private void FotolariStorageKaydet(MesajAdapter adapter, Context context){
+        UserRepository userRepository = UserRepository.Companion.getInstance(context);
+        Mesaj mesaj = new Mesaj(userRepository.getCurrentUserId(),System.currentTimeMillis(),"gecici",false);
         mesaj.setTur("foto");
         adapter.getMesajArrayList().add(mesaj);
         adapter.notifyItemInserted(adapter.getItemCount()-1);
@@ -65,7 +67,7 @@ public class MesajFotoGonderYonetici {
                             fotoUrlleri.add(uri.toString());
 
                             if(fotoUrlleri.size() == fotografUrileri.size()){
-                                FotoMesajGonder(adapter,mesaj);
+                                FotoMesajGonder(adapter,mesaj, userRepository.getCurrentUserId());
                             }
                         });
                     }
@@ -73,7 +75,7 @@ public class MesajFotoGonderYonetici {
         }
     }
 
-    private void FotoMesajGonder(MesajAdapter adapter,Mesaj mesaj){
+    private void FotoMesajGonder(MesajAdapter adapter,Mesaj mesaj, String userId){
         String sohbetID = MesajlasmaYonetici.getInstance().getSohbetID();
         DatabaseReference mesajRef = FirebaseDatabase.getInstance().getReference()
                 .child("mesajlar").child(sohbetID).child("anaMesaj").push();
@@ -89,7 +91,7 @@ public class MesajFotoGonderYonetici {
         Map<String, Object> veri = new HashMap<>();
         veri.put("fotoUrlleri",fotoUrlleri);
         veri.put("zaman",System.currentTimeMillis());
-        veri.put("gonderen", MainActivity.kullanici.getID());
+        veri.put("gonderen", userId);
         veri.put("goruldu",false);
         veri.put("tur","foto");
         mesajRef.setValue(veri);

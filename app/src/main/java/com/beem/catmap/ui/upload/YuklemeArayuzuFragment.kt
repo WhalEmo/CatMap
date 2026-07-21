@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.MainActivity
 import com.beem.catmap.Maps.LocationEngine
+import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
@@ -179,8 +180,8 @@ class YuklemeArayuzuFragment : Fragment() {
 
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
-            com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                docId, binding.main, messageManager
+            GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
+                requireContext(), docId, binding.main, messageManager
             )
             dialog.dismiss()
         }

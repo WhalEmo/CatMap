@@ -16,8 +16,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.MainActivity;
+import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.R;
+import com.beem.catmap.data.repository.UserRepository;
 
 import java.util.ArrayList;
 
@@ -34,6 +35,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private Runnable goster;
     private boolean Engel = false;
     Animation anim;
+    private UserRepository userRepository;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -70,6 +72,12 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         Mesaj mesaj = mesajArrayList.get(position);
 
+        if (userRepository == null) {
+            userRepository = UserRepository.Companion.getInstance(context);
+        }
+
+        Kullanici currentUser = userRepository.getCurrentUser();
+
         if(mesaj.isYaniyorMu()){
             holder.itemView.startAnimation(anim);
             mesaj.setYaniyorMu(false);
@@ -77,7 +85,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         if(mesaj instanceof YanitMesaj){
             YanitMesaj yanitMesaj = (YanitMesaj) mesaj;
-            if(yanitMesaj.getGonderici().equals(MainActivity.kullanici.getID())){
+            if(yanitMesaj.getGonderici().equals(currentUser.getID())){
                 holder.cevapKutusu.setVisibility(View.VISIBLE);
                 holder.cevapMetni.setText(yanitMesaj.getYanitlananMesaj().getMesaj());
                 holder.cevapKutusu.setOnClickListener(v->{
@@ -93,7 +101,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             }
         }
         if(!mesaj.getTur().equals("foto")) {
-            if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
+            if (mesaj.getGonderici().equals(currentUser.getID())) {
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.sagMesajText.setVisibility(View.VISIBLE);
@@ -114,7 +122,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         }
         else {
             // burası fotograf mesajları için
-            if (mesaj.getGonderici().equals(MainActivity.kullanici.getID())) {
+            if (mesaj.getGonderici().equals(currentUser.getID())) {
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagFotoLayout.setVisibility(View.VISIBLE);

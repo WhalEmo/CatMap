@@ -26,6 +26,7 @@ import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -111,6 +112,8 @@ public class GonderiDetayFragment extends Fragment {
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
 
+        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+
         viewPager.setAdapter(new FotoAdapter(fotoListesi, new FotoYuklemeListener() {
             @Override
             public void onTumFotograflarYuklendi() {
@@ -128,7 +131,7 @@ public class GonderiDetayFragment extends Fragment {
             }
 
         mViewModel.getYukleyenID().observe(getViewLifecycleOwner(), id -> {
-            if(id.equals(MainActivity.kullanici.getID())){
+            if(id.equals(userRepository.getCurrentUserId())){
                 GonderiMenu.setVisibility(View.VISIBLE);
                 GonderiMenu.setOnClickListener(v -> {
                     PopupMenu popupMenu = new PopupMenu(requireContext(), v);
