@@ -1,5 +1,6 @@
 package com.beem.catmap.Maps
 
+import android.location.Location
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -31,6 +32,9 @@ class MapViewModel : ViewModel() {
 
     private val _loadingState = MutableStateFlow<LoadingState>(LoadingState.Idle)
     val loadingState = _loadingState.asStateFlow()
+
+    private var lastFetchedLocation: Location? = null
+    private val FETCH_THRESHOLD_METERS = 500f
 
     fun fetchAllCats() {
         if (_catsList.value != null && _catsList.value!!.isNotEmpty()) {
@@ -71,6 +75,20 @@ class MapViewModel : ViewModel() {
             } finally {
                 _loadingState.value = LoadingState.Idle
             }
+        }
+    }
+
+    fun checkAndFetchCatsIfMoved(newLat: Double, newLng: Double) {
+        val newLocation = Location("GPS").apply {
+            latitude = newLat
+            longitude = newLng
+        }
+
+        val lastLoc = lastFetchedLocation
+
+        if (lastLoc == null || lastLoc.distanceTo(newLocation) >= FETCH_THRESHOLD_METERS) {
+            lastFetchedLocation = newLocation
+            fetchCatsNearLocation(newLat, newLng)
         }
     }
 

@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import com.beem.catmap.data.local.LocationCacheManager
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -59,8 +60,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private val markerlar = ArrayList<Marker>()
     private val markerKEY = HashMap<String, Any?>()
 
-    private var sonCekilenLat = 0.0
-    private var sonCekilenLng = 0.0
+    private var lastGpsLocation: LatLng? = null
     private var screenWidth = 0
     private var isPanelVisible = false
 
@@ -104,6 +104,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: İç harita başarıyla ayağa kalktı ve hazır!")
+
+        val cachedLocation = LocationCacheManager.getLastLocation()
+        val cachedZoom = LocationCacheManager.getLastZoom()
+        mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(cachedLocation, cachedZoom))
 
         LocationEngine.startTracking(requireContext(), mMap!!)
 
@@ -156,8 +160,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private fun setupClickListeners() {
         binding.fabCurrentLocation.setOnClickListener {
-            if (mMap != null && sonCekilenLat != 0.0 && sonCekilenLng != 0.0) {
-                val currentLatLng = LatLng(sonCekilenLat, sonCekilenLng)
+            if (mMap != null && lastGpsLocation!!.latitude != 0.0 && lastGpsLocation!!.longitude != 0.0) {
+                val currentLatLng = LatLng(lastGpsLocation!!.latitude, lastGpsLocation!!.longitude)
                 mMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 16f))
             } else {
                 UiMessageManager.emitMessage(UiMessageState.Info("Konum aranıyor, lütfen bekleyin..."))
@@ -211,9 +215,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         // 🛡️ INSTANCE eklendi
         LocationEngine.fetchDataEvent.observe(viewLifecycleOwner) { event ->
             if (event != null && mapViewModel != null) {
-                mapViewModel!!.fetchCatsNearLocation(event.latitude, event.longitude)
-                sonCekilenLat = event.latitude
-                sonCekilenLng = event.longitude
+                mapViewModel!!.checkAndFetchCatsIfMoved(event.latitude, event.longitude)
+
+                lastGpsLocation = event
+                LocationCacheManager.saveLastLocation(LatLng(event.latitude, event.longitude))
             }
         }
 

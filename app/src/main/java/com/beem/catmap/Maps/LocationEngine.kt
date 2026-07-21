@@ -29,8 +29,6 @@ object LocationEngine {
     private var locationCallback: LocationCallback? = null
     private var customLocationMarker: Marker? = null
 
-    private var sonCekilenKonum: Location? = null
-
     private val _fetchDataEvent = MutableLiveData<LatLng>()
     val fetchDataEvent: LiveData<LatLng> get() = _fetchDataEvent
 
@@ -90,10 +88,14 @@ object LocationEngine {
                 } else {
                     animateMarker(customLocationMarker!!, currentLatLng)
                 }
+                _fetchDataEvent.value = currentLatLng
+                /*
                 if (sonCekilenKonum == null || sonCekilenKonum!!.distanceTo(location) > 500f) {
                     sonCekilenKonum = location
                     _fetchDataEvent.value = currentLatLng
                 }
+
+                 */
             }
         }
 
