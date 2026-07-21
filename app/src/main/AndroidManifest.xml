@@ -45,8 +45,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.CatMap.Splash"
             android:windowSoftInputMode="adjustResize"
-            android:exported="true"
-            android:label="@string/title_activity_maps">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -60,13 +59,6 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7318801428076378~7650582629"/>
-
-        <activity
-            android:name=".MainActivity"
-            android:theme="@style/Theme.CatMap"
-            android:screenOrientation="portrait"
-            android:exported="true">
-        </activity>
     </application>
 
 </manifest>

@@ -26,9 +26,9 @@ import java.util.HashMap;
 
 public class SohbetYonetici {
     private DatabaseReference sohbetDB = FirebaseDatabase.getInstance().getReference("mesajlar");
-    private HashMap<String,Object> ProfilFotolari;
-    private HashMap<String,Kullanici> Kullanicilar;
-    private HashMap<String,Mesaj> SonMesajlar;
+    private HashMap<String,Object> ProfilFotolari = new HashMap<>();
+    private HashMap<String,Kullanici> Kullanicilar = new HashMap<>();
+    private HashMap<String,Mesaj> SonMesajlar = new HashMap<>();
     private static SohbetYonetici yonetici;
     private HashMap<String,Target> FotolariCek = new HashMap<>();
     private HashMap<String, ChildEventListener> dinleyiciler = new HashMap<>();
@@ -74,6 +74,10 @@ public class SohbetYonetici {
     }
 
     private void SohbetNesneleriniOlustur(ArrayList<Sohbet> sohbetArrayList, Runnable tamamdir){
+        if (Kullanicilar == null) Kullanicilar = new HashMap<>();
+        if (SonMesajlar == null) SonMesajlar = new HashMap<>();
+        if (ProfilFotolari == null) ProfilFotolari = new HashMap<>();
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         for(Sohbet sohbet: sohbetArrayList){
             EngelKontrol(sohbet);

@@ -15,7 +15,7 @@ enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, v
     FOLLOWERS("FOLLOWERS", -1, null),
     POST("POST", -1, null),
     MESSAGE_PHOTO_PREVIEW("MESSAGE_PHOTO_PREVIEW", -1, null),
-    AUTH("AUTH", -1, null);
+    AUTH("AUTH", -1, null, true);
 
     companion object {
         fun fromTag(tag: String?): Screen = entries.find { it.tag == tag } ?: MAP

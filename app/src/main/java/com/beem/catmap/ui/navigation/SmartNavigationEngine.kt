@@ -33,15 +33,15 @@ object SmartNavigationEngine {
     private var onSystemExit: (() -> Unit)? = null
 
     @JvmStatic
-    fun init(uiBridge: CatMapNavigationEngine) {
+    fun init(uiBridge: CatMapNavigationEngine, initialScreen: Screen) {
         this.uiBridge = uiBridge
         backStack.clear()
-        val initialId = generateScreenId(Screen.MAP)
-        backStack.push(Pair(Screen.MAP, initialId))
-        currentScreen = Screen.MAP
-        currentNode = Screen.MAP
+        val initialId = generateScreenId(initialScreen)
+        backStack.push(Pair(initialScreen, initialId))
+        currentScreen = initialScreen
+        currentNode = initialScreen
         emitCurrentState(
-            screen = Screen.MAP,
+            screen = initialScreen,
             trigger = NavigationTrigger.INITIAL,
             screenId = initialId,
             args = Bundle()

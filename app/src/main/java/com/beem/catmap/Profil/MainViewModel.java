@@ -15,6 +15,7 @@ import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.beem.catmap.CatMapApp;
 import com.beem.catmap.Profil.Gonderiler.GonderiYuklemeListener;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.Gonderiler.Gonderi;
@@ -117,10 +118,10 @@ public class MainViewModel extends ViewModel {
     }
 
 
-    public MainViewModel(@NonNull Application application) {
+    public MainViewModel() {
         takipDurumlariniBirlestir();
         db = FirebaseFirestore.getInstance();
-        userRepository = UserRepository.Companion.getInstance(application);
+        userRepository = UserRepository.Companion.getInstance(CatMapApp.Companion.getInstance());
     }
 
     private String getCurrentUserId() {

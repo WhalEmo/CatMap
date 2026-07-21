@@ -250,13 +250,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         navigationEngine = new CatMapNavigationEngine(this, binding);
         navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);
-        SmartNavigationEngine.init(navigationEngine);
-
-        if (userRepository.isUserLoggedIn()) {
-            SmartNavigationEngine.navigateTo(Screen.MAP);
-        } else {
-            SmartNavigationEngine.navigateTo(Screen.AUTH);
-        }
 
         SmartNavigationEngine.registerActivityCallbacks(
                 () -> {
@@ -273,6 +266,14 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     return null;
                 }
         );
+
+        if (userRepository.isUserLoggedIn()) {
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
+            BegenileriCek();
+            SmartNavigationEngine.init(navigationEngine, Screen.MAP);
+        } else {
+            SmartNavigationEngine.init(navigationEngine, Screen.AUTH);
+        }
 
         uiMessageManagerObserver();
 
@@ -376,9 +377,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         YrmgndrFotoImageView=ikinci.findViewById(R.id.YrmgndrFotoImageView);
         YntgndrFotoImageView=ikinci.findViewById(R.id.YntgndrFotoImageView);
         ulasma=new URLye_Ulasma();
-        ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(),YrmgndrFotoImageView);
-        ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(),YntgndrFotoImageView);
-        BegenileriCek();
+        if (userRepository.isUserLoggedIn()) {
+            ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(), YrmgndrFotoImageView);
+            ulasma.IDdenUrlyeUlasma(userRepository.getCurrentUserId(), YntgndrFotoImageView);
+        }
 
         textt.addTextChangedListener(new TextWatcher() {
             @Override
