@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.map
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -12,6 +13,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.LinearInterpolator
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -46,6 +50,7 @@ import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
 import com.beem.catmap.data.local.LocationCacheManager
+import com.google.android.gms.maps.model.BitmapDescriptor
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -65,6 +70,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var isPanelVisible = false
 
     private var lastScannedLocation: LatLng? = null
+
+    private var myLocationMarker: Marker? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -93,7 +100,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: CatMap Fragment ayağa kalktı!")
 
-        // 🎯 Oynat Bakalım: Tıklama dinleyicilerini ve LiveData gözlemcilerini erkenden bağlıyoruz usta!
         setupClickListeners()
         observeViewModel()
 
@@ -108,6 +114,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         val cachedLocation = LocationCacheManager.getLastLocation()
         val cachedZoom = LocationCacheManager.getLastZoom()
         mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(cachedLocation, cachedZoom))
+        updateMyLocationMarker(cachedLocation)
 
         LocationEngine.startTracking(requireContext(), mMap!!)
 
@@ -212,12 +219,12 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
-        // 🛡️ INSTANCE eklendi
         LocationEngine.fetchDataEvent.observe(viewLifecycleOwner) { event ->
             if (event != null && mapViewModel != null) {
                 mapViewModel!!.checkAndFetchCatsIfMoved(event.latitude, event.longitude)
 
                 lastGpsLocation = event
+                updateMyLocationMarker(event)
                 LocationCacheManager.saveLastLocation(LatLng(event.latitude, event.longitude))
             }
         }
@@ -367,6 +374,50 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         val canvas = Canvas(returnedBitmap)
         markerView.draw(canvas)
         return returnedBitmap
+    }
+
+    private fun updateMyLocationMarker(latLng: LatLng) {
+        val map = mMap ?: return
+
+        if (myLocationMarker == null) {
+            val puckIcon = getBitmapDescriptorFromVector(requireContext(), R.drawable.ic_location_puck)
+            myLocationMarker = map.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .icon(puckIcon)
+                    .anchor(0.5f, 0.5f)
+                    .zIndex(999.0f)
+            )
+        } else {
+            animateMarker(myLocationMarker!!, latLng)
+        }
+    }
+
+    private fun getBitmapDescriptorFromVector(
+        context: Context,
+        vectorResId: Int
+    ): BitmapDescriptor {
+        val vectorDrawable = ContextCompat.getDrawable(context, vectorResId)!!
+        vectorDrawable.setBounds(0, 0, vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight)
+        val bitmap = createBitmap(vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight)
+        val canvas = Canvas(bitmap)
+        vectorDrawable.draw(canvas)
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    private fun animateMarker(marker: Marker, toPosition: LatLng) {
+        val startPosition = marker.position
+        val valueAnimator = ValueAnimator.ofFloat(0f, 1f)
+        valueAnimator.duration = 800 // 800ms içinde yumuşak geçiş
+        valueAnimator.interpolator = LinearInterpolator()
+
+        valueAnimator.addUpdateListener { animation ->
+            val v = animation.animatedFraction
+            val lng = v * toPosition.longitude + (1 - v) * startPosition.longitude
+            val lat = v * toPosition.latitude + (1 - v) * startPosition.latitude
+            marker.position = LatLng(lat, lng)
+        }
+        valueAnimator.start()
     }
 
     private fun showPanel() {
