@@ -211,7 +211,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
+        setTheme(R.style.Theme_CatMap);
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             Log.e("CRASH_DETECTOR", "Uygulama fena patladı dayıcım! İşte hatan: ", throwable);
 

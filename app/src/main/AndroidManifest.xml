@@ -40,23 +40,17 @@
             android:value="AIzaSyA58fD4xQDaP2bi1ElUsk8x_LKfFuqpREI" />
 
         <activity
-            android:name=".ui.splash.SplashActivity"
-            android:theme="@style/Theme.CatMap.Splash"
+            android:name=".Maps.MapsActivity"
             android:screenOrientation="portrait"
-            android:exported="true">
+            android:theme="@style/Theme.CatMap.Splash"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"
+            android:label="@string/title_activity_maps">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".Maps.MapsActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.CatMap"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="true"
-            android:label="@string/title_activity_maps" />
 
         <meta-data
             android:name="firebase_analytics_collection_enabled"
