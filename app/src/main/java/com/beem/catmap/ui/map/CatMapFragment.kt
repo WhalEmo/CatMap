@@ -51,8 +51,11 @@ import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
 import com.beem.catmap.data.local.LocationCacheManager
+import com.beem.catmap.engine.speedengine.MotionState
+import com.beem.catmap.engine.speedengine.SpeedEngine
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
+import kotlinx.coroutines.Dispatchers
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -70,7 +73,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var lastGpsLocation: Location? = null
     private var screenWidth = 0
     private var isPanelVisible = false
-    private var isTrackingUser = false
+    private var isTrackingUser = true
 
     private var lastScannedLocation: LatLng? = null
 
@@ -105,6 +108,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         setupClickListeners()
         observeViewModel()
+        observeMotionState()
+        renderSimpleUi()
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map_actual_container) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
@@ -221,6 +226,19 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         binding.btnClosePanel.setOnClickListener { hidePanel() }
     }
 
+
+    private fun observeMotionState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SpeedEngine.motionState.collect { state ->
+                    if (isTrackingUser && lastGpsLocation != null) {
+                        updateCameraForTracking(lastGpsLocation!!, animate = true)
+                    }
+                }
+            }
+        }
+    }
+
     private fun observeViewModel() {
         mapViewModel?.catsList?.observe(viewLifecycleOwner) { catModels ->
             if (catModels != null && catModels.isNotEmpty()) {
@@ -242,6 +260,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 val currentLatLng = LatLng(event.latitude, event.longitude)
                 updateMyLocationMarker(currentLatLng)
                 LocationCacheManager.saveLastLocation(LatLng(event.latitude, event.longitude))
+
+                lifecycleScope.launch(Dispatchers.Default) {
+                    SpeedEngine.processLocation(event)
+                }
 
                 if (isTrackingUser) {
                     updateCameraForTracking(event, animate = true)
@@ -289,6 +311,11 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         }
 
 
+    }
+
+    private fun renderSimpleUi() {
+        val fabCurrentLocationIcon = if(isTrackingUser) R.drawable.ic_location_puck_active else R.drawable.ic_location_puck
+        binding.fabCurrentLocation.setImageResource(fabCurrentLocationIcon)
     }
 
 
@@ -398,7 +425,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private fun startTrackingMode() {
         isTrackingUser = true
-        binding.fabCurrentLocation.setImageResource(R.drawable.ic_location_puck)
+        binding.fabCurrentLocation.setImageResource(R.drawable.ic_location_puck_active)
 
         lastGpsLocation?.let { loc ->
             updateCameraForTracking(loc, animate = true)
@@ -423,15 +450,21 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private fun updateCameraForTracking(location: Location, animate: Boolean = true) {
         val map = mMap ?: return
         val currentLatLng = LatLng(location.latitude, location.longitude)
-        val bearing = if (location.hasBearing()) location.bearing else map.cameraPosition.bearing
+        val bearing = if (location.hasBearing() && location.bearing != 0f) {
+            location.bearing
+        } else {
+            0f
+        }
 
-        Log.d("BEARING", "has bearing ${location.hasBearing()} - $bearing")
+        val currentMotionState = SpeedEngine.motionState.value
+
+        val currentBearing = if(currentMotionState == MotionState.STATIC) 0f else bearing
 
         val cameraPosition = CameraPosition.Builder()
             .target(currentLatLng)
-            .zoom(18f)
-            .tilt(45f)
-            .bearing(bearing)
+            .zoom(currentMotionState.zoom)
+            .tilt(currentMotionState.tilt)
+            .bearing(currentBearing)
             .build()
 
         if (animate) {
