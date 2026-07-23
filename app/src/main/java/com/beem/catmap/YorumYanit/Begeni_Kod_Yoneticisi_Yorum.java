@@ -1,8 +1,6 @@
 package com.beem.catmap.YorumYanit;
 
 import android.content.Context;
-
-import com.beem.catmap.Maps.MapsActivity;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -13,86 +11,89 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Begeni_Kod_Yoneticisi_Yorum {
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
-    public void YorumBegenme(Yorum_Model yorum, String kullaniciId, Context context, Yorum_Adapter adapter){
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    // 🟢 String catId parametresi eklendi
+    public void YorumBegenme(String catId, Yorum_Model yorum, String kullaniciId, Context context, Yorum_Adapter adapter) {
+        if (catId == null || catId.isEmpty()) return;
+
         db.collection("cats")
-                .document(MapsActivity.kediID)
+                .document(catId)
                 .collection("yorumlar")
                 .document(yorum.getYorumID())
                 .collection("begenenler")
                 .document(kullaniciId)
                 .set(new HashMap<>())
                 .addOnSuccessListener(aVoid -> {
+                    Set<String> begenilenSet = CacheHelperYorum.loadBegenilenSet(context);
+                    begenilenSet.add(yorum.getYorumID());
+                    CacheHelperYorum.saveBegenilenSet(context, begenilenSet);
 
-            Set<String> begenilenSet = CacheHelperYorum.loadBegenilenSet(context);
-            begenilenSet.add(yorum.getYorumID());
-            CacheHelperYorum.saveBegenilenSet(context, begenilenSet);
-
-
-            yorum.setBegeniSayisi(yorum.getBegeniSayisi() + 1);
-            Map<String, Integer> map = CacheHelperYorum.loadBegeniSayilariMap(context);
-            int yeniSayi = map.getOrDefault(yorum.getYorumID(), 0) + 1;
+                    yorum.setBegeniSayisi(yorum.getBegeniSayisi() + 1);
+                    Map<String, Integer> map = CacheHelperYorum.loadBegeniSayilariMap(context);
+                    int yeniSayi = map.getOrDefault(yorum.getYorumID(), 0) + 1;
 
                     db.collection("cats")
-                            .document(MapsActivity.kediID)
+                            .document(catId)
                             .collection("yorumlar")
                             .document(yorum.getYorumID())
                             .update("begeniSayisi", yeniSayi);
 
-                     map.put(yorum.getYorumID(), yeniSayi);
-                     CacheHelperYorum.saveBegeniSayilariMap(context, map);
-                     adapter.setBegeniSayisiMap(map);
-                     adapter.setBegenilenYorumIDSeti(begenilenSet);
-                     adapter.notifyDataSetChanged();
-        })
-                .addOnFailureListener(e -> {
-                    // Hata durumunda istersen Toast veya Log
+                    map.put(yorum.getYorumID(), yeniSayi);
+                    CacheHelperYorum.saveBegeniSayilariMap(context, map);
+                    adapter.setBegeniSayisiMap(map);
+                    adapter.setBegenilenYorumIDSeti(begenilenSet);
+                    adapter.notifyDataSetChanged();
                 });
     }
-    public void YorumBegeniKladirma(Yorum_Model yorum,String kullaniciId,Context context,Yorum_Adapter adapter){
-            db.collection("cats")
-                    .document(MapsActivity.kediID)
-                    .collection("yorumlar")
-                    .document(yorum.getYorumID())
-                    .collection("begenenler")
-                    .document(kullaniciId)
-                    .delete()
-                    .addOnSuccessListener(aVoid -> {
-            // Başarılı silme → Cache güncelle
-            Set<String> begenilenSet = CacheHelperYorum.loadBegenilenSet(context);
-            begenilenSet.remove(yorum.getYorumID());
-            CacheHelperYorum.saveBegenilenSet(context, begenilenSet);
 
+    // 🟢 String catId parametresi eklendi
+    public void YorumBegeniKladirma(String catId, Yorum_Model yorum, String kullaniciId, Context context, Yorum_Adapter adapter) {
+        if (catId == null || catId.isEmpty()) return;
 
-            int mevcut = yorum.getBegeniSayisi();
-            if (mevcut > 0) {
-                yorum.setBegeniSayisi(mevcut - 1);
-            }
+        db.collection("cats")
+                .document(catId)
+                .collection("yorumlar")
+                .document(yorum.getYorumID())
+                .collection("begenenler")
+                .document(kullaniciId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Set<String> begenilenSet = CacheHelperYorum.loadBegenilenSet(context);
+                    begenilenSet.remove(yorum.getYorumID());
+                    CacheHelperYorum.saveBegenilenSet(context, begenilenSet);
 
-            Map<String, Integer> map = CacheHelperYorum.loadBegeniSayilariMap(context);
-            int yeniSayi = Math.max(map.getOrDefault(yorum.getYorumID(), 1) - 1, 0);
-                        // Firebase'e yeni sayı yaz
-                        db.collection("cats")
-                                .document(MapsActivity.kediID)
-                                .collection("yorumlar")
-                                .document(yorum.getYorumID())
-                                .update("begeniSayisi", yeniSayi);
+                    int mevcut = yorum.getBegeniSayisi();
+                    if (mevcut > 0) {
+                        yorum.setBegeniSayisi(mevcut - 1);
+                    }
 
-            map.put(yorum.getYorumID(), yeniSayi);
-            CacheHelperYorum.saveBegeniSayilariMap(context, map);
-            adapter.setBegeniSayisiMap(map);
-            adapter.setBegenilenYorumIDSeti(begenilenSet);
-            adapter.notifyDataSetChanged();
-        })
-                .addOnFailureListener(e -> {
-                    // Hata durumunda istersen Toast veya Log
+                    Map<String, Integer> map = CacheHelperYorum.loadBegeniSayilariMap(context);
+                    int yeniSayi = Math.max(map.getOrDefault(yorum.getYorumID(), 1) - 1, 0);
+
+                    db.collection("cats")
+                            .document(catId)
+                            .collection("yorumlar")
+                            .document(yorum.getYorumID())
+                            .update("begeniSayisi", yeniSayi);
+
+                    map.put(yorum.getYorumID(), yeniSayi);
+                    CacheHelperYorum.saveBegeniSayilariMap(context, map);
+                    adapter.setBegeniSayisiMap(map);
+                    adapter.setBegenilenYorumIDSeti(begenilenSet);
+                    adapter.notifyDataSetChanged();
                 });
     }
-    public void KullanicininBegendigiYorumalar(Context context, String kullaniciId, Yorum_Adapter adapter){
+
+    // 🟢 String catId parametresi eklendi
+    public void KullanicininBegendigiYorumalar(String catId, Context context, String kullaniciId, Yorum_Adapter adapter) {
+        if (catId == null || catId.isEmpty()) return;
+
         Set<String> begenilenYorumIDSeti = new HashSet<>();
         Map<String, Integer> begeniSayisiMap = new HashMap<>();
+
         db.collection("cats")
-                .document(MapsActivity.kediID)
+                .document(catId)
                 .collection("yorumlar")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
@@ -102,16 +103,13 @@ public class Begeni_Kod_Yoneticisi_Yorum {
                     for (DocumentSnapshot yorumDoc : querySnapshot) {
                         String yorumID = yorumDoc.getId();
 
-                        // Beğeni sayısını çek
                         yorumDoc.getReference()
                                 .collection("begenenler")
                                 .get()
                                 .addOnSuccessListener(begeniSnapshot -> {
                                     int begeniSayisi = begeniSnapshot.size();
-                                    begeniSayisiMap.put(yorumID,begeniSayisi);
+                                    begeniSayisiMap.put(yorumID, begeniSayisi);
 
-
-                                    // Yorum modelini adapter üzerinden bul ve güncelle
                                     for (Yorum_Model model : adapter.getYorumList()) {
                                         if (model.getYorumID().equals(yorumID)) {
                                             model.setBegeniSayisi(begeniSayisi);
@@ -120,7 +118,6 @@ public class Begeni_Kod_Yoneticisi_Yorum {
                                     }
                                     CacheHelperYorum.saveBegeniSayilariMap(context, begeniSayisiMap);
                                     adapter.setBegeniSayisiMap(begeniSayisiMap);
-
                                 });
 
                         yorumDoc.getReference()
@@ -132,7 +129,6 @@ public class Begeni_Kod_Yoneticisi_Yorum {
                                         begenilenYorumIDSeti.add(yorumID);
                                     }
                                     if (sayac.incrementAndGet() == toplamYorumSayisi) {
-                                        // Firestore’dan veri hazır, cache’e kaydet
                                         CacheHelperYorum.saveBegenilenSet(context, begenilenYorumIDSeti);
                                         adapter.setBegenilenYorumIDSeti(begenilenYorumIDSeti);
                                         adapter.notifyDataSetChanged();
@@ -147,23 +143,25 @@ public class Begeni_Kod_Yoneticisi_Yorum {
                     }
                 });
     }
+
     public interface YorumSayisiCallback {
         void onYorumSayisiAlindi(int sayi);
     }
 
+    public void yorumSayisiniGetir(String catId, YorumSayisiCallback callback) {
+        if (catId == null || catId.isEmpty()) {
+            callback.onYorumSayisiAlindi(0);
+            return;
+        }
 
-    public void yorumSayisiniGetir(YorumSayisiCallback callback) {
         db.collection("cats")
-                .document(MapsActivity.kediID)
+                .document(catId)
                 .collection("yorumlar")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     int toplam = querySnapshot.size();
                     callback.onYorumSayisiAlindi(toplam);
                 })
-                .addOnFailureListener(e -> {
-                    callback.onYorumSayisiAlindi(0);
-                });
+                .addOnFailureListener(e -> callback.onYorumSayisiAlindi(0));
     }
-
 }

@@ -1,8 +1,12 @@
 package com.beem.catmap.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.data.local.UserSessionManager
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class UserRepository private constructor(context: Context) {
 
@@ -58,4 +62,5 @@ class UserRepository private constructor(context: Context) {
         currentUserCache = null
         sessionManager.clearSession()
     }
+
 }

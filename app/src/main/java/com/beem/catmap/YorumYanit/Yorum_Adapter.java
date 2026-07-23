@@ -1,15 +1,8 @@
 package com.beem.catmap.YorumYanit;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,15 +13,12 @@ import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.Klavye;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
 import com.beem.catmap.data.repository.UserRepository;
@@ -39,27 +29,26 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder> {
 
-
-public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder>  {
-
-
-    private ArrayList<Yorum_Model>yorumList;
+    private ArrayList<Yorum_Model> yorumList;
     public ArrayList<Yorum_Model> getYorumList() {
         return yorumList;
     }
-    public boolean yorumMuGeldi=false;
+    public boolean yorumMuGeldi = false;
     private Set<String> begenilenYorumIDSeti = new HashSet<>();
     private Map<String, Integer> begeniSayisiMap = new HashMap<>();
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
     private OnYorumAksiyonListener aksiyonListener;
     private UserRepository userRepository;
 
+    private Context context;
+    private String catId; // 🟢 Eklenen Kedi ID
+
     public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
         this.kullaniciAdiTiklamaListener = listener;
     }
 
-    private Context context;
     private final Handler zamanHandler = new Handler();
     private final Runnable zamanRunnable = new Runnable() {
         @Override
@@ -76,8 +65,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             }
             zamanHandler.postDelayed(this, 60000);
         }
-
     };
+
     private void kalpAnimasyonuYap(ImageView kalpView) {
         ScaleAnimation büyütKücült = new ScaleAnimation(
                 0.7f, 1.2f,  // X ekseni
@@ -85,9 +74,9 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 Animation.RELATIVE_TO_SELF, 0.5f,
                 Animation.RELATIVE_TO_SELF, 0.5f
         );
-        büyütKücült.setDuration(200);  // milisaniye
+        büyütKücült.setDuration(200);
         büyütKücült.setRepeatCount(1);
-        büyütKücült.setRepeatMode(Animation.REVERSE); // tersine oynat
+        büyütKücült.setRepeatMode(Animation.REVERSE);
 
         kalpView.startAnimation(büyütKücült);
     }
@@ -112,22 +101,27 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         zamanHandler.removeCallbacks(zamanRunnable);
     }
 
-    public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context) {
+    // 🟢 Constructor'a catId eklendi
+    public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context, String catId) {
         this.yorumList = yorumList;
         this.context = context;
+        this.catId = catId;
     }
+
     public static int yorumindeks;
+
     @NonNull
     @Override
     public YorumViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.herbi_yorum_icin,parent,false);
+        View view = LayoutInflater.from(context).inflate(R.layout.herbi_yorum_icin, parent, false);
         return new YorumViewHolder(view);
     }
-    int pozisyon=-1;
+
+    int pozisyon = -1;
 
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
-        Yorum_Model yorum=yorumList.get(position);
+        Yorum_Model yorum = yorumList.get(position);
 
         if (userRepository == null) {
             userRepository = UserRepository.Companion.getInstance(context);
@@ -137,8 +131,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
-        URLye_Ulasma ulasma=new URLye_Ulasma();
-        ulasma.IDdenUrlyeUlasma(yorum.getYukleyenId(),holder.YorumFotoImageView);
+        URLye_Ulasma ulasma = new URLye_Ulasma();
+        ulasma.IDdenUrlyeUlasma(yorum.getYukleyenId(), holder.YorumFotoImageView);
 
         holder.kullaniciAditext.setOnClickListener(v -> {
             if (kullaniciAdiTiklamaListener != null) {
@@ -158,23 +152,25 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         }
 
         if (begenilenYorumIDSeti.contains(yorum.getYorumID())) {
-            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24); // dolu kalp
+            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
             holder.kalpImageView.setTag("begenildi");
         } else {
-            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24); // boş kalp
+            holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
             holder.kalpImageView.setTag("begeniYok");
         }
-        Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi=new Begeni_Kod_Yoneticisi_Yorum();
-        holder.kalpImageView.setOnClickListener(v->{
+
+        Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi = new Begeni_Kod_Yoneticisi_Yorum();
+        holder.kalpImageView.setOnClickListener(v -> {
             if ("begeniYok".equals(holder.kalpImageView.getTag())) {
-                begeniKodYoneticisi.YorumBegenme(yorum, currentUser.getID(), context,this);
+                // 🟢 catId eklendi
+                begeniKodYoneticisi.YorumBegenme(catId, yorum, currentUser.getID(), context, this);
                 holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
                 kalpAnimasyonuYap(holder.kalpImageView);
                 holder.kalpImageView.setTag("begenildi");
                 begenilenYorumIDSeti.add(yorum.getYorumID());
-
-            }else{
-                begeniKodYoneticisi.YorumBegeniKladirma(yorum,currentUser.getID(),context,this);
+            } else {
+                // 🟢 catId eklendi
+                begeniKodYoneticisi.YorumBegeniKladirma(catId, yorum, currentUser.getID(), context, this);
                 holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
                 holder.kalpImageView.setTag("begeniYok");
                 begenilenYorumIDSeti.remove(yorum.getYorumID());
@@ -182,18 +178,15 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         });
 
         if (currentUser.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
-            if(yorumMuGeldi==true){
+            if (yorumMuGeldi) {
                 holder.menuButonu.setVisibility(View.GONE);
                 holder.getYanitlarYukleniyorLayout2.setVisibility(View.VISIBLE);
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
-                        holder.menuButonu.setVisibility(View.VISIBLE);
-                        yorumMuGeldi = false;
-                    }
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
+                    holder.menuButonu.setVisibility(View.VISIBLE);
+                    yorumMuGeldi = false;
                 }, 3000);
-            }else {
+            } else {
                 holder.menuButonu.setVisibility(View.VISIBLE);
                 holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
             }
@@ -213,7 +206,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
             // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
             if (yorum.getYanitAdapter() == null) {
-                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context,position,yorum.getYorumID());
+                // 🟢 Yanit_Adapter'a catId parametresi geçildi
+                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context, position, yorum.getYorumID(), catId);
                 yorum.setYanitAdapter(yntadapter);
                 yntadapter.baslatZamanlayici();
                 yntadapter.hazirliklariYapBegenme(context, currentUser.getID(), yorum);
@@ -230,8 +224,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             // Adapter'i bağla
             holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
             holder.recyclerViewyanitlar.setAdapter(yorum.getYanitAdapter());
-
-
 
             if (yorum.isYanitYokMu()) {
                 holder.dahafazla.setVisibility(View.GONE);
@@ -250,33 +242,26 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             }
 
 
-            // 🔄 SADECE 1 KERE VERİ ÇEK
             if (!yorum.isYanitlarYuklendi()) {
                 holder.dahafazla.setVisibility(View.GONE);
                 holder.yanitlarYukleniyorLayout.setVisibility(View.VISIBLE);
                 Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum, yanitlar, yorum.getYanitAdapter(), 5, true, new Yanitlari_Cekme.YanitlarCallback() {
-                            @Override
-                            public void onComplete() {
-                                yorum.setYanitlarYuklendi(true);
-                                yorum.setYanitYokMu(yorum.getYanitlar().isEmpty());
-                                holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
-                                notifyDataSetChanged();
-                            }
-                        });
+                yanitcek.yanitlariCek(catId,yorum, yanitlar, yorum.getYanitAdapter(), 5, true, () -> {
+                    yorum.setYanitlarYuklendi(true);
+                    yorum.setYanitYokMu(yorum.getYanitlar().isEmpty());
+                    holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
+                    notifyDataSetChanged();
+                });
             }
 
             ArrayList<Yanit_Model> finalYanitlar = yanitlar;
             holder.dahafazla.setOnClickListener(dahafz -> {
                 holder.yanitlarYukleniyorLayout.setVisibility(View.VISIBLE);
                 Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(yorum, finalYanitlar, yorum.getYanitAdapter(), 5, false, new Yanitlari_Cekme.YanitlarCallback() {
-                    @Override
-                    public void onComplete() {
-                        yorum.getYanitAdapter().notifyDataSetChanged(); // yeni gelen veriler için
-                        holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
-                        notifyItemChanged(position);
-                    }
+                yanitcek.yanitlariCek(catId,yorum, finalYanitlar, yorum.getYanitAdapter(), 5, false, () -> {
+                    yorum.getYanitAdapter().notifyDataSetChanged();
+                    holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
+                    notifyItemChanged(position);
                 });
             });
 
@@ -291,7 +276,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             yorum.setYanitlarGorunuyor(!gorunuyorMu);
             notifyItemChanged(position);
         });
-
 
         holder.yanitlamayiGetir.setOnClickListener(cvp -> {
             int eskiPozisyon = pozisyon;
@@ -321,19 +305,18 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
             }
         });
 
+        holder.menuButonu.setOnClickListener(menu -> {
+            Yorum_Silme_Guncelleme islem = new Yorum_Silme_Guncelleme();
+            PopupMenu popupmenu = new PopupMenu(context, holder.menuButonu);
+            popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu, popupmenu.getMenu());
 
-        holder.menuButonu.setOnClickListener(menu->{
-            Yorum_Silme_Guncelleme islem=new Yorum_Silme_Guncelleme();
-            PopupMenu popupmenu=new PopupMenu(context,holder.menuButonu);
-            popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu,popupmenu.getMenu());
-
-            popupmenu.setOnMenuItemClickListener(item->{
+            popupmenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.menu_guncelle) {
-                    islem.yorumGuncelleme(yorum,context,yorumList,this);
+                    islem.yorumGuncelleme(catId,yorum, context, yorumList, this);
                     return true;
                 } else if (id == R.id.menu_sil) {
-                    islem.yorumSil(yorum.getYorumID(),yorumList,this);
+                    islem.yorumSil(catId,yorum.getYorumID(), yorumList, this);
                     return true;
                 }
                 return false;
@@ -346,7 +329,8 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
     public int getItemCount() {
         return yorumList.size();
     }
-    public static class YorumViewHolder extends RecyclerView.ViewHolder{
+
+    public static class YorumViewHolder extends RecyclerView.ViewHolder {
         TextView kullaniciAditext;
         TextView yorumText;
         TextView yorumTarihiText;
@@ -365,24 +349,21 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);
-            kullaniciAditext=itemView.findViewById(R.id.kullaniciAdiTextView);
-            yorumText=itemView.findViewById(R.id.yorumTextView);
-            yorumTarihiText=itemView.findViewById(R.id.tarihTextView);
-            yanitlariGor=itemView.findViewById(R.id.yanitlariGorTextView);
-            yanitlamayiGetir=itemView.findViewById(R.id.yanitGosterTextView);
-            recyclerViewyanitlar=itemView.findViewById(R.id.yanitlarRecyclerView);
-            dahafazla=itemView.findViewById(R.id.dahaFazlaYanitText);
-            container=itemView.findViewById(R.id.yanitlarContainer);
-            yanityoksa=itemView.findViewById(R.id.yanityok);
+            kullaniciAditext = itemView.findViewById(R.id.kullaniciAdiTextView);
+            yorumText = itemView.findViewById(R.id.yorumTextView);
+            yorumTarihiText = itemView.findViewById(R.id.tarihTextView);
+            yanitlariGor = itemView.findViewById(R.id.yanitlariGorTextView);
+            yanitlamayiGetir = itemView.findViewById(R.id.yanitGosterTextView);
+            recyclerViewyanitlar = itemView.findViewById(R.id.yanitlarRecyclerView);
+            dahafazla = itemView.findViewById(R.id.dahaFazlaYanitText);
+            container = itemView.findViewById(R.id.yanitlarContainer);
+            yanityoksa = itemView.findViewById(R.id.yanityok);
             yanitlarYukleniyorLayout = itemView.findViewById(R.id.yanitlarYukleniyorLayout);
-            menuButonu=itemView.findViewById(R.id.menuButton);
-            getYanitlarYukleniyorLayout2=itemView.findViewById(R.id.yanitlarYukleniyorLayout2);
-            kalpImageView=itemView.findViewById(R.id.kalpImageView);
-            begeniSayisiTextView=itemView.findViewById(R.id.begeniSayisiTextView);
-            YorumFotoImageView=itemView.findViewById(R.id.YorumFotoImageView);
-
+            menuButonu = itemView.findViewById(R.id.menuButton);
+            getYanitlarYukleniyorLayout2 = itemView.findViewById(R.id.yanitlarYukleniyorLayout2);
+            kalpImageView = itemView.findViewById(R.id.kalpImageView);
+            begeniSayisiTextView = itemView.findViewById(R.id.begeniSayisiTextView);
+            YorumFotoImageView = itemView.findViewById(R.id.YorumFotoImageView);
         }
     }
-
-
 }

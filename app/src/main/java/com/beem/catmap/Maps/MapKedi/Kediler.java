@@ -1,8 +1,9 @@
 package com.beem.catmap.Maps.MapKedi;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Kediler {
+public class Kediler implements Serializable {
     private String isim;
     private String hakkindasi;
     private double latitude;

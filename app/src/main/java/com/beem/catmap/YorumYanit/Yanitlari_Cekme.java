@@ -2,20 +2,27 @@ package com.beem.catmap.YorumYanit;
 
 import android.util.Log;
 
-import com.beem.catmap.Maps.MapsActivity;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+
 import java.util.ArrayList;
 
 public class Yanitlari_Cekme {
+
     public interface YanitlarCallback {
         void onComplete();
     }
 
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
-    public void yanitlariCek(Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar, Yanit_Adapter yorumAdapter, int limit, boolean clearList, YanitlarCallback callback) {
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    public void yanitlariCek(String catId, Yorum_Model yorum, ArrayList<Yanit_Model> yanitlar, Yanit_Adapter yorumAdapter, int limit, boolean clearList, YanitlarCallback callback) {
+        if (catId == null || catId.isEmpty() || yorum == null) {
+            if (callback != null) callback.onComplete();
+            return;
+        }
+
         if (clearList) {
             yanitlar.clear();
             yorumAdapter.notifyDataSetChanged();
@@ -23,7 +30,7 @@ public class Yanitlari_Cekme {
         }
 
         CollectionReference yanitlarRef = db.collection("cats")
-                .document(MapsActivity.kediID)
+                .document(catId)
                 .collection("yorumlar")
                 .document(yorum.getYorumID())
                 .collection("yanitlar");
@@ -53,14 +60,12 @@ public class Yanitlari_Cekme {
 
                         yorum.setSonYanit(snapshots.getDocuments().get(snapshots.size() - 1));
 
-                        // Daha fazla göster butonunu güncelle
                         if (snapshots.size() < limit) {
                             yorum.setDahafazlaGozukuyorMu(false);
                         } else {
                             yorum.setDahafazlaGozukuyorMu(true);
                         }
                     } else {
-                        // Eğer hiç veri yoksa
                         yorum.setDahafazlaGozukuyorMu(false);
                     }
 
@@ -73,15 +78,11 @@ public class Yanitlari_Cekme {
                     yorum.setYanitlar(yanitlar);
                     yorumAdapter.notifyDataSetChanged();
 
-                    callback.onComplete();
+                    if (callback != null) callback.onComplete();
                 })
                 .addOnFailureListener(e -> {
                     Log.e("Yanitlari_Cekme", "Yanıtlar çekilemedi", e);
-                    callback.onComplete();
+                    if (callback != null) callback.onComplete();
                 });
     }
-
-
-
 }
-

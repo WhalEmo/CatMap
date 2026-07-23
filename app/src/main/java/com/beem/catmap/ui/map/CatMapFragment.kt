@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import com.beem.catmap.Maps.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
@@ -164,7 +165,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 cat?.let {
                     if (activity is MapsActivity) {
                         (activity as MapsActivity).sonTiklananMarker = marker
-                        (activity as MapsActivity).kedibilgisigetirme(it)
+                        val bottomSheet = BottomSheetFragment.newInstance(cat)
+                        bottomSheet.show(childFragmentManager, BottomSheetFragment.TAG)
                     }
                 }
             }
