@@ -2,10 +2,10 @@ package com.beem.catmap.Maps;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -14,22 +14,29 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.R;
+import com.bumptech.glide.Glide; // Glide kütüphanesini içe aktardık
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.FotoHolder> {
+
     private Context baglanti;
     private ArrayList<Uri> fotolar;
     private FotografYukleyiciYonetici yukleyici;
 
-    public FotoGeciciAdapter(Context baglanti, ArrayList<Uri> fotolar,FotografYukleyiciYonetici yukleyici) {
+    public FotoGeciciAdapter(Context baglanti, ArrayList<Uri> fotolar, FotografYukleyiciYonetici yukleyici) {
         this.baglanti = baglanti;
-        this.fotolar = fotolar;
+        this.fotolar = (fotolar != null) ? fotolar : new ArrayList<>();
         this.yukleyici = yukleyici;
     }
 
-    public void setFotolar(ArrayList<Uri> fotolar) {
-        this.fotolar = fotolar;
+    public void setFotolar(List<Uri> yeniFotolar) {
+        this.fotolar.clear();
+        if (yeniFotolar != null) {
+            this.fotolar.addAll(yeniFotolar);
+        }
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -41,16 +48,20 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
 
     @Override
     public void onBindViewHolder(@NonNull FotoHolder holder, int position) {
-        if(yukleyici==null){
-            Uri fotoUri = fotolar.get(position);
-            holder.foto.setImageURI(fotoUri);
-        }
-        else {
-            Uri fotoUri = fotolar.get(position);
+        Uri fotoUri = fotolar.get(position);
+
+        if (yukleyici == null) {
+            if (fotoUri != null) {
+                Glide.with(baglanti)
+                        .load(fotoUri)
+                        .into(holder.foto);
+            }
+        } else {
             yukleyici.Yukleyici(fotoUri, holder.foto, holder.yukleniyorOverlay, holder.yukleniyorProgressBar);
         }
-        holder.foto.setOnLongClickListener(v->{
-            if(yukleyici==null) {
+
+        holder.foto.setOnLongClickListener(v -> {
+            if (yukleyici == null) {
                 if (holder.sil.getVisibility() == View.GONE) {
                     holder.sil.setVisibility(View.VISIBLE);
                 } else {
@@ -60,27 +71,32 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
             return true;
         });
 
-        holder.sil.setOnClickListener(v ->{
-            fotolar.remove(position);
-            notifyItemRemoved(position);
-            notifyItemRangeChanged(position, fotolar.size());
-            holder.sil.setVisibility(View.GONE);
-            if(fotolar.size()==0){
-                holder.foto.setImageResource(R.drawable.yuklemefotosu);
+        holder.sil.setOnClickListener(v -> {
+            int adapterPosition = holder.getBindingAdapterPosition();
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                fotolar.remove(adapterPosition);
+                notifyItemRemoved(adapterPosition);
+                notifyItemRangeChanged(adapterPosition, fotolar.size());
+                holder.sil.setVisibility(View.GONE);
+                if (fotolar.isEmpty()) {
+                    holder.foto.setImageResource(R.drawable.yuklemefotosu);
+                }
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return fotolar.size();
+        int count = (fotolar != null) ? fotolar.size() : 0;
+        return count;
     }
 
-    public static class FotoHolder extends RecyclerView.ViewHolder{
+    public static class FotoHolder extends RecyclerView.ViewHolder {
         ImageView foto;
         ImageButton sil;
         View yukleniyorOverlay;
         ProgressBar yukleniyorProgressBar;
+
         public FotoHolder(@NonNull View itemView) {
             super(itemView);
             foto = itemView.findViewById(R.id.fotoView);

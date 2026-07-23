@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +15,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -126,9 +128,14 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                     isim.text = it.isim
                     hakkinda.text = it.hakkindasi
 
-                    fotolar.clear()
-                    it.urLler?.forEach { url -> fotolar.add(Uri.parse(url)) }
-                    fotoAdapter.notifyDataSetChanged()
+                    if (!it.urLler.isNullOrEmpty()) {
+                        val uriList = it.urLler.mapNotNull { url ->
+                            url.toUri()
+                        }
+                        fotoAdapter.setFotolar(uriList)
+                    } else {
+                        fotoAdapter.setFotolar(emptyList())
+                    }
 
                     yorumSayisiToplam()
                 }
