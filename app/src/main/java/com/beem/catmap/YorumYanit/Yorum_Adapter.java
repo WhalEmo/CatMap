@@ -101,7 +101,6 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         zamanHandler.removeCallbacks(zamanRunnable);
     }
 
-    // 🟢 Constructor'a catId eklendi
     public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context, String catId) {
         this.yorumList = yorumList;
         this.context = context;
@@ -221,7 +220,7 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
                 });
             }
 
-            // Adapter'i bağla
+
             holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
             holder.recyclerViewyanitlar.setAdapter(yorum.getYanitAdapter());
 

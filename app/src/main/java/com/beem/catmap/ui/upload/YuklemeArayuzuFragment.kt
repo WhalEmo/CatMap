@@ -59,7 +59,7 @@ class YuklemeArayuzuFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Temel Altyapı Kurulumları
+
         locationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         messageManager = UyariMesaji(requireContext(), false)
 

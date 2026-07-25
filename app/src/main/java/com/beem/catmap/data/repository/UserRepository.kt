@@ -25,10 +25,6 @@ class UserRepository private constructor(context: Context) {
         }
     }
 
-    /**
-     * Aktif Kullanıcıyı Getirir.
-     * Önce RAM'e bakar, RAM'de yoksa diskten okur. Asla NULL fırlatıp patlamaz!
-     */
     fun getCurrentUser(): Kullanici {
         if (currentUserCache == null) {
             currentUserCache = sessionManager.getUserSession() ?: Kullanici()

@@ -24,7 +24,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
 import com.beem.catmap.Maps.CatFactService
-import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.Maps.MapKedi.Kediler
 import com.beem.catmap.Maps.MapViewModel
 import com.beem.catmap.Maps.MapsActivity
@@ -50,6 +49,7 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.Maps.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState

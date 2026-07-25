@@ -40,21 +40,6 @@ class CatRepository {
         }
     }
 
-    /**
-     * Kediye yorum ekleme işlemi. Başarılı olursa true, hata olursa false döner.
-     */
-    suspend fun addComment(catId: String, comment: CommentModel): Boolean {
-        return try {
-            catsCollection.document(catId)
-                .collection("yorumlar")
-                .add(comment)
-                .await()
-            true
-        } catch (e: Exception) {
-            Log.e("CatRepository", "Yorum eklenirken hata: ${e.message}")
-            false
-        }
-    }
 
     suspend fun getCatsNearLocation(userLat: Double, userLng: Double): List<CatModel> {
         return withContext(Dispatchers.IO) { // İşlemi arka plana (IO) zorla

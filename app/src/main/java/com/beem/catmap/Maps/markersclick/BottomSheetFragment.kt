@@ -32,8 +32,10 @@ import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class BottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -50,7 +52,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var yukleyenPP: ImageView
 
     private lateinit var fotoAdapter: FotoGeciciAdapter
-    private val fotolar = ArrayList<Uri>()
     private val viewModel: CatDetailViewModel by viewModels()
 
     private val begeniKodYoneticisi = Begeni_Kod_Yoneticisi_Yorum()
@@ -117,8 +118,9 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         yukleyenAdiText = view.findViewById(R.id.yukleyenAdiText)
         yukleyenPP = view.findViewById(R.id.YukprofilFotoImageView)
 
-        fotoAdapter = FotoGeciciAdapter(requireContext(), fotolar, null)
+        fotoAdapter = FotoGeciciAdapter(requireContext(), null)
         fotoPager.adapter = fotoAdapter
+        fotoPager.offscreenPageLimit = 1
     }
 
     private fun observeViewModel() {
@@ -129,12 +131,12 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                     hakkinda.text = it.hakkindasi
 
                     if (!it.urLler.isNullOrEmpty()) {
-                        val uriList = it.urLler.mapNotNull { url ->
-                            url.toUri()
+                        val uriList = withContext(Dispatchers.IO) {
+                            it.urLler.mapNotNull { url -> url.toUri() }
                         }
-                        fotoAdapter.setFotolar(uriList)
+                        fotoAdapter.submitList(uriList)
                     } else {
-                        fotoAdapter.setFotolar(emptyList())
+                        fotoAdapter.submitList(emptyList())
                     }
 
                     yorumSayisiToplam()
@@ -149,6 +151,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                     Glide.with(this@BottomSheetFragment)
                         .load(photoUrl)
                         .placeholder(R.drawable.kullanici)
+                        .dontAnimate()
                         .into(yukleyenPP)
                 }
             }
@@ -236,12 +239,14 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                 com.google.android.material.R.id.design_bottom_sheet
             )
             bottomSheet?.let { sheet ->
-                val behavior = BottomSheetBehavior.from(sheet)
-                val layoutParams = sheet.layoutParams
-                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                sheet.layoutParams = layoutParams
-                behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                behavior.skipCollapsed = true
+                sheet.post {
+                    val behavior = BottomSheetBehavior.from(sheet)
+                    val layoutParams = sheet.layoutParams
+                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                    sheet.layoutParams = layoutParams
+                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                    behavior.skipCollapsed = true
+                }
             }
         }
         return dialog

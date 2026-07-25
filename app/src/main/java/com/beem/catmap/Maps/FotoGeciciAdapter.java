@@ -2,7 +2,6 @@ package com.beem.catmap.Maps;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,32 +10,34 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.R;
-import com.bumptech.glide.Glide; // Glide kütüphanesini içe aktardık
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
-import java.util.ArrayList;
-import java.util.List;
+public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHolder> {
 
-public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.FotoHolder> {
-
-    private Context baglanti;
-    private ArrayList<Uri> fotolar;
-    private FotografYukleyiciYonetici yukleyici;
-
-    public FotoGeciciAdapter(Context baglanti, ArrayList<Uri> fotolar, FotografYukleyiciYonetici yukleyici) {
-        this.baglanti = baglanti;
-        this.fotolar = (fotolar != null) ? fotolar : new ArrayList<>();
-        this.yukleyici = yukleyici;
-    }
-
-    public void setFotolar(List<Uri> yeniFotolar) {
-        this.fotolar.clear();
-        if (yeniFotolar != null) {
-            this.fotolar.addAll(yeniFotolar);
+    private final Context baglanti;
+    private final FotografYukleyiciYonetici yukleyici;
+    private static final DiffUtil.ItemCallback<Uri> DIFF_CALLBACK = new DiffUtil.ItemCallback<Uri>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Uri oldItem, @NonNull Uri newItem) {
+            return oldItem.equals(newItem);
         }
-        notifyDataSetChanged();
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Uri oldItem, @NonNull Uri newItem) {
+            return oldItem.toString().equals(newItem.toString());
+        }
+    };
+
+    public FotoGeciciAdapter(Context baglanti, FotografYukleyiciYonetici yukleyici) {
+        super(DIFF_CALLBACK);
+        this.baglanti = baglanti;
+        this.yukleyici = yukleyici;
     }
 
     @NonNull
@@ -48,12 +49,16 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
 
     @Override
     public void onBindViewHolder(@NonNull FotoHolder holder, int position) {
-        Uri fotoUri = fotolar.get(position);
+        Uri fotoUri = getItem(position); // ListAdapter içinden öğeyi çeker
 
         if (yukleyici == null) {
             if (fotoUri != null) {
-                Glide.with(baglanti)
+                Glide.with(holder.itemView.getContext())
                         .load(fotoUri)
+                        .override(1080, 1080)
+                        .centerCrop()
+                        .dontAnimate()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
                         .into(holder.foto);
             }
         } else {
@@ -62,11 +67,8 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
 
         holder.foto.setOnLongClickListener(v -> {
             if (yukleyici == null) {
-                if (holder.sil.getVisibility() == View.GONE) {
-                    holder.sil.setVisibility(View.VISIBLE);
-                } else {
-                    holder.sil.setVisibility(View.GONE);
-                }
+                int vis = (holder.sil.getVisibility() == View.GONE) ? View.VISIBLE : View.GONE;
+                holder.sil.setVisibility(vis);
             }
             return true;
         });
@@ -74,21 +76,12 @@ public class FotoGeciciAdapter extends RecyclerView.Adapter<FotoGeciciAdapter.Fo
         holder.sil.setOnClickListener(v -> {
             int adapterPosition = holder.getBindingAdapterPosition();
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                fotolar.remove(adapterPosition);
-                notifyItemRemoved(adapterPosition);
-                notifyItemRangeChanged(adapterPosition, fotolar.size());
-                holder.sil.setVisibility(View.GONE);
-                if (fotolar.isEmpty()) {
-                    holder.foto.setImageResource(R.drawable.yuklemefotosu);
-                }
+                // Silme işleminde mevcut listenin kopyasını gönderiyoruz
+                java.util.List<Uri> currentList = new java.util.ArrayList<>(getCurrentList());
+                currentList.remove(adapterPosition);
+                submitList(currentList);
             }
         });
-    }
-
-    @Override
-    public int getItemCount() {
-        int count = (fotolar != null) ? fotolar.size() : 0;
-        return count;
     }
 
     public static class FotoHolder extends RecyclerView.ViewHolder {
