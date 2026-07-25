@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Yanitlari_Cekme {
 
@@ -25,7 +26,7 @@ public class Yanitlari_Cekme {
 
         if (clearList) {
             yanitlar.clear();
-            yorumAdapter.notifyDataSetChanged();
+            yorumAdapter.submitList(new ArrayList<>());
             yorum.setSonYanit(null);
         }
 
@@ -76,7 +77,8 @@ public class Yanitlari_Cekme {
                     }
 
                     yorum.setYanitlar(yanitlar);
-                    yorumAdapter.notifyDataSetChanged();
+
+                    yorumAdapter.submitList(new ArrayList<>(yanitlar));
 
                     if (callback != null) callback.onComplete();
                 })

@@ -5,126 +5,190 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Profil Alanı -->
-    <LinearLayout
-        android:id="@+id/profilAlani"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        android:background="@drawable/yorum_background"
-        android:gravity="center_vertical"
-        android:onClick="yukleyenProfilineGit"
-        android:orientation="horizontal"
-        android:visibility="visible"
-        app:layout_constraintStart_toStartOf="parent"
+    <!-- Kaydırılabilir Ana İçerik -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/imageButton"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Sol: Dikey Profil Alanı -->
-        <LinearLayout
-            android:layout_width="70dp"
-            android:layout_height="70dp"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/profilimText"
+            <!-- Profil Alanı -->
+            <LinearLayout
+                android:id="@+id/profilAlani"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:letterSpacing="0.05"
-                android:text="Yükleyen"
-                android:textColor="#9E9E9E"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/yorum_background"
+                android:gravity="center_vertical"
+                android:onClick="yukleyenProfilineGit"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/YukprofilFotoImageView"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="3dp"
-                android:src="@drawable/kullanici" />
-        </LinearLayout>
+                <!-- Sol: Dikey Profil Alanı -->
+                <LinearLayout
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
 
-        <!-- Sağ: Kullanıcı Adı -->
-        <TextView
-            android:id="@+id/yukleyenAdiText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="15dp"
-            android:background="#00404040"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="sans-serif-medium"
-            android:paddingStart="4dp"
-            android:text="Kullanici adi"
-            android:textColor="#EC9017"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+                    <TextView
+                        android:id="@+id/profilimText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:letterSpacing="0.05"
+                        android:text="Yükleyen"
+                        android:textColor="#9E9E9E"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-    <ImageView
-        android:id="@+id/GonderiEkleButton"
-        android:layout_width="65dp"
-        android:layout_height="33dp"
-        android:layout_marginTop="8dp"
-        android:background="?selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:contentDescription="Menü"
-        android:elevation="6dp"
-        android:padding="2dp"
-        android:src="@drawable/baseline_more_vert_24"
-        android:tint="#888888"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="@id/profilAlani"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.902"
-        app:layout_constraintStart_toEndOf="@+id/profilAlani"
-        app:layout_constraintTop_toTopOf="@id/profilAlani"
-        app:layout_constraintVertical_bias="0.0" />
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/YukprofilFotoImageView"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="3dp"
+                        android:src="@drawable/kullanici" />
+                </LinearLayout>
 
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/fotoPager"
-        android:layout_width="0dp"
-        android:layout_height="250dp"
-        android:layout_marginTop="40dp"
-        android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/isimgosterme"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+                <!-- Sağ: Kullanıcı Adı -->
+                <TextView
+                    android:id="@+id/yukleyenAdiText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="15dp"
+                    android:background="#00404040"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingStart="4dp"
+                    android:text="Kullanici adi"
+                    android:textColor="#EC9017"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-    <TextView
-        android:id="@+id/isimgosterme"
-        android:layout_width="252dp"
-        android:layout_height="52dp"
-        android:background="@drawable/duzenle_background"
-        android:padding="12dp"
-        android:text="TextView"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.576" />
+            <ImageView
+                android:id="@+id/GonderiEkleButton"
+                android:layout_width="65dp"
+                android:layout_height="33dp"
+                android:layout_marginEnd="20dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Menü"
+                android:elevation="6dp"
+                android:padding="2dp"
+                android:src="@drawable/baseline_more_vert_24"
+                android:tint="#888888"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="@id/profilAlani"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/profilAlani" />
 
-    <TextView
-        android:id="@+id/hakkindagosterme"
-        android:layout_width="252dp"
-        android:layout_height="90dp"
-        android:background="@drawable/duzenle_background"
-        android:padding="12dp"
-        android:text="TextView"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.496"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/isimgosterme"
-        app:layout_constraintVertical_bias="0.132" />
+            <!-- Fotoğraf Slider -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/fotoPager"
+                android:layout_width="0dp"
+                android:layout_height="250dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/profilAlani" />
 
-    <!-- Yorum Sayısı TextView -->
+            <!-- Beğeni Alanı -->
+            <LinearLayout
+                android:id="@+id/begeniAlani"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="12dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/fotoPager">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/kalpImageView"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:clickable="true"
+                        android:contentDescription="Beğen"
+                        android:padding="2dp"
+                        android:src="@drawable/baseline_favorite_border_24" />
+
+                    <TextView
+                        android:id="@+id/begeniSayisiTextView"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:gravity="center_vertical"
+                        android:text="0"
+                        android:textColor="@android:color/black"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/begeniYazisi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:text="Beğeniler"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- İsim Gösterme Alanı -->
+            <TextView
+                android:id="@+id/isimgosterme"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="32dp"
+                android:background="@drawable/duzenle_background"
+                android:padding="12dp"
+                android:text="TextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/begeniAlani" />
+
+            <!-- Hakkında Gösterme Alanı -->
+            <TextView
+                android:id="@+id/hakkindagosterme"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="32dp"
+                android:background="@drawable/duzenle_background"
+                android:minHeight="90dp"
+                android:padding="12dp"
+                android:text="TextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/isimgosterme" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Sabit Alt Buton Alanı (Yorum Yap) -->
     <TextView
         android:id="@+id/yorumSayisiTextView"
         android:layout_width="wrap_content"
@@ -140,66 +204,14 @@
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_marginBottom="16dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="12dp"
         android:background="@android:color/transparent"
         android:scaleType="fitCenter"
         android:src="@drawable/patiliyorum"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/begeniAlani"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.047"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/fotoPager"
-        app:layout_constraintVertical_bias="0.0">
-
-        <!-- Kalp ve sayı -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/kalpImageView"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:clickable="true"
-                android:contentDescription="Beğen"
-                android:padding="2dp"
-                android:src="@drawable/baseline_favorite_border_24" />
-
-            <TextView
-                android:id="@+id/begeniSayisiTextView"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:gravity="center_vertical"
-                android:text="0"
-                android:textColor="@android:color/black"
-                android:textSize="15sp" />
-        </LinearLayout>
-
-        <!-- ALTTA SOLUK GRI YAZI -->
-        <TextView
-            android:id="@+id/begeniYazisi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
-            android:text="Beğeniler"
-            android:textColor="#888888"
-            android:textSize="13sp" />
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

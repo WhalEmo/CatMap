@@ -1,8 +1,6 @@
 package com.beem.catmap.YorumYanit;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,100 +12,51 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.Maps.MapKedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.R;
 import com.beem.catmap.URLye_Ulasma;
-import com.beem.catmap.data.repository.UserRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
-public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewHolder> {
+public class Yorum_Adapter extends ListAdapter<Yorum_Model, Yorum_Adapter.YorumViewHolder> {
 
-    private ArrayList<Yorum_Model> yorumList;
-    public ArrayList<Yorum_Model> getYorumList() {
-        return yorumList;
-    }
-    public boolean yorumMuGeldi = false;
-    private Set<String> begenilenYorumIDSeti = new HashSet<>();
-    private Map<String, Integer> begeniSayisiMap = new HashMap<>();
-    public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
-    private OnYorumAksiyonListener aksiyonListener;
-    private UserRepository userRepository;
-
-    private Context context;
-    private String catId; // 🟢 Eklenen Kedi ID
-
-    public void setKullaniciAdiTiklamaListener(KullaniciAdiTiklamaListener listener) {
-        this.kullaniciAdiTiklamaListener = listener;
+    public interface OnYorumInteractionListener {
+        void onKalpTiklandi(Yorum_Model yorum);
+        void onYanitlariGorTiklandi(Yorum_Model yorum);
+        void onYanitlaTiklandi(Yorum_Model yorum);
+        void onKullaniciAdiTiklandi(String userId);
+        void onSilTiklandi(Yorum_Model yorum);
+        void onGuncelleTiklandi(Yorum_Model yorum);
     }
 
-    private final Handler zamanHandler = new Handler();
-    private final Runnable zamanRunnable = new Runnable() {
+    private final Context context;
+    private final String currentUserId;
+    private OnYorumInteractionListener listener;
+
+    private static final DiffUtil.ItemCallback<Yorum_Model> DIFF_CALLBACK = new DiffUtil.ItemCallback<Yorum_Model>() {
         @Override
-        public void run() {
-            for (int i = 0; i < yorumList.size(); i++) {
-                Yorum_Model yorum = yorumList.get(i);
-                if (yorum.getTarih() == null) continue;
-                long fark = System.currentTimeMillis() - yorum.getTarih().getTime();
+        public boolean areItemsTheSame(@NonNull Yorum_Model oldItem, @NonNull Yorum_Model newItem) {
+            return Objects.equals(oldItem.getYorumID(), newItem.getYorumID());
+        }
 
-                // Sadece 1 saatten küçük yorumlar için yenileme yap
-                if (fark < 3600000 && fark >= 60000) {
-                    notifyItemChanged(i);
-                }
-            }
-            zamanHandler.postDelayed(this, 60000);
+        @Override
+        public boolean areContentsTheSame(@NonNull Yorum_Model oldItem, @NonNull Yorum_Model newItem) {
+            return oldItem.equals(newItem);
         }
     };
 
-    private void kalpAnimasyonuYap(ImageView kalpView) {
-        ScaleAnimation büyütKücült = new ScaleAnimation(
-                0.7f, 1.2f,  // X ekseni
-                0.7f, 1.2f,  // Y ekseni
-                Animation.RELATIVE_TO_SELF, 0.5f,
-                Animation.RELATIVE_TO_SELF, 0.5f
-        );
-        büyütKücült.setDuration(200);
-        büyütKücült.setRepeatCount(1);
-        büyütKücült.setRepeatMode(Animation.REVERSE);
-
-        kalpView.startAnimation(büyütKücült);
-    }
-
-    public void setBegenilenYorumIDSeti(Set<String> set) {
-        this.begenilenYorumIDSeti = set;
-    }
-
-    public void setBegeniSayisiMap(Map<String, Integer> begeniMap) {
-        this.begeniSayisiMap = begeniMap;
-    }
-
-    public void setAksiyonListener(OnYorumAksiyonListener listener) {
-        this.aksiyonListener = listener;
-    }
-
-    public void baslatZamanlayici() {
-        zamanHandler.post(zamanRunnable);
-    }
-
-    public void durdurZamanlayici() {
-        zamanHandler.removeCallbacks(zamanRunnable);
-    }
-
-    public Yorum_Adapter(ArrayList<Yorum_Model> yorumList, Context context, String catId) {
-        this.yorumList = yorumList;
+    public Yorum_Adapter(Context context, String currentUserId) {
+        super(DIFF_CALLBACK);
         this.context = context;
-        this.catId = catId;
+        this.currentUserId = currentUserId;
     }
 
-    public static int yorumindeks;
+    public void setOnYorumInteractionListener(OnYorumInteractionListener listener) {
+        this.listener = listener;
+    }
 
     @NonNull
     @Override
@@ -116,235 +65,101 @@ public class Yorum_Adapter extends RecyclerView.Adapter<Yorum_Adapter.YorumViewH
         return new YorumViewHolder(view);
     }
 
-    int pozisyon = -1;
-
     @Override
     public void onBindViewHolder(@NonNull YorumViewHolder holder, int position) {
-        Yorum_Model yorum = yorumList.get(position);
-
-        if (userRepository == null) {
-            userRepository = UserRepository.Companion.getInstance(context);
-        }
-        Kullanici currentUser = userRepository.getCurrentUser();
+        Yorum_Model yorum = getItem(position);
 
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
-        URLye_Ulasma ulasma = new URLye_Ulasma();
-        ulasma.IDdenUrlyeUlasma(yorum.getYukleyenId(), holder.YorumFotoImageView);
+
+
+        new URLye_Ulasma().IDdenUrlyeUlasma(yorum.getYukleyenId(), holder.YorumFotoImageView);
 
         holder.kullaniciAditext.setOnClickListener(v -> {
-            if (kullaniciAdiTiklamaListener != null) {
-                kullaniciAdiTiklamaListener.onKullaniciAdiTiklandi(yorum.getYukleyenId());
-            }
+            if (listener != null) listener.onKullaniciAdiTiklandi(yorum.getYukleyenId());
         });
 
-        int begeniSayisi = begeniSayisiMap.getOrDefault(yorum.getYorumID(), 0);
+        int begeniSayisi = yorum.getBegeniSayisi();
         if (begeniSayisi >= 1_000_000) {
-            double milyon = begeniSayisi / 1_000_000.0;
-            holder.begeniSayisiTextView.setText(String.format("%.1f m", milyon));
+            holder.begeniSayisiTextView.setText(String.format("%.1f m", begeniSayisi / 1_000_000.0));
         } else if (begeniSayisi >= 1_000) {
-            double bin = begeniSayisi / 1_000.0;
-            holder.begeniSayisiTextView.setText(String.format("%.1f bin", bin).replace('.', ','));
+            holder.begeniSayisiTextView.setText(String.format("%.1f bin", begeniSayisi / 1_000.0).replace('.', ','));
         } else {
             holder.begeniSayisiTextView.setText(String.valueOf(begeniSayisi));
         }
 
-        if (begenilenYorumIDSeti.contains(yorum.getYorumID())) {
+        if (yorum.isBegenildiMi()) {
             holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
-            holder.kalpImageView.setTag("begenildi");
         } else {
             holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
-            holder.kalpImageView.setTag("begeniYok");
         }
 
-        Begeni_Kod_Yoneticisi_Yorum begeniKodYoneticisi = new Begeni_Kod_Yoneticisi_Yorum();
+
         holder.kalpImageView.setOnClickListener(v -> {
-            if ("begeniYok".equals(holder.kalpImageView.getTag())) {
-                // 🟢 catId eklendi
-                begeniKodYoneticisi.YorumBegenme(catId, yorum, currentUser.getID(), context, this);
-                holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_24);
-                kalpAnimasyonuYap(holder.kalpImageView);
-                holder.kalpImageView.setTag("begenildi");
-                begenilenYorumIDSeti.add(yorum.getYorumID());
-            } else {
-                // 🟢 catId eklendi
-                begeniKodYoneticisi.YorumBegeniKladirma(catId, yorum, currentUser.getID(), context, this);
-                holder.kalpImageView.setImageResource(R.drawable.baseline_favorite_border_24);
-                holder.kalpImageView.setTag("begeniYok");
-                begenilenYorumIDSeti.remove(yorum.getYorumID());
-            }
+            kalpAnimasyonuYap(holder.kalpImageView);
+            if (listener != null) listener.onKalpTiklandi(yorum);
         });
 
-        if (currentUser.getKullaniciAdi().equals(yorum.getKullaniciAdi())) {
-            if (yorumMuGeldi) {
-                holder.menuButonu.setVisibility(View.GONE);
-                holder.getYanitlarYukleniyorLayout2.setVisibility(View.VISIBLE);
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
-                    holder.menuButonu.setVisibility(View.VISIBLE);
-                    yorumMuGeldi = false;
-                }, 3000);
-            } else {
-                holder.menuButonu.setVisibility(View.VISIBLE);
-                holder.getYanitlarYukleniyorLayout2.setVisibility(View.GONE);
-            }
+        // Kendi Yorumu ise Menü Göster
+        if (currentUserId != null && currentUserId.equals(yorum.getYukleyenId())) {
+            holder.menuButonu.setVisibility(View.VISIBLE);
+            holder.menuButonu.setOnClickListener(menu -> {
+                PopupMenu popupmenu = new PopupMenu(context, holder.menuButonu);
+                popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu, popupmenu.getMenu());
+                popupmenu.setOnMenuItemClickListener(item -> {
+                    int id = item.getItemId();
+                    if (id == R.id.menu_guncelle) {
+                        if (listener != null) listener.onGuncelleTiklandi(yorum);
+                        return true;
+                    } else if (id == R.id.menu_sil) {
+                        if (listener != null) listener.onSilTiklandi(yorum);
+                        return true;
+                    }
+                    return false;
+                });
+                popupmenu.show();
+            });
         } else {
             holder.menuButonu.setVisibility(View.GONE);
         }
 
+
         if (yorum.isYanitlarGorunuyor()) {
             holder.container.setVisibility(View.VISIBLE);
             holder.yanitlariGor.setText("Yanıtları Gizle");
-
-            ArrayList<Yanit_Model> yanitlar = yorum.getYanitlar();
-            if (yanitlar == null) {
-                yanitlar = new ArrayList<>();
-                yorum.setYanitlar(yanitlar);
-            }
-
-            // ✨ SADECE BİR KERE ADAPTER OLUŞTUR
-            if (yorum.getYanitAdapter() == null) {
-                // 🟢 Yanit_Adapter'a catId parametresi geçildi
-                Yanit_Adapter yntadapter = new Yanit_Adapter(yanitlar, context, position, yorum.getYorumID(), catId);
-                yorum.setYanitAdapter(yntadapter);
-                yntadapter.baslatZamanlayici();
-                yntadapter.hazirliklariYapBegenme(context, currentUser.getID(), yorum);
-
-                yntadapter.setKullaniciAdiTiklamaListener(kullaniciAdiTiklamaListener);
-
-                yntadapter.setOnYanitAksiyonListener((kullaniciAdi, yukleyenId, parentYorumIndeks, ayniButonaMiBasildi) -> {
-                    if (aksiyonListener != null) {
-                        aksiyonListener.onYanitlaTiklandi(kullaniciAdi, yukleyenId, parentYorumIndeks, ayniButonaMiBasildi);
-                    }
-                });
-            }
-
-
-            holder.recyclerViewyanitlar.setLayoutManager(new LinearLayoutManager(context));
-            holder.recyclerViewyanitlar.setAdapter(yorum.getYanitAdapter());
-
-            if (yorum.isYanitYokMu()) {
-                holder.dahafazla.setVisibility(View.GONE);
-                if (yorum.getYanitlar().size() > 0) {
-                    holder.yanityoksa.setVisibility(View.GONE);
-                } else {
-                    holder.yanityoksa.setVisibility(View.VISIBLE);
-                }
-            } else {
-                holder.yanityoksa.setVisibility(View.GONE);
-                if (yorum.isDahafazlaGozukuyorMu()) {
-                    holder.dahafazla.setVisibility(View.VISIBLE);
-                } else {
-                    holder.dahafazla.setVisibility(View.GONE);
-                }
-            }
-
-
-            if (!yorum.isYanitlarYuklendi()) {
-                holder.dahafazla.setVisibility(View.GONE);
-                holder.yanitlarYukleniyorLayout.setVisibility(View.VISIBLE);
-                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(catId,yorum, yanitlar, yorum.getYanitAdapter(), 5, true, () -> {
-                    yorum.setYanitlarYuklendi(true);
-                    yorum.setYanitYokMu(yorum.getYanitlar().isEmpty());
-                    holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
-                    notifyDataSetChanged();
-                });
-            }
-
-            ArrayList<Yanit_Model> finalYanitlar = yanitlar;
-            holder.dahafazla.setOnClickListener(dahafz -> {
-                holder.yanitlarYukleniyorLayout.setVisibility(View.VISIBLE);
-                Yanitlari_Cekme yanitcek = new Yanitlari_Cekme();
-                yanitcek.yanitlariCek(catId,yorum, finalYanitlar, yorum.getYanitAdapter(), 5, false, () -> {
-                    yorum.getYanitAdapter().notifyDataSetChanged();
-                    holder.yanitlarYukleniyorLayout.setVisibility(View.GONE);
-                    notifyItemChanged(position);
-                });
-            });
-
         } else {
             holder.container.setVisibility(View.GONE);
             holder.yanitlariGor.setText("Yanıtları Gör");
-            holder.dahafazla.setVisibility(View.GONE);
         }
 
         holder.yanitlariGor.setOnClickListener(v -> {
-            boolean gorunuyorMu = yorum.isYanitlarGorunuyor();
-            yorum.setYanitlarGorunuyor(!gorunuyorMu);
-            notifyItemChanged(position);
+            if (listener != null) listener.onYanitlariGorTiklandi(yorum);
         });
 
-        holder.yanitlamayiGetir.setOnClickListener(cvp -> {
-            int eskiPozisyon = pozisyon;
-            boolean ayniButonaMiBasildi = (eskiPozisyon == position);
-
-            if (ayniButonaMiBasildi) {
-                pozisyon = -1;
-                yorumindeks = -1;
-            } else {
-                pozisyon = position;
-                yorumindeks = position;
-                yorumList.get(position).setYanitlarGorunuyor(true);
-            }
-
-            if (eskiPozisyon != -1) {
-                notifyItemChanged(eskiPozisyon);
-            }
-            notifyItemChanged(position);
-
-            if (aksiyonListener != null) {
-                aksiyonListener.onYanitlaTiklandi(
-                        yorum.getKullaniciAdi(),
-                        yorum.getYukleyenId(),
-                        position,
-                        ayniButonaMiBasildi
-                );
-            }
-        });
-
-        holder.menuButonu.setOnClickListener(menu -> {
-            Yorum_Silme_Guncelleme islem = new Yorum_Silme_Guncelleme();
-            PopupMenu popupmenu = new PopupMenu(context, holder.menuButonu);
-            popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu, popupmenu.getMenu());
-
-            popupmenu.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.menu_guncelle) {
-                    islem.yorumGuncelleme(catId,yorum, context, yorumList, this);
-                    return true;
-                } else if (id == R.id.menu_sil) {
-                    islem.yorumSil(catId,yorum.getYorumID(), yorumList, this);
-                    return true;
-                }
-                return false;
-            });
-            popupmenu.show();
+        holder.yanitlamayiGetir.setOnClickListener(v -> {
+            if (listener != null) listener.onYanitlaTiklandi(yorum);
         });
     }
 
-    @Override
-    public int getItemCount() {
-        return yorumList.size();
+    private void kalpAnimasyonuYap(ImageView kalpView) {
+        ScaleAnimation buyutKucult = new ScaleAnimation(
+                0.7f, 1.2f,
+                0.7f, 1.2f,
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+        );
+        buyutKucult.setDuration(200);
+        buyutKucult.setRepeatCount(1);
+        buyutKucult.setRepeatMode(Animation.REVERSE);
+        kalpView.startAnimation(buyutKucult);
     }
 
     public static class YorumViewHolder extends RecyclerView.ViewHolder {
-        TextView kullaniciAditext;
-        TextView yorumText;
-        TextView yorumTarihiText;
-        TextView yanitlariGor;
-        TextView yanitlamayiGetir;
+        TextView kullaniciAditext, yorumText, yorumTarihiText, yanitlariGor, yanitlamayiGetir, dahafazla, yanityoksa, begeniSayisiTextView;
         RecyclerView recyclerViewyanitlar;
-        TextView dahafazla;
-        LinearLayout container;
-        TextView yanityoksa;
-        LinearLayout yanitlarYukleniyorLayout;
-        ImageView menuButonu;
-        LinearLayout getYanitlarYukleniyorLayout2;
-        ImageView kalpImageView;
-        TextView begeniSayisiTextView;
-        ImageView YorumFotoImageView;
+        LinearLayout container, yanitlarYukleniyorLayout, getYanitlarYukleniyorLayout2;
+        ImageView menuButonu, kalpImageView, YorumFotoImageView;
 
         public YorumViewHolder(@NonNull View itemView) {
             super(itemView);

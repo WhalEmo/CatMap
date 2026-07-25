@@ -18,26 +18,31 @@ public class CacheHelperYorum {
     private static final String KEY_BEGENILEN_SET = "begenilenSet";
     private static final String KEY_BEGENI_SAYILARI = "begeniSayilariMap";
 
-    public static void saveBegenilenSet(Context context, Set<String> begenilenSet) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putStringSet(KEY_BEGENILEN_SET, begenilenSet).apply();
+    private static SharedPreferences getPrefs(Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
+
+    public static void saveBegenilenSet(Context context, Set<String> begenilenSet) {
+        getPrefs(context).edit().putStringSet(KEY_BEGENILEN_SET, begenilenSet).apply();
+    }
+
 
     public static Set<String> loadBegenilenSet(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getStringSet(KEY_BEGENILEN_SET, new HashSet<>());
-    }
-    // ✅ YENİ: Beğeni Sayısı Map’ini kaydet
-    public static void saveBegeniSayilariMap(Context context, Map<String, Integer> begeniMap) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        JSONObject jsonObject = new JSONObject(begeniMap); // Map → JSON
-        prefs.edit().putString(KEY_BEGENI_SAYILARI, jsonObject.toString()).apply();
+        Set<String> savedSet = getPrefs(context).getStringSet(KEY_BEGENILEN_SET, null);
+        if (savedSet == null) {
+            return new HashSet<>();
+        }
+        return new HashSet<>(savedSet);
     }
 
-    // ✅ YENİ: Beğeni Sayısı Map’ini yükle
+    public static void saveBegeniSayilariMap(Context context, Map<String, Integer> begeniMap) {
+        if (begeniMap == null) return;
+        JSONObject jsonObject = new JSONObject(begeniMap);
+        getPrefs(context).edit().putString(KEY_BEGENI_SAYILARI, jsonObject.toString()).apply();
+    }
+
     public static Map<String, Integer> loadBegeniSayilariMap(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String json = prefs.getString(KEY_BEGENI_SAYILARI, "{}");
+        String json = getPrefs(context).getString(KEY_BEGENI_SAYILARI, "{}");
         Map<String, Integer> result = new HashMap<>();
 
         try {
@@ -53,5 +58,9 @@ public class CacheHelperYorum {
         }
 
         return result;
+    }
+
+    public static void clearCache(Context context) {
+        getPrefs(context).edit().clear().apply();
     }
 }

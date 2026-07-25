@@ -14,6 +14,8 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
@@ -25,29 +27,44 @@ import com.beem.catmap.data.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewHolder> {
+public class Yanit_Adapter extends ListAdapter<Yanit_Model, Yanit_Adapter.YanitViewHolder> {
 
     private OnYanitAksiyonListener aksiyonListener;
-    private ArrayList<Yanit_Model> yanitListe;
     private Context context;
     private int aitOlduguYorumIndeks;
     private String yorumID;
-    private String catId; // 🟢 Eklenen Kedi ID
+    private String catId;
     private Set<String> begenilenYanitIdSeti = new HashSet<>();
     private Map<String, Integer> begeniSayisiYanitMap = new HashMap<>();
     public KullaniciAdiTiklamaListener kullaniciAdiTiklamaListener;
     private UserRepository userRepository;
 
+    // ListAdapter DiffUtil Tanımlaması
+    private static final DiffUtil.ItemCallback<Yanit_Model> DIFF_CALLBACK = new DiffUtil.ItemCallback<Yanit_Model>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Yanit_Model oldItem, @NonNull Yanit_Model newItem) {
+            return Objects.equals(oldItem.getYanitId(), newItem.getYanitId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Yanit_Model oldItem, @NonNull Yanit_Model newItem) {
+            return Objects.equals(oldItem.getYaniticerik(), newItem.getYaniticerik())
+                    && Objects.equals(oldItem.getAdi(), newItem.getAdi())
+                    && oldItem.yanitMiGeldi == newItem.yanitMiGeldi;
+        }
+    };
+
     public ArrayList<Yanit_Model> getYanitList() {
-        return yanitListe;
+        return new ArrayList<>(getCurrentList());
     }
 
-    // 🟢 Constructor'a catId eklendi
-    public Yanit_Adapter(ArrayList<Yanit_Model> yanitListe, Context context, int yorumIndeks, String yorumID, String catId) {
-        this.yanitListe = yanitListe;
+    public Yanit_Adapter(Context context, int yorumIndeks, String yorumID, String catId) {
+        super(DIFF_CALLBACK);
         this.context = context;
         this.aitOlduguYorumIndeks = yorumIndeks;
         this.yorumID = yorumID;
@@ -74,8 +91,9 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
     private final Runnable zamanRunnable = new Runnable() {
         @Override
         public void run() {
-            for (int i = 0; i < yanitListe.size(); i++) {
-                Yanit_Model yanit = yanitListe.get(i);
+            List<Yanit_Model> mevcuttur = getCurrentList();
+            for (int i = 0; i < mevcuttur.size(); i++) {
+                Yanit_Model yanit = mevcuttur.get(i);
                 if (yanit.getTarih() == null) continue;
                 long fark = System.currentTimeMillis() - yanit.getTarih().getTime();
 
@@ -105,10 +123,8 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
     public void hazirliklariYapBegenme(Context context, String kullaniciId, Yorum_Model yorum) {
         Set<String> cachedSet = CacheHelperYanit.loadBegenilenSet(context);
         this.setBegenilenYanitIdSeti(cachedSet);
-        new Handler(Looper.getMainLooper()).postDelayed(this::notifyDataSetChanged, 100);
 
         Begeni_Kod_Yoneticisi_Yanit bgynt = new Begeni_Kod_Yoneticisi_Yanit();
-        // 🟢 catId parametresi bgynt'ye aktarıldı
         bgynt.KullanicininBegendigiYanitlar(catId, context, kullaniciId, this, yorum);
     }
 
@@ -127,11 +143,11 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
         return new Yanit_Adapter.YanitViewHolder(view);
     }
 
-    int pozisyon = -1;
+    private int pozisyon = -1;
 
     @Override
     public void onBindViewHolder(@NonNull Yanit_Adapter.YanitViewHolder holder, int position) {
-        Yanit_Model yanit = yanitListe.get(position);
+        Yanit_Model yanit = getItem(position);
 
         if (userRepository == null) {
             userRepository = UserRepository.Companion.getInstance(context);
@@ -167,14 +183,12 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
 
         holder.kalpImageViewYnt.setOnClickListener(v -> {
             if ("begeniYok".equals(holder.kalpImageViewYnt.getTag())) {
-                // 🟢 catId eklendi
                 begeniKodYoneticisi.YanitBegenme(catId, yorumID, yanit, currentUser.getID(), context, this);
                 holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_24);
                 kalpAnimasyonuYap(holder.kalpImageViewYnt);
                 holder.kalpImageViewYnt.setTag("begenildi");
                 begenilenYanitIdSeti.add(yanit.getYanitId());
             } else {
-                // 🟢 catId eklendi
                 begeniKodYoneticisi.YanitBegeniKaldirma(catId, yorumID, yanit, currentUser.getID(), context, this);
                 holder.kalpImageViewYnt.setImageResource(R.drawable.baseline_favorite_border_24);
                 holder.kalpImageViewYnt.setTag("begeniYok");
@@ -234,21 +248,16 @@ public class Yanit_Adapter extends RecyclerView.Adapter<Yanit_Adapter.YanitViewH
             popupmenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.menu_guncelle) {
-                    islem.yorumGuncellemeynt(catId,yanit, yorumID, context, yanitListe, this);
+                    islem.yorumGuncellemeynt(catId, yanit, yorumID, context, getYanitList(), this);
                     return true;
                 } else if (id == R.id.menu_sil) {
-                    islem.yorumSilynt(catId,yanit.getYanitId(), yorumID, yanitListe, this);
+                    islem.yorumSilynt(catId, yanit.getYanitId(), yorumID, getYanitList(), this);
                     return true;
                 }
                 return false;
             });
             popupmenu.show();
         });
-    }
-
-    @Override
-    public int getItemCount() {
-        return yanitListe.size();
     }
 
     public static class YanitViewHolder extends RecyclerView.ViewHolder {

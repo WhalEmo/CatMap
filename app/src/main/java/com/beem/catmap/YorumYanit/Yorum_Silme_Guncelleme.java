@@ -17,105 +17,13 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Yorum_Silme_Guncelleme {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    public void yorumSil(String catId, String yorumID, ArrayList<Yorum_Model> yorumlar, Yorum_Adapter adapter) {
-        if (catId == null || catId.isEmpty() || yorumID == null || yorumID.isEmpty()) return;
-
-        db.collection("cats")
-                .document(catId)
-                .collection("yorumlar")
-                .document(yorumID)
-                .collection("yanitlar")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        doc.getReference().delete();
-                    }
-
-                    // Ana yorumu sil
-                    db.collection("cats")
-                            .document(catId)
-                            .collection("yorumlar")
-                            .document(yorumID)
-                            .delete()
-                            .addOnSuccessListener(aVoid -> {
-                                for (int i = 0; i < yorumlar.size(); i++) {
-                                    if (yorumlar.get(i).getYorumID().equals(yorumID)) {
-                                        yorumlar.remove(i);
-                                        adapter.notifyItemRemoved(i);
-                                        adapter.notifyItemRangeChanged(i, yorumlar.size());
-                                        break;
-                                    }
-                                }
-                            })
-                            .addOnFailureListener(e -> Log.e("YorumSil", "Yorum silme hatası: ", e));
-
-                })
-                .addOnFailureListener(e -> Log.e("YanitSil", "Yanıtları alma/silme hatası: ", e));
-    }
-
-    public void yorumGuncelleme(String catId, Yorum_Model yorum, Context context, ArrayList<Yorum_Model> yorumList, Yorum_Adapter adapter) {
-        if (catId == null || catId.isEmpty()) return;
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.ModernAlertDialog);
-        builder.setTitle("Yorumu Güncelle");
-
-        final EditText input = new EditText(context);
-        input.setText(yorum.getYorumicerik());
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        input.setMinLines(3);
-        input.setMaxLines(6);
-        input.setGravity(Gravity.TOP | Gravity.START);
-        input.setBackground(ContextCompat.getDrawable(context, R.drawable.edittext_oval_bg));
-        input.setPadding(30, 30, 30, 30);
-        builder.setView(input);
-
-        builder.setPositiveButton("Güncelle", (dialog, which) -> {
-            String yeniYorum = input.getText().toString().trim();
-            if (!yeniYorum.isEmpty()) {
-                db.collection("cats")
-                        .document(catId)
-                        .collection("yorumlar")
-                        .document(yorum.getYorumID())
-                        .update("icerik", yeniYorum)
-                        .addOnSuccessListener(aVoid -> {
-                            for (int i = 0; i < yorumList.size(); i++) {
-                                if (yorumList.get(i).getYorumID().equals(yorum.getYorumID())) {
-                                    yorum.setYorumicerik(yeniYorum);
-                                    yorumList.set(i, yorum);
-                                    adapter.notifyItemChanged(i);
-                                    break;
-                                }
-                            }
-                            Toast.makeText(context, "Yorum güncellendi", Toast.LENGTH_SHORT).show();
-                        });
-            }
-        });
-
-        builder.setNegativeButton("İptal", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(dlg -> {
-            Window window = dialog.getWindow();
-            if (window != null) {
-                window.setBackgroundDrawable(ContextCompat.getDrawable(context, R.drawable.modern_dialog_bg));
-            }
-
-            if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#13216E"));
-            }
-            if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#BF6A33"));
-            }
-        });
-        dialog.show();
-    }
-
-    public void yorumSilynt(String catId, String yanitID, String yorumID, ArrayList<Yanit_Model> yanitlar, Yanit_Adapter adapter) {
+    public void yorumSilynt(String catId, String yanitID, String yorumID, List<Yanit_Model> mevcuttur, Yanit_Adapter adapter) {
         if (catId == null || catId.isEmpty()) return;
 
         db.collection("cats")
@@ -126,18 +34,18 @@ public class Yorum_Silme_Guncelleme {
                 .document(yanitID)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
-                    for (int i = 0; i < yanitlar.size(); i++) {
-                        if (yanitlar.get(i).getYanitId().equals(yanitID)) {
-                            yanitlar.remove(i);
-                            adapter.notifyItemRemoved(i);
-                            adapter.notifyItemRangeChanged(i, yanitlar.size());
+                    List<Yanit_Model> yeniYanitListesi = new ArrayList<>(mevcuttur);
+                    for (int i = 0; i < yeniYanitListesi.size(); i++) {
+                        if (yeniYanitListesi.get(i).getYanitId().equals(yanitID)) {
+                            yeniYanitListesi.remove(i);
                             break;
                         }
                     }
+                    adapter.submitList(yeniYanitListesi);
                 });
     }
 
-    public void yorumGuncellemeynt(String catId, Yanit_Model yanit, String yorumID, Context context, ArrayList<Yanit_Model> yanitlar, Yanit_Adapter adapter) {
+    public void yorumGuncellemeynt(String catId, Yanit_Model yanit, String yorumID, Context context, List<Yanit_Model> mevcuttur, Yanit_Adapter adapter) {
         if (catId == null || catId.isEmpty()) return;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.ModernAlertDialog);
@@ -164,14 +72,17 @@ public class Yorum_Silme_Guncelleme {
                         .document(yanit.getYanitId())
                         .update("yaniticerik", yeniYanit)
                         .addOnSuccessListener(aVoid -> {
-                            for (int i = 0; i < yanitlar.size(); i++) {
-                                if (yanitlar.get(i).getYanitId().equals(yanit.getYanitId())) {
-                                    yanit.setYaniticerik(yeniYanit);
-                                    yanitlar.set(i, yanit);
-                                    adapter.notifyItemChanged(i);
+                            List<Yanit_Model> yeniYanitListesi = new ArrayList<>(mevcuttur);
+                            for (int i = 0; i < yeniYanitListesi.size(); i++) {
+                                if (yeniYanitListesi.get(i).getYanitId().equals(yanit.getYanitId())) {
+                                    Yanit_Model guncel = yeniYanitListesi.get(i);
+                                    guncel.setYaniticerik(yeniYanit);
+                                    yeniYanitListesi.set(i, guncel);
                                     break;
                                 }
                             }
+                            // ListAdapter için submitList çağrısı yapıyoruz
+                            adapter.submitList(yeniYanitListesi);
                             Toast.makeText(context, "Yanıt güncellendi", Toast.LENGTH_SHORT).show();
                         });
             }

@@ -1,5 +1,6 @@
 package com.beem.catmap.Maps.MapKedi;
 
+import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -13,6 +14,21 @@ public class Kediler implements Serializable {
     private boolean MarkerOlustuMu = false;
     private ArrayList<String> URLler;
     private String YukleyenId;
+
+    // 1. Firebase'in nesneyi hatasız oluşturabilmesi için BOŞ constructor ŞARTTIR!
+    public Kediler() {
+    }
+
+    public Kediler(String ID, String isim, String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler, String YukleyenId){
+        this.ID = ID;
+        this.isim = isim;
+        this.hakkindasi = hakkindasi;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.URL = URL;
+        this.URLler = URLler;
+        this.YukleyenId = YukleyenId;
+    }
 
     public ArrayList<String> getURLler() {
         return URLler;
@@ -28,17 +44,6 @@ public class Kediler implements Serializable {
 
     public void setMarkerOlustuMu(boolean markerOlustuMu) {
         MarkerOlustuMu = markerOlustuMu;
-    }
-
-    public Kediler(String ID, String isim , String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler,String YukleyenId){
-        this.ID=ID;
-        this.isim=isim;
-        this.hakkindasi=hakkindasi;
-        this.latitude=latitude;
-        this.longitude=longitude;
-        this.URL=URL;
-        this.URLler=URLler;
-        this.YukleyenId=YukleyenId;
     }
 
     public String getIsim() {
@@ -89,10 +94,12 @@ public class Kediler implements Serializable {
         this.ID = ID;
     }
 
+    @PropertyName("YukleyenKullaniciID")
     public String getYukleyenId() {
         return YukleyenId;
     }
 
+    @PropertyName("YukleyenKullaniciID")
     public void setYukleyenId(String yukleyenId) {
         YukleyenId = yukleyenId;
     }

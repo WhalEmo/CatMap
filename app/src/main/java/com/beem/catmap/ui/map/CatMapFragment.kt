@@ -160,19 +160,24 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         mMap!!.setOnMarkerClickListener { marker ->
             if (marker.title != "konum") {
-                val cat = findCat(marker.position)
+                //val cat = findCat(marker.position)
+                val cat = marker.tag as? Kediler
 
                 cat?.let {
                     if (activity is MapsActivity) {
                         (activity as MapsActivity).sonTiklananMarker = marker
-                        val bottomSheet = BottomSheetFragment.newInstance(cat)
-                        bottomSheet.show(childFragmentManager, BottomSheetFragment.TAG)
+
+                        val existingFragment =
+                            childFragmentManager.findFragmentByTag(BottomSheetFragment.TAG)
+                        if (existingFragment == null || !existingFragment.isAdded) {
+                            val bottomSheet = BottomSheetFragment.newInstance(cat)
+                            bottomSheet.show(childFragmentManager, BottomSheetFragment.TAG)
+                        }
                     }
                 }
             }
             true
         }
-
     }
 
     private fun findCat(location: LatLng): Kediler? {
@@ -364,6 +369,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                                 .position(kedy)
                                 .title(cat.id)
                         )
+                        marker?.tag = modelToKediler(cat)
                         marker?.let { markerlar.add(it) }
                     }
                 })
@@ -404,6 +410,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                                     .position(kedy)
                                     .title(kedi.isim)
                             )
+                            marker?.tag = kedi
                             marker?.let { markerlar.add(it) }
                         }
                     })

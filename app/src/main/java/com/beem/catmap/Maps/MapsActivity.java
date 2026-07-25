@@ -27,6 +27,7 @@ import androidx.fragment.app.Fragment;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.Maps.markersclick.comments.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
 import com.beem.catmap.Profil.MainViewModel;
@@ -51,7 +52,6 @@ import com.beem.catmap.ui.navigation.FragmentProvider;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
-import com.beem.catmap.YorumYanit.CommentsBottomSheetFragment;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
@@ -59,6 +59,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.squareup.picasso.Target;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,6 +73,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     private BottomSheetDialog bottomSheetDialog;
+    private long sonTiklamaZamani = 0;
 
     Map<String, Bitmap> fotoCache = new HashMap<>();
     List<Target> targetListesi = new ArrayList<>();
@@ -91,6 +93,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     private double latitude;
     private double longitude;
     private boolean bittimi = true;
+
+
 
     private final FragmentProvider fragmentProvider = new FragmentProvider() {
         @Nullable
@@ -205,8 +209,18 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         }
     }
 
+
     public void yorumlarBottomSheetGoster(String catId) {
-        CommentsBottomSheetFragment bottomSheet = CommentsBottomSheetFragment.Companion.newInstance(catId);
+        if (android.os.SystemClock.elapsedRealtime() - sonTiklamaZamani < 600) {
+            return;
+        }
+        sonTiklamaZamani = android.os.SystemClock.elapsedRealtime();
+        Fragment existing = getSupportFragmentManager().findFragmentByTag(CommentsBottomSheetFragment.TAG);
+        if (existing != null && (existing.isAdded() || existing.isVisible())) {
+            return;
+        }
+
+        CommentsBottomSheetFragment bottomSheet = CommentsBottomSheetFragment.newInstance(catId);
         bottomSheet.show(getSupportFragmentManager(), CommentsBottomSheetFragment.TAG);
     }
 

@@ -1,11 +1,8 @@
 package com.beem.catmap.Maps.markersclick
 
 import android.app.AlertDialog
-import android.app.Dialog
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,13 +15,15 @@ import android.widget.TextView
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 import com.beem.catmap.Maps.FotoGeciciAdapter
 import com.beem.catmap.Maps.MapKedi.Kediler
+import com.beem.catmap.Maps.markersclick.comments.CommentViewModel
+import com.beem.catmap.Maps.markersclick.comments.CommentsBottomSheetFragment
 import com.beem.catmap.R
-import com.beem.catmap.YorumYanit.Begeni_Kod_Yoneticisi_Yorum
-import com.beem.catmap.YorumYanit.CommentsBottomSheetFragment
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
@@ -53,8 +52,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
     private lateinit var fotoAdapter: FotoGeciciAdapter
     private val viewModel: CatDetailViewModel by viewModels()
+    private val commentsViewModel: CommentViewModel by viewModels()
 
-    private val begeniKodYoneticisi = Begeni_Kod_Yoneticisi_Yorum()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -62,6 +61,10 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.markerdaki_kediyi_gosterme, container, false)
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -75,6 +78,10 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
         cat?.let { kedi ->
             viewModel.setCatData(kedi)
+
+            kedi.id?.let { catId ->
+                commentsViewModel.initCatId(catId)
+            }
 
             kedi.yukleyenId?.let { ownerId ->
                 viewModel.loadOwnerInfo(ownerId)
@@ -230,30 +237,51 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             NavigationHelper.navigateToProfile(kediYukleyenID)
         }
     }
-
+    /*
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+
         dialog.setOnShowListener { dialogInterface ->
             val bottomSheetDialog = dialogInterface as BottomSheetDialog
             val bottomSheet = bottomSheetDialog.findViewById<FrameLayout>(
                 com.google.android.material.R.id.design_bottom_sheet
             )
+
             bottomSheet?.let { sheet ->
-                sheet.post {
-                    val behavior = BottomSheetBehavior.from(sheet)
-                    val layoutParams = sheet.layoutParams
-                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    sheet.layoutParams = layoutParams
-                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                    behavior.skipCollapsed = true
-                }
+                val behavior = BottomSheetBehavior.from(sheet)
+
+                sheet.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+
+                behavior.skipCollapsed = true
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
         return dialog
     }
 
+     */
+    override fun onStart() {
+        super.onStart()
+
+        val dialog = dialog as? BottomSheetDialog ?: return
+        val bottomSheet = dialog.findViewById<FrameLayout>(
+            com.google.android.material.R.id.design_bottom_sheet
+        ) ?: return
+
+        bottomSheet.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+
+        val behavior = BottomSheetBehavior.from(bottomSheet)
+        behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+            isFitToContents = false
+            expandedOffset = 0
+        }
+    }
+
     private fun yorumSayisiToplam() {
         val currentCatId = viewModel.selectedCat.value?.id ?: return
+
 
         yorumSayisiTextView.text = "Yükleniyor..."
         yorumSayisiTextView.setTextColor(Color.parseColor("#333333"))
@@ -261,11 +289,15 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         val fadeAnim = AnimationUtils.loadAnimation(requireContext(), R.anim.animasyonlu_yukleniyor)
         yorumSayisiTextView.startAnimation(fadeAnim)
 
-        begeniKodYoneticisi.yorumSayisiniGetir(currentCatId) { sayi ->
-            if (isAdded) {
-                yorumSayisiTextView.clearAnimation()
-                yorumSayisiTextView.setTextColor(Color.BLACK)
-                yorumSayisiTextView.text = "$sayi Yorum"
+
+        commentsViewModel.fetchCommentCount()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                commentsViewModel.commentCount.collectLatest { sayi ->
+                    yorumSayisiTextView.setTextColor(Color.BLACK)
+                    yorumSayisiTextView.text = "$sayi Yorum"
+                }
             }
         }
     }

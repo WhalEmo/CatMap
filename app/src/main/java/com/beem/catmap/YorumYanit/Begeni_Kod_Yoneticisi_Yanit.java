@@ -4,8 +4,10 @@ import android.content.Context;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,13 +46,13 @@ public class Begeni_Kod_Yoneticisi_Yanit {
 
                     map.put(yanit.getYanitId(), yeniSayi);
                     CacheHelperYanit.saveBegeniSayilariMap(context, map);
+
+                    // ListAdapter için doğrudan veri setlerini aktarıyoruz
                     adapter.setBegeniSayisiYanitMap(map);
                     adapter.setBegenilenYanitIdSeti(begenilenSet);
-                    adapter.notifyDataSetChanged();
                 });
     }
 
-    // 🟢 String catId parametresi eklendi
     public void YanitBegeniKaldirma(String catId, String yorumId, Yanit_Model yanit, String kullaniciId, Context context, Yanit_Adapter adapter) {
         if (catId == null || catId.isEmpty() || yorumId == null || yorumId.isEmpty()) return;
 
@@ -86,13 +88,13 @@ public class Begeni_Kod_Yoneticisi_Yanit {
 
                     map.put(yanit.getYanitId(), yeniSayi);
                     CacheHelperYanit.saveBegeniSayilariMap(context, map);
+
+                    // ListAdapter için doğrudan veri setlerini aktarıyoruz
                     adapter.setBegeniSayisiYanitMap(map);
                     adapter.setBegenilenYanitIdSeti(begenilenSet);
-                    adapter.notifyDataSetChanged();
                 });
     }
 
-    // 🟢 String catId parametresi eklendi
     public void KullanicininBegendigiYanitlar(String catId, Context context, String kullaniciId, Yanit_Adapter adapter, Yorum_Model yorum) {
         if (catId == null || catId.isEmpty() || yorum == null) return;
 
@@ -107,6 +109,15 @@ public class Begeni_Kod_Yoneticisi_Yanit {
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     int toplamYanitSayisi = querySnapshot.size();
+                    if (toplamYanitSayisi == 0) {
+                        CacheHelperYanit.saveBegeniSayilariMap(context, begeniSayisiMap);
+                        adapter.setBegeniSayisiYanitMap(begeniSayisiMap);
+
+                        CacheHelperYanit.saveBegenilenSet(context, begenilenYanitIDSeti);
+                        adapter.setBegenilenYanitIdSeti(begenilenYanitIDSeti);
+                        return;
+                    }
+
                     AtomicInteger sayac = new AtomicInteger(0);
 
                     for (DocumentSnapshot yanitDoc : querySnapshot) {
@@ -119,12 +130,20 @@ public class Begeni_Kod_Yoneticisi_Yanit {
                                     int begeniSayisi = begeniSnapshot.size();
                                     begeniSayisiMap.put(yanitID, begeniSayisi);
 
-                                    for (Yanit_Model model : adapter.getYanitList()) {
+                                    // ListAdapter'daki mevcut listenin bir kopyasını alıyoruz
+                                    List<Yanit_Model> mevcutListe = new ArrayList<>(adapter.getYanitList());
+                                    for (Yanit_Model model : mevcutListe) {
                                         if (model.getYanitId().equals(yanitID)) {
                                             model.setBegeniSayisiYanit(begeniSayisi);
                                             break;
                                         }
                                     }
+
+                                    CacheHelperYanit.saveBegeniSayilariMap(context, begeniSayisiMap);
+                                    adapter.setBegeniSayisiYanitMap(begeniSayisiMap);
+
+                                    // 🟢 Modeldeki beğeni sayısı değiştiği için DiffUtil hesaplamasına gönderiyoruz
+                                    adapter.submitList(mevcutListe);
                                 });
 
                         yanitDoc.getReference()
@@ -137,25 +156,10 @@ public class Begeni_Kod_Yoneticisi_Yanit {
                                     }
 
                                     if (sayac.incrementAndGet() == toplamYanitSayisi) {
-                                        CacheHelperYanit.saveBegeniSayilariMap(context, begeniSayisiMap);
-                                        adapter.setBegeniSayisiYanitMap(begeniSayisiMap);
-
                                         CacheHelperYanit.saveBegenilenSet(context, begenilenYanitIDSeti);
                                         adapter.setBegenilenYanitIdSeti(begenilenYanitIDSeti);
-
-                                        adapter.notifyDataSetChanged();
                                     }
                                 });
-                    }
-
-                    if (toplamYanitSayisi == 0) {
-                        CacheHelperYanit.saveBegeniSayilariMap(context, begeniSayisiMap);
-                        adapter.setBegeniSayisiYanitMap(begeniSayisiMap);
-
-                        CacheHelperYanit.saveBegenilenSet(context, begenilenYanitIDSeti);
-                        adapter.setBegenilenYanitIdSeti(begenilenYanitIDSeti);
-
-                        adapter.notifyDataSetChanged();
                     }
                 });
     }
