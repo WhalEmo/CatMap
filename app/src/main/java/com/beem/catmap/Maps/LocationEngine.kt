@@ -24,8 +24,8 @@ object LocationEngine {
     private var locationCallback: LocationCallback? = null
     private var customLocationMarker: Marker? = null
 
-    private val _fetchDataEvent = MutableLiveData<LatLng>()
-    val fetchDataEvent: LiveData<LatLng> get() = _fetchDataEvent
+    private val _fetchDataEvent = MutableLiveData<Location>()
+    val fetchDataEvent: LiveData<Location> get() = _fetchDataEvent
 
 
     fun hasLocationPermission(context: Context): Boolean {
@@ -67,10 +67,8 @@ object LocationEngine {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation ?: return
-                val currentLatLng = LatLng(location.latitude, location.longitude)
+                _fetchDataEvent.value = locationResult.lastLocation ?: return
 
-                _fetchDataEvent.value = currentLatLng
             }
         }
 
