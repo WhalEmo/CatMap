@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Begeni_Kod_Yoneticisi_Yanit {
+    /*
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public void YanitBegenme(String catId, String yorumId, Yanit_Model yanit, String kullaniciId, Context context, Yanit_Adapter adapter) {
@@ -163,4 +164,6 @@ public class Begeni_Kod_Yoneticisi_Yanit {
                     }
                 });
     }
+
+     */
 }

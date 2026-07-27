@@ -11,12 +11,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 public class CacheHelperYorum {
 
     private static final String PREFS_NAME = "begenilenYorumCache";
     private static final String KEY_BEGENILEN_SET = "begenilenSet";
     private static final String KEY_BEGENI_SAYILARI = "begeniSayilariMap";
+
+    // --- YENİ EKLENENLER (Yanıtlar İçin) ---
+    private static final String KEY_BEGENILEN_YANIT_SET = "begenilenYanitSet";
+    private static final String KEY_BEGENI_SAYILARI_YANIT = "begeniSayilariYanitMap";
 
     private static SharedPreferences getPrefs(Context context) {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -26,9 +29,21 @@ public class CacheHelperYorum {
         getPrefs(context).edit().putStringSet(KEY_BEGENILEN_SET, begenilenSet).apply();
     }
 
-
     public static Set<String> loadBegenilenSet(Context context) {
         Set<String> savedSet = getPrefs(context).getStringSet(KEY_BEGENILEN_SET, null);
+        if (savedSet == null) {
+            return new HashSet<>();
+        }
+        return new HashSet<>(savedSet);
+    }
+
+    // --- YENİ: Yanıt Beğeni Set Kaydet/Yükle ---
+    public static void saveBegenilenYanitSet(Context context, Set<String> begenilenYanitSet) {
+        getPrefs(context).edit().putStringSet(KEY_BEGENILEN_YANIT_SET, begenilenYanitSet).apply();
+    }
+
+    public static Set<String> loadBegenilenYanitSet(Context context) {
+        Set<String> savedSet = getPrefs(context).getStringSet(KEY_BEGENILEN_YANIT_SET, null);
         if (savedSet == null) {
             return new HashSet<>();
         }

@@ -30,7 +30,11 @@ class CommentsRepo {
                 val content = doc.getString("icerik") ?: ""
                 val uploaderId = doc.getString("Yukleyen_ID") ?: ""
                 val date = doc.getDate("zaman")
-                Yorum_Model(id, username, content, date, null, uploaderId)
+                val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
+
+                Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
+                    this.begeniSayisi = begeniSayisi
+                }
             }
 
             val lastDoc = querySnapshot.documents.lastOrNull()
@@ -62,7 +66,11 @@ class CommentsRepo {
                 val content = doc.getString("icerik") ?: ""
                 val uploaderId = doc.getString("Yukleyen_ID") ?: ""
                 val date = doc.getDate("zaman")
-                Yorum_Model(id, username, content, date, null, uploaderId)
+                val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
+
+                Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
+                    this.begeniSayisi = begeniSayisi
+                }
             }
 
             val newLastDoc = querySnapshot.documents.lastOrNull()
@@ -72,7 +80,7 @@ class CommentsRepo {
         }
     }
 
-    suspend fun addComment(catId: String, content: String, username: String, userId: String): Boolean {
+    suspend fun addComment(catId: String, content: String, username: String, userId: String): String? {
         return try {
             val commentData = hashMapOf(
                 "icerik" to content,
@@ -80,34 +88,13 @@ class CommentsRepo {
                 "kullanici_adi" to username,
                 "Yukleyen_ID" to userId
             )
-            db.collection("cats").document(catId).collection("yorumlar").add(commentData).await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    suspend fun addReply(catId: String, commentId: String, content: String, username: String, userId: String): String? {
-        return try {
-            val replyData = hashMapOf(
-                "yaniticerik" to content,
-                "yanitzaman" to FieldValue.serverTimestamp(),
-                "kullanici_adi" to username,
-                "YanitiYukleyenID" to userId
-            )
-            val docRef = db.collection("cats")
-                .document(catId)
-                .collection("yorumlar")
-                .document(commentId)
-                .collection("yanitlar")
-                .add(replyData)
-                .await()
-
-            docRef.id
+            val documentRef = db.collection("cats").document(catId).collection("yorumlar").add(commentData).await()
+            documentRef.id
         } catch (e: Exception) {
             null
         }
     }
+
 
     fun yorumBegen(catId: String, yorumId: String, kullaniciId: String): Task<Void> {
         val batch = db.batch()

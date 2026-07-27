@@ -1,5 +1,5 @@
-
 package com.beem.catmap.Maps.markersclick.comments
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.core.widget.doOnTextChanged
 import androidx.core.view.isVisible
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -18,8 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.beem.catmap.Maps.markersclick.BottomSheetFragment
-import com.beem.catmap.Maps.markersclick.comments.CommentViewModel
 import com.beem.catmap.R
+import com.beem.catmap.YorumYanit.Yanit_Model
 import com.beem.catmap.YorumYanit.Yorum_Adapter
 import com.beem.catmap.YorumYanit.Yorum_Model
 import com.beem.catmap.data.repository.UserRepository
@@ -70,7 +70,6 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
 
         initViews(view)
 
@@ -127,6 +126,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
             override fun onYanitlariGorTiklandi(yorum: Yorum_Model) {
                 yorum.yorumID?.let { id ->
+                    hedefYorumId = id
                     viewModel.toggleYanitlarGorunurluk(id)
                 }
             }
@@ -140,6 +140,15 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 yntEditText.requestFocus()
             }
 
+            override fun onYanitYanitlaTiklandi(yanit: Yanit_Model, yorumId: String) {
+                hedefYorumId = yorumId
+                carpiLayout.isVisible = true
+                yorumLayout.isVisible = false
+                yanitLayout.isVisible = true
+                kimeYanitText.text = "@${yanit.adi} yanıtlanıyor"
+                yntEditText.requestFocus()
+            }
+
             override fun onKullaniciAdiTiklandi(userId: String) {
                 dismiss()
                 val parentBottomSheet = parentFragmentManager.findFragmentByTag(BottomSheetFragment.TAG)
@@ -150,9 +159,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             }
 
             override fun onSilTiklandi(yorum: Yorum_Model) {
-                yorum.yorumID?.let { id ->
-                    viewModel.deleteComment(id)
-                }
+                yorum.yorumID?.let { id -> viewModel.deleteComment(id) }
             }
 
             override fun onGuncelleTiklandi(yorum: Yorum_Model) {
@@ -178,16 +185,55 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                         android.widget.Toast.makeText(context, "Yorum güncellendi", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
-
                 builder.setNegativeButton("İptal") { dialog, _ -> dialog.cancel() }
-
                 val dialog = builder.create()
-                dialog.setOnShowListener {
-                    dialog.window?.setBackgroundDrawable(androidx.core.content.ContextCompat.getDrawable(context, R.drawable.modern_dialog_bg))
-                    dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(android.graphics.Color.parseColor("#13216E"))
-                    dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(android.graphics.Color.parseColor("#BF6A33"))
-                }
                 dialog.show()
+            }
+
+
+            override fun onYanitKalpTiklandi(yanit: Yanit_Model, yorumId: String) {
+                val currentUserId = userRepository.getCurrentUserId().orEmpty()
+                viewModel.toggleYanitBegeni(catId, yorumId, yanit, currentUserId)
+            }
+
+            override fun onYanitSilTiklandi(yanit: Yanit_Model, yorumId: String) {
+                yanit.yanitId?.let { yanitId ->
+                    viewModel.deleteYanit(yorumId, yanitId)
+                }
+            }
+
+            override fun onYanitGuncelleTiklandi(yanit: Yanit_Model, yorumId: String) {
+                val context = requireContext()
+                val builder = android.app.AlertDialog.Builder(context, R.style.ModernAlertDialog)
+                builder.setTitle("Yanıtı Güncelle")
+
+                val input = EditText(context).apply {
+                    setText(yanit.yaniticerik)
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    minLines = 3
+                    maxLines = 6
+                    gravity = android.view.Gravity.TOP or android.view.Gravity.START
+                    background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.edittext_oval_bg)
+                    setPadding(30, 30, 30, 30)
+                }
+                builder.setView(input)
+
+                builder.setPositiveButton("Güncelle") { _, _ ->
+                    val yeniIcerik = input.text.toString().trim()
+                    if (yeniIcerik.isNotEmpty() && yanit.yanitId != null) {
+                        viewModel.updateYanit(yorumId, yanit.yanitId, yeniIcerik)
+                        android.widget.Toast.makeText(context, "Yanıt güncellendi", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                builder.setNegativeButton("İptal") { dialog, _ -> dialog.cancel() }
+                val dialog = builder.create()
+                dialog.show()
+            }
+
+            override fun onDahaFazlaYanitGetirTiklandi(yorum: Yorum_Model) {
+                yorum.yorumID?.let { yorumId ->
+                    viewModel.yanitlariYukle(yorumId, 10, false)
+                }
             }
         })
 
@@ -208,23 +254,16 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun setupTextWatchers() {
-        yorumEditText.doOnTextChanged { text, _, _, _ ->
-            setButtonState(yorumGonderButton, !text.isNullOrBlank())
-        }
-
-        yntEditText.doOnTextChanged { text, _, _, _ ->
-            setButtonState(yanitGonderButton, !text.isNullOrBlank())
-        }
+        yorumEditText.doOnTextChanged { text, _, _, _ -> setButtonState(yorumGonderButton, !text.isNullOrBlank()) }
+        yntEditText.doOnTextChanged { text, _, _, _ -> setButtonState(yanitGonderButton, !text.isNullOrBlank()) }
     }
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-
                 launch {
                     viewModel.comments.collectLatest { list ->
-                        yorumAdapter.submitList(list)
-
+                        yorumAdapter.submitYorumList(list)
                         shimmerFrameLayout.stopShimmer()
                         shimmerFrameLayout.isVisible = false
                         val isEmpty = viewModel.isEmpty.value
@@ -233,24 +272,11 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                     }
                 }
                 launch {
-                    viewModel.isLoading.collectLatest { isLoading ->
-
-                    }
-                }
-
-                launch {
-                    viewModel.begenilenYorumIDs.collectLatest { begenilenSet ->
-                        //updateAdapterList(viewModel.comments.value, begenilenSet)
-                    }
-                }
-
-                launch {
                     viewModel.isEmpty.collectLatest { isEmpty ->
                         bosYorumText.isVisible = isEmpty
                         yorumlarRecyclerView.isVisible = !isEmpty
                     }
                 }
-
                 launch {
                     viewModel.actionSuccess.collectLatest {
                         yorumEditText.setText("")
@@ -262,21 +288,9 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun updateAdapterList(comments: List<Yorum_Model>, begenilenSet: Set<String>) {
-        for (yorum in comments) {
-            val isLiked = begenilenSet.contains(yorum.yorumID)
-            if (yorum.isBegenildiMi() != isLiked) {
-                yorum.setBegenildiMi(isLiked)
-            }
-        }
-        yorumAdapter.submitList(comments)
-    }
-
     private fun sendComment() {
         val text = yorumEditText.text.toString().trim()
-        if (text.isNotEmpty()) {
-            viewModel.sendComment(text)
-        }
+        if (text.isNotEmpty()) viewModel.sendComment(text)
     }
 
     private fun sendReply() {
@@ -305,14 +319,9 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onStart() {
         super.onStart()
-
         val dialog = dialog as? BottomSheetDialog ?: return
-        val bottomSheet = dialog.findViewById<FrameLayout>(
-            com.google.android.material.R.id.design_bottom_sheet
-        ) ?: return
-
+        val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet) ?: return
         bottomSheet.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-
         val behavior = BottomSheetBehavior.from(bottomSheet)
         behavior.apply {
             state = BottomSheetBehavior.STATE_EXPANDED
@@ -324,11 +333,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun show(manager: FragmentManager, tag: String?) {
         val existingFragment = manager.findFragmentByTag(tag)
-
-        if (existingFragment != null && (existingFragment.isAdded || existingFragment.isStateSaved)) {
-            return
-        }
-
+        if (existingFragment != null && (existingFragment.isAdded || existingFragment.isStateSaved)) return
         try {
             super.show(manager, tag)
         } catch (e: IllegalStateException) {
@@ -344,11 +349,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         @JvmStatic
         fun newInstance(catId: String): CommentsBottomSheetFragment {
             return CommentsBottomSheetFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_CAT_ID, catId)
-                }
+                arguments = Bundle().apply { putString(ARG_CAT_ID, catId) }
             }
         }
     }
 }
-

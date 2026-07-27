@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:layout_marginStart="32dp"
     android:background="@drawable/yanit_background"
     android:padding="8dp">
 
@@ -49,7 +50,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:visibility="gone"
+            android:visibility="visible"
             android:layout_marginTop="8dp">
 
             <ProgressBar
@@ -106,7 +107,6 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="end"
-            android:onClick="yanitlayazisi"
             android:text="Yanıtla"
             android:textColor="@android:color/holo_blue_dark"
             android:textStyle="italic"
@@ -117,9 +117,11 @@
             android:layout_weight="1"/>
 
         <LinearLayout
+            android:id="@+id/likeLayoutYnt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:visibility="gone"
             android:layout_marginEnd="8dp"
             android:gravity="center_vertical">
 

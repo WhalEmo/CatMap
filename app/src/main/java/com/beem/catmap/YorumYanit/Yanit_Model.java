@@ -3,96 +3,112 @@ package com.beem.catmap.YorumYanit;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 public class Yanit_Model {
     private String yanitId;
-    private String Adi;
+    private String yorumId;
+    private String adi;
     private String yaniticerik;
     private Date tarih;
-    private String YanitiYukleyen;
-    public boolean yanitMiGeldi=false;
-    private int begeniSayisiYanit;
+    private String yanitiYukleyen;
+    private boolean yanitMiGeldi;
+    private int begeniSayisiYanit = 0;
+    private boolean begenildiMi = false;
+    private boolean isSending = false;
 
-    public Yanit_Model(){}
+    public Yanit_Model() {
+        this.yanitId = "";
+    }
 
-    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih,String YanitiYukleyen) {
-        this.yanitId = yanitId;
-        Adi = adi;
+    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih, String yanitiYukleyen, boolean yanitMiGeldi, int begeniSayisiYanit, boolean begenildiMi,boolean isSending) {
+        this.yanitId = yanitId != null ? yanitId : "";
+        this.adi = adi;
         this.yaniticerik = yaniticerik;
         this.tarih = tarih;
-        this.YanitiYukleyen=YanitiYukleyen;
+        this.yanitiYukleyen = yanitiYukleyen;
+        this.yanitMiGeldi = yanitMiGeldi;
+        this.begeniSayisiYanit = begeniSayisiYanit;
+        this.begenildiMi = begenildiMi;
+        this.isSending = isSending;
     }
 
-    public String getYanitId() {
-        return yanitId;
+    public Yanit_Model copy() {
+        Yanit_Model kopya = new Yanit_Model(this.yanitId, this.adi, this.yaniticerik, this.tarih, this.yanitiYukleyen, this.yanitMiGeldi, this.begeniSayisiYanit, this.begenildiMi,this.isSending);
+        kopya.setYorumId(this.yorumId);
+        return kopya;
     }
 
-    public void setYanitId(String yanitId) {
-        this.yanitId = yanitId;
+    public String getYanitId() { return yanitId; }
+    public void setYanitId(String yanitId) { this.yanitId = yanitId; }
+
+    public String getYorumId() { return yorumId; }
+    public void setYorumId(String yorumId) { this.yorumId = yorumId; }
+
+    public String getAdi() { return adi; }
+    public void setAdi(String adi) { this.adi = adi; }
+
+    public String getYaniticerik() { return yaniticerik; }
+    public void setYaniticerik(String yaniticerik) { this.yaniticerik = yaniticerik; }
+
+    public Date getTarih() { return tarih; }
+    public void setTarih(Date tarih) { this.tarih = tarih; }
+
+    public String getYanitiYukleyen() { return yanitiYukleyen; }
+    public void setYanitiYukleyen(String yanitiYukleyen) { this.yanitiYukleyen = yanitiYukleyen; }
+
+    public boolean isYanitMiGeldi() { return yanitMiGeldi; }
+    public void setYanitMiGeldi(boolean yanitMiGeldi) { this.yanitMiGeldi = yanitMiGeldi; }
+
+    public int getBegeniSayisiYanit() { return begeniSayisiYanit; }
+    public void setBegeniSayisiYanit(int begeniSayisiYanit) { this.begeniSayisiYanit = begeniSayisiYanit; }
+
+    // --- YENİ EKLENEN GETTER / SETTER ---
+    public boolean isBegenildiMi() { return begenildiMi; }
+    public void setBegenildiMi(boolean begenildiMi) { this.begenildiMi = begenildiMi; }
+
+    public boolean isSending() {
+        return isSending;
     }
 
-    public String getAdi() {
-        return Adi;
+    public void setSending(boolean sending) {
+        isSending = sending;
     }
 
-    public void setAdi(String adi) {
-        Adi = adi;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Yanit_Model that = (Yanit_Model) o;
+        return begeniSayisiYanit == that.begeniSayisiYanit &&
+                yanitMiGeldi == that.yanitMiGeldi &&
+                begenildiMi == that.begenildiMi &&
+                isSending == that.isSending && // EKLENDİ
+                Objects.equals(yanitId, that.yanitId) &&
+                Objects.equals(yorumId, that.yorumId) &&
+                Objects.equals(adi, that.adi) &&
+                Objects.equals(yaniticerik, that.yaniticerik) &&
+                Objects.equals(tarih, that.tarih) &&
+                Objects.equals(yanitiYukleyen, that.yanitiYukleyen);
     }
 
-    public String getYaniticerik() {
-        return yaniticerik;
+    @Override
+    public int hashCode() {
+        return Objects.hash(yanitId, yorumId, adi, yaniticerik, tarih, yanitiYukleyen, yanitMiGeldi, begeniSayisiYanit, begenildiMi, isSending);
     }
 
-    public void setYaniticerik(String yaniticerik) {
-        this.yaniticerik = yaniticerik;
-    }
-
-    public Date getTarih() {
-        return tarih;
-    }
-
-    public void setTarih(Date tarih) {
-        this.tarih = tarih;
-    }
     public String duzenlenmisTarih() {
-        if (tarih == null) {
-            return "şimdi";  // Ya da "Bilinmiyor"
-        }
+        if (tarih == null) return "şimdi";
 
         long simdi = System.currentTimeMillis();
         long fark = simdi - tarih.getTime();
 
-        if (fark < 60000) {  // 1 dakika
-            return "şimdi";
-        } else if (fark < 3600000) {  // 1 saat
-            return (fark / 60000) + " dakika önce";
-        }  else {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
-            return sdf.format(tarih);
-        }
-    }
+        if (fark < 60000) return "şimdi";
+        if (fark < 3600000) return (fark / 60000) + " dakika önce";
 
-    public boolean isYanitMiGeldi() {
-        return yanitMiGeldi;
-    }
-
-    public void setYanitMiGeldi(boolean yanitMiGeldi) {
-        this.yanitMiGeldi = yanitMiGeldi;
-    }
-
-    public int getBegeniSayisiYanit() {
-        return begeniSayisiYanit;
-    }
-
-    public void setBegeniSayisiYanit(int begeniSayisiYanit) {
-        this.begeniSayisiYanit = begeniSayisiYanit;
-    }
-
-    public String getYanitiYukleyen() {
-        return YanitiYukleyen;
-    }
-
-    public void setYanitiYukleyen(String yanitiYukleyen) {
-        YanitiYukleyen = yanitiYukleyen;
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
+        return sdf.format(tarih);
     }
 }
+
