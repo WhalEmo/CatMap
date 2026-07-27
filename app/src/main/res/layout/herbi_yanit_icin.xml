@@ -93,6 +93,7 @@
 
     <!-- Yorum için Yanıtları Gör ve Yanıtla metinlerini aynı satıra yerleştiriyoruz -->
     <LinearLayout
+        android:id="@+id/yanitlaLayout"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

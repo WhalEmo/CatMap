@@ -203,9 +203,11 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
         if (yorum.getSending()) {
             holder.yanitlarYukleniyorLayout2.setVisibility(VISIBLE);
             holder.likeLayout.setVisibility(GONE);
+            holder.yanitlarLayout.setVisibility(GONE);
         } else {
             holder.yanitlarYukleniyorLayout2.setVisibility(GONE);
             holder.likeLayout.setVisibility(VISIBLE);
+            holder.yanitlarLayout.setVisibility(VISIBLE);
         }
 
         if (yorum.isBegenildiMi()) {
@@ -275,9 +277,11 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
 
         if (yanit.isSending()) {
             holder.yanitlarYukleniyorLayout2ynt.setVisibility(VISIBLE);
+            holder.yanitlaLayout.setVisibility(VISIBLE);
             holder.likeLayoutYnt.setVisibility(GONE);
         } else {
             holder.yanitlarYukleniyorLayout2ynt.setVisibility(GONE);
+            holder.yanitlaLayout.setVisibility(GONE);
             holder.likeLayoutYnt.setVisibility(VISIBLE);
         }
 
@@ -350,7 +354,7 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
     public static class YorumViewHolder extends RecyclerView.ViewHolder {
         TextView kullaniciAditext, yorumText, yorumTarihiText, yanitlariGor, yanitlamayiGetir, begeniSayisiTextView;
         ImageView menuButonu, kalpImageView, YorumFotoImageView;
-        LinearLayout yanitlarYukleniyorLayout2,likeLayout;
+        LinearLayout yanitlarYukleniyorLayout2,likeLayout,yanitlarLayout;
 
         public YorumViewHolder(View itemView) {
             super(itemView);
@@ -365,13 +369,14 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
             kalpImageView = itemView.findViewById(R.id.kalpImageView);
             begeniSayisiTextView = itemView.findViewById(R.id.begeniSayisiTextView);
             YorumFotoImageView = itemView.findViewById(R.id.YorumFotoImageView);
+            yanitlarLayout = itemView.findViewById(R.id.yanitlarLayout);
         }
     }
 
     public static class YanitViewHolder extends RecyclerView.ViewHolder {
         TextView kullaniciAditextYnt, yanitText, yanitTarihiText, yanitlayazisiynt, begeniSayisiTextViewYnt;
         ImageView menuButonuYnt, YorumFotoImageViewYnt,kalpImageViewYnt;
-        LinearLayout likeLayoutYnt, yanitlarYukleniyorLayout2ynt;
+        LinearLayout likeLayoutYnt, yanitlarYukleniyorLayout2ynt,yanitlaLayout;
 
         public YanitViewHolder(View itemView) {
             super(itemView);
@@ -385,6 +390,7 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
             begeniSayisiTextViewYnt = itemView.findViewById(R.id.begeniSayisiTextViewYnt);
             likeLayoutYnt = itemView.findViewById(R.id.likeLayoutYnt);
             yanitlarYukleniyorLayout2ynt = itemView.findViewById(R.id.yanitlarYukleniyorLayout2ynt);
+            yanitlaLayout = itemView.findViewById(R.id.yanitlaLayout);
         }
     }
 

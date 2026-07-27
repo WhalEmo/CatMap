@@ -1,6 +1,7 @@
 package com.beem.catmap.Maps.markersclick.comments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -193,6 +194,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
             override fun onYanitKalpTiklandi(yanit: Yanit_Model, yorumId: String) {
                 val currentUserId = userRepository.getCurrentUserId().orEmpty()
+                Log.d("FRAGMENT",yanit.yaniticerik)
+                Log.d("FRAGMENT",yorumId)
                 viewModel.toggleYanitBegeni(catId, yorumId, yanit, currentUserId)
             }
 
@@ -232,7 +235,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
             override fun onDahaFazlaYanitGetirTiklandi(yorum: Yorum_Model) {
                 yorum.yorumID?.let { yorumId ->
-                    viewModel.yanitlariYukle(yorumId, 10, false)
+                    viewModel.yanitlariYukle(yorumId, 3, false)
                 }
             }
         })
@@ -295,10 +298,15 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun sendReply() {
         val targetId = hedefYorumId ?: return
-        val text = yntEditText.text.toString().trim()
 
-        if (text.isNotEmpty()) {
-            viewModel.sendReply(targetId, text) { _ ->
+        val etiket = kimeYanitText.text.toString().trim()
+        val mesaj = yntEditText.text.toString().trim()
+
+        val formatliEtiket = if (etiket.startsWith("@")) etiket else "@$etiket"
+        val birlesmisIcerik = "$formatliEtiket $mesaj"
+
+        if (mesaj.isNotEmpty()) {
+            viewModel.sendReply(targetId, birlesmisIcerik) { _ ->
                 yntEditText.setText("")
                 resetToCommentMode()
             }

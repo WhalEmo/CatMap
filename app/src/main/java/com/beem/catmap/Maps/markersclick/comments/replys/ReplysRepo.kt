@@ -1,6 +1,7 @@
 package com.beem.catmap.yorumyanit.data.repository
 
 import com.beem.catmap.YorumYanit.Yanit_Model
+import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -10,6 +11,7 @@ import kotlinx.coroutines.tasks.await
 class YanitRepository {
 
     private val db = FirebaseFirestore.getInstance()
+
 
     suspend fun yanitlariCek(
         catId: String,
@@ -42,9 +44,7 @@ class YanitRepository {
                     doc.getString("yaniticerik"),
                     doc.getDate("yanitzaman"),
                     doc.getString("YanitiYukleyenID"),
-                    false,
                     doc.getLong("begeniSayisiYanit")?.toInt() ?: 0,
-                    false,
                     false
                 )
                 yanitListesi.add(yanit)
@@ -115,39 +115,45 @@ class YanitRepository {
             false
         }
     }
-    suspend fun yanitBegen(catId: String, yorumId: String, yanitId: String, kullaniciId: String): Boolean {
-        return try {
-            db.collection("cats")
-                .document(catId)
-                .collection("yorumlar")
-                .document(yorumId)
-                .collection("yanitlar")
-                .document(yanitId)
-                .collection("begenenlerYanit")
-                .document(kullaniciId)
-                .set(emptyMap<String, Any>())
-                .await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
 
-    suspend fun yanitBegeniKaldir(catId: String, yorumId: String, yanitId: String, kullaniciId: String): Boolean {
-        return try {
-            db.collection("cats")
-                .document(catId)
-                .collection("yorumlar")
-                .document(yorumId)
-                .collection("yanitlar")
-                .document(yanitId)
-                .collection("begenenlerYanit")
-                .document(kullaniciId)
-                .delete()
-                .await()
-            true
-        } catch (e: Exception) {
-            false
+
+
+     fun yanitBegen(catId: String, yorumId: String, yanitId: String, kullaniciId: String): Task<Void> {
+            val batch = db.batch()
+
+            val begenenRef = db.collection("cats").document(catId)
+                .collection("yorumlar").document(yorumId)
+                .collection("yanitlar").document(yanitId)
+                .collection("begenenlerYanit").document(kullaniciId)
+
+            batch.set(begenenRef, hashMapOf<String, Any>())
+
+            val yanitRef = db.collection("cats").document(catId)
+                .collection("yorumlar").document(yorumId)
+                .collection("yanitlar").document(yanitId)
+            batch.update(yanitRef, "begeniSayisiYanit", FieldValue.increment(1))
+
+            return batch.commit()
+
         }
+
+
+    fun yanitBegeniKaldir(catId: String, yorumId: String, yanitId: String, kullaniciId: String):Task<Void>{
+        val batch = db.batch()
+
+        val begenenRef = db.collection("cats").document(catId)
+            .collection("yorumlar").document(yorumId)
+            .collection("yanitlar").document(yanitId)
+            .collection("begenenlerYanit").document(kullaniciId)
+
+        batch.delete(begenenRef)
+
+        val yanitRef = db.collection("cats").document(catId)
+            .collection("yorumlar").document(yorumId)
+            .collection("yanitlar").document(yanitId)
+        batch.update(yanitRef, "begeniSayisiYanit", FieldValue.increment(-1))
+
+        return batch.commit()
+
     }
 }

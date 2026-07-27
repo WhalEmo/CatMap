@@ -67,20 +67,18 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
     }
     private fun applyLikedState(comments: List<Yorum_Model>): List<Yorum_Model> {
         val likedSet = _begenilenYorumIDs.value
-        val likedYanitSet = _begenilenYanitIDs.value
-
         return comments.map { yorum ->
             val isLiked = yorum.yorumID != null && likedSet.contains(yorum.yorumID)
-
-            // Yanıtların da beğeni durumunu set ediyoruz
-            yorum.yanitlar?.let { yanitListesi ->
-                for (yanit in yanitListesi) {
-                    val yanitLiked = yanit.yanitId != null && likedYanitSet.contains(yanit.yanitId)
-                    yanit.setBegenildiMi(yanitLiked) // Yanıt Modelinde bu metodun olduğuna emin olun
-                }
-            }
-
             yorum.copy().apply {
+                setBegenildiMi(isLiked)
+            }
+        }
+    }
+    private fun applyLikedReplyState(replies: List<Yanit_Model>): List<Yanit_Model> {
+        val likedSet = _begenilenYanitIDs.value
+        return replies.map { yanit ->
+            val isLiked = yanit.yanitId != null && likedSet.contains(yanit.yanitId)
+            yanit.copy().apply {
                 setBegenildiMi(isLiked)
             }
         }
@@ -96,7 +94,6 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
 
             val (initialList, lastDoc) = repository.getInitialComments(catId, pageSize)
 
-            // Beğeni durumunu lokal set ile eşleştiriyoruz
             val processedList = applyLikedState(initialList)
 
             _comments.value = processedList
@@ -137,7 +134,7 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
                     val yeniDurum = !isYanitlarGorunuyor
                     setYanitlarGorunuyor(yeniDurum)
                     if (yeniDurum && (yanitlar == null || yanitlar.isEmpty())) {
-                        yanitlariYukle(yorumId, 10, true)
+                        yanitlariYukle(yorumId, 3, true)
                     }
                 }
             } else {
@@ -156,18 +153,21 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
             val result = yanitRepository.yanitlariCek(catId, yorumId, limit, lastDoc)
 
             result.onSuccess { (yeniYanitlar, yeniLastDoc) ->
+                val processedReplies = applyLikedReplyState(yeniYanitlar)
                 yanitLastDocMap[yorumId] = yeniLastDoc
-
                 val liste = yanitCacheMap.getOrPut(yorumId) { mutableListOf() }
                 if (clearList) {
                     liste.clear()
                 }
-                liste.addAll(yeniYanitlar)
-
-                val dahaFazlaVar = yeniYanitlar.size >= limit
+                liste.addAll(processedReplies)
+                val dahaFazlaVar = processedReplies.size >= limit
                 yanitDahaFazlaMap[yorumId] = dahaFazlaVar
-
-                updateCommentYanitState(yorumId, liste, true, dahaFazlaVar)
+                updateCommentYanitState(
+                    yorumId,
+                    liste,
+                    true,
+                    dahaFazlaVar
+                )
             }.onFailure {
                 _hataMesaji.emit("Yanıtlar yüklenirken hata oluştu.")
             }
@@ -199,14 +199,8 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
                 val eskiListe = yanitCacheMap[yorumId] ?: mutableListOf()
                 val guncelListe = eskiListe.map { yanit ->
                     if (yanit.yanitId == yanitId) {
-                        Yanit_Model().apply {
-                            this.yanitId = yanit.yanitId
-                            this.yorumId = yanit.yorumId
-                            this.adi = yanit.adi
-                            this.yaniticerik = yeniIcerik
-                            this.tarih = yanit.tarih
-                            this.yanitiYukleyen = yanit.yanitiYukleyen
-                            this.begeniSayisiYanit = yanit.begeniSayisiYanit
+                        yanit.copy().apply {
+                            setYaniticerik(yeniIcerik)
                         }
                     } else {
                         yanit
@@ -439,13 +433,15 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             val success = if (durumBegenilmis) {
-                yanitRepository.yanitBegeniKaldir(catId, yorumId, yanitId, kullaniciId)
-            } else {
-                yanitRepository.yanitBegen(catId, yorumId, yanitId, kullaniciId)
-            }
+                yanitRepository.yanitBegeniKaldir(catId, yorumId, yanitId, kullaniciId).addOnFailureListener {
+                    rollbackYanitBegeniState(yorumId, yanitId, true)
+                }
 
-            if (!success) {
-                rollbackYanitBegeniState(yorumId, yanitId, durumBegenilmis)
+            } else {
+                yanitRepository.yanitBegen(catId, yorumId, yanitId, kullaniciId).addOnFailureListener {
+                    rollbackYanitBegeniState(yorumId, yanitId, false)
+                }
+
             }
         }
     }

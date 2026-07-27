@@ -112,6 +112,7 @@ class CommentsRepo {
     }
 
 
+
     fun yorumBegeniKaldir(catId: String, yorumId: String, kullaniciId: String): Task<Void> {
         val batch = db.batch()
 
