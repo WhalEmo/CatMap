@@ -19,6 +19,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Maps.markersclick.BottomSheetFragment
 import com.beem.catmap.R
 import com.beem.catmap.YorumYanit.Yanit_Model
@@ -38,6 +39,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private val viewModel: CommentViewModel by viewModels()
     private lateinit var userRepository: UserRepository
+    private lateinit var currentUser: Kullanici
 
     private lateinit var yorumlarRecyclerView: RecyclerView
     private lateinit var shimmerFrameLayout: com.facebook.shimmer.ShimmerFrameLayout
@@ -64,7 +66,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
         catId = arguments?.getString(ARG_CAT_ID).orEmpty()
+
+        // Repository ve currentUser nesnesini burada 1 kez yüklüyoruz
         userRepository = UserRepository.getInstance(requireContext())
+        currentUser = userRepository.getCurrentUser()
     }
 
     override fun onCreateView(
@@ -119,8 +124,9 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         yorumGonderButton.setOnClickListener { sendComment() }
         yanitGonderButton.setOnClickListener { sendReply() }
     }
+
     private fun loadCurrentUserProfileImage() {
-        val currentUser = userRepository.getCurrentUser()
+        // Doğrudan sınıf seviyesindeki currentUser nesnesini kullanıyoruz
         val photoUrl = currentUser.fotoUrl
 
         if (!photoUrl.isNullOrBlank()) {
@@ -130,7 +136,6 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 .error(R.drawable.kullanici)
                 .into(yorumGonderUserPp)
 
-            // Yanıt gönderme alanındaki resim
             Glide.with(this)
                 .load(photoUrl)
                 .placeholder(R.drawable.kullanici)
@@ -147,14 +152,13 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         yorumlarRecyclerView.layoutManager = layoutManager
 
         (yorumlarRecyclerView.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
-
-        val currentUserId = userRepository.getCurrentUserId().orEmpty()
+        val currentUserId = currentUser.id
         yorumAdapter = Yorum_Adapter(requireContext(), currentUserId)
         yorumlarRecyclerView.adapter = yorumAdapter
 
         yorumAdapter.setOnYorumInteractionListener(object : Yorum_Adapter.OnYorumInteractionListener {
             override fun onKalpTiklandi(yorum: Yorum_Model) {
-                viewModel.toggleBegeni(catId, yorum, userRepository.getCurrentUserId())
+                viewModel.toggleBegeni(catId, yorum, currentUser.id)
             }
 
             override fun onYanitlariGorTiklandi(yorum: Yorum_Model) {
@@ -223,12 +227,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 dialog.show()
             }
 
-
             override fun onYanitKalpTiklandi(yanit: Yanit_Model, yorumId: String) {
-                val currentUserId = userRepository.getCurrentUserId().orEmpty()
-                Log.d("FRAGMENT",yanit.yaniticerik)
-                Log.d("FRAGMENT",yorumId)
-                viewModel.toggleYanitBegeni(catId, yorumId, yanit, currentUserId)
+                viewModel.toggleYanitBegeni(catId, yorumId, yanit, currentUser.id)
             }
 
             override fun onYanitSilTiklandi(yanit: Yanit_Model, yorumId: String) {
@@ -287,12 +287,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         })
     }
-
     private fun setupTextWatchers() {
         yorumEditText.doOnTextChanged { text, _, _, _ -> setButtonState(yorumGonderButton, !text.isNullOrBlank()) }
         yntEditText.doOnTextChanged { text, _, _, _ -> setButtonState(yanitGonderButton, !text.isNullOrBlank()) }
     }
-
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -327,12 +325,10 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
     private fun sendComment() {
         val text = yorumEditText.text.toString().trim()
         if (text.isNotEmpty()) viewModel.sendComment(text)
     }
-
     private fun sendReply() {
         val targetId = hedefYorumId ?: return
 
@@ -375,7 +371,6 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             expandedOffset = 0
         }
     }
-
     override fun show(manager: FragmentManager, tag: String?) {
         val existingFragment = manager.findFragmentByTag(tag)
         if (existingFragment != null && (existingFragment.isAdded || existingFragment.isStateSaved)) return
@@ -385,7 +380,6 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             e.printStackTrace()
         }
     }
-
     companion object {
         @JvmField
         val TAG = "CommentsBottomSheetFragment"
