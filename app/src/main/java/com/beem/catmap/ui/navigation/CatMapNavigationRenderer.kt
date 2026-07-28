@@ -43,19 +43,12 @@ class CatMapNavigationRenderer(
         val transaction = fm.beginTransaction()
 
         val oldScreen = SmartNavigationEngine.getOldScreen() ?: SmartNavigationEngine.getCurrentScreen()
-
-        // 🎯 DÜZELTİLDİ: Tüm animasyon kararlarını trigger'a göre alt metotlara devrettik usta!
         when (trigger) {
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
         }
 
-        /*
-        for (f in fm.fragments) {
-            f.fragmentLog("BEFORE")
-        }
-        */
 
         val validTags = Screen.entries.map { it.tag }
         for (f in fm.fragments) {
@@ -102,17 +95,10 @@ class CatMapNavigationRenderer(
 
         transaction.commitAllowingStateLoss()
 
-        /*
-        for (f in fm.fragments) {
-            f.fragmentLog("AFTER")
-        }
-
-         */
     }
 
 
     private fun renderInitialAnimation(transaction: FragmentTransaction) {
-        // İlk açılışta animasyona gerek yok, harita direkt sahneye asilce otursun
     }
 
     private fun renderForwardAnimation(transaction: FragmentTransaction, oldScreen: Screen, targetScreen: Screen) {

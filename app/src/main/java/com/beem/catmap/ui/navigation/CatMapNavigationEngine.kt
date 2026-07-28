@@ -50,7 +50,7 @@ class CatMapNavigationEngine(
 
     fun updateUISilently(screen: Screen) {
 
-        if(screen.isNode) menuShow() else menuHide()
+        if(screen.isNode && screen != Screen.AUTH) menuShow() else menuHide()
 
         if (screen == Screen.MAP) mapItemViewFadeIn() else mapItemViewFadeOut()
 
