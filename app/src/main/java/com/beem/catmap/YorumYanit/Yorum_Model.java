@@ -24,6 +24,8 @@ public class Yorum_Model {
     private boolean begenildiMi = false;
     private int begeniSayisi = 0;
 
+    private int toplamYanitSayisi = 0;
+
     private boolean isSending = false;
 
     public Yorum_Model() {}
@@ -39,40 +41,58 @@ public class Yorum_Model {
     }
 
 
+
     public Yorum_Model copyWithUpdatedYanit(Yanit_Model guncelYanit) {
-        ArrayList<Yanit_Model> yeniYanitListesi = new ArrayList<>();
-        if (this.yanitlar != null) {
-            for (Yanit_Model y : this.yanitlar) {
-                if (y != null && Objects.equals(y.getYanitId(), guncelYanit.getYanitId())) {
-                    // SADECE değişen yanıtın YENİ kopyasını/referansını ekle
-                    yeniYanitListesi.add(guncelYanit);
-                } else {
-                    // Değişmeyen yanıtları kopyalamadan AYNEN aktar (Performans sırrı burası)
-                    yeniYanitListesi.add(y);
-                }
+
+        ArrayList<Yanit_Model> yeniYanitListesi =
+                this.yanitlar != null
+                        ? new ArrayList<>(this.yanitlar)
+                        : new ArrayList<>();
+
+        for (int i = 0; i < yeniYanitListesi.size(); i++) {
+
+            Yanit_Model mevcut = yeniYanitListesi.get(i);
+
+            if (mevcut != null &&
+                    Objects.equals(mevcut.getYanitId(), guncelYanit.getYanitId())) {
+
+                yeniYanitListesi.set(i, guncelYanit);
+                break;
             }
         }
 
-        Yorum_Model newModel = new Yorum_Model(this.yorumID, this.kullaniciAdi, this.yorumicerik, this.tarih, yeniYanitListesi, this.yukleyenId, this.isSending);
+
+        Yorum_Model newModel = new Yorum_Model(
+                this.yorumID,
+                this.kullaniciAdi,
+                this.yorumicerik,
+                this.tarih,
+                yeniYanitListesi,
+                this.yukleyenId,
+                this.isSending
+        );
+
         aktarOrtakAlanlar(newModel);
+
         return newModel;
     }
 
-    /**
-     * Tam Derin Kopyalama (Deep Copy)
-     * Tüm yanıtları tek tek kopyalar.
-     */
     public Yorum_Model copy() {
-        ArrayList<Yanit_Model> kopyaYanitlar = new ArrayList<>();
-        if (this.yanitlar != null) {
-            for (Yanit_Model y : this.yanitlar) {
-                if (y != null) {
-                    kopyaYanitlar.add(y.copy()); // Her yanıtın bağımsız kopyasını alır
-                }
-            }
-        }
+        ArrayList<Yanit_Model> yeniListe =
+                this.yanitlar == null
+                        ? new ArrayList<>()
+                        : new ArrayList<>(this.yanitlar);
 
-        Yorum_Model newModel = new Yorum_Model(this.yorumID, this.kullaniciAdi, this.yorumicerik, this.tarih, kopyaYanitlar, this.yukleyenId, this.isSending);
+        Yorum_Model newModel = new Yorum_Model(
+                this.yorumID,
+                this.kullaniciAdi,
+                this.yorumicerik,
+                this.tarih,
+                yeniListe,
+                this.yukleyenId,
+                this.isSending
+        );
+
         aktarOrtakAlanlar(newModel);
         return newModel;
     }
@@ -87,6 +107,7 @@ public class Yorum_Model {
         target.begenildiMi = this.begenildiMi;
         target.begeniSayisi = this.begeniSayisi;
         target.isSending = this.isSending;
+        target.toplamYanitSayisi = this.toplamYanitSayisi;
     }
 
     public String duzenlenmisTarih() {
@@ -142,6 +163,22 @@ public class Yorum_Model {
     public Boolean getSending() { return isSending; }
     public void setSending(Boolean sending) { isSending = sending; }
 
+    public int getToplamYanitSayisi() {
+        return toplamYanitSayisi;
+    }
+
+    public void setToplamYanitSayisi(int toplamYanitSayisi) {
+        this.toplamYanitSayisi = toplamYanitSayisi;
+    }
+
+    public boolean isSending() {
+        return isSending;
+    }
+
+    public void setSending(boolean sending) {
+        isSending = sending;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -155,6 +192,7 @@ public class Yorum_Model {
                 begenildiMi == that.begenildiMi &&
                 begeniSayisi == that.begeniSayisi &&
                 isSending == that.isSending &&
+                toplamYanitSayisi == that.toplamYanitSayisi &&
                 Objects.equals(yorumID, that.yorumID) &&
                 Objects.equals(kullaniciAdi, that.kullaniciAdi) &&
                 Objects.equals(yorumicerik, that.yorumicerik) &&
@@ -167,6 +205,6 @@ public class Yorum_Model {
     public int hashCode() {
         return Objects.hash(yorumID, kullaniciAdi, yorumicerik, tarih, yukleyenId, yanitlar,
                 yanitlarGorunuyor, yanitlarYuklendi, yanitYokMu,
-                dahafazlaGozukuyorMu, begenildiMi, begeniSayisi, isSending);
+                dahafazlaGozukuyorMu, begenildiMi, begeniSayisi, isSending,toplamYanitSayisi);
     }
 }

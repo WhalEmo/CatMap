@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
@@ -50,6 +51,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var bosYorumText: TextView
 
     private lateinit var yorumAdapter: Yorum_Adapter
+    private lateinit var paginationProgressBar: ProgressBar
 
     private var catId: String = ""
     private var hedefYorumId: String? = null
@@ -101,6 +103,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         yorumGonderButton = view.findViewById(R.id.yorumgonder)
         yanitGonderButton = view.findViewById(R.id.yntgonder)
         bosYorumText = view.findViewById(R.id.bosYorumTextView)
+        paginationProgressBar = view.findViewById(R.id.paginationProgressBar)
 
         setButtonState(yorumGonderButton, false)
         setButtonState(yanitGonderButton, false)
@@ -137,7 +140,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 carpiLayout.isVisible = true
                 yorumLayout.isVisible = false
                 yanitLayout.isVisible = true
-                kimeYanitText.text = "@${yorum.kullaniciAdi} yanıtlanıyor"
+                kimeYanitText.text = "@${yorum.kullaniciAdi}"
                 yntEditText.requestFocus()
             }
 
@@ -146,7 +149,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                 carpiLayout.isVisible = true
                 yorumLayout.isVisible = false
                 yanitLayout.isVisible = true
-                kimeYanitText.text = "@${yanit.adi} yanıtlanıyor"
+                kimeYanitText.text = "@${yanit.adi}"
                 yntEditText.requestFocus()
             }
 
@@ -285,6 +288,11 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                         yorumEditText.setText("")
                         yntEditText.setText("")
                         resetToCommentMode()
+                    }
+                }
+                launch {
+                    viewModel.isPaginationLoading.collect { isLoading ->
+                        paginationProgressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
                     }
                 }
             }

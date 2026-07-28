@@ -4,6 +4,7 @@ import static android.view.View.VISIBLE;
 
 import android.content.Context;
 import android.opengl.Visibility;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -114,8 +115,6 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
 
         @Override
         public boolean areContentsTheSame(@NonNull CommentItem oldItem, @NonNull CommentItem newItem) {
-            // Doğrudan CommentItem.equals() metoduna yönlendiriyoruz.
-            // Sınıflara eklediğimiz equals() sayesinde derinlemesine kontrol yapılır.
             return Objects.equals(oldItem, newItem);
         }
     };
@@ -134,12 +133,25 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
         if (yorumlar != null) {
             for (Yorum_Model yorum : yorumlar) {
                 flattenedList.add(new CommentItem(yorum));
-                if (yorum.isYanitlarGorunuyor() && yorum.getYanitlar() != null) {
-                    for (Yanit_Model yanit : yorum.getYanitlar()) {
-                        flattenedList.add(new CommentItem(yanit, yorum.getYorumID()));
-                    }
-                    if (yorum.isDahafazlaGozukuyorMu() && !yorum.getYanitlar().isEmpty()) {
-                        flattenedList.add(new CommentItem(TYPE_DAHA_FAZLA, yorum));
+
+                List<Yanit_Model> yanitlar = yorum.getYanitlar();
+                if (yanitlar != null && !yanitlar.isEmpty()) {
+
+                    if (yorum.isYanitlarGorunuyor()) {
+                        for (Yanit_Model yanit : yanitlar) {
+                            flattenedList.add(new CommentItem(yanit, yorum.getYorumID()));
+                        }
+                        if (yorum.isDahafazlaGozukuyorMu()
+                                && yorum.getYanitlar().size() < yorum.getToplamYanitSayisi()) {
+
+                            flattenedList.add(new CommentItem(TYPE_DAHA_FAZLA, yorum));
+                        }
+                    } else {
+                        for (Yanit_Model yanit : yanitlar) {
+                            if (yanit.isLocalOnly() || yanit.isSending()) {
+                                flattenedList.add(new CommentItem(yanit, yorum.getYorumID()));
+                            }
+                        }
                     }
                 }
             }
@@ -184,6 +196,7 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
         holder.kullaniciAditext.setText(yorum.getKullaniciAdi());
         holder.yorumText.setText(yorum.getYorumicerik());
         holder.yorumTarihiText.setText(yorum.duzenlenmisTarih());
+
 
         new URLye_Ulasma().IDdenUrlyeUlasma(yorum.getYukleyenId(), holder.YorumFotoImageView);
 
@@ -244,9 +257,15 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
         }
 
         if (yorum.isYanitlarGorunuyor()) {
+
             holder.yanitlariGor.setText("Yanıtları Gizle");
         } else {
-            holder.yanitlariGor.setText("Yanıtları Gör");
+            int toplam = yorum.getToplamYanitSayisi();
+            if (toplam > 0) {
+                holder.yanitlariGor.setText(toplam + " Yanıtı Gör");
+            } else {
+                holder.yanitlariGor.setText("Yanıtları Gör");
+            }
         }
 
         holder.yanitlariGor.setOnClickListener(v -> {
@@ -277,11 +296,11 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
 
         if (yanit.isSending()) {
             holder.yanitlarYukleniyorLayout2ynt.setVisibility(VISIBLE);
-            holder.yanitlaLayout.setVisibility(VISIBLE);
+            holder.yanitlaLayout.setVisibility(GONE);
             holder.likeLayoutYnt.setVisibility(GONE);
         } else {
             holder.yanitlarYukleniyorLayout2ynt.setVisibility(GONE);
-            holder.yanitlaLayout.setVisibility(GONE);
+            holder.yanitlaLayout.setVisibility(VISIBLE);
             holder.likeLayoutYnt.setVisibility(VISIBLE);
         }
 
@@ -331,6 +350,24 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
     }
 
     private void bindDahaFazla(DahaFazlaViewHolder holder, Yorum_Model yorum) {
+        int toplam = yorum.getToplamYanitSayisi();
+        int sunucudanYuklenen = 0;
+        if (yorum.getYanitlar() != null) {
+            for (Yanit_Model yanit : yorum.getYanitlar()) {
+                if (!yanit.isLocalOnly() && !yanit.isSending()) {
+                    sunucudanYuklenen++;
+                }
+            }
+        }
+
+        int kalan = toplam - sunucudanYuklenen;
+
+        if (kalan > 0) {
+            holder.dahaFazlaText.setText(kalan + " yanıt daha göster");
+        } else {
+            holder.dahaFazlaText.setText("Daha fazla yanıt göster");
+        }
+
         holder.dahaFazlaText.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onDahaFazlaYanitGetirTiklandi(yorum);

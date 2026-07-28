@@ -27,7 +27,7 @@ class YanitRepository {
                 .collection("yanitlar")
 
             var query = yanitlarRef
-                .orderBy("yanitzaman", Query.Direction.ASCENDING)
+                .orderBy("yanitzaman", Query.Direction.DESCENDING)
                 .limit(limit.toLong())
 
             if (lastVisibleDoc != null) {
@@ -70,12 +70,20 @@ class YanitRepository {
                 "kullanici_adi" to username,
                 "YanitiYukleyenID" to userId
             )
+
             val docRef = db.collection("cats")
                 .document(catId)
                 .collection("yorumlar")
                 .document(commentId)
                 .collection("yanitlar")
                 .add(replyData)
+                .await()
+
+            db.collection("cats")
+                .document(catId)
+                .collection("yorumlar")
+                .document(commentId)
+                .update("yanitSayisi", FieldValue.increment(1))
                 .await()
 
             docRef.id
@@ -94,6 +102,14 @@ class YanitRepository {
                 .document(yanitId)
                 .delete()
                 .await()
+
+            db.collection("cats")
+                .document(catId)
+                .collection("yorumlar")
+                .document(yorumId)
+                .update("yanitSayisi", FieldValue.increment(-1))
+                .await()
+
             true
         } catch (e: Exception) {
             false

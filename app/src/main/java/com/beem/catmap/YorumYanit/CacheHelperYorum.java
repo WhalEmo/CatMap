@@ -37,7 +37,6 @@ public class CacheHelperYorum {
         return new HashSet<>(savedSet);
     }
 
-    // --- YENİ: Yanıt Beğeni Set Kaydet/Yükle ---
     public static void saveBegenilenYanitSet(Context context, Set<String> begenilenYanitSet) {
         getPrefs(context).edit().putStringSet(KEY_BEGENILEN_YANIT_SET, begenilenYanitSet).apply();
     }

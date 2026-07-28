@@ -1,4 +1,5 @@
 package com.beem.catmap.YorumYanit;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -14,12 +15,13 @@ public class Yanit_Model {
     private int begeniSayisiYanit = 0;
     private boolean begenildiMi = false;
     private boolean isSending = false;
+    private boolean localOnly = false; // Yeni eklenen profesyonel alan
 
     public Yanit_Model() {
         this.yanitId = "";
     }
 
-    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih, String yanitiYukleyen,int begeniSayisiYanit,boolean isSending) {
+    public Yanit_Model(String yanitId, String adi, String yaniticerik, Date tarih, String yanitiYukleyen, int begeniSayisiYanit, boolean isSending) {
         this.yanitId = yanitId != null ? yanitId : "";
         this.adi = adi;
         this.yaniticerik = yaniticerik;
@@ -29,11 +31,11 @@ public class Yanit_Model {
         this.isSending = isSending;
     }
 
-
     public Yanit_Model copy() {
-        Yanit_Model kopya = new Yanit_Model(this.yanitId, this.adi, this.yaniticerik, this.tarih, this.yanitiYukleyen,this.begeniSayisiYanit, this.isSending);
+        Yanit_Model kopya = new Yanit_Model(this.yanitId, this.adi, this.yaniticerik, this.tarih, this.yanitiYukleyen, this.begeniSayisiYanit, this.isSending);
         kopya.setYorumId(this.yorumId);
         kopya.setBegenildiMi(this.begenildiMi);
+        kopya.setLocalOnly(this.localOnly);
         return kopya;
     }
 
@@ -61,14 +63,11 @@ public class Yanit_Model {
     public boolean isBegenildiMi() { return begenildiMi; }
     public void setBegenildiMi(boolean begenildiMi) { this.begenildiMi = begenildiMi; }
 
-    public boolean isSending() {
-        return isSending;
-    }
+    public boolean isSending() { return isSending; }
+    public void setSending(boolean sending) { isSending = sending; }
 
-    public void setSending(boolean sending) {
-        isSending = sending;
-    }
-
+    public boolean isLocalOnly() { return localOnly; }
+    public void setLocalOnly(boolean localOnly) { this.localOnly = localOnly; }
 
     @Override
     public boolean equals(Object o) {
@@ -78,6 +77,7 @@ public class Yanit_Model {
         return begeniSayisiYanit == that.begeniSayisiYanit &&
                 begenildiMi == that.begenildiMi &&
                 isSending == that.isSending &&
+                localOnly == that.localOnly &&
                 Objects.equals(yanitId, that.yanitId) &&
                 Objects.equals(yorumId, that.yorumId) &&
                 Objects.equals(adi, that.adi) &&
@@ -88,7 +88,7 @@ public class Yanit_Model {
 
     @Override
     public int hashCode() {
-        return Objects.hash(yanitId, yorumId, adi, yaniticerik, tarih, yanitiYukleyen, begeniSayisiYanit, begenildiMi, isSending);
+        return Objects.hash(yanitId, yorumId, adi, yaniticerik, tarih, yanitiYukleyen, begeniSayisiYanit, begenildiMi, isSending, localOnly);
     }
 
     public String duzenlenmisTarih() {
@@ -104,4 +104,3 @@ public class Yanit_Model {
         return sdf.format(tarih);
     }
 }
-

@@ -72,6 +72,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
         initViews(view)
         observeViewModel()
+        setupCommentCountObserver()
 
         @Suppress("DEPRECATION")
         val cat = arguments?.getSerializable(ARG_CAT) as? Kediler
@@ -81,6 +82,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
             kedi.id?.let { catId ->
                 commentsViewModel.initCatId(catId)
+                yorumSayisiToplam()
             }
 
             kedi.yukleyenId?.let { ownerId ->
@@ -146,7 +148,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                         fotoAdapter.submitList(emptyList())
                     }
 
-                    yorumSayisiToplam()
                 }
             }
         }
@@ -278,30 +279,26 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             expandedOffset = 0
         }
     }
-
-    private fun yorumSayisiToplam() {
-        val currentCatId = viewModel.selectedCat.value?.id ?: return
-
-
-        yorumSayisiTextView.text = "Yükleniyor..."
-        yorumSayisiTextView.setTextColor(Color.parseColor("#333333"))
-
-        val fadeAnim = AnimationUtils.loadAnimation(requireContext(), R.anim.animasyonlu_yukleniyor)
-        yorumSayisiTextView.startAnimation(fadeAnim)
-
-
-        commentsViewModel.fetchCommentCount()
-
+    private fun setupCommentCountObserver() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 commentsViewModel.commentCount.collectLatest { sayi ->
+                    yorumSayisiTextView.clearAnimation()
                     yorumSayisiTextView.setTextColor(Color.BLACK)
                     yorumSayisiTextView.text = "$sayi Yorum"
                 }
             }
         }
     }
+    private fun yorumSayisiToplam() {
+        yorumSayisiTextView.text = "Yükleniyor..."
+        yorumSayisiTextView.setTextColor(Color.parseColor("#333333"))
 
+        val fadeAnim = AnimationUtils.loadAnimation(requireContext(), R.anim.animasyonlu_yukleniyor)
+        yorumSayisiTextView.startAnimation(fadeAnim)
+
+        commentsViewModel.fetchCommentCount()
+    }
     companion object {
         const val TAG = "BottomSheetFragment"
         private const val ARG_CAT = "arg_cat"

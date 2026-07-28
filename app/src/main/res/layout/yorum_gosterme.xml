@@ -71,6 +71,14 @@
                 android:visibility="gone"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
+            <ProgressBar
+                android:id="@+id/paginationProgressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/catmap_accent"
+                android:padding="8dp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/bosYorumTextView"

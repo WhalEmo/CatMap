@@ -31,10 +31,14 @@ class CommentsRepo {
                 val uploaderId = doc.getString("Yukleyen_ID") ?: ""
                 val date = doc.getDate("zaman")
                 val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
+                val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
+
 
                 Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
                     this.begeniSayisi = begeniSayisi
+                    this.toplamYanitSayisi = yanitSayisi
                 }
+
             }
 
             val lastDoc = querySnapshot.documents.lastOrNull()
@@ -67,9 +71,11 @@ class CommentsRepo {
                 val uploaderId = doc.getString("Yukleyen_ID") ?: ""
                 val date = doc.getDate("zaman")
                 val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
+                val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
 
                 Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
                     this.begeniSayisi = begeniSayisi
+                    this.toplamYanitSayisi = yanitSayisi
                 }
             }
 
@@ -86,7 +92,8 @@ class CommentsRepo {
                 "icerik" to content,
                 "zaman" to FieldValue.serverTimestamp(),
                 "kullanici_adi" to username,
-                "Yukleyen_ID" to userId
+                "Yukleyen_ID" to userId,
+                "yanitSayisi" to 0
             )
             val documentRef = db.collection("cats").document(catId).collection("yorumlar").add(commentData).await()
             documentRef.id
