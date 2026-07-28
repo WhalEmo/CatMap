@@ -26,9 +26,11 @@ import com.beem.catmap.YorumYanit.Yorum_Adapter
 import com.beem.catmap.YorumYanit.Yorum_Model
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.ui.navigation.NavigationHelper
+import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -49,6 +51,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var yorumGonderButton: View
     private lateinit var yanitGonderButton: View
     private lateinit var bosYorumText: TextView
+    private lateinit var yorumGonderUserPp: CircleImageView
+    private lateinit var yanitGonderUserPp: CircleImageView
 
     private lateinit var yorumAdapter: Yorum_Adapter
     private lateinit var paginationProgressBar: ProgressBar
@@ -84,6 +88,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         setupRecyclerView()
         setupTextWatchers()
         observeViewModel()
+        loadCurrentUserProfileImage()
 
         if (catId.isNotEmpty()) {
             viewModel.initCatId(catId)
@@ -104,6 +109,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         yanitGonderButton = view.findViewById(R.id.yntgonder)
         bosYorumText = view.findViewById(R.id.bosYorumTextView)
         paginationProgressBar = view.findViewById(R.id.paginationProgressBar)
+        yorumGonderUserPp = view.findViewById(R.id.YrmgndrFotoImageView)
+        yanitGonderUserPp = view.findViewById(R.id.YntgndrFotoImageView)
 
         setButtonState(yorumGonderButton, false)
         setButtonState(yanitGonderButton, false)
@@ -111,6 +118,28 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         iptalButton.setOnClickListener { resetToCommentMode() }
         yorumGonderButton.setOnClickListener { sendComment() }
         yanitGonderButton.setOnClickListener { sendReply() }
+    }
+    private fun loadCurrentUserProfileImage() {
+        val currentUser = userRepository.getCurrentUser()
+        val photoUrl = currentUser.fotoUrl
+
+        if (!photoUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .load(photoUrl)
+                .placeholder(R.drawable.kullanici)
+                .error(R.drawable.kullanici)
+                .into(yorumGonderUserPp)
+
+            // Yanıt gönderme alanındaki resim
+            Glide.with(this)
+                .load(photoUrl)
+                .placeholder(R.drawable.kullanici)
+                .error(R.drawable.kullanici)
+                .into(yanitGonderUserPp)
+        } else {
+            yorumGonderUserPp.setImageResource(R.drawable.kullanici)
+            yanitGonderUserPp.setImageResource(R.drawable.kullanici)
+        }
     }
 
     private fun setupRecyclerView() {
