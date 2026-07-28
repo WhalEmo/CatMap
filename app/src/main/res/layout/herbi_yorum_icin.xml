@@ -6,7 +6,9 @@
     android:orientation="vertical"
     android:background="@drawable/yorum_background"
     android:padding="8dp"
-    android:layout_marginBottom="8dp">
+    android:layout_marginBottom="0dp"
+    android:layout_marginTop="8dp"
+    >
 
     <LinearLayout
         android:layout_width="200dp"
@@ -122,6 +124,7 @@
             android:layout_height="wrap_content"
             android:gravity="end"
             android:text="Yanıtla"
+            android:textSize="15sp"
             android:textStyle="italic"
             android:textColor="@android:color/holo_blue_dark"
             android:layout_marginStart="20dp"

@@ -351,14 +351,8 @@ public class Yorum_Adapter extends ListAdapter<Yorum_Adapter.CommentItem, Recycl
 
     private void bindDahaFazla(DahaFazlaViewHolder holder, Yorum_Model yorum) {
         int toplam = yorum.getToplamYanitSayisi();
-        int sunucudanYuklenen = 0;
-        if (yorum.getYanitlar() != null) {
-            for (Yanit_Model yanit : yorum.getYanitlar()) {
-                if (!yanit.isLocalOnly() && !yanit.isSending()) {
-                    sunucudanYuklenen++;
-                }
-            }
-        }
+        int sunucudanYuklenen = yorum.getYanitlar().size();
+
 
         int kalan = toplam - sunucudanYuklenen;
 

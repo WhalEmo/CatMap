@@ -1,12 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:layout_marginStart="32dp"
+    android:layout_marginStart="40dp"
+    android:layout_marginBottom="0dp"
+    android:layout_marginTop="1dp"
     android:background="@drawable/yanit_background"
     android:padding="8dp">
 
+    <!-- Kullanıcı Profil Fotoğrafı ve Adı -->
     <LinearLayout
         android:layout_width="200dp"
         android:layout_height="40dp"
@@ -26,24 +30,26 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:translationX="5dp"
+            android:textSize="13sp"
             android:text="Kullanıcı Adı"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <!-- Yanıt Metni, Yükleniyor ve Menü Butonu -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        >
+        android:gravity="center_vertical">
 
         <TextView
             android:id="@+id/yanittTextView"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:textColor="@android:color/black"
             android:text="Yanıt içeriği" />
-        <!-- 👇 Buraya ekle -->
+
         <LinearLayout
             android:id="@+id/yanitlarYukleniyorLayout2ynt"
             android:layout_width="wrap_content"
@@ -51,7 +57,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:visibility="visible"
-            android:layout_marginTop="8dp">
+            android:layout_marginStart="8dp">
 
             <ProgressBar
                 android:id="@+id/yanitlarProgress2ynt"
@@ -82,7 +88,7 @@
             app:tint="#888888" />
     </LinearLayout>
 
-
+    <!-- Tarih -->
     <TextView
         android:id="@+id/tarihTextView"
         android:layout_width="wrap_content"
@@ -91,7 +97,7 @@
         android:text="Tarih"
         android:textColor="#888888"/>
 
-    <!-- Yorum için Yanıtları Gör ve Yanıtla metinlerini aynı satıra yerleştiriyoruz -->
+    <!-- Alt Etkileşim Alanı (Yanıtla metni ve Kalp/Beğeni) -->
     <LinearLayout
         android:id="@+id/yanitlaLayout"
         android:orientation="horizontal"
@@ -100,7 +106,6 @@
         android:paddingTop="4dp"
         android:gravity="start">
 
-        <!-- Yanıtla metni -->
         <TextView
             android:id="@+id/yanitlayazisiynt"
             android:layout_width="wrap_content"
@@ -109,9 +114,10 @@
             android:focusable="true"
             android:gravity="end"
             android:text="Yanıtla"
+            android:textSize="15sp"
             android:textColor="@android:color/holo_blue_dark"
-            android:textStyle="italic"
-            />
+            android:textStyle="italic" />
+
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
@@ -126,7 +132,6 @@
             android:layout_marginEnd="8dp"
             android:gravity="center_vertical">
 
-            <!-- Kalp simgesi -->
             <ImageView
                 android:id="@+id/kalpImageViewYnt"
                 android:layout_width="24dp"
@@ -138,7 +143,6 @@
                 android:focusable="true"
                 android:layout_gravity="center_vertical"/>
 
-            <!-- Sabit genişlikli sayı -->
             <TextView
                 android:id="@+id/begeniSayisiTextViewYnt"
                 android:layout_width="40dp"
@@ -146,7 +150,7 @@
                 android:text="0"
                 android:textSize="12sp"
                 android:gravity="center_vertical|start"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="4dp"
                 android:textColor="@android:color/black"
                 android:maxLines="1"
                 android:ellipsize="end"/>
