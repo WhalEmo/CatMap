@@ -10,9 +10,8 @@ import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -53,8 +52,8 @@ public class MesajFotoGonderYonetici {
     }
 
     private void FotolariStorageKaydet(MesajAdapter adapter, Context context){
-        UserRepository userRepository = UserRepository.Companion.getInstance(context);
-        Mesaj mesaj = new Mesaj(userRepository.getCurrentUserId(),System.currentTimeMillis(),"gecici",false);
+        CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(context);
+        Mesaj mesaj = new Mesaj(currentUserManager.getCurrentUserId(),System.currentTimeMillis(),"gecici",false);
         mesaj.setTur("foto");
         adapter.getMesajArrayList().add(mesaj);
         adapter.notifyItemInserted(adapter.getItemCount()-1);
@@ -67,7 +66,7 @@ public class MesajFotoGonderYonetici {
                             fotoUrlleri.add(uri.toString());
 
                             if(fotoUrlleri.size() == fotografUrileri.size()){
-                                FotoMesajGonder(adapter,mesaj, userRepository.getCurrentUserId());
+                                FotoMesajGonder(adapter,mesaj, currentUserManager.getCurrentUserId());
                             }
                         });
                     }

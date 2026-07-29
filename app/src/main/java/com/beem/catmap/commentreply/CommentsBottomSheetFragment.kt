@@ -7,8 +7,6 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -31,7 +29,7 @@ import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.R
 import com.beem.catmap.models.ReplyModel
 import com.beem.catmap.models.CommentModel
-import com.beem.catmap.data.repository.UserRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.bumptech.glide.Glide
@@ -46,7 +44,7 @@ import kotlinx.coroutines.launch
 class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private val viewModel: CommentViewModel by viewModels()
-    private lateinit var userRepository: UserRepository
+    private lateinit var currentUserManager: CurrentUserManager
     private lateinit var currentUser: Kullanici
 
     private lateinit var commentRecyclerView: RecyclerView
@@ -75,8 +73,8 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
         catId = arguments?.getString(ARG_CAT_ID).orEmpty()
 
-        userRepository = UserRepository.getInstance(requireContext())
-        currentUser = userRepository.getCurrentUser()
+        currentUserManager = CurrentUserManager.getInstance(requireContext())
+        currentUser = currentUserManager.getCurrentUser()
     }
 
     override fun onCreateView(

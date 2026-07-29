@@ -2,14 +2,12 @@ package com.beem.catmap.Profil;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 import android.util.Pair;
 
-import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -20,7 +18,7 @@ import com.beem.catmap.Profil.Gonderiler.GonderiYuklemeListener;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.Gonderiler.Gonderi;
 import com.beem.catmap.UyariMesaji;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
@@ -38,7 +36,7 @@ import java.util.UUID;
 
 public class MainViewModel extends ViewModel {
     private FirebaseFirestore db;
-    private UserRepository userRepository;
+    private CurrentUserManager currentUserManager;
 
     public MutableLiveData<String>_Url=new MutableLiveData<>();
     public LiveData<String>UrlLiveData(){return _Url;}
@@ -121,11 +119,11 @@ public class MainViewModel extends ViewModel {
     public MainViewModel() {
         takipDurumlariniBirlestir();
         db = FirebaseFirestore.getInstance();
-        userRepository = UserRepository.Companion.getInstance(CatMapApp.Companion.getInstance());
+        currentUserManager = CurrentUserManager.Companion.getInstance(CatMapApp.Companion.getInstance());
     }
 
     private String getCurrentUserId() {
-        return userRepository.getCurrentUser().getID();
+        return currentUserManager.getCurrentUser().getID();
     }
 
     public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
@@ -467,9 +465,9 @@ public class MainViewModel extends ViewModel {
                                 .document(getCurrentUserId())
                                 .update("KullaniciAdi",kullaniciAdi)
                                 .addOnSuccessListener(b->{
-                                    Kullanici k = userRepository.getCurrentUser();
+                                    Kullanici k = currentUserManager.getCurrentUser();
                                     k.setKullaniciAdi(kullaniciAdi);
-                                    userRepository.setCurrentUser(k);
+                                    currentUserManager.setCurrentUser(k);
 
                                     SharedPreferences sp = context.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
                                     sp.edit().putString("KullaniciAdi",kullaniciAdi).apply();
