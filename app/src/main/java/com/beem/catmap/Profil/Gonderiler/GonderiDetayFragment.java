@@ -140,7 +140,6 @@ public class GonderiDetayFragment extends Fragment {
       
         CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(requireContext());
 
-        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
 
         kediAdiText.setText(kediAdi);
         if (aciklama == null || aciklama.trim().isEmpty()) {
