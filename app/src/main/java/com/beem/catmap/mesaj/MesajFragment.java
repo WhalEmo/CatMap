@@ -39,7 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.database.DataSnapshot;
@@ -80,7 +80,7 @@ public class MesajFragment extends Fragment {
     private boolean engellendim;
     private boolean engelledim;
 
-    private UserRepository userRepository;
+    private CurrentUserManager currentUserManager;
 
     public MesajFragment(){
     }
@@ -98,7 +98,7 @@ public class MesajFragment extends Fragment {
             SmartNavigationEngine.navigateBack();
         });
 
-        userRepository = UserRepository.Companion.getInstance(requireContext());
+        currentUserManager = CurrentUserManager.Companion.getInstance(requireContext());
     }
 
     @Nullable
@@ -397,7 +397,7 @@ public class MesajFragment extends Fragment {
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()) {
                     Boolean  engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
-                    Boolean  engelledinMi = snapshot.child(userRepository.getCurrentUserId()).getValue(Boolean.class);
+                    Boolean  engelledinMi = snapshot.child(currentUserManager.getCurrentUserId()).getValue(Boolean.class);
                     engellendim = engellendinMi != null && engellendinMi;
                     engelledim = engelledinMi != null && engelledinMi;
                     mesajlasmaYonetici.setEngelledim(engelledim);
@@ -424,7 +424,7 @@ public class MesajFragment extends Fragment {
         };
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("mesajlar");
         if(mesajlasmaYonetici.getSohbetID()==null){
-            mesajlasmaYonetici.sohbetIDOlustur(userRepository.getCurrentUserId(),mesajlasmaYonetici.getAlici().getID(), id->{
+            mesajlasmaYonetici.sohbetIDOlustur(currentUserManager.getCurrentUserId(),mesajlasmaYonetici.getAlici().getID(), id->{
                 ref.child(id)
                         .child("engelliMi")
                         .addListenerForSingleValueEvent(event);

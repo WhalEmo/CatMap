@@ -7,8 +7,6 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.LayoutInflater
@@ -24,7 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
 import com.beem.catmap.Maps.CatFactService
-import com.beem.catmap.Maps.MapKedi.Kediler
+import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Maps.MapViewModel
 import com.beem.catmap.Maps.MapsActivity
 import com.beem.catmap.R
@@ -50,7 +48,7 @@ import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
 import com.beem.catmap.Maps.LocationEngine
-import com.beem.catmap.Maps.markersclick.BottomSheetFragment
+import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
@@ -337,7 +335,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         return Kediler(
             model.id, model.kediAdi, model.kediHakkinda,
             model.latitude, model.longitude, model.mainPhotoUrl,
-            ArrayList(model.photoUri), model.YukleyenKullaniciID
+            ArrayList(model.photoUri), model.YukleyenKullaniciID,model.createdAt
         )
     }
 

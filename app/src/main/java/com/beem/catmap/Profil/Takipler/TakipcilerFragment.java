@@ -13,11 +13,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -56,13 +55,13 @@ public class TakipcilerFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+        CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(requireContext());
         // ID'yi alıyoruz
         if (getArguments() != null) {
             id = getArguments().getString("profilID");
             Log.d("FIRESTORE_KORUMA", "TakipcilerFragment'a gelen ID: " + id);
-        } else if(userRepository.isUserLoggedIn()) {
-            id = userRepository.getCurrentUserId(); // Yedek olarak kendi ID'miz
+        } else if(currentUserManager.isUserLoggedIn()) {
+            id = currentUserManager.getCurrentUserId(); // Yedek olarak kendi ID'miz
         }
 
         veriCekTakipciler(id);

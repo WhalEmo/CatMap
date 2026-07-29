@@ -19,14 +19,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.beem.catmap.MainActivity;
-
 
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 
@@ -77,7 +75,7 @@ public class engellenenlerFragmnet extends Fragment {
             adapter.notifyDataSetChanged();
         });
 
-        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+        CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(requireContext());
 
         adapter.setOnEngelClickListener(kullanici -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
@@ -85,7 +83,7 @@ public class engellenenlerFragmnet extends Fragment {
             builder.setMessage("Bu kullanıcının engelini kaldırmak istiyor musunuz?");
 
             builder.setPositiveButton("Evet", (dialog, which) -> {
-                mViewModel.engelKaldir(kullanici.getID(), userRepository.getCurrentUserId(), uyari);
+                mViewModel.engelKaldir(kullanici.getID(), currentUserManager.getCurrentUserId(), uyari);
                 adapter.remove(kullanici);
             });
 

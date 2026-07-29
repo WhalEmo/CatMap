@@ -6,10 +6,9 @@ import android.util.Log;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.UyariMesaji;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.Timestamp;
@@ -22,14 +21,14 @@ import java.util.Map;
 
 public class GonderiKaydetmeYardimciSinif {
     public static void kullaniciyaGonderiKaydet(Context context, String kediID, ConstraintLayout main, UyariMesaji mesaji){
-        UserRepository userRepository = UserRepository.Companion.getInstance(context);
+        CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(context);
 
-        if (!userRepository.isUserLoggedIn()) {
+        if (!currentUserManager.isUserLoggedIn()) {
             if (mesaji != null) mesaji.BasarisizDurum("Oturum bulunamadı!", 1000);
             return;
         }
 
-        String currentUserId = userRepository.getCurrentUser().getID();
+        String currentUserId = currentUserManager.getCurrentUser().getID();
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference kullaniciRef = db.collection("users").document(currentUserId);

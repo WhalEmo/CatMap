@@ -1,12 +1,13 @@
-package com.beem.catmap.Maps.markersclick
+package com.beem.catmap.ui.markersclick
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.Maps.MapKedi.Kediler
+import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.Profil.Gonderiler.Gonderi
-import com.beem.catmap.data.repository.UserRepository
+import com.beem.catmap.data.repository.CatRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,7 @@ import kotlinx.coroutines.launch
 
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatRepository()
-    private val userRepository = UserRepository.Companion.getInstance(application)
+    private val currentUserManager = CurrentUserManager.Companion.getInstance(application)
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()
@@ -58,7 +59,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun toggleLike() {
         val currentCat = _selectedCat.value ?: return
-        val userId = userRepository.getCurrentUserId() ?: return
+        val userId = currentUserManager.getCurrentUserId() ?: return
         val currentlyLiked = _isLiked.value
 
         if (currentlyLiked) {
@@ -88,7 +89,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun loadOwnerInfo(ownerId: String) {
         viewModelScope.launch {
-            val currentUserId = userRepository.getCurrentUserId()
+            val currentUserId = currentUserManager.getCurrentUserId()
             _isMyCat.value = (ownerId == currentUserId)
 
             val userData = repository.getUserInfo(ownerId)
@@ -102,7 +103,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun deleteCatFromUserAndMap() {
         val currentCat = _selectedCat.value ?: return
-        val userId = userRepository.getCurrentUserId() ?: return
+        val userId = currentUserManager.getCurrentUserId() ?: return
 
         viewModelScope.launch {
             val isRemovedFromUser = repository.removeCatFromUserPosts(userId, currentCat.id)

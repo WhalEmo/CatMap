@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.R;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 
 import java.util.ArrayList;
 
@@ -35,7 +35,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
     private Runnable goster;
     private boolean Engel = false;
     Animation anim;
-    private UserRepository userRepository;
+    private CurrentUserManager currentUserManager;
 
     public ArrayList<Mesaj> getMesajArrayList() {
         return mesajArrayList;
@@ -72,11 +72,11 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         Mesaj mesaj = mesajArrayList.get(position);
 
-        if (userRepository == null) {
-            userRepository = UserRepository.Companion.getInstance(context);
+        if (currentUserManager == null) {
+            currentUserManager = CurrentUserManager.Companion.getInstance(context);
         }
 
-        Kullanici currentUser = userRepository.getCurrentUser();
+        Kullanici currentUser = currentUserManager.getCurrentUser();
 
         if(mesaj.isYaniyorMu()){
             holder.itemView.startAnimation(anim);

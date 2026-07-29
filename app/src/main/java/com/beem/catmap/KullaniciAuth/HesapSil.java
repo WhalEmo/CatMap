@@ -3,8 +3,7 @@ package com.beem.catmap.KullaniciAuth;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
-import com.beem.catmap.MainActivity;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.AuthCredential;
@@ -31,12 +30,12 @@ public class HesapSil {
     private ArrayList<String> takipciler = new ArrayList<>();
     private ArrayList<Map<String, Object>> yuklenenKediler;
 
-    private UserRepository userRepository;
+    private CurrentUserManager currentUserManager;
     private Kullanici currentUser;
 
     public HesapSil(Context context) {
-        this.userRepository = UserRepository.Companion.getInstance(context);
-        this.currentUser = userRepository.getCurrentUser();
+        this.currentUserManager = CurrentUserManager.Companion.getInstance(context);
+        this.currentUser = currentUserManager.getCurrentUser();
     }
 
     public void HesapSilmeBaslat(Runnable onFinish) {
@@ -85,7 +84,7 @@ public class HesapSil {
                 .addOnSuccessListener(tasks -> {
                     MesajlariSil(() -> {
                         HesabiSil(() -> {
-                            userRepository.logout();
+                            currentUserManager.logout();
                             onFinish.run();
                         });
                     });

@@ -27,7 +27,7 @@ import androidx.fragment.app.Fragment;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.Maps.markersclick.comments.CommentsBottomSheetFragment;
+import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
 import com.beem.catmap.Profil.MainViewModel;
@@ -35,7 +35,7 @@ import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.Profil.Takipler.TakiplerFragment;
 import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
 import com.beem.catmap.R;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
 import com.beem.catmap.mesaj.MesajFotoGosterFragment;
 import com.beem.catmap.mesaj.MesajFragment;
@@ -88,7 +88,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
     private CatMapNavigationEngine navigationEngine;
     private CatMapNavigationRenderer navigationRenderer;
-    private UserRepository userRepository;
+    private CurrentUserManager currentUserManager;
 
     private double latitude;
     private double longitude;
@@ -120,7 +120,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        userRepository = UserRepository.Companion.getInstance(getApplicationContext());
+        currentUserManager = CurrentUserManager.Companion.getInstance(getApplicationContext());
 
         setTheme(R.style.Theme_CatMap);
 
@@ -165,8 +165,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 () -> null
         );
 
-        if (userRepository.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
+        if (currentUserManager.isUserLoggedIn()) {
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
             BegenileriCek();
             SmartNavigationEngine.init(navigationEngine, Screen.MAP);
         } else {
@@ -232,7 +232,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     }
 
     private void BegenileriCek() {
-        String userId = userRepository.getCurrentUserId();
+        String userId = currentUserManager.getCurrentUserId();
         if (userId == null || userId.isEmpty()) return;
 
         db.collection("users")
@@ -280,8 +280,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         bittimi = false;
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
 
-        if (userRepository != null && userRepository.isUserLoggedIn()) {
-            Kullanici user = userRepository.getCurrentUser();
+        if (currentUserManager != null && currentUserManager.isUserLoggedIn()) {
+            Kullanici user = currentUserManager.getCurrentUser();
             if (user != null) {
                 CevrimIciYonetimi.getInstance().CevrimIciCalistir(user);
                 user.setLatitude(latitude);
@@ -295,8 +295,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onResume() {
         super.onResume();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
-        if (userRepository.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
+        if (currentUserManager.isUserLoggedIn()) {
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
         }
     }
 
@@ -304,8 +304,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onStop() {
         super.onStop();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (userRepository.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
+        if (currentUserManager.isUserLoggedIn()) {
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
         }
     }
 
@@ -313,8 +313,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onPause() {
         super.onPause();
         CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (userRepository.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(userRepository.getCurrentUser());
+        if (currentUserManager.isUserLoggedIn()) {
+            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
         }
     }
 

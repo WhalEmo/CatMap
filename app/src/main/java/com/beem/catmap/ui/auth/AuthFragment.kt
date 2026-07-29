@@ -1,6 +1,5 @@
 package com.beem.catmap.ui.auth
 
-import android.content.Context
 import android.os.Bundle
 import android.text.InputType
 import android.util.Patterns
@@ -20,7 +19,7 @@ import com.beem.catmap.KullaniciAuth.Kullanici
 
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
-import com.beem.catmap.data.repository.UserRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.ActivityMainBinding
 import com.beem.catmap.databinding.GirispencereBinding
 import com.beem.catmap.databinding.KaydolpencereBinding
@@ -258,7 +257,7 @@ class AuthFragment : Fragment() {
     }
 
     private fun saveUserLocallyAndNavigate(user: Kullanici) {
-        UserRepository.getInstance(requireContext()).setCurrentUser(user)
+        CurrentUserManager.getInstance(requireContext()).setCurrentUser(user)
         dialog?.dismiss()
         animateButtonsOut()
 
