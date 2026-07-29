@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
@@ -31,9 +32,11 @@ import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class GonderiDetayFragment extends Fragment {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -51,6 +54,14 @@ public class GonderiDetayFragment extends Fragment {
     private String aciklama;
     private Long begeni;
     private String kediid;
+
+    private ViewPager2 photoPager;
+    private LinearLayout photoDotsContainer;
+    private MaterialCardView photoIndicatorCapsule;
+
+    private final List<View> photoIndicatorDots = new ArrayList<>();
+
+    private ViewPager2.OnPageChangeCallback photoPageChangeCallback;
 
     public static Bundle newBundle(ArrayList<String> fotoListesi, String kediAdi, String aciklama, Long begeni,String kediid) {
         Bundle args = new Bundle();
@@ -103,22 +114,35 @@ public class GonderiDetayFragment extends Fragment {
     }
 
     @Override
+    public void onDestroyView() {
+        if (photoPager != null && photoPageChangeCallback != null) {
+            photoPager.unregisterOnPageChangeCallback(photoPageChangeCallback);
+        }
+
+        photoPager = null;
+        photoDotsContainer = null;
+        photoIndicatorCapsule = null;
+        photoPageChangeCallback = null;
+
+        photoIndicatorDots.clear();
+
+        super.onDestroyView();
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false);
         MainViewModel mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-        ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
         TextView begeniBilgiTextView=view.findViewById(R.id.begeniBilgiTextView);
         ImageView GonderiMenu=view.findViewById(R.id.GonderiMenu);
 
-        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+        photoPager = view.findViewById(R.id.fotoPager);
+        photoDotsContainer = view.findViewById(R.id.fotoDotsContainer);
+        photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule);
 
-        viewPager.setAdapter(new FotoAdapter(fotoListesi, new FotoYuklemeListener() {
-            @Override
-            public void onTumFotograflarYuklendi() {
-            }
-        }));
+        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
 
         kediAdiText.setText(kediAdi);
             aciklamaText.setText(aciklama);
@@ -203,6 +227,110 @@ public class GonderiDetayFragment extends Fragment {
                 mapViewModel.requestZoomToCat(kediid);
             }
         });
+
+
+
+        if (fotoListesi == null) {
+            fotoListesi = new ArrayList<>();
+        }
+
+        photoPager.setAdapter(new FotoAdapter(fotoListesi, new FotoYuklemeListener() {
+            @Override
+            public void onTumFotograflarYuklendi() {
+            }
+        }));
+
+        setupPhotoIndicator(fotoListesi.size());
+
+        photoPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                updatePhotoIndicator(position);
+            }
+        };
+
+        photoPager.registerOnPageChangeCallback(photoPageChangeCallback);
+
+    }
+
+
+    private void setupPhotoIndicator(int photoCount) {
+        photoDotsContainer.removeAllViews();
+        photoIndicatorDots.clear();
+
+        if (photoCount <= 1) {
+            photoIndicatorCapsule.setVisibility(View.GONE);
+            return;
+        }
+
+        photoIndicatorCapsule.setVisibility(View.VISIBLE);
+
+        for (int i = 0; i < photoCount; i++) {
+            View dot = new View(requireContext());
+
+            boolean isSelected = i == 0;
+
+            int dotSize = dpToPx(isSelected ? 8 : 6);
+            int dotMargin = dpToPx(3);
+
+            LinearLayout.LayoutParams layoutParams =
+                    new LinearLayout.LayoutParams(dotSize, dotSize);
+
+            layoutParams.setMargins(
+                    dotMargin,
+                    0,
+                    dotMargin,
+                    0
+            );
+
+            dot.setLayoutParams(layoutParams);
+
+            dot.setBackground(
+                    ContextCompat.getDrawable(
+                            requireContext(),
+                            isSelected
+                                    ? R.drawable.dot_active
+                                    : R.drawable.dot_inactive
+                    )
+            );
+
+            photoDotsContainer.addView(dot);
+            photoIndicatorDots.add(dot);
+        }
+    }
+
+    private void updatePhotoIndicator(int selectedPosition) {
+        for (int i = 0; i < photoIndicatorDots.size(); i++) {
+            View dot = photoIndicatorDots.get(i);
+
+            boolean isSelected = i == selectedPosition;
+
+            int dotSize = dpToPx(isSelected ? 8 : 6);
+
+            LinearLayout.LayoutParams layoutParams =
+                    (LinearLayout.LayoutParams) dot.getLayoutParams();
+
+            layoutParams.width = dotSize;
+            layoutParams.height = dotSize;
+
+            dot.setLayoutParams(layoutParams);
+
+            dot.setBackground(
+                    ContextCompat.getDrawable(
+                            requireContext(),
+                            isSelected
+                                    ? R.drawable.dot_active
+                                    : R.drawable.dot_inactive
+                    )
+            );
+        }
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(
+                dp * getResources().getDisplayMetrics().density
+        );
     }
 
 }
