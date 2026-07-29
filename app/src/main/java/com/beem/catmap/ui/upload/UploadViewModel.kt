@@ -5,10 +5,14 @@ import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.MapRepository
+import com.beem.catmap.gonderi.SavePostToProfileUseCase
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.ImageUploadManager
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -16,9 +20,13 @@ import kotlinx.coroutines.launch
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MapRepository()
+    private val savePostToProfileUseCase: SavePostToProfileUseCase = SavePostToProfileUseCase()
 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()
+
+    private val _profilEklemeSonucu = MutableSharedFlow<Boolean>()
+    val profilEklemeSonucu: SharedFlow<Boolean> = _profilEklemeSonucu.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -28,6 +36,17 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun gonderiyiProfileKaydet(userId: String, docId: String) {
+        viewModelScope.launch {
+            savePostToProfileUseCase(userId, docId)
+                .onSuccess {
+                    _profilEklemeSonucu.emit(true)
+                }
+                .onFailure { exception ->
+                    _profilEklemeSonucu.emit(false)
+                }
+        }
+    }
 
     fun onProgressDialogDismissed() {
         _uiState.update { it.copy(isAllDone = true) }

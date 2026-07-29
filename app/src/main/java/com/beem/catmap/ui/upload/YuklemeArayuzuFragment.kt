@@ -3,6 +3,7 @@ package com.beem.catmap.ui.upload
 import android.Manifest
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +11,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.MainActivity
@@ -111,36 +114,59 @@ class YuklemeArayuzuFragment : Fragment() {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collectLatest { state ->
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                handlePhotoListVisibility(state.selectedImages)
+                launch {
+                    viewModel.uiState.collectLatest { state ->
+                        handlePhotoListVisibility(state.selectedImages)
 
-                if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
-                    if (premiumDialog == null) {
-                        premiumDialog = PremiumUploadDialog(
-                            context = requireContext(),
-                            onAnimationEnd = {
-                                viewModel.onProgressDialogDismissed()
+                        if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
+                            if (premiumDialog == null) {
+                                premiumDialog = PremiumUploadDialog(
+                                    context = requireContext(),
+                                    onAnimationEnd = {
+                                        viewModel.onProgressDialogDismissed()
+                                    }
+                                )
+                                premiumDialog?.show()
                             }
-                        )
-                        premiumDialog?.show()
+                            premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
+                        } else {
+                            premiumDialog = null
+                        }
+
+                        if (state.isAllDone && state.createdDocumentId != null) {
+                            viewModel.resetState()
+                            // showAdIfAvailable()
+                            showPostSaveDialog(state.createdDocumentId)
+                            clearFormFields()
+                        }
                     }
-                    premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
-                } else {
-                    premiumDialog = null
                 }
 
-                if (state.isAllDone && state.createdDocumentId != null) {
-                    viewModel.resetState()
+                launch {
+                    viewModel.profilEklemeSonucu.collectLatest { result ->
+                        if(result){
+                            messageManager.BasariliDurum("Eklendi", 1000)
 
-                    //showAdIfAvailable()
-                    showPostSaveDialog(state.createdDocumentId)
-                    clearFormFields()
+                            val args = Bundle().apply {
+                                putString("currentUserId", UserSession.userId)
+                            }
+
+                            SmartNavigationEngine.navigateTo(
+                                Screen.PROFILE,
+                                args
+                            )
+                        }else{
+                            messageManager.BasariliDurum("Eklendi", 1000)
+                            Log.e("Yukle", "yukleme başarısız: ");
+                        }
+
+                    }
                 }
             }
         }
     }
-
 
     private fun handlePhotoListVisibility(images: List<Uri>) {
         if (images.isNotEmpty()) {
@@ -181,8 +207,9 @@ class YuklemeArayuzuFragment : Fragment() {
 
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
-            GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                requireContext(), docId, binding.main, messageManager
+            viewModel.gonderiyiProfileKaydet(
+                userId = UserSession.userId,
+                docId = docId
             )
             dialog.dismiss()
         }

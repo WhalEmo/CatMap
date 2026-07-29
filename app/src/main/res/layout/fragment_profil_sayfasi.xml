@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/myConstraintLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp">
+
+            <!-- Üst Sağ Menü Butonu (Seçenekler) -->
+            <ImageView
+                android:id="@+id/PPmenuButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Menü"
+                android:focusable="true"
+                android:padding="6dp"
+                android:src="@drawable/baseline_more_vert_24"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#888888" />
+
+            <!-- Profil Fotoğrafı -->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/profilFotoImageView"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_marginTop="32dp"
+                android:src="@drawable/kullanici"
+                app:civ_border_color="#B0B0B0"
+                app:civ_border_width="2dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Ad Soyad / Kullanıcı Adı -->
+            <TextView
+                android:id="@+id/KullaniciAdi"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Kullanıcı Adı"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/PPmenuButton"
+                app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
+                app:layout_constraintTop_toTopOf="@id/profilFotoImageView" />
+
+            <!-- Sayısal İstatistikler (Gönderi, Takipçi, Takip) -->
+            <LinearLayout
+                android:id="@+id/sayilarLinearLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
+                app:layout_constraintTop_toBottomOf="@id/KullaniciAdi">
+
+                <!-- Gönderi -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/gonderiSayisiTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gönderi"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Takipçi -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/takipciSayisiTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Takipçi"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Takip -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/takipEdilenSayisiTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Takip"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Biyografi -->
+            <TextView
+                android:id="@+id/bioTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="start"
+                android:text="Hakkında..."
+                android:textColor="#262626"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/profilFotoImageView" />
+
+            <!-- 1. Kendi Profiliniz İse: Profili Düzenle Düğmesi -->
+            <Button
+                android:id="@+id/profiliDuzenleTiklandi"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FFE0B2"
+                android:text="Profili düzenle"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:visibility="visible"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/bioTextView"
+                app:strokeColor="#FF9800"
+                app:strokeWidth="1dp" />
+
+            <!-- 2. Başkasının Profili ve Takip Etmiyorsanız: Takip Et Butonu -->
+            <Button
+                android:id="@+id/takipEtButonu"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FF9800"
+                android:text="Takip Et"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:visibility="gone"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
+            <!-- 3. Başkasının Profili ve Zaten Takip Ediyorsanız: TakipEdiliyor + Sohbet Buton Yan Yana -->
+            <LinearLayout
+                android:id="@+id/takipEdiliyorVeMesajLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/bioTextView">
+
+                <Button
+                    android:id="@+id/takipEdiliyorButonu"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#C8E6C9"
+                    android:text="Takip Ediliyor"
+                    android:textAllCaps="false"
+                    android:textColor="#000000"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#556B2F"
+                    app:strokeWidth="1dp" />
+
+                <Button
+                    android:id="@+id/sohbetButon"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#FEB8AE"
+                    android:text="Mesaj"
+                    android:textAllCaps="false"
+                    android:textColor="#000000"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="#8F504C"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/buttonBarrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout" />
+
+            <!-- Gönderiler Başlığı (Artık Barrier'ın altına hizalandı) -->
+            <TextView
+                android:id="@+id/gonderilerBaslikTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/gonderiler_background"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:letterSpacing="0.05"
+                android:paddingVertical="10dp"
+                android:text="Gönderiler"
+                android:textColor="@color/catmap_text_dark"
+                android:textSize="15sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/buttonBarrier" />
+
+            <!-- Gönderi RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/gonderiRecyclerView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginTop="8dp"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingHorizontal="2dp"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/gonderilerBaslikTextView" />
+
+            <!-- Gönderi Yoksa Gösterilebilecek Boş Metin -->
+            <TextView
+                android:id="@+id/emptyTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="16dp"
+                android:text="Henüz gönderi yok"
+                android:textColor="#888888"
+                android:textSize="15sp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/gonderiRecyclerView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/gonderiRecyclerView" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Geri Butonu -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Geri Dön"
+        android:src="?attr/homeAsUpIndicator"
+        app:tint="#000000" />
+
+    <!-- Yükleniyor Göstergesi -->
+    <ProgressBar
+        android:id="@+id/progressBarr"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+</FrameLayout>

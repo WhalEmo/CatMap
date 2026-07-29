@@ -16,7 +16,6 @@ import androidx.lifecycle.ViewModel;
 import com.beem.catmap.CatMapApp;
 import com.beem.catmap.Profil.Gonderiler.GonderiYuklemeListener;
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.Profil.Gonderiler.Gonderi;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.firebase.Timestamp;
