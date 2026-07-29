@@ -47,11 +47,13 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import androidx.fragment.app.activityViewModels
 import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
+import com.beem.catmap.ui.markersclick.CatDetailViewModel
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +66,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var mMap: GoogleMap? = null
     private var mapViewModel: MapViewModel? = null
     private var bottomSheetController: BottomSheetController? = null
+
+    private val catDetailViewModel: CatDetailViewModel by activityViewModels()
 
     private val kediler = ArrayList<Kediler>()
     private val markerlar = ArrayList<Marker>()
@@ -315,7 +319,35 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                catDetailViewModel.catDeletedSuccess.collect { isDeleted ->
+                    if (isDeleted) {
+                        val deletedCatId = catDetailViewModel.selectedCat.value?.id
+                        if (deletedCatId != null) {
+                            removeCatMarkerFromMap(deletedCatId)
 
+                            UiMessageManager.emitMessage(UiMessageState.Success("Kedi haritadan silindi."))
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private fun removeCatMarkerFromMap(catId: String) {
+        val targetMarker = markerlar.firstOrNull { marker ->
+            val cat = marker.tag as? Kediler
+            cat?.id == catId
+        }
+
+        targetMarker?.let { marker ->
+            marker.remove()
+            markerlar.remove(marker)
+        }
+
+        kediler.removeAll { it.id == catId }
     }
 
     private fun renderSimpleUi() {

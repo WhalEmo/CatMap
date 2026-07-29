@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -70,7 +71,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         }
 
     private lateinit var fotoAdapter: FotoGeciciAdapter
-    private val viewModel: CatDetailViewModel by viewModels()
+    private val viewModel: CatDetailViewModel by activityViewModels()
     private val commentsViewModel: CommentViewModel by viewModels()
 
 
