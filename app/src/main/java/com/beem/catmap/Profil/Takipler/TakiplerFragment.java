@@ -12,9 +12,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.R;
-import com.beem.catmap.data.repository.UserRepository;
+import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -33,10 +32,10 @@ public class TakiplerFragment extends Fragment {
             startPage = getArguments().getInt("startPage", 0);
         }
 
-        UserRepository userRepository = UserRepository.Companion.getInstance(requireContext());
+        CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(requireContext());
 
         if (yukleyenID == null || yukleyenID.isEmpty()) {
-            yukleyenID = userRepository.getCurrentUserId();
+            yukleyenID = currentUserManager.getCurrentUserId();
         }
 
         TakipViewPagerAdapter takipViewPagerAdapter=new TakipViewPagerAdapter(this,yukleyenID);

@@ -1,9 +1,8 @@
-package com.beem.catmap.data.local
+package com.beem.catmap.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
 import com.beem.catmap.KullaniciAuth.Kullanici
-
 
 class UserSessionManager private constructor(context: Context) {
 

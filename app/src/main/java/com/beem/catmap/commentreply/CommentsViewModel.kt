@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.CacheHelperComment
 import com.beem.catmap.models.ReplyModel
 import com.beem.catmap.models.CommentModel
-import com.beem.catmap.data.repository.UserRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.data.repository.CommentsRepo
 import com.beem.catmap.data.repository.ReplysRepo
 import com.google.firebase.firestore.DocumentSnapshot
@@ -22,7 +22,7 @@ import java.util.Date
 class CommentViewModel(application: Application) : AndroidViewModel(application) {
     private val commentRepository = CommentsRepo()
     private val replyRepository = ReplysRepo()
-    private val userRepository = UserRepository.getInstance(application)
+    private val currentUserManager = CurrentUserManager.getInstance(application)
 
     private val _comments = MutableStateFlow<List<CommentModel>>(emptyList())
     val comments: StateFlow<List<CommentModel>> = _comments.asStateFlow()
@@ -212,8 +212,8 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
     fun sendComment(content: String) {
         if (content.trim().isEmpty() || catId.isEmpty()) return
 
-        val currentUser = userRepository.getCurrentUser() ?: return
-        val currentUserId = userRepository.getCurrentUserId() ?: ""
+        val currentUser = currentUserManager.getCurrentUser() ?: return
+        val currentUserId = currentUserManager.getCurrentUserId() ?: ""
         val username = currentUser.kullaniciAdi ?: ""
 
         val tempId = "temp_${System.currentTimeMillis()}"
@@ -270,12 +270,12 @@ class CommentViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
-        val currentUser = userRepository.getCurrentUser() ?: run {
+        val currentUser = currentUserManager.getCurrentUser() ?: run {
             onComplete(null)
             return
         }
 
-        val currentUserId = userRepository.getCurrentUserId() ?: ""
+        val currentUserId = currentUserManager.getCurrentUserId() ?: ""
         val username = currentUser.kullaniciAdi ?: ""
         val tempReplyId = "temp_${System.currentTimeMillis()}"
 

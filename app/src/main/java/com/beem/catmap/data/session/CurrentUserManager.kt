@@ -1,14 +1,10 @@
-package com.beem.catmap.data.repository
+package com.beem.catmap.data.session
 
 import android.content.Context
-import android.util.Log
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
-import com.beem.catmap.data.local.UserSessionManager
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.beem.catmap.data.session.UserSessionManager
 
-class UserRepository private constructor(context: Context) {
+class CurrentUserManager private constructor(context: Context) {
 
     private val sessionManager = UserSessionManager.Companion.getInstance(context)
 
@@ -16,11 +12,11 @@ class UserRepository private constructor(context: Context) {
 
     companion object {
         @Volatile
-        private var INSTANCE: UserRepository? = null
+        private var INSTANCE: CurrentUserManager? = null
 
-        fun getInstance(context: Context): UserRepository {
+        fun getInstance(context: Context): CurrentUserManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: UserRepository(context.applicationContext).also { INSTANCE = it }
+                INSTANCE ?: CurrentUserManager(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
