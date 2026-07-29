@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.Profil.Gonderiler.Gonderi
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
-import com.beem.catmap.data.session.CurrentUserManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatRepository()
-    private val currentUserManager = CurrentUserManager.Companion.getInstance(application)
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()
@@ -59,7 +58,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun toggleLike() {
         val currentCat = _selectedCat.value ?: return
-        val userId = currentUserManager.getCurrentUserId() ?: return
+        val userId = UserSession.userId ?: return
         val currentlyLiked = _isLiked.value
 
         if (currentlyLiked) {
@@ -89,7 +88,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun loadOwnerInfo(ownerId: String) {
         viewModelScope.launch {
-            val currentUserId = currentUserManager.getCurrentUserId()
+            val currentUserId = UserSession.userId
             _isMyCat.value = (ownerId == currentUserId)
 
             val userData = repository.getUserInfo(ownerId)
@@ -103,7 +102,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun deleteCatFromUserAndMap() {
         val currentCat = _selectedCat.value ?: return
-        val userId = currentUserManager.getCurrentUserId() ?: return
+        val userId = UserSession.userId ?: return
 
         viewModelScope.launch {
             val isRemovedFromUser = repository.removeCatFromUserPosts(userId, currentCat.id)

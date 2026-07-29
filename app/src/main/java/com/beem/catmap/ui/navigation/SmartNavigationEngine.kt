@@ -2,8 +2,6 @@ package com.beem.catmap.ui.navigation
 
 import android.os.Bundle
 import android.util.Log
-import com.beem.catmap.MainActivity
-import com.beem.catmap.Profil.ProfilSayfasiFragment
 import java.util.Stack
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -2,11 +2,11 @@ package com.beem.catmap.data.session
 
 import android.content.Context
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.data.session.UserSessionManager
+import com.google.firebase.auth.FirebaseAuth
 
 class CurrentUserManager private constructor(context: Context) {
 
-    private val sessionManager = UserSessionManager.Companion.getInstance(context)
+    private val sessionManager = UserSessionManager.getInstance(context)
 
     private var currentUserCache: Kullanici? = null
 
@@ -22,37 +22,39 @@ class CurrentUserManager private constructor(context: Context) {
     }
 
     fun getCurrentUser(): Kullanici {
-        if (currentUserCache == null) {
-            currentUserCache = sessionManager.getUserSession() ?: Kullanici()
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            clearLocalCache()
+            return Kullanici()
         }
-        return currentUserCache!!
+
+        if (currentUserCache == null) {
+            currentUserCache = sessionManager.getUserSession()
+        }
+        return currentUserCache ?: Kullanici()
     }
 
-    fun getCurrentUserId(): String {
-        return getCurrentUser().id
+    fun getCurrentUserId(): String? {
+        return getCurrentUser()?.id ?: FirebaseAuth.getInstance().uid
     }
 
-    /**
-     * Yeni giriş veya kayıt sonrasında kullanıcıyı günceller ve kaydeder
-     */
     fun setCurrentUser(kullanici: Kullanici) {
         this.currentUserCache = kullanici
         sessionManager.saveUserSession(kullanici)
     }
 
-    /**
-     * Oturum durumu kontrolü
-     */
+
     fun isUserLoggedIn(): Boolean {
-        return sessionManager.isLoggedIn()
+        return FirebaseAuth.getInstance().currentUser != null && sessionManager.isLoggedIn()
     }
 
-    /**
-     * Çıkış Yap (Logout)
-     */
     fun logout() {
+        FirebaseAuth.getInstance().signOut()
+
+        clearLocalCache()
+    }
+
+    fun clearLocalCache() {
         currentUserCache = null
         sessionManager.clearSession()
     }
-
 }

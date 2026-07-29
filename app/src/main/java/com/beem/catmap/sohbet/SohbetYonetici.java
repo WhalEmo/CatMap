@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.R;
