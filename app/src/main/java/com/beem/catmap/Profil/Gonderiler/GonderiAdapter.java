@@ -22,15 +22,11 @@ import java.util.ArrayList;
 public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiViewHolder> {
 
     private ArrayList<Gonderi> gonderiler;
-    private FragmentManager fragmentManager;
     public Boolean gerigitti=true;
-    private GonderiYuklemeListener listener;
 
-    public GonderiAdapter(ArrayList<Gonderi> gonderiler, FragmentManager fragmentManager, Boolean gerigitti, GonderiYuklemeListener listener) {
+    public GonderiAdapter(ArrayList<Gonderi> gonderiler, Boolean gerigitti) {
         this.gonderiler = gonderiler;
-        this.fragmentManager = fragmentManager;
         this.gerigitti=gerigitti;
-        this.listener=listener;
     }
 
     public void guncelleList(ArrayList<Gonderi> yeniListe) {
@@ -52,15 +48,6 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
         holder.itemView.setOnClickListener(v -> {
             gerigitti=true;
 
-            /*
-            FragmentManager fm = fragmentManager;
-            FragmentTransaction transaction = fm.beginTransaction();
-
-            Fragment mevcutFragment = fm.findFragmentById(R.id.fragment_container);
-            if (mevcutFragment != null) {
-                transaction.hide(mevcutFragment);
-            }
-            */
 
             Bundle args = GonderiDetayFragment.newBundle(
                     new ArrayList<>(gonderi.getFotoUrlListesi()),
@@ -71,11 +58,6 @@ public class GonderiAdapter extends RecyclerView.Adapter<GonderiAdapter.GonderiV
             );
             SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.getKediID());
 
-            /*
-            transaction
-                    .add(R.id.fragment_container, fragment)
-                    .addToBackStack(null)
-                    .commit(); */
         });
 
         Picasso.get()
