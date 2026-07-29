@@ -23,7 +23,7 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
     private int yuklenenFotoSayisi = 0;
 
     public FotoAdapter(ArrayList<String> fotoUrlListesi, FotoYuklemeListener listener) {
-        this.fotoUrlListesi = fotoUrlListesi;
+        this.fotoUrlListesi = (fotoUrlListesi != null) ? fotoUrlListesi : new ArrayList<>();
         this.listener = listener;
     }
 
@@ -88,6 +88,9 @@ public class FotoAdapter extends RecyclerView.Adapter<FotoAdapter.FotoViewHolder
 
     @Override
     public int getItemCount() {
+        if (fotoUrlListesi == null) {
+            return 0;
+        }
         return fotoUrlListesi.size();
     }
 

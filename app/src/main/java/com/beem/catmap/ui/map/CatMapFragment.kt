@@ -545,7 +545,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private fun animateMarker(marker: Marker, toPosition: LatLng) {
         val startPosition = marker.position
         val valueAnimator = ValueAnimator.ofFloat(0f, 1f)
-        valueAnimator.duration = 800 // 800ms içinde yumuşak geçiş
+        valueAnimator.duration = 800
         valueAnimator.interpolator = LinearInterpolator()
 
         valueAnimator.addUpdateListener { animation ->
