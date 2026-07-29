@@ -1,6 +1,6 @@
-package com.beem.catmap.Maps.markersclick.comments
+package com.beem.catmap.data.repository
 
-import com.beem.catmap.YorumYanit.Yorum_Model
+import com.beem.catmap.models.CommentModel
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -14,7 +14,7 @@ class CommentsRepo {
     suspend fun getInitialComments(
         catId: String,
         limit: Long
-    ): Pair<List<Yorum_Model>, DocumentSnapshot?> {
+    ): Pair<List<CommentModel>, DocumentSnapshot?> {
         return try {
             val querySnapshot = db.collection("cats")
                 .document(catId)
@@ -34,9 +34,9 @@ class CommentsRepo {
                 val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
 
 
-                Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
-                    this.begeniSayisi = begeniSayisi
-                    this.toplamYanitSayisi = yanitSayisi
+                CommentModel(id, username, content, date, null, uploaderId, false).apply {
+                    this.likeCount = begeniSayisi
+                    this.sumRepliesCount = yanitSayisi
                 }
 
             }
@@ -53,7 +53,7 @@ class CommentsRepo {
         catId: String,
         lastDoc: DocumentSnapshot,
         limit: Long
-    ): Pair<List<Yorum_Model>, DocumentSnapshot?> {
+    ): Pair<List<CommentModel>, DocumentSnapshot?> {
         return try {
             val querySnapshot = db.collection("cats")
                 .document(catId)
@@ -73,9 +73,9 @@ class CommentsRepo {
                 val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
                 val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
 
-                Yorum_Model(id, username, content, date, null, uploaderId, false).apply {
-                    this.begeniSayisi = begeniSayisi
-                    this.toplamYanitSayisi = yanitSayisi
+                CommentModel(id, username, content, date, null, uploaderId, false).apply {
+                    this.likeCount = begeniSayisi
+                    this.sumRepliesCount = yanitSayisi
                 }
             }
 

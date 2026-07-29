@@ -17,10 +17,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
-
 import com.beem.catmap.Maps.FotoYuklemeListener;
-import com.beem.catmap.Maps.MapKedi.KediSilmeDurumu;
-import com.beem.catmap.MainActivity;
 import com.beem.catmap.Maps.MapViewModel;
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
@@ -31,12 +28,10 @@ import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 
 public class GonderiDetayFragment extends Fragment {
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
     private static final String ARG_FOTO_LIST = "fotoListesi";
     private static final String ARG_KEDI_ADI = "kediAdi";
     private static final String ARG_ACIKLAMA = "aciklama";
@@ -121,7 +116,11 @@ public class GonderiDetayFragment extends Fragment {
         }));
 
         kediAdiText.setText(kediAdi);
+        if (aciklama == null || aciklama.trim().isEmpty()) {
+            aciklamaText.setText("Bu sevimli dostumuz için henüz bir açıklama eklenmemiş. 🐾");
+        } else {
             aciklamaText.setText(aciklama);
+        }
 
             if (begeni != 0) {
                 String bilgi = String.format("Bu kediyi %d kişi beğendi. Sen de beğenmek istersen haritada göre bas!", begeni);
@@ -157,7 +156,6 @@ public class GonderiDetayFragment extends Fragment {
                                     .setMessage("Kediyi haritadan silmek istiyor musunuz? Bu işlemi yaptığınızda, kediye ait gönderiler de silinecektir.")
                                     .setPositiveButton("Evet", (dialog, which) -> {
                                            mViewModel.HaritadanSilme(kediid, () -> {
-                                            KediSilmeDurumu.getInstance().setSilindiMi(true);
                                             mViewModel.kullaniciyaGonderiSil(kediid,uyari);
                                             mViewModel.gonderiSil(kediid);
                                                if (getActivity() instanceof MapsActivity) {

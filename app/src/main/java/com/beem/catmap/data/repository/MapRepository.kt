@@ -1,13 +1,13 @@
-package com.beem.catmap.repository
+package com.beem.catmap.data.repository
 
 import android.net.Uri
 import android.util.Log
 import com.beem.catmap.models.CatModel
-import com.beem.catmap.models.CommentModel
+import com.beem.catmap.ui.manager.UploadProgressState
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -20,26 +20,11 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.math.abs
 
-class CatRepository {
+class MapRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val catsCollection = db.collection("cats")
     private val storage = FirebaseStorage.getInstance()
-
-    suspend fun getAllCats(): List<CatModel> {
-        return try {
-            val snapshot = catsCollection.get().await()
-            snapshot.documents.mapNotNull { doc ->
-                // Firestore dokümanını doğrudan Kotlin Data Class'ına çeviriyoruz
-                val cat = doc.toObject(CatModel::class.java)
-                cat?.copy(id = doc.id) // Firestore ID'sini modelin içine enjekte et
-            }
-        } catch (e: Exception) {
-            Log.e("CatRepository", "Kediler çekilirken hata: ${e.message}")
-            emptyList()
-        }
-    }
-
 
     suspend fun getCatsNearLocation(userLat: Double, userLng: Double): List<CatModel> {
         return withContext(Dispatchers.IO) { // İşlemi arka plana (IO) zorla
@@ -95,12 +80,11 @@ class CatRepository {
                     "geohash" to hash,
                     "photoUri" to uploadedUrls,
                     "YukleyenKullaniciID" to userId,
-                    "createdAt" to System.currentTimeMillis()
+                    "createdAt" to FieldValue.serverTimestamp()
                 )
 
                 catsCollection.add(catData)
                     .addOnSuccessListener { documentRef ->
-                        // 🏆 BAŞARI: Firestore ID'sini arayüze pasla ve akışı pürüzsüzce kapat
                         trySend(UploadProgressState.Success(documentRef.id))
                         close()
                     }
@@ -111,7 +95,6 @@ class CatRepository {
                 return
             }
 
-            // Tekil resim yükleme hattı
             val uri = imageUris[index]
             val fileName = "fotoklasoru/${System.currentTimeMillis()}_${UUID.randomUUID()}_$index.jpg"
             val storageRef = storage.reference.child(fileName)
@@ -119,13 +102,8 @@ class CatRepository {
 
             uploadTask.addOnProgressListener { snapshot ->
                 if (snapshot.totalByteCount > 0) {
-                    // Bu resmin kendi içindeki doluluk yüzdesi
                     val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
-
-                    // 🎯 AUDITOR MATRİSİ: Toplam resim sayısına göre genel ilerleme hesabı
                     val globalProgress = ((index * 100) + progress) / totalImages
-
-                    // ViewModel'e anlık yüzdeyi %0 - %99 arası fırlat (Son %100'ü Firestore sonrasına saklıyoruz)
                     val safeProgress = if (globalProgress >= 100) 99 else globalProgress
                     trySend(UploadProgressState.Loading(safeProgress))
                 }

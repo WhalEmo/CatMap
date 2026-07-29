@@ -1,8 +1,9 @@
-package com.beem.catmap.Maps.MapKedi;
+package com.beem.catmap.Maps.mapkedi;
 
 import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class Kediler implements Serializable {
     private String isim;
@@ -14,12 +15,13 @@ public class Kediler implements Serializable {
     private boolean MarkerOlustuMu = false;
     private ArrayList<String> URLler;
     private String YukleyenId;
+    private Date createdAt;
 
     // 1. Firebase'in nesneyi hatasız oluşturabilmesi için BOŞ constructor ŞARTTIR!
     public Kediler() {
     }
 
-    public Kediler(String ID, String isim, String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler, String YukleyenId){
+    public Kediler(String ID, String isim, String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler, String YukleyenId, Date createdAt){
         this.ID = ID;
         this.isim = isim;
         this.hakkindasi = hakkindasi;
@@ -28,6 +30,7 @@ public class Kediler implements Serializable {
         this.URL = URL;
         this.URLler = URLler;
         this.YukleyenId = YukleyenId;
+        this.createdAt = createdAt;
     }
 
     public ArrayList<String> getURLler() {
@@ -92,6 +95,14 @@ public class Kediler implements Serializable {
 
     public void setID(String ID) {
         this.ID = ID;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 
     @PropertyName("YukleyenKullaniciID")

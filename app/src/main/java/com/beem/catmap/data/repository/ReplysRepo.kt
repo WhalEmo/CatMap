@@ -1,6 +1,6 @@
-package com.beem.catmap.yorumyanit.data.repository
+package com.beem.catmap.data.repository
 
-import com.beem.catmap.YorumYanit.Yanit_Model
+import com.beem.catmap.models.ReplyModel
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -8,17 +8,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-class YanitRepository {
-
+class ReplysRepo {
     private val db = FirebaseFirestore.getInstance()
-
-
-    suspend fun yanitlariCek(
+    suspend fun loadReplies(
         catId: String,
         yorumId: String,
         limit: Int,
         lastVisibleDoc: DocumentSnapshot?
-    ): Result<Pair<List<Yanit_Model>, DocumentSnapshot?>> {
+    ): Result<Pair<List<ReplyModel>, DocumentSnapshot?>> {
         return try {
             val yanitlarRef = db.collection("cats")
                 .document(catId)
@@ -35,10 +32,10 @@ class YanitRepository {
             }
 
             val snapshots = query.get().await()
-            val yanitListesi = mutableListOf<Yanit_Model>()
+            val yanitListesi = mutableListOf<ReplyModel>()
 
             for (doc in snapshots.documents) {
-                val yanit = Yanit_Model(
+                val yanit = ReplyModel(
                     doc.id,
                     doc.getString("kullanici_adi"),
                     doc.getString("yaniticerik"),
@@ -92,7 +89,7 @@ class YanitRepository {
         }
     }
 
-    suspend fun yanitSil(catId: String, yorumId: String, yanitId: String): Boolean {
+    suspend fun deleteReply(catId: String, yorumId: String, yanitId: String): Boolean {
         return try {
             db.collection("cats")
                 .document(catId)
@@ -116,7 +113,7 @@ class YanitRepository {
         }
     }
 
-    suspend fun yanitGuncelle(catId: String, yorumId: String, yanitId: String, yeniIcerik: String): Boolean {
+    suspend fun updateReply(catId: String, yorumId: String, yanitId: String, yeniIcerik: String): Boolean {
         return try {
             db.collection("cats")
                 .document(catId)
@@ -154,7 +151,7 @@ class YanitRepository {
         }
 
 
-    fun yanitBegeniKaldir(catId: String, yorumId: String, yanitId: String, kullaniciId: String):Task<Void>{
+    fun yanitBegeniKaldir(catId: String, yorumId: String, yanitId: String, kullaniciId: String): Task<Void> {
         val batch = db.batch()
 
         val begenenRef = db.collection("cats").document(catId)
