@@ -1,4 +1,4 @@
-package com.beem.catmap.repository
+package com.beem.catmap.ui.manager
 
 sealed class UploadProgressState {
     data class Loading(val progress: Int) : UploadProgressState()

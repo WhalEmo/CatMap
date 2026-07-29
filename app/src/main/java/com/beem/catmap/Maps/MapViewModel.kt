@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.models.CatModel
-import com.beem.catmap.repository.CatRepository
+import com.beem.catmap.data.repository.MapRepository
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.map.LoadingState
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 
 class MapViewModel : ViewModel() {
 
-    private val repository = CatRepository()
+    private val repository = MapRepository()
 
     private val _catsList = MutableLiveData<List<CatModel>>()
     val catsList: LiveData<List<CatModel>> get() = _catsList
@@ -36,26 +36,6 @@ class MapViewModel : ViewModel() {
     private var lastFetchedLocation: Location? = null
     private val FETCH_THRESHOLD_METERS = 500f
 
-    fun fetchAllCats() {
-        if (_catsList.value != null && _catsList.value!!.isNotEmpty()) {
-            return
-        }
-        viewModelScope.launch {
-
-            try {
-                val cats = repository.getAllCats()
-
-                if (cats.isNotEmpty()) {
-                    _catsList.postValue(cats)
-                } else {
-                    _errorMessage.postValue("Haritada hiç kedi bulunamadı.")
-                }
-            } catch (e: Exception) {
-                _errorMessage.postValue("Bağlantı hatası: ${e.message}")
-            } finally {
-            }
-        }
-    }
 
     fun requestZoomToCat(catId: String) {
         viewModelScope.launch {

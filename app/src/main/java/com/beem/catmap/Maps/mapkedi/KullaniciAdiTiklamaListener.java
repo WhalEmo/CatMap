@@ -1,4 +1,4 @@
-package com.beem.catmap.Maps.MapKedi;
+package com.beem.catmap.Maps.mapkedi;
 
 public interface KullaniciAdiTiklamaListener {
     void onKullaniciAdiTiklandi(String kullaniciID);

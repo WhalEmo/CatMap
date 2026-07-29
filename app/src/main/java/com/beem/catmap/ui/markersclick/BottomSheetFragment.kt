@@ -1,4 +1,4 @@
-package com.beem.catmap.Maps.markersclick
+package com.beem.catmap.ui.markersclick
 
 import android.app.AlertDialog
 import android.graphics.Color
@@ -20,10 +20,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 import com.beem.catmap.Maps.FotoGeciciAdapter
-import com.beem.catmap.Maps.MapKedi.Kediler
-import com.beem.catmap.Maps.markersclick.comments.CommentViewModel
-import com.beem.catmap.Maps.markersclick.comments.CommentsBottomSheetFragment
+import com.beem.catmap.Maps.mapkedi.Kediler
+import com.beem.catmap.commentreply.CommentViewModel
+import com.beem.catmap.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.R
+import com.beem.catmap.ui.extensions.getFormattedDate
+import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
@@ -31,6 +33,7 @@ import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,10 +48,11 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var begeniSayisiTextView: TextView
     private lateinit var gonderiEkleButton: View
     private lateinit var yorumSayisiTextView: TextView
-    private lateinit var patiYorumButton: ImageButton
+    private lateinit var patiYorumButton: MaterialCardView
     private lateinit var profilAlani: View
     private lateinit var yukleyenAdiText: TextView
     private lateinit var yukleyenPP: ImageView
+    private lateinit var tarihText: TextView
 
     private lateinit var fotoAdapter: FotoGeciciAdapter
     private val viewModel: CatDetailViewModel by viewModels()
@@ -106,6 +110,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         patiYorumButton.setOnClickListener(openCommentsAction)
 
         kalpImageView.setOnClickListener {
+            kalpImageView.kalpAnimasyonuYap()
             viewModel.toggleLike()
         }
 
@@ -122,10 +127,11 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         begeniSayisiTextView = view.findViewById(R.id.begeniSayisiTextView)
         gonderiEkleButton = view.findViewById(R.id.GonderiEkleButton)
         yorumSayisiTextView = view.findViewById(R.id.yorumSayisiTextView)
-        patiYorumButton = view.findViewById(R.id.imageButton)
+        patiYorumButton = view.findViewById(R.id.btnYorumlar)
         profilAlani = view.findViewById(R.id.profilAlani)
         yukleyenAdiText = view.findViewById(R.id.yukleyenAdiText)
         yukleyenPP = view.findViewById(R.id.YukprofilFotoImageView)
+        tarihText = view.findViewById(R.id.tarihText)
 
         fotoAdapter = FotoGeciciAdapter(requireContext(), null)
         fotoPager.adapter = fotoAdapter
@@ -137,7 +143,12 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             viewModel.selectedCat.collectLatest { cat ->
                 cat?.let {
                     isim.text = it.isim
-                    hakkinda.text = it.hakkindasi
+                    if (it.hakkindasi.isNullOrBlank()) {
+                        hakkinda.text = "Bu sevimli dostumuz için henüz bir açıklama eklenmemiş. 🐾"
+                    } else {
+                        hakkinda.text = it.hakkindasi
+                    }
+                    tarihText.text = getFormattedDate(it.createdAt) ?: ""
 
                     if (!it.urLler.isNullOrEmpty()) {
                         val uriList = withContext(Dispatchers.IO) {
@@ -284,7 +295,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 commentsViewModel.commentCount.collectLatest { sayi ->
                     yorumSayisiTextView.clearAnimation()
-                    yorumSayisiTextView.setTextColor(Color.BLACK)
+                    yorumSayisiTextView.setTextColor(Color.WHITE)
                     yorumSayisiTextView.text = "$sayi Yorum"
                 }
             }

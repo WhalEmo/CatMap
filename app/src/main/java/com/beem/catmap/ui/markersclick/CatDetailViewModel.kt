@@ -1,11 +1,12 @@
-package com.beem.catmap.Maps.markersclick
+package com.beem.catmap.ui.markersclick
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.Maps.MapKedi.Kediler
+import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.Profil.Gonderiler.Gonderi
+import com.beem.catmap.data.repository.CatRepository
 import com.beem.catmap.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

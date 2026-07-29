@@ -1,6 +1,6 @@
-package com.beem.catmap.Maps.markersclick
+package com.beem.catmap.data.repository
+
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
-import com.beem.catmap.models.CatModel
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await

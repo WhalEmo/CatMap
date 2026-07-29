@@ -1,14 +1,11 @@
 package com.beem.catmap.ui.upload
 
 import android.app.Application
-import android.content.Context
 import android.location.Location
-import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.Maps.LocationEngine
-import com.beem.catmap.repository.CatRepository
-import com.beem.catmap.repository.UploadProgressState
+import com.beem.catmap.data.repository.MapRepository
+import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.ImageUploadManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +15,7 @@ import kotlinx.coroutines.launch
 
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = CatRepository()
+    private val repository = MapRepository()
 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()

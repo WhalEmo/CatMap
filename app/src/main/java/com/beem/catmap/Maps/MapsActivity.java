@@ -27,7 +27,7 @@ import androidx.fragment.app.Fragment;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.Maps.markersclick.comments.CommentsBottomSheetFragment;
+import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
 import com.beem.catmap.Profil.MainViewModel;

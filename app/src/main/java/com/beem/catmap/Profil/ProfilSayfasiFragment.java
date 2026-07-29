@@ -148,13 +148,6 @@ public class ProfilSayfasiFragment extends Fragment {
             return null;
         }
     }
-    private void fragmentiYenidenYukle() {
-        // Fragmenti yeniden oluşturmak için detach & attach yöntemi
-        FragmentManager fragmentManager = getParentFragmentManager();
-        FragmentTransaction ft = fragmentManager.beginTransaction();
-        ft.detach(this).commitNow();  // Hemen detach et
-        ft.attach(this).commitNow();  // Hemen tekrar attach et
-    }
 
     private void fragmentiYenidenYukle_v2() {
         if (mViewModel != null && yukleyenID != null) {
