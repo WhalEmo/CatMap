@@ -24,6 +24,7 @@ import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.Profil.MainViewModel;
 import com.beem.catmap.data.session.CurrentUserManager;
+import com.beem.catmap.gonderi.PostViewModel;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -31,6 +32,7 @@ import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 
+/*
 public class GonderiDetayFragment extends Fragment {
     private static final String ARG_FOTO_LIST = "fotoListesi";
     private static final String ARG_KEDI_ADI = "kediAdi";
@@ -40,6 +42,7 @@ public class GonderiDetayFragment extends Fragment {
     UyariMesaji uyari;
 
     private MapViewModel mapViewModel;
+    private PostViewModel postViewModel;
 
     private ArrayList<String> fotoListesi;
     private String kediAdi;
@@ -100,7 +103,8 @@ public class GonderiDetayFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false);
-        MainViewModel mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+
+        postViewModel = new ViewModelProvider(this).get(PostViewModel.class);
         ViewPager2 viewPager = view.findViewById(R.id.fotoPager);
         TextView kediAdiText = view.findViewById(R.id.kediAdiText);
         TextView aciklamaText = view.findViewById(R.id.kediAciklama);
@@ -128,6 +132,8 @@ public class GonderiDetayFragment extends Fragment {
             } else {
                 begeniBilgiTextView.setText("Bu kediyi henüz kimse beğenmedi. Beğenmek istersen haritada göre bas!");
             }
+
+
 
         mViewModel.getYukleyenID().observe(getViewLifecycleOwner(), id -> {
             if(id.equals(currentUserManager.getCurrentUserId())){
@@ -204,3 +210,5 @@ public class GonderiDetayFragment extends Fragment {
     }
 
 }
+
+ */

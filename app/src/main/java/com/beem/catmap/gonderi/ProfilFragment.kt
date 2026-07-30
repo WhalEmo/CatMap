@@ -1,15 +1,18 @@
 package com.beem.catmap.Profil
-
+import FollowViewModel
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -21,31 +24,39 @@ import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
 import com.beem.catmap.R
 import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.gonderi.ProfileUiState
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ProfilFragment : Fragment() {
 
-    private val viewModel: PostViewModel by viewModels()
+    private val viewModel: PostViewModel by activityViewModels()
+    private val followViewModel: FollowViewModel by viewModels()
 
-    // XML ID Bağlantıları
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var progressFollow: ProgressBar
     private lateinit var tvGonderiSayisi: TextView
     private lateinit var tvEmpty: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var btnBack: ImageButton
-
+    private lateinit var profiliDuzenleTiklandi: Button
+    private lateinit var takipEtButonu: Button
+    private lateinit var takipEdiliyorVeMesajLayout: LinearLayout
+    private  lateinit var takipEdiliyorButonu: Button
+    private lateinit var sohbetButon: Button
     private lateinit var gonderiAdapter: GonderiAdapter
     private var currentUserId: String? = null
+    private var targetUserId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            currentUserId = it.getString(ARG_USER_ID)
+            targetUserId = it.getString(ARG_USER_ID)
         }
     }
 
@@ -62,18 +73,28 @@ class ProfilFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.gonderiRecyclerView)
         progressBar = view.findViewById(R.id.progressBarr)
+        progressFollow = view.findViewById(R.id.progressFollow)
         tvGonderiSayisi = view.findViewById(R.id.gonderiSayisiTextView)
         tvEmpty = view.findViewById(R.id.emptyTextView)
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
         btnBack = view.findViewById(R.id.btnBack)
+        profiliDuzenleTiklandi = view.findViewById(R.id.profiliDuzenleTiklandi)
+        takipEtButonu = view.findViewById(R.id.takipEtButonu)
+        takipEdiliyorVeMesajLayout= view.findViewById(R.id.takipEdiliyorVeMesajLayout)
+        takipEdiliyorButonu = view.findViewById(R.id.takipEdiliyorButonu)
+        sohbetButon = view.findViewById(R.id.sohbetButon)
 
         setupRecyclerView()
         setupListeners()
         observeViewModel()
 
-        yukleVerileri()
-    }
+        targetUserId?.let { userId ->
+            viewModel.profilDurumunuHazirla(userId)
+            followViewModel.takipTakipciSayisiGetir(userId, requireContext())
+            yukleVerileri()
+        }
 
+    }
     private fun setupRecyclerView() {
         gonderiAdapter = GonderiAdapter { gonderi ->
             onGonderiTiklandi(gonderi)
@@ -114,10 +135,26 @@ class ProfilFragment : Fragment() {
         swipeRefreshLayout.setOnRefreshListener {
             yukleVerileri()
         }
-    }
 
+        takipEtButonu.setOnClickListener {
+
+        }
+
+        //takıpten cıkma
+        takipEdiliyorButonu.setOnClickListener {
+
+        }
+
+        sohbetButon.setOnClickListener {
+
+        }
+
+        profiliDuzenleTiklandi.setOnClickListener {
+
+        }
+    }
     private fun yukleVerileri() {
-        currentUserId?.let { userId ->
+        targetUserId?.let { userId ->
             viewModel.gonderileriGetir(userId)
         } ?: run {
             swipeRefreshLayout.isRefreshing = false
@@ -128,6 +165,11 @@ class ProfilFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+                launch {
+                    viewModel.profileUiState.collectLatest { state ->
+                        renderProfileButtons(state)
+                    }
+                }
                 launch {
                     viewModel.gonderilerState.collect { state ->
                         when (state) {
@@ -163,6 +205,7 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
+
                 launch {
                     viewModel.gonderiSayisi.collect { sayi ->
                         tvGonderiSayisi.text = sayi.toString()
@@ -182,6 +225,37 @@ class ProfilFragment : Fragment() {
                         }
                     }
                 }
+            }
+        }
+    }
+    private fun renderProfileButtons(state: ProfileUiState) {
+        if (state.isSelfProfile) {
+            profiliDuzenleTiklandi.visibility = View.VISIBLE
+            takipEtButonu.visibility = View.GONE
+            takipEdiliyorVeMesajLayout.visibility = View.GONE
+        } else {
+            profiliDuzenleTiklandi.visibility = View.GONE
+            if (state.isLoadingFollowState) {
+                takipEtButonu.visibility = View.GONE
+                takipEdiliyorVeMesajLayout.visibility = View.GONE
+                progressFollow.visibility = View.VISIBLE
+            } else {
+                progressFollow.visibility = View.GONE
+                if(state.isFollowing){
+                    takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
+                    takipEtButonu.visibility = View.GONE
+                }
+                if(state.isFollowed && !state.isFollowing){
+                    takipEtButonu.text = "Sende takip et"
+                    takipEtButonu.visibility = View.VISIBLE
+                    takipEdiliyorVeMesajLayout.visibility = View.GONE
+                }
+                if(!state.isFollowing && !state.isFollowed){
+                    takipEtButonu.text = "Takip et"
+                    takipEtButonu.visibility = View.VISIBLE
+                    takipEdiliyorVeMesajLayout.visibility = View.GONE
+                }
+
             }
         }
     }

@@ -1,6 +1,9 @@
 package com.beem.catmap.data.repository
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
+import com.beem.catmap.Profil.ProfileCacheManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
 import com.google.firebase.Timestamp
@@ -11,6 +14,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class PostRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -47,7 +51,7 @@ class PostRepository {
         }
     }
 
-    // Sadece istenen sayfadaki kedi ID'lerinin detayını çeker
+
     suspend fun getGonderiDetaylariByIds(items: List<GonderilenKediItem>): Result<List<Gonderi>> {
         if (items.isEmpty()) return Result.success(emptyList())
 
@@ -107,6 +111,13 @@ class PostRepository {
         }
     }
 
+    suspend fun haritadanKediSil(kediId: String): Result<Unit> = runCatching {
+        catsCollection
+            .document(kediId)
+            .delete()
+            .await()
+    }
+
     suspend fun kullaniciGonderiKaydet(userId: String, kediId: String): Result<Unit> {
         return try {
             val yeniKedi = mapOf(
@@ -123,4 +134,5 @@ class PostRepository {
             Result.failure(e)
         }
     }
+
 }

@@ -80,7 +80,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     public Marker sonTiklananMarker;
 
     private String gosterilecekKediID;
-    private MainViewModel mViewModel;
     private FrameLayout rightSlidingPanel;
     private boolean isPanelVisible = false;
     private ImageButton btnClose;

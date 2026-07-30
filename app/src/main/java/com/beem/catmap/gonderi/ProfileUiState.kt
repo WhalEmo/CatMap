@@ -6,3 +6,10 @@ data class ProfileUiState(
     val isFollowed: Boolean = false,
     val isLoadingFollowState: Boolean = false // Takip et butonu yükleniyor mu?
 )
+
+data class ProfileState(
+    val takipciSayisi: Long = 0L,
+    val takipEdilenSayisi: Long = 0L,
+    val gonderiSayisi: Long = 0L,
+    val biyografi: String = ""
+)

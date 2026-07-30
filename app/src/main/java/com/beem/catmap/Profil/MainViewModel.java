@@ -100,6 +100,7 @@ public class MainViewModel extends ViewModel {
         return yukleyenID;
     }
 
+    /*
     public void takipDurumlariniBirlestir() {
         takipDurumuCift.addSource(_takipDurumu, benimTakipDurumum ->
                 takipDurumuCift.setValue(new Pair<>(benimTakipDurumum, _beniTakipEdiyor.getValue()))
@@ -109,6 +110,8 @@ public class MainViewModel extends ViewModel {
                 takipDurumuCift.setValue(new Pair<>(_takipDurumu.getValue(), onunTakipDurumu))
         );
     }
+
+     */
 
     public LiveData<Pair<Boolean, Boolean>> getTakipDurumuCift() {
         return takipDurumuCift;
@@ -125,7 +128,7 @@ public class MainViewModel extends ViewModel {
         return currentUserManager.getCurrentUser().getID();
     }
 
-    public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
+    /*public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
         if (_Url != null) {
             _Url.setValue(null);
         }
@@ -175,6 +178,9 @@ public class MainViewModel extends ViewModel {
                     Log.e("StorageUpload", "Profil fotoğrafı yüklenemedi!", e);
                 });
     }
+
+     */
+
 
     public void TakipEt(String TakipEttiginId){
         List<String> benimEngellediklerim = _benimEngellediklerim.getValue();
@@ -252,6 +258,9 @@ public class MainViewModel extends ViewModel {
         });
     }
 
+
+    /*
+
     public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
                 .document(getCurrentUserId())
@@ -281,7 +290,9 @@ public class MainViewModel extends ViewModel {
                 });
     }
 
+     */
 
+/*
     public void TakiptenCikarma(String TakiptenCiktiginId){
         DocumentReference mevcutKullaniciRef = db.collection("users").document(getCurrentUserId());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakiptenCiktiginId);
@@ -396,6 +407,8 @@ public class MainViewModel extends ViewModel {
         });
     }
 
+
+ */
 
     public void HakkindaDBEkle(String hakkindasi,Context context){
         Map<String, Object> veri = new HashMap<>();

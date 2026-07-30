@@ -38,6 +38,11 @@ public class Kullanici {
     public int TakipEdiyorMuyum=0;
     public int TakipciMi=0;
 
+    private Long takipciSayisi= 0L;
+    private Long takipEdilenSayisi= 0L;
+    private String biyografi= "";
+
+
     public boolean isCevrimiciMi() {
         return cevrimiciMi;
     }
@@ -170,6 +175,29 @@ public class Kullanici {
         Email = email.toLowerCase().trim();
     }
 
+    public Long getTakipciSayisi() {
+        return takipciSayisi;
+    }
+
+    public void setTakipciSayisi(Long takipciSayisi) {
+        this.takipciSayisi = takipciSayisi;
+    }
+
+    public Long getTakipEdilenSayisi() {
+        return takipEdilenSayisi;
+    }
+
+    public void setTakipEdilenSayisi(Long takipEdilenSayisi) {
+        this.takipEdilenSayisi = takipEdilenSayisi;
+    }
+
+    public String getBiyografi() {
+        return biyografi;
+    }
+
+    public void setBiyografi(String biyografi) {
+        this.biyografi = biyografi;
+    }
 
     public boolean KullaniciIs(){
         if(this.Ad.isEmpty() || this.Soyad.isEmpty() || this.Email.isEmpty() || this.KullaniciAdi.isEmpty() || this.Sifre.isEmpty()){

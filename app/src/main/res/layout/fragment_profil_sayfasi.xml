@@ -215,7 +215,7 @@
                     android:layout_marginEnd="6dp"
                     android:layout_weight="1"
                     android:backgroundTint="#C8E6C9"
-                    android:text="Takip Ediliyor"
+                    android:text="Takip "
                     android:textAllCaps="false"
                     android:textColor="#000000"
                     app:cornerRadius="8dp"
@@ -236,13 +236,24 @@
                     app:strokeColor="#8F504C"
                     app:strokeWidth="1dp" />
             </LinearLayout>
+            <!-- Takip Durumu Yükleniyor Göstergesi -->
+            <ProgressBar
+                android:id="@+id/progressFollow"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginTop="16dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
             <androidx.constraintlayout.widget.Barrier
                 android:id="@+id/buttonBarrier"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:barrierDirection="bottom"
-                app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout" />
+                app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout,progressFollow" />
 
             <!-- Gönderiler Başlığı (Artık Barrier'ın altına hizalandı) -->
             <TextView
