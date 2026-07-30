@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.Looper
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
@@ -29,10 +30,23 @@ object LocationEngine {
 
 
     fun hasLocationPermission(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(
+        val fineLocation = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+
+        val coarseLocation = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        return fineLocation || coarseLocation
+    }
+
+    fun isGpsEnabled(context: Context): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     @SuppressLint("MissingPermission")
@@ -52,7 +66,7 @@ object LocationEngine {
 
     @SuppressLint("MissingPermission")
     fun startTracking(context: Context, map: GoogleMap) {
-        if (!hasLocationPermission(context)) return
+        if (!hasLocationPermission(context) || !isGpsEnabled(context)) return
 
         map.isMyLocationEnabled = false
         map.uiSettings.isMyLocationButtonEnabled = false
@@ -61,8 +75,11 @@ object LocationEngine {
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         }
 
+        stopTracking()
+
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 4000)
-            .setMinUpdateIntervalMillis(2000)
+            .setMinUpdateIntervalMillis(1500)
+            .setWaitForAccurateLocation(false)
             .build()
 
         locationCallback = object : LocationCallback() {
