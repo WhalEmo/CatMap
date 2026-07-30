@@ -33,8 +33,8 @@ class CurrentUserManager private constructor(context: Context) {
         return currentUserCache ?: Kullanici()
     }
 
-    fun getCurrentUserId(): String? {
-        return getCurrentUser()?.id ?: FirebaseAuth.getInstance().uid
+    fun getCurrentUserId(): String {
+        return getCurrentUser().id
     }
 
     fun setCurrentUser(kullanici: Kullanici) {
