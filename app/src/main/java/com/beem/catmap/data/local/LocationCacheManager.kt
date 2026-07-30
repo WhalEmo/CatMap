@@ -11,7 +11,6 @@ object LocationCacheManager {
     private const val KEY_LNG = "last_lng"
     private const val KEY_ZOOM = "last_zoom"
 
-    private val DEFAULT_LOCATION = LatLng(39.925533, 32.866287) // Ankara
     private const val DEFAULT_ZOOM = 14f
 
     private val prefs by lazy {
@@ -29,8 +28,8 @@ object LocationCacheManager {
     }
 
     fun getLastLocation(): LatLng {
-        val lat = prefs.getFloat(KEY_LAT, DEFAULT_LOCATION.latitude.toFloat()).toDouble()
-        val lng = prefs.getFloat(KEY_LNG, DEFAULT_LOCATION.longitude.toFloat()).toDouble()
+        val lat = prefs.getFloat(KEY_LAT, 0f).toDouble()
+        val lng = prefs.getFloat(KEY_LNG, 0f).toDouble()
         return LatLng(lat, lng)
     }
 
