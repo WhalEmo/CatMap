@@ -13,7 +13,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
-import com.beem.catmap.MainActivity
 import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif
 import com.beem.catmap.R

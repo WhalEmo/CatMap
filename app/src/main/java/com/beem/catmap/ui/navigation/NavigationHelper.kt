@@ -1,7 +1,6 @@
 package com.beem.catmap.ui.navigation
 
 import android.util.Log
-import com.beem.catmap.MainActivity
 import com.beem.catmap.Profil.ProfilSayfasiFragment
 import com.beem.catmap.data.local.UserSession
 
