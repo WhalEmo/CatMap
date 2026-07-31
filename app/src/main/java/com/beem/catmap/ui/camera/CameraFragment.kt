@@ -85,23 +85,6 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private val galleryPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val hasFullAccess = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true ||
-                permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
-        val hasPartialAccess = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            permissions[Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED] == true
-        } else false
-
-        if (hasFullAccess || hasPartialAccess) {
-            openGalleryBottomSheet()
-        } else {
-            UiMessageManager.emitMessage(UiMessageState.Error("Galeriye erişim izni reddedildi."))
-        }
-    }
-
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -153,15 +136,6 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    /*
-    private fun checkPermissionsAndStart() {
-        val permissions = mutableListOf(Manifest.permission.CAMERA).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.READ_MEDIA_IMAGES)
-            else add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-        val missing = permissions.filter { ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED }
-        if (missing.isEmpty()) startCamera() else requestPermissionsLauncher.launch(missing.toTypedArray())
-    }*/
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
@@ -252,7 +226,7 @@ class CameraFragment : DialogFragment() {
         }
 
         binding.btnGallery.setOnClickListener {
-            checkGalleryPermissionsAndOpen()
+            openGalleryBottomSheet()
         }
         binding.btnClose.setOnClickListener {
             SmartNavigationEngine.navigateBack()
@@ -482,40 +456,7 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    private fun checkGalleryPermissionsAndOpen() {
-        val galleryPermissions = mutableListOf<String>()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            galleryPermissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-            galleryPermissions.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            galleryPermissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            galleryPermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-
-        val missingPermissions = galleryPermissions.filter {
-            ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (missingPermissions.isEmpty() || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && hasAnyGalleryPermission())) {
-            openGalleryBottomSheet()
-        } else {
-            galleryPermissionLauncher.launch(galleryPermissions.toTypedArray())
-        }
-    }
-
-    private fun hasAnyGalleryPermission(): Boolean {
-        val context = requireContext()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
-        } else {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-        }
-    }
 
     private fun openGalleryBottomSheet() {
         if (isAdded && isResumed) {
