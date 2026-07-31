@@ -305,6 +305,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mapViewModel?.zoomToCatEvent?.collect { cat ->
+                    stopTrackingMode()
                     kediler.add(
                         modelToKediler(cat)
                     )
