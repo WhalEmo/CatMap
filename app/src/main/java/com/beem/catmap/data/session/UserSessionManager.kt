@@ -24,6 +24,10 @@ class UserSessionManager private constructor(context: Context) {
         private const val KEY_IS_LOGGED_IN = "GirisYapildi"
         private const val KEY_FOTO_URL = "FotoUrl"
 
+        private const val KEY_TAKIPCI_SAYISI = "TakipciSayisi"
+        private const val KEY_TAKIP_EDILEN_SAYISI = "TakipEdilenSayisi"
+        private const val KEY_BIYOGRAFI = "Biyografi"
+
         @Volatile
         private var INSTANCE: UserSessionManager? = null
 
@@ -50,6 +54,7 @@ class UserSessionManager private constructor(context: Context) {
             apply() // Disk yazımını arka planda asenkron yapar
         }
     }
+
 
     /**
      * Diskten kayıtlı kullanıcıyı çekip nesneye dönüştürür

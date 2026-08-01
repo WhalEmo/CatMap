@@ -5,9 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
-import com.beem.catmap.Profil.Gonderiler.Gonderi
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
+import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.models.Gonderi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

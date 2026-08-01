@@ -13,8 +13,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.R;
-import com.beem.catmap.Profil.MainViewModel;
-import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
@@ -23,7 +21,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
-
+/*
 public class TakipEdilenlerFragment extends Fragment {
     private RecyclerView recyclerView;
     private Kullanicilar_adapter adapter;
@@ -99,3 +97,5 @@ public class TakipEdilenlerFragment extends Fragment {
                 });
     }
 }
+
+ */

@@ -4,6 +4,7 @@ import android.net.Uri
 
 data class UploadUiState(
     val selectedImages: List<Uri> = emptyList(),
+    val uploadedPhotoUrls: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val uploadProgress: Int = 0,
     val isSuccess: Boolean = false,

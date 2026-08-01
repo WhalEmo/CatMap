@@ -16,7 +16,7 @@ import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-
+/*
 public class TakiplerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -59,3 +59,5 @@ public class TakiplerFragment extends Fragment {
         handleBackPressWithEngine(this);
     }
 }
+
+ */

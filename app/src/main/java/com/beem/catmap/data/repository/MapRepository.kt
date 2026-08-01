@@ -85,7 +85,12 @@ class MapRepository {
 
                 catsCollection.add(catData)
                     .addOnSuccessListener { documentRef ->
-                        trySend(UploadProgressState.Success(documentRef.id))
+                        trySend(
+                            UploadProgressState.Success(
+                                documentId = documentRef.id,
+                                imageUrls = uploadedUrls.toList()
+                            )
+                        )
                         close()
                     }
                     .addOnFailureListener { e ->

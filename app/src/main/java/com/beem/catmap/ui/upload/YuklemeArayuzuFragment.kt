@@ -3,22 +3,28 @@ package com.beem.catmap.ui.upload
 import android.Manifest
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.Maps.LocationEngine
-import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
+import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -32,6 +38,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -41,6 +48,7 @@ class YuklemeArayuzuFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: UploadViewModel by viewModels()
+    private val postViewModel: PostViewModel by activityViewModels()
     private lateinit var locationClient: FusedLocationProviderClient
     private lateinit var messageManager: UyariMesaji
 
@@ -110,36 +118,66 @@ class YuklemeArayuzuFragment : Fragment() {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collectLatest { state ->
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                handlePhotoListVisibility(state.selectedImages)
+                launch {
+                    viewModel.uiState.collectLatest { state ->
+                        handlePhotoListVisibility(state.selectedImages)
 
-                if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
-                    if (premiumDialog == null) {
-                        premiumDialog = PremiumUploadDialog(
-                            context = requireContext(),
-                            onAnimationEnd = {
-                                viewModel.onProgressDialogDismissed()
+                        if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
+                            if (premiumDialog == null) {
+                                premiumDialog = PremiumUploadDialog(
+                                    context = requireContext(),
+                                    onAnimationEnd = {
+                                        viewModel.onProgressDialogDismissed()
+                                    }
+                                )
+                                premiumDialog?.show()
                             }
-                        )
-                        premiumDialog?.show()
+                            premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
+                        } else {
+                            premiumDialog = null
+                        }
+
+                        if (state.isAllDone && state.createdDocumentId != null) {
+                            viewModel.resetState()
+                            // showAdIfAvailable()
+                            showPostSaveDialog(state.createdDocumentId)
+                            clearFormFields()
+                        }
                     }
-                    premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
-                } else {
-                    premiumDialog = null
                 }
 
-                if (state.isAllDone && state.createdDocumentId != null) {
-                    viewModel.resetState()
+                launch {
+                    launch {
+                        postViewModel.islemSonucu.collectLatest { result ->
+                            when (result) {
+                                is UiState.Success -> {
+                                    messageManager.BasariliDurum("Eklendi", 1000)
 
-                    //showAdIfAvailable()
-                    showPostSaveDialog(state.createdDocumentId)
-                    clearFormFields()
+                                    val args = Bundle().apply {
+                                        putString("USER_ID", UserSession.userId)
+                                    }
+                                    SmartNavigationEngine.navigateTo(
+                                        Screen.PROFILE,
+                                        args
+                                    )
+                                }
+                                is UiState.Error -> {
+                                    messageManager.BasariliDurum("Ekleme başarısız", 1000)
+                                    Log.e("Yukle", "Gönderi kaydetme başarısız: ${result.message}")
+                                }
+                                is UiState.Loading -> {
+
+                                }
+                                UiState.Idle -> {}
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-
 
     private fun handlePhotoListVisibility(images: List<Uri>) {
         if (images.isNotEmpty()) {
@@ -180,9 +218,24 @@ class YuklemeArayuzuFragment : Fragment() {
 
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
-            GonderiKaydetmeYardimciSinif.kullaniciyaGonderiKaydet(
-                requireContext(), docId, binding.main, messageManager
+
+            val secilenFotografUrileri = viewModel.uiState.value.uploadedPhotoUrls
+
+            val yeniGonderi = Gonderi(
+                kediID = docId,
+                kediAdi = binding.isimText.text.toString(),
+                aciklama = binding.hakkindaText.text.toString(),
+                fotoUrlListesi = secilenFotografUrileri, // Ekrandaki fotoğrafların Uri/URL listesi
+                tarih = com.google.firebase.Timestamp.now(),
+                begeniSayisi = 0L
             )
+
+            // Doğrudan tam nesneyi veriyoruz
+            postViewModel.gonderiKaydet(
+                userId = UserSession.userId,
+                yeniGonderi = yeniGonderi
+            )
+
             dialog.dismiss()
         }
 
