@@ -31,11 +31,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _gonderiSayisi = MutableStateFlow<Int>(0)
     val gonderiSayisi: StateFlow<Int> = _gonderiSayisi.asStateFlow()
 
-    private val _islemSonucu = MutableSharedFlow<UiState<String>>(replay = 1)
+    // Single event'ler için replay = 0 yapıldı (Tekrarlayan Toast/SnackBar engellemek için)
+    private val _islemSonucu = MutableSharedFlow<UiState<String>>(replay = 0)
     val islemSonucu: SharedFlow<UiState<String>> = _islemSonucu.asSharedFlow()
 
-
-    private val _haritaSilindiEvent = MutableSharedFlow<Boolean>()
+    private val _haritaSilindiEvent = MutableSharedFlow<Boolean>(replay = 0)
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
 
     private val _yukleyenID = MutableStateFlow<String>("")
@@ -59,7 +59,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
         val cached = profileCache.get(targetUserId)
         if (cached != null) {
-            Log.d("CACHED","dolu geldı"+ cached.idList.size)
+            Log.d("CACHED", "Cache dolu geldi: ${cached.idList.size}")
             _gonderiSayisi.value = cached.idList.size
             _gonderilerState.value = UiState.Success(cached.posts)
             if (isSelf) {
@@ -207,7 +207,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
                     val cachedData = profileCache.get(userId)
 
-                    // 1. Durum: Profil önceden yüklenmiş ve cache'de veri var
                     if (cachedData != null) {
                         val updatedPosts = listOf(yeniGonderi) + cachedData.posts
                         val updatedIdList = listOf(yeniKediItem) + cachedData.idList
@@ -221,11 +220,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
                         _gonderiSayisi.value = updatedIdList.size
                         _gonderilerState.value = UiState.Success(updatedPosts)
-                    }
-                    // 2. Durum: Profil hiç açılmamış (Cache NULL).
-                    // Sadece yeni gönderiyi koyup eski verileri ezmek yerine sunucudan taze çekiyoruz.
-                    else {
-                        gonderileriGetir(userId, forceRefresh = true)
+                    } else {
+                        gonderileriGetir(userId,true)
                     }
 
                     _islemSonucu.emit(UiState.Success("Gönderi başarıyla paylaşıldı."))
@@ -237,6 +233,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
     }
+
     private fun saveToCache(
         userId: String,
         posts: List<Gonderi>,
@@ -250,25 +247,29 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-
     private fun removePostFromCacheAndUi(userId: String, kediId: String) {
+        val cachedData = profileCache.get(userId)
         val activePosts = (_gonderilerState.value as? UiState.Success)?.data ?: emptyList()
+
+        // Ekranda gösterilen listeden silinen gönderiyi çıkar
         val updatedPosts = activePosts.filterNot { it.kediID == kediId }
 
-        val cachedData = profileCache.get(userId)
+        // Cache'deki tüm ID listesinden silinen gönderiyi çıkar
         val updatedIdList = cachedData?.idList?.filterNot { it.kediID == kediId } ?: emptyList()
         val updatedOffset = ((cachedData?.offset ?: updatedPosts.size) - 1).coerceAtLeast(0)
 
+        // FIX: userManager güncellenirken ekrandaki liste boyutu değil, TOPLAM ID listesinin boyutu verilmeli
         if (userId == UserSession.userId) {
-            val yeniSayi = (updatedPosts.size).toLong()
-            userManager.updateGonderiSayisi(yeniSayi)
+            val yeniToplamSayi = updatedIdList.size.toLong()
+            userManager.updateGonderiSayisi(yeniToplamSayi)
         }
 
         if (cachedData != null) {
             saveToCache(userId, updatedPosts, updatedIdList, updatedOffset, cachedData.isLastPage)
         }
 
-        _gonderiSayisi.value = updatedPosts.size
+        // UI'daki toplam sayıyı da doğru güncelliyoruz
+        _gonderiSayisi.value = updatedIdList.size
         _gonderilerState.value = UiState.Success(updatedPosts)
     }
 }
