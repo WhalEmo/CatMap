@@ -111,6 +111,61 @@ class ChatRepository(
         }
     }
 
+    suspend fun updateMessage(chatId: String, messageId: String, newText: String): Boolean {
+        return try {
+            val updates = mapOf<String, Any>(
+                "mesaj" to newText,
+                "duzenlendi" to true
+            )
+            messageRef.child(chatId).child("anaMesaj").child(messageId).updateChildren(updates).await()
+
+            // gunMesaj düğümüne de log/takip kaydı atalım (eski veritabanı yapınla uyumlu olması için)
+            val gunKey = messageRef.child(chatId).child("gunMesaj").push().key
+            if (gunKey != null) {
+                val gunMap = mapOf("ID" to messageId, "mesaj" to newText)
+                messageRef.child(chatId).child("gunMesaj").child(gunKey).setValue(gunMap).await()
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun getOlderMessages(
+        chatId: String,
+        lastMessageTimestamp: Long,
+        limit: Int = 20
+    ): List<ChatMessage> {
+        return try {
+            val query = messageRef.child(chatId).child("anaMesaj")
+                .orderByChild("zaman")
+                .endBefore(lastMessageTimestamp.toDouble())
+                .limitToLast(limit)
+
+            val snapshot = query.get().await()
+            snapshot.children.mapNotNull { it.toChatMessage() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    suspend fun deleteMessage(chatId: String, messageId: String): Boolean {
+        return try {
+            messageRef.child(chatId).child("anaMesaj").child(messageId).removeValue().await()
+
+            val silKey = messageRef.child(chatId).child("silMesaj").push().key
+            if (silKey != null) {
+                messageRef.child(chatId).child("silMesaj").child(silKey).setValue(messageId).await()
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     /**
      * Mesaj Gönderme
      */
@@ -189,21 +244,4 @@ class ChatRepository(
         messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(isTyping)
     }
 
-    private fun parseMesaj(snapshot: DataSnapshot): Mesaj? {
-        val tur = snapshot.child("tur").getValue(String::class.java) ?: "metin"
-        return when (tur) {
-            "metin" -> {
-                val id = snapshot.key ?: ""
-                val gonderen = snapshot.child("gonderen").getValue(String::class.java) ?: ""
-                val zaman = snapshot.child("zaman").getValue(Long::class.java) ?: 0L
-                val mesaj = snapshot.child("mesaj").getValue(String::class.java) ?: ""
-                val goruldu = snapshot.child("goruldu").getValue(Boolean::class.java) ?: false
-                Mesaj(gonderen, mesaj, zaman, id, goruldu).apply {
-                    this.tur = "metin"
-                }
-            }
-            "yanit" -> snapshot.getValue(YanitMesaj::class.java)
-            else -> null
-        }
-    }
 }

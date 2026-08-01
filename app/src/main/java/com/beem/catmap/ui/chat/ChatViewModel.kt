@@ -33,6 +33,8 @@ class ChatViewModel(
 
     private var presenceJob: Job? = null
 
+    private var isPagingLoading = false
+
     val currentUserId: String get() = currentUserManager.getCurrentUserId()
 
     init {
@@ -82,6 +84,23 @@ class ChatViewModel(
         }
     }
 
+    fun updateMessage(messageId: String, newText: String) {
+        val activeChatId = chatId ?: return
+        if (newText.trim().isEmpty()) return
+
+        viewModelScope.launch {
+            repository.updateMessage(activeChatId, messageId, newText)
+        }
+    }
+
+    fun deleteMessage(messageId: String) {
+        val activeChatId = chatId ?: return
+
+        viewModelScope.launch {
+            repository.deleteMessage(activeChatId, messageId)
+        }
+    }
+
     private fun observeReceiverPresence() {
         presenceJob?.cancel()
         presenceJob = viewModelScope.launch {
@@ -96,6 +115,35 @@ class ChatViewModel(
             repository.listenTypingStatus(chatId, receiverId).collectLatest { isTyping ->
                 _uiState.update { it.copy(isOtherUserTyping = isTyping) }
             }
+        }
+    }
+
+
+    fun loadOlderMessages() {
+        val activeChatId = chatId ?: return
+        val currentMessages = _uiState.value.messages
+
+        if (isPagingLoading || currentMessages.isEmpty()) return
+
+        val oldestMessageTimestamp = currentMessages.first().timestamp
+
+        viewModelScope.launch {
+            isPagingLoading = true
+
+            val olderMessages = repository.getOlderMessages(
+                chatId = activeChatId,
+                lastMessageTimestamp = oldestMessageTimestamp,
+                limit = 20
+            )
+
+            if (olderMessages.isNotEmpty()) {
+                _uiState.update { state ->
+                    // Yeni çekilen 20 eski mesajı listenin BAŞINA birleştiriyoruz
+                    state.copy(messages = olderMessages + state.messages)
+                }
+            }
+
+            isPagingLoading = false
         }
     }
 

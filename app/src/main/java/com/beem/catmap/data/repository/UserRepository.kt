@@ -1,5 +1,6 @@
 package com.beem.catmap.data.repository
 
+import com.beem.catmap.utils.toFormattedLastSeen
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -27,7 +28,7 @@ class UserRepository(
                 val statusText = if (isOnline) {
                     "Çevrimiçi"
                 } else if (lastSeen > 0) {
-                    "Son görülme: ${formatLastSeen(lastSeen)}"
+                    "Son görülme: ${lastSeen.toFormattedLastSeen()}"
                 } else {
                     "Çevrimdışı"
                 }
@@ -44,8 +45,4 @@ class UserRepository(
         awaitClose { userStatusRef.removeEventListener(listener) }
     }
 
-    private fun formatLastSeen(timestamp: Long): String {
-        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-        return sdf.format(Date(timestamp))
-    }
 }
