@@ -3,8 +3,10 @@ package com.beem.catmap.ui.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.ChatRepository
+import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.mesaj.Mesaj
+import com.beem.catmap.models.ChatMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +19,7 @@ import java.util.TimerTask
 
 class ChatViewModel(
     private val repository: ChatRepository = ChatRepository(),
+    private val userRepo: UserRepository = UserRepository(),
     private val currentUserManager: CurrentUserManager,
     private val receiverId: String
 ) : ViewModel() {
@@ -27,6 +30,8 @@ class ChatViewModel(
     private var chatId: String? = null
     private var typingTimer: Timer? = null
     private var messagesJob: Job? = null
+
+    private var presenceJob: Job? = null
 
     val currentUserId: String get() = currentUserManager.getCurrentUserId()
 
@@ -43,11 +48,18 @@ class ChatViewModel(
             val generatedChatId = repository.getOrCreateChatId(senderId, receiverId)
             chatId = generatedChatId
 
+            val (name, photoUrl) = repository.fetchReceiverProfileInfo(receiverId)
+            _uiState.update {
+                it.copy(receiverName = name, receiverPhotoUrl = photoUrl)
+            }
+
             // 2. Mesaj Akışını Başlat
             observeMessages(generatedChatId)
 
             // 3. Yazıyor... Durumunu Dinle
             observeTypingStatus(generatedChatId)
+
+            observeReceiverPresence()
 
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -58,6 +70,23 @@ class ChatViewModel(
         messagesJob = viewModelScope.launch {
             repository.getMessagesFlow(chatId).collectLatest { messageList ->
                 _uiState.update { it.copy(messages = messageList) }
+
+                val unreadIdsFromOther = messageList
+                    .filter { it.senderId != currentUserId && !it.isRead }
+                    .map { it.id }
+
+                if (unreadIdsFromOther.isNotEmpty()) {
+                    repository.markMessagesAsReadByIds(chatId, unreadIdsFromOther)
+                }
+            }
+        }
+    }
+
+    private fun observeReceiverPresence() {
+        presenceJob?.cancel()
+        presenceJob = viewModelScope.launch {
+            userRepo.getUserPresenceFlow(receiverId).collectLatest { status ->
+                _uiState.update { it.copy(receiverStatus = status) }
             }
         }
     }
@@ -108,8 +137,8 @@ class ChatViewModel(
         }
     }
 
-    fun setReplyMessage(mesaj: Mesaj?) {
-        _uiState.update { it.copy(replyMessage = mesaj) }
+    fun setReplyMessage(message: ChatMessage?) {
+        _uiState.update { it.copy(replyMessage = message) }
     }
 
     override fun onCleared() {

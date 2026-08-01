@@ -24,6 +24,7 @@ import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.mesaj.Mesaj
 import com.beem.catmap.mesaj.MesajFotoGonderYonetici
+import com.beem.catmap.models.ChatMessage
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -94,10 +95,12 @@ class ChatFragment : Fragment() {
                 showOptionMenu(message, anchor)
             },
             onReplyClick = { replyMessage ->
-                scrollToMessage(replyMessage.yanitlananMesaj.mesajID)
+                scrollToMessage(replyMessage.id)
             },
-            onPhotoClick = {
-
+            onPhotoClick = { photoUrls ->
+                if (photoUrls.isNotEmpty()) {
+                    openPhotoPreview(photoUrls)
+                }
             },
         )
         binding.mesajRecyclerView.apply {
@@ -156,6 +159,27 @@ class ChatFragment : Fragment() {
     }
 
     private fun renderUi(state: ChatUiState) {
+
+        if (state.receiverName.isNotEmpty()) {
+            binding.kisiAdiText.text = state.receiverName
+        }
+
+        // Picasso / Glide ile Profil Fotoğrafını Yükle
+        if (state.receiverPhotoUrl.isNotEmpty()) {
+            com.squareup.picasso.Picasso.get()
+                .load(state.receiverPhotoUrl)
+                .placeholder(R.drawable.kullanici)
+                .error(R.drawable.kullanici)
+                .into(binding.kisiProfilFoto)
+        }
+
+        if (!state.isOtherUserTyping) {
+            binding.kisiDurumText.text = state.receiverStatus
+        } else {
+            binding.kisiDurumText.text = "Yazıyor..."
+        }
+
+
         // 1. Mesaj Listesini Güncelle
         mesajAdapter.submitList(state.messages) {
             if (state.messages.isNotEmpty()) {
@@ -167,10 +191,6 @@ class ChatFragment : Fragment() {
         binding.yukleniyorProgress.isVisible = state.isLoading
         binding.mesajRecyclerView.isVisible = !state.isLoading
 
-        // 3. Karşı Tarafın "Yazıyor..." veya Çevrimiçi Durumu
-        if (state.isOtherUserTyping) {
-            binding.kisiDurumText.text = "Yazıyor..."
-        }
 
         // 4. Engelleme UI Yönetimi
         val isBlocked = state.isBlockedByMe || state.isBlockedByOther
@@ -192,8 +212,15 @@ class ChatFragment : Fragment() {
         // 5. Yanıtlama Kutusu (Reply Layout)
         binding.cevapAlani.isVisible = state.replyMessage != null
         state.replyMessage?.let { msg ->
-            binding.cevapMetni.text = if (msg.tur == "foto") "📷 Fotoğraf" else msg.mesaj
+            binding.cevapMetni.text = when (msg) {
+                is ChatMessage.Text -> msg.message
+                is ChatMessage.Photo -> "📷 Fotoğraf"
+                is ChatMessage.Reply -> msg.message
+            }
         }
+    }
+
+    private fun openPhotoPreview(photoUrls: List<String>) {
     }
 
     private fun setupKeyboardAdjustments() {
@@ -211,15 +238,13 @@ class ChatFragment : Fragment() {
         }
     }
 
-    private fun showOptionMenu(mesaj: Mesaj, view: View) {
+    private fun showOptionMenu(message: ChatMessage, view: View) {
     }
 
     private fun scrollToMessage(targetMessageId: String) {
         val currentList = mesajAdapter.currentList
-        val index = currentList.indexOfFirst { it.mesajID == targetMessageId }
+        val index = currentList.indexOfFirst { it.id == targetMessageId }
         if (index != -1) {
-            currentList[index].isYaniyorMu = true
-            mesajAdapter.notifyItemChanged(index)
             binding.mesajRecyclerView.scrollToPosition(index)
         }
     }

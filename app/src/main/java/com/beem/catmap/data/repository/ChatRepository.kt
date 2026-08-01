@@ -2,6 +2,8 @@ package com.beem.catmap.data.repository
 
 import com.beem.catmap.mesaj.Mesaj
 import com.beem.catmap.mesaj.YanitMesaj
+import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.models.toChatMessage
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -55,21 +57,33 @@ class ChatRepository(
         })
     }
 
+    suspend fun fetchReceiverProfileInfo(receiverId: String): Pair<String, String> {
+        return try {
+            val document = firestore.collection("users").document(receiverId).get().await()
+            if (document.exists()) {
+                val name = document.getString("KullaniciAdi") ?: ""
+                val photoUrl = document.getString("profilFotoUrl") ?: ""
+                Pair(name, photoUrl)
+            } else {
+                Pair("", "")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair("", "")
+        }
+    }
+
     /**
      * Canlı Mesaj Akışını Flow Olarak Yayınlar
      */
-    fun getMessagesFlow(chatId: String, limit: Int = 20): Flow<List<Mesaj>> = callbackFlow {
+    fun getMessagesFlow(chatId: String, limit: Int = 20): Flow<List<ChatMessage>> = callbackFlow {
         val query = messageRef.child(chatId).child("anaMesaj")
             .orderByChild("zaman")
             .limitToLast(limit)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val list = mutableListOf<Mesaj>()
-                for (snap in snapshot.children) {
-                    val mesaj = parseMesaj(snap)
-                    if (mesaj != null) list.add(mesaj)
-                }
+                val list = snapshot.children.mapNotNull { it.toChatMessage() }
                 trySend(list)
             }
 
@@ -82,17 +96,56 @@ class ChatRepository(
         awaitClose { query.removeEventListener(listener) }
     }
 
+    suspend fun markMessagesAsReadByIds(chatId: String, unreadMessageIds: List<String>) {
+        if (unreadMessageIds.isEmpty()) return
+
+        try {
+            val updates = mutableMapOf<String, Any>()
+            for (id in unreadMessageIds) {
+                updates["$id/goruldu"] = true
+            }
+
+            messageRef.child(chatId).child("anaMesaj").updateChildren(updates).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     /**
      * Mesaj Gönderme
      */
-    suspend fun sendMessage(chatId: String, senderId: String, text: String, replyTo: Mesaj? = null): Boolean {
+    suspend fun sendMessage(chatId: String, senderId: String, text: String, replyTo: ChatMessage? = null): Boolean {
         return try {
             val mesajKey = messageRef.child(chatId).child("anaMesaj").push().key ?: return false
 
             if (replyTo != null) {
-                val yanit = YanitMesaj(senderId, text, System.currentTimeMillis(), mesajKey, false, replyTo)
-                if (replyTo.tur == "foto") replyTo.mesaj = "📷 Fotoğraf"
-                messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(yanit).await()
+                val parentSummary = when (replyTo) {
+                    is ChatMessage.Text -> replyTo.message
+                    is ChatMessage.Photo -> "📷 Fotoğraf"
+                    is ChatMessage.Reply -> replyTo.message
+                }
+
+                val yanitMap = mapOf(
+                    "gonderici" to senderId,
+                    "mesaj" to text,
+                    "zaman" to System.currentTimeMillis(),
+                    "goruldu" to false,
+                    "tur" to "yanit",
+                    "mesajID" to mesajKey,
+                    "yanitlananMesaj" to mapOf(
+                        "mesajID" to replyTo.id,
+                        "gonderici" to replyTo.senderId,
+                        "mesaj" to parentSummary,
+                        "zaman" to replyTo.timestamp,
+                        "goruldu" to replyTo.isRead,
+                        "tur" to when (replyTo) {
+                            is ChatMessage.Photo -> "foto"
+                            is ChatMessage.Reply -> "yanit"
+                            is ChatMessage.Text -> "metin"
+                        }
+                    )
+                )
+                messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(yanitMap).await()
             } else {
                 val map = mapOf(
                     "gonderen" to senderId,
@@ -104,7 +157,6 @@ class ChatRepository(
                 messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(map).await()
             }
 
-            // Yazıyor durumunu kapat
             messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(false).await()
             true
         } catch (e: Exception) {
