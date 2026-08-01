@@ -10,19 +10,21 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.CevrimIciYonetimi
-import com.beem.catmap.MainActivity
 import com.beem.catmap.Maps.LocationEngine
-import com.beem.catmap.Profil.Gonderiler.GonderiKaydetmeYardimciSinif
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
+import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -36,6 +38,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -45,6 +48,7 @@ class YuklemeArayuzuFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: UploadViewModel by viewModels()
+    private val postViewModel: PostViewModel by activityViewModels()
     private lateinit var locationClient: FusedLocationProviderClient
     private lateinit var messageManager: UyariMesaji
 
@@ -145,23 +149,30 @@ class YuklemeArayuzuFragment : Fragment() {
                 }
 
                 launch {
-                    viewModel.profilEklemeSonucu.collectLatest { result ->
-                        if(result){
-                            messageManager.BasariliDurum("Eklendi", 1000)
+                    launch {
+                        postViewModel.islemSonucu.collectLatest { result ->
+                            when (result) {
+                                is UiState.Success -> {
+                                    messageManager.BasariliDurum("Eklendi", 1000)
 
-                            val args = Bundle().apply {
-                                putString("currentUserId", UserSession.userId)
+                                    val args = Bundle().apply {
+                                        putString("USER_ID", UserSession.userId)
+                                    }
+                                    SmartNavigationEngine.navigateTo(
+                                        Screen.PROFILE,
+                                        args
+                                    )
+                                }
+                                is UiState.Error -> {
+                                    messageManager.BasariliDurum("Ekleme başarısız", 1000)
+                                    Log.e("Yukle", "Gönderi kaydetme başarısız: ${result.message}")
+                                }
+                                is UiState.Loading -> {
+
+                                }
+                                UiState.Idle -> {}
                             }
-
-                            SmartNavigationEngine.navigateTo(
-                                Screen.PROFILE,
-                                args
-                            )
-                        }else{
-                            messageManager.BasariliDurum("Eklendi", 1000)
-                            Log.e("Yukle", "yukleme başarısız: ");
                         }
-
                     }
                 }
             }
@@ -207,10 +218,24 @@ class YuklemeArayuzuFragment : Fragment() {
 
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
-            viewModel.gonderiyiProfileKaydet(
-                userId = UserSession.userId,
-                docId = docId
+
+            val secilenFotografUrileri = viewModel.uiState.value.uploadedPhotoUrls
+
+            val yeniGonderi = Gonderi(
+                kediID = docId,
+                kediAdi = binding.isimText.text.toString(),
+                aciklama = binding.hakkindaText.text.toString(),
+                fotoUrlListesi = secilenFotografUrileri, // Ekrandaki fotoğrafların Uri/URL listesi
+                tarih = com.google.firebase.Timestamp.now(),
+                begeniSayisi = 0L
             )
+
+            // Doğrudan tam nesneyi veriyoruz
+            postViewModel.gonderiKaydet(
+                userId = UserSession.userId,
+                yeniGonderi = yeniGonderi
+            )
+
             dialog.dismiss()
         }
 

@@ -47,6 +47,7 @@ class CatMapNavigationRenderer(
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
+
         }
 
 

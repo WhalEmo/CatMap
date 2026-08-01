@@ -11,6 +11,7 @@ enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, v
     OTHER_PROFILE("OTHER_PROFILE", -1, null),
     CAMERA("CAMERA", -1, null),
     MESSAGE("MESSAGE", -1, null),
+    EDIT_PROFILE("EDIT_PROFILE", -1, null),
     BLOCKED_USERS("BLOCKED_USERS", -1, null),
     FOLLOWERS("FOLLOWERS", -1, null),
     POST("POST", -1, null),

@@ -1,11 +1,13 @@
 package com.beem.catmap.gonderi
 
+import android.app.Application
+import android.util.Log
 import androidx.collection.LruCache
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
-import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.data.repository.PostRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
 import kotlinx.coroutines.async
@@ -16,13 +18,12 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class PostViewModel : ViewModel() {
+class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: PostRepository = PostRepository()
-    private val followRepository: FollowRepository = FollowRepository()
+    private val userManager = CurrentUserManager.getInstance(application)
 
     private val _gonderilerState = MutableStateFlow<UiState<List<Gonderi>>>(UiState.Idle)
     val gonderilerState: StateFlow<UiState<List<Gonderi>>> = _gonderilerState.asStateFlow()
@@ -30,28 +31,23 @@ class PostViewModel : ViewModel() {
     private val _gonderiSayisi = MutableStateFlow<Int>(0)
     val gonderiSayisi: StateFlow<Int> = _gonderiSayisi.asStateFlow()
 
-    private val _islemSonucu = MutableSharedFlow<UiState<String>>()
+    private val _islemSonucu = MutableSharedFlow<UiState<String>>(replay = 1)
     val islemSonucu: SharedFlow<UiState<String>> = _islemSonucu.asSharedFlow()
+
 
     private val _haritaSilindiEvent = MutableSharedFlow<Boolean>()
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
 
-    private val _profileUiState = MutableStateFlow(ProfileUiState())
-    val profileUiState: StateFlow<ProfileUiState> = _profileUiState.asStateFlow()
-
     private val _yukleyenID = MutableStateFlow<String>("")
     val yukleyenID: StateFlow<String> = _yukleyenID.asStateFlow()
 
-    private val profilePostsCache = LruCache<String, MutableList<Gonderi>>(3)
-    private val profileKediItemsCache = LruCache<String, MutableList<GonderilenKediItem>>(3)
-    private val profileOffsetCache = LruCache<String, Int>(3)
-    private val profileLastPageCache = LruCache<String, Boolean>(3)
+    private val profileCache = LruCache<String, ProfilePostCacheData>(3)
 
     private val PAGE_SIZE = 12
     var isLoadingMore = false
 
     val isLastPage: Boolean
-        get() = profileLastPageCache.get(_yukleyenID.value) ?: false
+        get() = profileCache.get(_yukleyenID.value)?.isLastPage ?: false
 
     fun setYukleyenID(id: String) {
         _yukleyenID.value = id
@@ -59,67 +55,62 @@ class PostViewModel : ViewModel() {
 
     fun profilDurumunuHazirla(targetUserId: String) {
         setYukleyenID(targetUserId)
-        val currentUserId = UserSession.userId
-        val isSelf = (targetUserId == currentUserId)
+        val isSelf = (targetUserId == UserSession.userId)
 
-        _profileUiState.update { it.copy(isSelfProfile = isSelf) }
-
-        if (!isSelf) {
-            kullaniciTakipDurumunuKontrolEt(targetUserId)
-        }
-    }
-
-    private fun kullaniciTakipDurumunuKontrolEt(targetUserId: String) {
-        viewModelScope.launch {
-            _profileUiState.update { it.copy(isLoadingFollowState = true) }
-
-            val isFollowing = followRepository.isFollowing(targetUserId).getOrDefault(false)
-            val isFollowed = followRepository.isFollowedBy(targetUserId).getOrDefault(false)
-
-            _profileUiState.update {
-                it.copy(isFollowing = isFollowing, isFollowed = isFollowed, isLoadingFollowState = false)
+        val cached = profileCache.get(targetUserId)
+        if (cached != null) {
+            Log.d("CACHED","dolu geldı"+ cached.idList.size)
+            _gonderiSayisi.value = cached.idList.size
+            _gonderilerState.value = UiState.Success(cached.posts)
+            if (isSelf) {
+                userManager.updateGonderiSayisi(cached.idList.size.toLong())
             }
+        } else {
+            _gonderiSayisi.value = 0
+            _gonderilerState.value = UiState.Idle
         }
     }
 
-    fun gonderileriGetir(userId: String) {
+    fun gonderileriGetir(userId: String, forceRefresh: Boolean = false) {
         if (userId.isBlank()) return
 
+        val cachedData = profileCache.get(userId)
+        if (cachedData != null && !forceRefresh) {
+            _gonderiSayisi.value = cachedData.idList.size
+            _gonderilerState.value = UiState.Success(cachedData.posts)
+            return
+        }
+
         viewModelScope.launch {
-            val cachedPosts = profilePostsCache.get(userId)
-            val cachedItems = profileKediItemsCache.get(userId)
-
-            if (cachedPosts != null && cachedItems != null) {
-                _gonderiSayisi.value = cachedItems.size
-                _gonderilerState.value = UiState.Success(cachedPosts.toList())
-                return@launch
-            }
-
             _gonderilerState.value = UiState.Loading
 
             repository.getKullaniciGonderiIdListesi(userId)
                 .onSuccess { fullIdList ->
-                    val userItems = fullIdList.toMutableList()
-                    profileKediItemsCache.put(userId, userItems)
-                    _gonderiSayisi.value = userItems.size
+                    _gonderiSayisi.value = fullIdList.size
 
-                    if (userItems.isEmpty()) {
-                        profileLastPageCache.put(userId, true)
-                        profilePostsCache.put(userId, mutableListOf())
+                    if (userId == UserSession.userId) {
+                        userManager.updateGonderiSayisi(fullIdList.size.toLong())
+                    }
+
+                    if (fullIdList.isEmpty()) {
+                        saveToCache(userId, emptyList(), emptyList(), 0, true)
                         _gonderilerState.value = UiState.Success(emptyList())
                         return@launch
                     }
 
-                    val firstBatch = userItems.take(PAGE_SIZE)
-                    profileOffsetCache.put(userId, firstBatch.size)
+                    val firstBatch = fullIdList.take(PAGE_SIZE)
+                    val isLast = firstBatch.size >= fullIdList.size
 
-                    if (firstBatch.size >= userItems.size) {
-                        profileLastPageCache.put(userId, true)
-                    } else {
-                        profileLastPageCache.put(userId, false)
-                    }
-
-                    fetchAndEmitDetails(userId, firstBatch)
+                    repository.getGonderiDetaylariByIds(firstBatch)
+                        .onSuccess { gonderiler ->
+                            saveToCache(userId, gonderiler, fullIdList, firstBatch.size, isLast)
+                            _gonderilerState.value = UiState.Success(gonderiler)
+                        }
+                        .onFailure { exception ->
+                            _gonderilerState.value = UiState.Error(
+                                exception.localizedMessage ?: "Gönderi detayları alınamadı."
+                            )
+                        }
                 }
                 .onFailure { exception ->
                     _gonderilerState.value = UiState.Error(
@@ -133,52 +124,30 @@ class PostViewModel : ViewModel() {
         val userId = _yukleyenID.value
         if (userId.isBlank() || isLoadingMore || isLastPage) return
 
-        val userItems = profileKediItemsCache.get(userId) ?: return
-        val currentOffset = profileOffsetCache.get(userId) ?: 0
+        val cachedData = profileCache.get(userId) ?: return
+        val currentOffset = cachedData.offset
 
-        if (currentOffset >= userItems.size) return
+        if (currentOffset >= cachedData.idList.size) return
 
         isLoadingMore = true
 
         viewModelScope.launch {
-            val nextOffset = (currentOffset + PAGE_SIZE).coerceAtMost(userItems.size)
-            val nextBatch = userItems.subList(currentOffset, nextOffset)
-
-            profileOffsetCache.put(userId, nextOffset)
-
-            if (nextOffset >= userItems.size) {
-                profileLastPageCache.put(userId, true)
-            }
+            val nextOffset = (currentOffset + PAGE_SIZE).coerceAtMost(cachedData.idList.size)
+            val nextBatch = cachedData.idList.subList(currentOffset, nextOffset)
+            val isLast = nextOffset >= cachedData.idList.size
 
             repository.getGonderiDetaylariByIds(nextBatch)
                 .onSuccess { newGonderiler ->
-                    val userPosts = profilePostsCache.get(userId) ?: mutableListOf()
-                    userPosts.addAll(newGonderiler)
-                    profilePostsCache.put(userId, userPosts)
+                    val updatedPosts = cachedData.posts + newGonderiler
+                    saveToCache(userId, updatedPosts, cachedData.idList, nextOffset, isLast)
 
-                    _gonderilerState.value = UiState.Success(userPosts.toList())
+                    _gonderilerState.value = UiState.Success(updatedPosts)
                     isLoadingMore = false
                 }
                 .onFailure {
                     isLoadingMore = false
                 }
         }
-    }
-
-    private suspend fun fetchAndEmitDetails(userId: String, items: List<GonderilenKediItem>) {
-        repository.getGonderiDetaylariByIds(items)
-            .onSuccess { gonderiler ->
-                val userPosts = profilePostsCache.get(userId) ?: mutableListOf()
-                userPosts.addAll(gonderiler)
-                profilePostsCache.put(userId, userPosts)
-
-                _gonderilerState.value = UiState.Success(userPosts.toList())
-            }
-            .onFailure { exception ->
-                _gonderilerState.value = UiState.Error(
-                    exception.localizedMessage ?: "Gönderi detayları alınamadı."
-                )
-            }
     }
 
     fun gonderiSil(userId: String, kediId: String) {
@@ -188,15 +157,7 @@ class PostViewModel : ViewModel() {
             repository.kullaniciGonderiSil(userId, kediId)
                 .onSuccess {
                     _islemSonucu.emit(UiState.Success("Gönderi başarıyla silindi."))
-
-                    val userItems = profileKediItemsCache.get(userId)
-                    userItems?.removeAll { it.kediID == kediId }
-                    _gonderiSayisi.value = userItems?.size ?: 0
-
-                    val userPosts = profilePostsCache.get(userId)
-                    userPosts?.removeAll { it.kediID == kediId }
-
-                    _gonderilerState.value = UiState.Success(userPosts?.toList() ?: emptyList())
+                    removePostFromCacheAndUi(userId, kediId)
                 }
                 .onFailure { exception ->
                     _islemSonucu.emit(
@@ -222,15 +183,7 @@ class PostViewModel : ViewModel() {
                     gonderiSilJob?.await()?.getOrThrow()
                 }
             }.onSuccess {
-                val userItems = profileKediItemsCache.get(userId)
-                userItems?.removeAll { it.kediID == kediId }
-                _gonderiSayisi.value = userItems?.size ?: 0
-
-                val userPosts = profilePostsCache.get(userId)
-                userPosts?.removeAll { it.kediID == kediId }
-
-                _gonderilerState.value = UiState.Success(userPosts?.toList() ?: emptyList())
-
+                removePostFromCacheAndUi(userId, kediId)
                 _haritaSilindiEvent.emit(true)
                 _islemSonucu.emit(UiState.Success("Haritadan silindi."))
             }.onFailure { exception ->
@@ -240,31 +193,42 @@ class PostViewModel : ViewModel() {
     }
 
     fun gonderiKaydet(userId: String, yeniGonderi: Gonderi) {
+        val kediId = yeniGonderi.kediID ?: return
+
         viewModelScope.launch {
             _islemSonucu.emit(UiState.Loading)
 
-            repository.kullaniciGonderiKaydet(userId, yeniGonderi.kediID ?: "")
+            repository.kullaniciGonderiKaydet(userId, kediId)
                 .onSuccess {
-                    _islemSonucu.emit(UiState.Success("Gönderi başarıyla paylaşıldı."))
-
                     val yeniKediItem = GonderilenKediItem(
-                        kediID = yeniGonderi.kediID ?: "",
+                        kediID = kediId,
                         tarih = yeniGonderi.tarih
                     )
 
-                    val userItems = profileKediItemsCache.get(userId) ?: mutableListOf()
-                    userItems.add(0, yeniKediItem)
-                    profileKediItemsCache.put(userId, userItems)
-                    _gonderiSayisi.value = userItems.size
+                    val cachedData = profileCache.get(userId)
 
-                    val userPosts = profilePostsCache.get(userId) ?: mutableListOf()
-                    userPosts.add(0, yeniGonderi)
-                    profilePostsCache.put(userId, userPosts)
+                    // 1. Durum: Profil önceden yüklenmiş ve cache'de veri var
+                    if (cachedData != null) {
+                        val updatedPosts = listOf(yeniGonderi) + cachedData.posts
+                        val updatedIdList = listOf(yeniKediItem) + cachedData.idList
 
-                    val currentOffset = profileOffsetCache.get(userId) ?: 0
-                    profileOffsetCache.put(userId, currentOffset + 1)
+                        if (userId == UserSession.userId) {
+                            userManager.updateGonderiSayisi(updatedIdList.size.toLong())
+                        }
 
-                    _gonderilerState.value = UiState.Success(userPosts.toList())
+                        val newOffset = cachedData.offset + 1
+                        saveToCache(userId, updatedPosts, updatedIdList, newOffset, cachedData.isLastPage)
+
+                        _gonderiSayisi.value = updatedIdList.size
+                        _gonderilerState.value = UiState.Success(updatedPosts)
+                    }
+                    // 2. Durum: Profil hiç açılmamış (Cache NULL).
+                    // Sadece yeni gönderiyi koyup eski verileri ezmek yerine sunucudan taze çekiyoruz.
+                    else {
+                        gonderileriGetir(userId, forceRefresh = true)
+                    }
+
+                    _islemSonucu.emit(UiState.Success("Gönderi başarıyla paylaşıldı."))
                 }
                 .onFailure { exception ->
                     _islemSonucu.emit(
@@ -272,5 +236,39 @@ class PostViewModel : ViewModel() {
                     )
                 }
         }
+    }
+    private fun saveToCache(
+        userId: String,
+        posts: List<Gonderi>,
+        idList: List<GonderilenKediItem>,
+        offset: Int,
+        isLastPage: Boolean
+    ) {
+        profileCache.put(
+            userId,
+            ProfilePostCacheData(posts, idList, offset, isLastPage)
+        )
+    }
+
+
+    private fun removePostFromCacheAndUi(userId: String, kediId: String) {
+        val activePosts = (_gonderilerState.value as? UiState.Success)?.data ?: emptyList()
+        val updatedPosts = activePosts.filterNot { it.kediID == kediId }
+
+        val cachedData = profileCache.get(userId)
+        val updatedIdList = cachedData?.idList?.filterNot { it.kediID == kediId } ?: emptyList()
+        val updatedOffset = ((cachedData?.offset ?: updatedPosts.size) - 1).coerceAtLeast(0)
+
+        if (userId == UserSession.userId) {
+            val yeniSayi = (updatedPosts.size).toLong()
+            userManager.updateGonderiSayisi(yeniSayi)
+        }
+
+        if (cachedData != null) {
+            saveToCache(userId, updatedPosts, updatedIdList, updatedOffset, cachedData.isLastPage)
+        }
+
+        _gonderiSayisi.value = updatedPosts.size
+        _gonderilerState.value = UiState.Success(updatedPosts)
     }
 }

@@ -13,3 +13,10 @@ data class ProfileState(
     val gonderiSayisi: Long = 0L,
     val biyografi: String = ""
 )
+
+data class UserProfileData(
+    val userId: String,
+    val kullaniciAdi: String = "",
+    val fotoUrl: String? = null,
+    val hakkinda: String = ""
+)

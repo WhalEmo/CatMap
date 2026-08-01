@@ -6,7 +6,6 @@ import android.util.Log;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
@@ -18,7 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
 import java.util.Map;
-
+/*
 public class GonderiKaydetmeYardimciSinif {
     public static void kullaniciyaGonderiKaydet(Context context, String kediID, ConstraintLayout main, UyariMesaji mesaji){
         CurrentUserManager currentUserManager = CurrentUserManager.Companion.getInstance(context);
@@ -51,3 +50,5 @@ public class GonderiKaydetmeYardimciSinif {
     }
 
 }
+
+ */

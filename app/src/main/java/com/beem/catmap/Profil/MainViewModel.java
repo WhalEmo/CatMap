@@ -1,5 +1,5 @@
 package com.beem.catmap.Profil;
-
+/*
 import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
@@ -111,7 +111,7 @@ public class MainViewModel extends ViewModel {
         );
     }
 
-     */
+
 
     public LiveData<Pair<Boolean, Boolean>> getTakipDurumuCift() {
         return takipDurumuCift;
@@ -128,7 +128,7 @@ public class MainViewModel extends ViewModel {
         return currentUserManager.getCurrentUser().getID();
     }
 
-    /*public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
+    public void profilFotoUrlGetirVeCachele(Context context,String kullaniciId) {
         if (_Url != null) {
             _Url.setValue(null);
         }
@@ -179,7 +179,7 @@ public class MainViewModel extends ViewModel {
                 });
     }
 
-     */
+
 
 
     public void TakipEt(String TakipEttiginId){
@@ -259,7 +259,7 @@ public class MainViewModel extends ViewModel {
     }
 
 
-    /*
+
 
     public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
@@ -408,7 +408,7 @@ public class MainViewModel extends ViewModel {
     }
 
 
- */
+
 
     public void HakkindaDBEkle(String hakkindasi,Context context){
         Map<String, Object> veri = new HashMap<>();
@@ -744,3 +744,4 @@ public class MainViewModel extends ViewModel {
     }
 
 }
+*/

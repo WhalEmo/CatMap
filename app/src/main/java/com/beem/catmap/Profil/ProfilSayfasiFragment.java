@@ -1,5 +1,5 @@
 package com.beem.catmap.Profil;
-
+/*
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 
@@ -996,7 +996,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
     private void BottomSheetAc(){
         BottomSheetDialog bottom= new BottomSheetDialog(requireContext());
-        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_duzenle, null);
+        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.fragment_profili_duzenle, null);
 
         bottom.setOnShowListener(dialog -> {
             BottomSheetDialog d = (BottomSheetDialog) dialog;
@@ -1248,3 +1248,5 @@ public class ProfilSayfasiFragment extends Fragment {
         Log.d("PROFILE_PRINT", safeMessage);
     }
 }
+
+ */

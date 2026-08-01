@@ -1,5 +1,5 @@
 package com.beem.catmap.Profil
-import FollowViewModel
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,12 +23,18 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
 import com.beem.catmap.R
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.gonderi.FollowUiState
+import com.beem.catmap.gonderi.FollowViewModel
 import com.beem.catmap.gonderi.PostViewModel
-import com.beem.catmap.gonderi.ProfileUiState
+import com.beem.catmap.gonderi.ProfileUpdateResult
+import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.bumptech.glide.Glide
+import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -36,21 +42,27 @@ class ProfilFragment : Fragment() {
 
     private val viewModel: PostViewModel by activityViewModels()
     private val followViewModel: FollowViewModel by viewModels()
+    private val profileViewModel: ProfileViewModel by viewModels()
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressFollow: ProgressBar
-    private lateinit var tvGonderiSayisi: TextView
     private lateinit var tvEmpty: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var btnBack: ImageButton
     private lateinit var profiliDuzenleTiklandi: Button
     private lateinit var takipEtButonu: Button
     private lateinit var takipEdiliyorVeMesajLayout: LinearLayout
-    private  lateinit var takipEdiliyorButonu: Button
+    private lateinit var takipEdiliyorButonu: Button
     private lateinit var sohbetButon: Button
+    private lateinit var takipciSayisiTextView: TextView
+    private lateinit var takipEdilenSayisiTextView: TextView
+    private lateinit var gonderiSayisiTextView: TextView
+    private lateinit var bioTextView: TextView
+    private lateinit var KullaniciAdi: TextView
+    private lateinit var profilFotoImageView: CircleImageView
     private lateinit var gonderiAdapter: GonderiAdapter
-    private var currentUserId: String? = null
+    val myUserId = UserSession.userId
     private var targetUserId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,27 +86,40 @@ class ProfilFragment : Fragment() {
         recyclerView = view.findViewById(R.id.gonderiRecyclerView)
         progressBar = view.findViewById(R.id.progressBarr)
         progressFollow = view.findViewById(R.id.progressFollow)
-        tvGonderiSayisi = view.findViewById(R.id.gonderiSayisiTextView)
         tvEmpty = view.findViewById(R.id.emptyTextView)
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
         btnBack = view.findViewById(R.id.btnBack)
         profiliDuzenleTiklandi = view.findViewById(R.id.profiliDuzenleTiklandi)
         takipEtButonu = view.findViewById(R.id.takipEtButonu)
-        takipEdiliyorVeMesajLayout= view.findViewById(R.id.takipEdiliyorVeMesajLayout)
+        takipEdiliyorVeMesajLayout = view.findViewById(R.id.takipEdiliyorVeMesajLayout)
         takipEdiliyorButonu = view.findViewById(R.id.takipEdiliyorButonu)
         sohbetButon = view.findViewById(R.id.sohbetButon)
+        takipciSayisiTextView = view.findViewById(R.id.takipciSayisiTextView)
+        takipEdilenSayisiTextView = view.findViewById(R.id.takipEdilenSayisiTextView)
+        gonderiSayisiTextView = view.findViewById(R.id.gonderiSayisiTextView)
+        bioTextView = view.findViewById(R.id.bioTextView)
+        KullaniciAdi = view.findViewById(R.id.KullaniciAdi)
+        profilFotoImageView = view.findViewById(R.id.profilFotoImageView)
 
         setupRecyclerView()
         setupListeners()
         observeViewModel()
 
         targetUserId?.let { userId ->
+            // 1. Önce ViewModel'deki Cache durumunu hazırla
             viewModel.profilDurumunuHazirla(userId)
-            followViewModel.takipTakipciSayisiGetir(userId, requireContext())
-            yukleVerileri()
-        }
+            followViewModel.profilDurumunuHazirla(userId)
+            followViewModel.targetUserClearOrPrepare(userId)
+            followViewModel.takipTakipciSayisiGetir(userId, false)
+            profileViewModel.profilBilgileriniYukle(userId)
 
+            // 2. YALNIZCA cache boşsa sunucudan veri çek!
+            // gonderiKaydet ile cache zaten güncellendiği için forceRefresh = false ile çağırıyoruz.
+            viewModel.gonderileriGetir(userId, forceRefresh = false)
+            followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = false)
+        }
     }
+
     private fun setupRecyclerView() {
         gonderiAdapter = GonderiAdapter { gonderi ->
             onGonderiTiklandi(gonderi)
@@ -129,33 +154,46 @@ class ProfilFragment : Fragment() {
 
     private fun setupListeners() {
         btnBack.setOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed()
+            SmartNavigationEngine.navigateBack()
         }
 
         swipeRefreshLayout.setOnRefreshListener {
-            yukleVerileri()
+            yukleVerileri(forceRefresh = true)
         }
 
         takipEtButonu.setOnClickListener {
-
+            targetUserId?.let { targetId ->
+                if (targetId != myUserId) {
+                    followViewModel.takipEt(
+                        takipEttiginId = targetId,
+                        currentUserId = myUserId
+                    )
+                }
+            }
         }
 
-        //takıpten cıkma
         takipEdiliyorButonu.setOnClickListener {
-
+            targetUserId?.let { targetId ->
+                if (targetId != myUserId) {
+                    followViewModel.takiptenCikar(
+                        takiptenCiktiginId = targetId,
+                        currentUserId = myUserId
+                    )
+                }
+            }
         }
 
-        sohbetButon.setOnClickListener {
-
-        }
+        sohbetButon.setOnClickListener { }
 
         profiliDuzenleTiklandi.setOnClickListener {
-
+            SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE)
         }
     }
-    private fun yukleVerileri() {
+
+    private fun yukleVerileri(forceRefresh: Boolean = false) {
         targetUserId?.let { userId ->
-            viewModel.gonderileriGetir(userId)
+            followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = forceRefresh)
+            viewModel.gonderileriGetir(userId, forceRefresh = forceRefresh)
         } ?: run {
             swipeRefreshLayout.isRefreshing = false
         }
@@ -165,11 +203,94 @@ class ProfilFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+                // 1. Profil Güncelleme Durumu
                 launch {
-                    viewModel.profileUiState.collectLatest { state ->
+                    profileViewModel.profileUpdateState.collect { state ->
+                        when (state) {
+                            is ProfileUpdateResult.Loading -> {}
+                            is ProfileUpdateResult.Success -> {
+                                Toast.makeText(requireContext(), "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show()
+                            }
+                            is ProfileUpdateResult.UsernameAlreadyTaken -> {
+                                Toast.makeText(requireContext(), "Bu kullanıcı adı daha önce alınmış.", Toast.LENGTH_SHORT).show()
+                            }
+                            is ProfileUpdateResult.Error -> {
+                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                            }
+                            ProfileUpdateResult.Idle -> {}
+                        }
+                    }
+                }
+
+
+                launch {
+                    followViewModel.followUiState.collectLatest { state ->
                         renderProfileButtons(state)
                     }
                 }
+
+                launch {
+
+                    if (targetUserId == myUserId) {
+
+                        followViewModel.profileState.collect { profileState ->
+                            takipciSayisiTextView.text =
+                                profileState.takipciSayisi.toString()
+
+                            takipEdilenSayisiTextView.text =
+                                profileState.takipEdilenSayisi.toString()
+
+                            gonderiSayisiTextView.text =
+                                profileState.gonderiSayisi.toString()
+                        }
+
+                    } else {
+
+                        launch {
+                            followViewModel.targetUserTakipciSayisi.collect { sayi ->
+                                takipciSayisiTextView.text = sayi.toString()
+                            }
+                        }
+
+                        launch {
+                            followViewModel.targetUserTakipEdilenSayisi.collect { sayi ->
+                                takipEdilenSayisiTextView.text = sayi.toString()
+                            }
+                        }
+
+                        launch {
+                            viewModel.gonderiSayisi.collect { sayi ->
+                                gonderiSayisiTextView.text = sayi.toString()
+                            }
+                        }
+                    }
+                }
+
+                launch {
+                    profileViewModel.userProfile.collect { state ->
+                        when (state) {
+                            is UiState.Success -> {
+                                KullaniciAdi.text = state.data.kullaniciAdi
+                                bioTextView.text = state.data.hakkinda
+
+                                Glide.with(requireContext())
+                                    .load(state.data.fotoUrl)
+                                    .placeholder(R.drawable.kullanici)
+                                    .error(R.drawable.kullanici)
+                                    .into(profilFotoImageView)
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+                // 6. Gönderi Sayısı
+                launch {
+                    viewModel.gonderiSayisi.collect { sayi ->
+                            gonderiSayisiTextView.text = sayi.toString()
+                    }
+                }
+
+                // 7. Gönderi Listesinin Durumu
                 launch {
                     viewModel.gonderilerState.collect { state ->
                         when (state) {
@@ -189,7 +310,10 @@ class ProfilFragment : Fragment() {
                                 } else {
                                     tvEmpty.visibility = View.GONE
                                     recyclerView.visibility = View.VISIBLE
-                                    gonderiAdapter.submitList(state.data)
+                                    gonderiAdapter.submitList(state.data.toList()) {
+                                        // Yeni eleman eklendiğinde listenin en başına kaydır
+                                        recyclerView.scrollToPosition(0)
+                                    }
                                 }
                             }
                             is UiState.Error -> {
@@ -205,12 +329,7 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
-
-                launch {
-                    viewModel.gonderiSayisi.collect { sayi ->
-                        tvGonderiSayisi.text = sayi.toString()
-                    }
-                }
+                // 8. Genel İşlem Sonucu Bildirimleri
                 launch {
                     viewModel.islemSonucu.collect { result ->
                         when (result) {
@@ -228,7 +347,8 @@ class ProfilFragment : Fragment() {
             }
         }
     }
-    private fun renderProfileButtons(state: ProfileUiState) {
+
+    private fun renderProfileButtons(state: FollowUiState) {
         if (state.isSelfProfile) {
             profiliDuzenleTiklandi.visibility = View.VISIBLE
             takipEtButonu.visibility = View.GONE
@@ -241,21 +361,18 @@ class ProfilFragment : Fragment() {
                 progressFollow.visibility = View.VISIBLE
             } else {
                 progressFollow.visibility = View.GONE
-                if(state.isFollowing){
+                if (state.isFollowing) {
                     takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
                     takipEtButonu.visibility = View.GONE
-                }
-                if(state.isFollowed && !state.isFollowing){
+                } else if (state.isFollowed) {
                     takipEtButonu.text = "Sende takip et"
                     takipEtButonu.visibility = View.VISIBLE
                     takipEdiliyorVeMesajLayout.visibility = View.GONE
-                }
-                if(!state.isFollowing && !state.isFollowed){
+                } else {
                     takipEtButonu.text = "Takip et"
                     takipEtButonu.visibility = View.VISIBLE
                     takipEdiliyorVeMesajLayout.visibility = View.GONE
                 }
-
             }
         }
     }

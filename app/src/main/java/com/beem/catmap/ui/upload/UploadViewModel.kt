@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.MapRepository
 import com.beem.catmap.gonderi.SavePostToProfileUseCase
+import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.ImageUploadManager
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.security.Timestamp
 
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -32,6 +34,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             ImageUploadManager.selectedImages.collect { uris ->
                 _uiState.update { it.copy(selectedImages = uris) }
+
             }
         }
     }
@@ -47,6 +50,8 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 }
         }
     }
+
+
 
     fun onProgressDialogDismissed() {
         _uiState.update { it.copy(isAllDone = true) }
@@ -119,6 +124,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                                 isUploadComplete = true,
                                 isSuccess = true,
                                 createdDocumentId = progressState.documentId,
+                                uploadedPhotoUrls = progressState.imageUrls,
                                 uploadStage = UploadStage.SUCCESS
                             )
                         }

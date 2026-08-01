@@ -1,92 +1,125 @@
 package com.beem.catmap.gonderi
+
 import android.app.Application
-import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.UyariMesaji
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
-    private val userManager = CurrentUserManager.getInstance(application)
-    val profileState: StateFlow<ProfileState> = userManager.profileState
     private val repository: ProfileRepository = ProfileRepository()
 
-    private val _url = MutableLiveData<String?>()
-    val url: LiveData<String?> get() = _url
-    private val _uploadState = MutableLiveData<Boolean>()
-    val uploadState: LiveData<Boolean> get() = _uploadState
-    private val _kullaniciAdi = MutableLiveData<String?>()
-    val kullaniciAdi: LiveData<String?> get() = _kullaniciAdi
+    private val userManager = CurrentUserManager.getInstance(application)
+    val profileState: StateFlow<ProfileState> = userManager.profileState
 
-    private val _usernameUpdateState = MutableLiveData<UsernameUpdateResult>()
-    val usernameUpdateState: LiveData<UsernameUpdateResult> get() = _usernameUpdateState
+    private val _userProfile = MutableStateFlow<UiState<UserProfileData>>(UiState.Idle)
+    val userProfile: StateFlow<UiState<UserProfileData>> = _userProfile.asStateFlow()
 
-    fun profilFotoUrlGetirVeCachele(context: Context, kullaniciId: String) {
-        _url.value = null
+    private val _profileUpdateState = MutableStateFlow<ProfileUpdateResult>(ProfileUpdateResult.Idle)
+    val profileUpdateState: StateFlow<ProfileUpdateResult> = _profileUpdateState.asStateFlow()
+
+    fun profilBilgileriniYukle(kullaniciId: String) {
         viewModelScope.launch {
-            val photoUrl = repository.getProfilePhotoUrl(context, kullaniciId)
-            _url.postValue(photoUrl)
-        }
-    }
+            _userProfile.value = UiState.Loading
 
-    fun profilFotoUrlKaydetFirebaseVeCachele(imageUri: Uri, context: Context, currentUserId: String) {
-        viewModelScope.launch {
-            val result = repository.saveProfilePhotoUrl(imageUri, context, currentUserId)
-            result.onSuccess { newUrl ->
-                _url.postValue(newUrl)
-                _uploadState.postValue(true)
-            }.onFailure {
-                _uploadState.postValue(false)
+            val isMyProfile = kullaniciId == UserSession.userId
+            if (isMyProfile) {
+                val cachedUser = userManager.getCurrentUser()
+                val cachedBiyografi = userManager.profileState.value.biyografi ?: ""
+
+                Log.d("CACHED","ismyprofıle"+ cachedBiyografi)
+                val localProfile = UserProfileData(
+                    userId = kullaniciId,
+                    kullaniciAdi = cachedUser.getKullaniciAdi() ?: "",
+                    fotoUrl = cachedUser.getFotoUrl(),
+                    hakkinda = cachedBiyografi
+                )
+
+                if (localProfile.kullaniciAdi.isNotBlank()) {
+                    Log.d("CACHED","buraya mı girdi"+localProfile.kullaniciAdi)
+                    _userProfile.value = UiState.Success(localProfile)
+                    return@launch
+                }
             }
+            Log.d("CACHED","yok")
+            fetchAndCacheProfileFromDb(kullaniciId, isMyProfile)
         }
     }
 
-    // Kullanıcı adını Firestore'a kaydet ve güncelle
-    fun kullaniciAdiKaydet(
-        kullaniciAdi: String,
-        context: Context,
-        currentUserId: String,
-        currentUserManager: CurrentUserManager
-        uyari: UyariMesaji
+    private suspend fun fetchAndCacheProfileFromDb(kullaniciId: String, isMyProfile: Boolean) {
+        val profileData = repository.getUserProfile(kullaniciId)
+
+        if (profileData != null) {
+            _userProfile.value = UiState.Success(profileData)
+            Log.d("PROFILE_DEBUG", "userId=$kullaniciId")
+            Log.d("PROFILE_DEBUG", "profileData=$profileData")
+
+            if (isMyProfile) {
+                userManager.updateBiyografi(profileData.hakkinda)
+                val currentUser = userManager.getCurrentUser().apply {
+                    setKullaniciAdi(profileData.kullaniciAdi)
+                    profileData.fotoUrl?.let { setFotoUrl(it) }
+                }
+                userManager.setCurrentUser(currentUser)
+            }
+        } else {
+            Log.d("PROFILE_DEBUG", "profileData NULL")
+            _userProfile.value = UiState.Error("Kullanıcı bilgileri alınamadı.")
+        }
+    }
+
+    // UI bileşeni olan 'uyari' nesnesi buradan çıkarıldı!
+    fun tumProfilBilgileriniGuncelle(
+        yeniKullaniciAdi: String,
+        yeniHakkinda: String,
+        yeniResimUri: Uri?,
+        currentUserId: String
     ) {
-        uyari.YuklemeDurum("Kaydediliyor...")
-
         viewModelScope.launch {
-            val result = repository.updateUsername(context, kullaniciAdi, currentUserId)
-            _usernameUpdateState.value = result
+            _profileUpdateState.value = ProfileUpdateResult.Loading // Yükleniyor durumu eklendi
 
-            when (result) {
-                is UsernameUpdateResult.Success -> {
-                    val user = currentUserManager.getCurrentUser()
-                    user?.setKullaniciAdi(kullaniciAdi)
-                    currentUserManager.setCurrentUser(user)
+            val currentUser = userManager.getCurrentUser()
+            val currentUsername = currentUser.getKullaniciAdi() ?: ""
 
-                    _kullaniciAdi.postValue(kullaniciAdi)
-                    uyari.BasariliDurum("Güncelleme başarılı.", 1000)
-                    uyari.DahaOnceAlinmisMi = false
-                }
-                is UsernameUpdateResult.AlreadyTaken -> {
-                    uyari.BasarisizDurum("Bu kullanıcı adı daha önce alınmış", 1000)
-                    uyari.DahaOnceAlinmisMi = true
-                }
-                is UsernameUpdateResult.Error -> {
-                    uyari.BasarisizDurum("Bir hata oluştu", 1000)
-                }
+            val result = repository.updateFullProfile(
+                context = getApplication(),
+                currentUserId = currentUserId,
+                currentUsername = currentUsername,
+                newUsername = yeniKullaniciAdi,
+                newHakkinda = yeniHakkinda,
+                newImageUri = yeniResimUri
+            )
+
+            if (result is ProfileUpdateResult.Success) {
+                // 1. Önbellek Güncellemeleri
+                currentUser.setKullaniciAdi(result.newUsername)
+                result.newPhotoUrl?.let { currentUser.setFotoUrl(it) }
+                userManager.setCurrentUser(currentUser)
+                userManager.updateBiyografi(result.newHakkinda)
+
+                // 2. StateFlow Güncellemesi
+                val currentPhoto = (_userProfile.value as? UiState.Success)?.data?.fotoUrl
+                _userProfile.value = UiState.Success(
+                    UserProfileData(
+                        userId = currentUserId,
+                        kullaniciAdi = result.newUsername,
+                        fotoUrl = result.newPhotoUrl ?: currentPhoto,
+                        hakkinda = result.newHakkinda
+                    )
+                )
             }
+
+            _profileUpdateState.value = result
         }
     }
 
-    fun kullaniciAdiGetirDB(kullaniciId: String) {
-        _kullaniciAdi.value = null
-        viewModelScope.launch {
-            val username = repository.getUsernameFromDb(kullaniciId)
-            _kullaniciAdi.postValue(username)
-        }
+    fun resetUpdateState() {
+        _profileUpdateState.value = ProfileUpdateResult.Idle
     }
 }
