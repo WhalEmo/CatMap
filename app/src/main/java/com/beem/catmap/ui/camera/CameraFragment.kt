@@ -19,6 +19,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraControl
 import androidx.camera.core.CameraInfo
@@ -72,6 +73,18 @@ class CameraFragment : DialogFragment() {
 
     private val ZOOM_SENSITIVITY = 2.4f
 
+
+    private val cameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startCamera()
+        } else {
+            UiMessageManager.emitMessage(UiMessageState.Error("Kamera kullanabilmek için kamera izni gereklidir."))
+            SmartNavigationEngine.navigateBack()
+        }
+    }
+
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -123,14 +136,6 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    private fun checkPermissionsAndStart() {
-        val permissions = mutableListOf(Manifest.permission.CAMERA).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.READ_MEDIA_IMAGES)
-            else add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-        val missing = permissions.filter { ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED }
-        if (missing.isEmpty()) startCamera() else requestPermissionsLauncher.launch(missing.toTypedArray())
-    }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
@@ -201,12 +206,16 @@ class CameraFragment : DialogFragment() {
         }
 
 
-        // Deklanşör
         binding.btnCaptureLayout.setOnClickListener {
-            binding.btnCaptureLayout.animate().scaleX(0.86f).scaleY(0.86f).setDuration(70).withEndAction {
-                binding.btnCaptureLayout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
-                capturePhoto()
-            }.start()
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                binding.btnCaptureLayout.animate().scaleX(0.86f).scaleY(0.86f).setDuration(70).withEndAction {
+                    binding.btnCaptureLayout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
+                    capturePhoto()
+                }.start()
+            } else {
+                UiMessageManager.emitMessage(UiMessageState.Info("Fotoğraf çekebilmek için kamera izni gereklidir."))
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
         }
 
         // Kamera Çevir
@@ -217,10 +226,7 @@ class CameraFragment : DialogFragment() {
         }
 
         binding.btnGallery.setOnClickListener {
-            if (isAdded && isResumed) {
-                val gallerySheet = GalleryBottomSheet()
-                gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
-            }
+            openGalleryBottomSheet()
         }
         binding.btnClose.setOnClickListener {
             SmartNavigationEngine.navigateBack()
@@ -357,13 +363,11 @@ class CameraFragment : DialogFragment() {
             actionDialog.dismiss()
         }
 
-        // SADECE GALERİYE KAYDET: Sadece cache durumunda görünür ve tetiklenir
         dialogBinding.btnDialogSave.setOnClickListener {
             viewModel.saveTempImageToGallery(requireContext(), activeUri, shouldKeepInStrip = false)
             actionDialog.dismiss()
         }
 
-        // ÖNİZLEMEYE DEVAM ET
         dialogBinding.btnDialogContinue.setOnClickListener {
             actionDialog.dismiss()
         }
@@ -441,4 +445,24 @@ class CameraFragment : DialogFragment() {
         cameraExecutor.shutdown()
         _binding = null
     }
+
+
+
+    private fun checkPermissionsAndStart() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+
+
+    private fun openGalleryBottomSheet() {
+        if (isAdded && isResumed) {
+            val gallerySheet = GalleryBottomSheet()
+            gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
+        }
+    }
+
 }

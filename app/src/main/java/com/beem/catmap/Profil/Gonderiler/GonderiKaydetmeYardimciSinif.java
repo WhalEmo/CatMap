@@ -8,6 +8,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.data.session.CurrentUserManager;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.google.firebase.Timestamp;
@@ -36,11 +37,7 @@ public class GonderiKaydetmeYardimciSinif {
         yeniKedi.put("tarih", Timestamp.now());
         kullaniciRef.update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
                 .addOnSuccessListener(aVoid -> {
-                    Bundle args = ProfilSayfasiFragment.newArgs(currentUserId);
-                    SmartNavigationEngine.navigateTo(
-                            Screen.PROFILE,
-                            args
-                    );
+                    NavigationHelper.navigateToProfile(currentUserId);
                     mesaji.BasariliDurum("Eklendi",1000);
                 })
                 .addOnFailureListener(e -> {

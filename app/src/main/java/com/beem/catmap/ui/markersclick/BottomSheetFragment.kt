@@ -10,10 +10,13 @@ import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -54,8 +57,21 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     private lateinit var yukleyenPP: ImageView
     private lateinit var tarihText: TextView
 
+    private lateinit var photoIndicatorCapsule: MaterialCardView
+    private lateinit var photoDotsContainer: LinearLayout
+
+    private val photoIndicatorDots = mutableListOf<View>()
+
+    private val photoPageChangeCallback =
+        object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                updatePhotoIndicator(position)
+            }
+        }
+
     private lateinit var fotoAdapter: FotoGeciciAdapter
-    private val viewModel: CatDetailViewModel by viewModels()
+    private val viewModel: CatDetailViewModel by activityViewModels()
     private val commentsViewModel: CommentViewModel by viewModels()
 
 
@@ -69,6 +85,12 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
+    }
+
+    override fun onDestroyView() {
+        fotoPager.unregisterOnPageChangeCallback(photoPageChangeCallback)
+        photoIndicatorDots.clear()
+        super.onDestroyView()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -122,7 +144,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     private fun initViews(view: View) {
         isim = view.findViewById(R.id.isimgosterme)
         hakkinda = view.findViewById(R.id.hakkindagosterme)
-        fotoPager = view.findViewById(R.id.fotoPager)
         kalpImageView = view.findViewById(R.id.kalpImageView)
         begeniSayisiTextView = view.findViewById(R.id.begeniSayisiTextView)
         gonderiEkleButton = view.findViewById(R.id.GonderiEkleButton)
@@ -133,9 +154,15 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         yukleyenPP = view.findViewById(R.id.YukprofilFotoImageView)
         tarihText = view.findViewById(R.id.tarihText)
 
+        fotoPager = view.findViewById(R.id.fotoPager)
+        photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule)
+        photoDotsContainer = view.findViewById(R.id.fotoDotsContainer)
+
         fotoAdapter = FotoGeciciAdapter(requireContext(), null)
         fotoPager.adapter = fotoAdapter
         fotoPager.offscreenPageLimit = 1
+
+        fotoPager.registerOnPageChangeCallback(photoPageChangeCallback)
     }
 
     private fun observeViewModel() {
@@ -155,8 +182,10 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                             it.urLler.mapNotNull { url -> url.toUri() }
                         }
                         fotoAdapter.submitList(uriList)
+                        setupPhotoIndicator(uriList.size)
                     } else {
                         fotoAdapter.submitList(emptyList())
+                        setupPhotoIndicator(0)
                     }
 
                 }
@@ -323,4 +352,67 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             return fragment
         }
     }
+
+
+    private fun setupPhotoIndicator(photoCount: Int) {
+        photoDotsContainer.removeAllViews()
+        photoIndicatorDots.clear()
+
+        if (photoCount <= 1) {
+            photoIndicatorCapsule.visibility = View.GONE
+            return
+        }
+
+        photoIndicatorCapsule.visibility = View.VISIBLE
+
+        repeat(photoCount) { index ->
+            val dot = View(requireContext())
+            val selected = index == 0
+
+            val size = dpToPx(if (selected) 8 else 6)
+            val margin = dpToPx(3)
+
+            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                setMargins(margin, 0, margin, 0)
+            }
+
+            dot.background = ContextCompat.getDrawable(
+                requireContext(),
+                if (selected) {
+                    R.drawable.dot_active
+                } else {
+                    R.drawable.dot_inactive
+                }
+            )
+
+            photoDotsContainer.addView(dot)
+            photoIndicatorDots.add(dot)
+        }
+    }
+
+    private fun updatePhotoIndicator(selectedPosition: Int) {
+        photoIndicatorDots.forEachIndexed { index, dot ->
+            val selected = index == selectedPosition
+            val size = dpToPx(if (selected) 8 else 6)
+
+            val params = dot.layoutParams as LinearLayout.LayoutParams
+            params.width = size
+            params.height = size
+            dot.layoutParams = params
+
+            dot.background = ContextCompat.getDrawable(
+                requireContext(),
+                if (selected) {
+                    R.drawable.dot_active
+                } else {
+                    R.drawable.dot_inactive
+                }
+            )
+        }
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
+    }
+
 }

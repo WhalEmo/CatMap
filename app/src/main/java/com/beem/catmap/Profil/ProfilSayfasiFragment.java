@@ -618,12 +618,7 @@ public class ProfilSayfasiFragment extends Fragment {
                    emptyTextView.setVisibility(View.GONE);
                    gonderiRecyclerView.setVisibility(View.VISIBLE);
                    if (gonderiAdapter == null) {
-                       gonderiAdapter = new GonderiAdapter(gonderilist,getParentFragmentManager(),true,new GonderiYuklemeListener() {
-                           @Override
-                           public void onTumGonderilerYuklendi() {
-                               showLoading(false); // ProgressBar burada kapanır
-                           }
-                       });
+                       gonderiAdapter = new GonderiAdapter(gonderilist,true);
                        gonderiGeri=gonderiAdapter.gerigitti;
                        gonderiRecyclerView.setAdapter(gonderiAdapter);
                    } else {
@@ -703,12 +698,7 @@ public class ProfilSayfasiFragment extends Fragment {
                        } else {
                            emptyTextView.setVisibility(View.GONE);
                            gonderiRecyclerView.setVisibility(View.VISIBLE);
-                           gonderiAdapter = new GonderiAdapter(gonderilist, getParentFragmentManager(),true,new GonderiYuklemeListener() {
-                               @Override
-                               public void onTumGonderilerYuklendi() {
-                                   showLoading(false); // örneğin progressBar'ı kapat
-                               }
-                           });
+                           gonderiAdapter = new GonderiAdapter(gonderilist, true);
                            gonderiRecyclerView.setAdapter(gonderiAdapter);
                        }
 

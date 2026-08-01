@@ -63,6 +63,19 @@ class AuthFragment : Fragment() {
         binding.kaydolid.setOnClickListener { openRegister() }
     }
 
+
+    override fun onResume() {
+        super.onResume()
+        resetButtonsState()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) {
+            resetButtonsState()
+        }
+    }
+
     private fun openLogin() {
         dialog?.dismiss()
         val loginBinding = GirispencereBinding.inflate(layoutInflater)
@@ -285,10 +298,28 @@ class AuthFragment : Fragment() {
         }
     }
 
+
+    private fun resetButtonsState() {
+        binding.girisid.apply {
+            animate().cancel()
+            translationX = 0f
+            alpha = 1.0f
+            isEnabled = true
+            isClickable = true
+        }
+        binding.kaydolid.apply {
+            animate().cancel()
+            translationX = 0f
+            alpha = 1.0f
+            isEnabled = true
+            isClickable = true
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         dialog?.dismiss()
         dialog = null
-        _binding = null // Memory Leak önleme usta!
+        _binding = null
     }
 }

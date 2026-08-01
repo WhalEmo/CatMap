@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.map
 
 import android.animation.ValueAnimator
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -13,6 +14,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
@@ -47,11 +50,15 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import androidx.fragment.app.activityViewModels
 import com.beem.catmap.Maps.LocationEngine
+import com.beem.catmap.Maps.LocationSettingsHandler
 import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
+import com.beem.catmap.ui.markersclick.CatDetailViewModel
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +71,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var mMap: GoogleMap? = null
     private var mapViewModel: MapViewModel? = null
     private var bottomSheetController: BottomSheetController? = null
+
+    private val catDetailViewModel: CatDetailViewModel by activityViewModels()
 
     private val kediler = ArrayList<Kediler>()
     private val markerlar = ArrayList<Marker>()
@@ -78,6 +87,16 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private var myLocationMarker: Marker? = null
 
+    private val gpsEnablerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            mMap?.let { LocationEngine.startTracking(requireContext(), it) }
+        } else {
+            UiMessageManager.emitMessage(UiMessageState.Info("Konum servisleri kapalı olduğu için harita güncellenemiyor."))
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -91,6 +110,13 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         super.onAttach(context)
         if (context is BottomSheetController) {
             bottomSheetController = context
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (mMap != null && LocationEngine.hasLocationPermission(requireContext()) && LocationEngine.isGpsEnabled(requireContext())) {
+            LocationEngine.startTracking(requireContext(), mMap!!)
         }
     }
 
@@ -120,10 +146,13 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         val cachedLocation = LocationCacheManager.getLastLocation()
         val cachedZoom = LocationCacheManager.getLastZoom()
-        mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(cachedLocation, cachedZoom))
-        updateMyLocationMarker(cachedLocation)
 
-        LocationEngine.startTracking(requireContext(), mMap!!)
+        if (cachedLocation.latitude != 0.0 && cachedLocation.longitude != 0.0) {
+            mMap!!.moveCamera(CameraUpdateFactory.newLatLngZoom(cachedLocation, cachedZoom))
+            updateMyLocationMarker(cachedLocation)
+        }
+
+        checkGpsAndStartTracking()
 
         lastScannedLocation = mMap!!.cameraPosition.target
 
@@ -178,16 +207,13 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun findCat(location: LatLng): Kediler? {
-        return kediler.firstOrNull { cat ->
-            val epsilon = 0.000001
-            Math.abs(cat.latitude - location.latitude) < epsilon &&
-                    Math.abs(cat.longitude - location.longitude) < epsilon
-        }
-    }
-
     private fun setupClickListeners() {
         binding.fabCurrentLocation.setOnClickListener {
+            if (!LocationEngine.isGpsEnabled(requireContext())) {
+                checkGpsAndStartTracking()
+                return@setOnClickListener
+            }
+
             if (lastGpsLocation != null && mMap != null) {
                 if (!isTrackingUser) {
                     startTrackingMode()
@@ -279,6 +305,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mapViewModel?.zoomToCatEvent?.collect { cat ->
+                    stopTrackingMode()
                     kediler.add(
                         modelToKediler(cat)
                     )
@@ -315,7 +342,35 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                catDetailViewModel.catDeletedSuccess.collect { isDeleted ->
+                    if (isDeleted) {
+                        val deletedCatId = catDetailViewModel.selectedCat.value?.id
+                        if (deletedCatId != null) {
+                            removeCatMarkerFromMap(deletedCatId)
 
+                            UiMessageManager.emitMessage(UiMessageState.Success("Kedi haritadan silindi."))
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private fun removeCatMarkerFromMap(catId: String) {
+        val targetMarker = markerlar.firstOrNull { marker ->
+            val cat = marker.tag as? Kediler
+            cat?.id == catId
+        }
+
+        targetMarker?.let { marker ->
+            marker.remove()
+            markerlar.remove(marker)
+        }
+
+        kediler.removeAll { it.id == catId }
     }
 
     private fun renderSimpleUi() {
@@ -513,7 +568,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private fun animateMarker(marker: Marker, toPosition: LatLng) {
         val startPosition = marker.position
         val valueAnimator = ValueAnimator.ofFloat(0f, 1f)
-        valueAnimator.duration = 800 // 800ms içinde yumuşak geçiş
+        valueAnimator.duration = 800
         valueAnimator.interpolator = LinearInterpolator()
 
         valueAnimator.addUpdateListener { animation ->
@@ -523,6 +578,65 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             marker.position = LatLng(lat, lng)
         }
         valueAnimator.start()
+    }
+
+    private fun checkGpsAndStartTracking() {
+        if (!LocationEngine.hasLocationPermission(requireContext())) {
+            UiMessageManager.emitMessage(UiMessageState.Info("Lütfen konum iznini kontrol edin."))
+            return
+        }
+
+        LocationSettingsHandler.checkLocationSettings(
+            activity = requireActivity(),
+            onGpsEnabled = {
+                mMap?.let { LocationEngine.startTracking(requireContext(), it) }
+            },
+            onGpsDisabled = { exception ->
+                showCatMapGpsDialog(exception as ResolvableApiException)
+            }
+        )
+    }
+
+    private fun showCatMapGpsDialog(resolvableException: ResolvableApiException) {
+        if (isStateSaved) return
+
+        val context = requireContext()
+
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+            .setTitle("Konum Servisi Kapalı")
+            .setMessage("Canlı harita takibi ve çevredeki kayıtları görüntülemek için konum servislerinin aktif olması gerekmektedir.")
+            .setIcon(R.drawable.ic_location_puck)
+            .setCancelable(true)
+            .setPositiveButton("Konumu Etkinleştir") { dialog, _ ->
+                dialog.dismiss()
+                try {
+                    val intentSenderRequest = IntentSenderRequest.Builder(resolvableException.resolution).build()
+                    gpsEnablerLauncher.launch(intentSenderRequest)
+                } catch (e: Exception) {
+                    Log.e("CAT_MAP", "GPS Intent fırlatılamadı: ${e.message}")
+                }
+            }
+            .setNegativeButton("Vazgeç") { dialog, _ ->
+                dialog.dismiss()
+            }
+
+        val dialog = builder.create()
+        val backgroundDrawable = com.google.android.material.shape.MaterialShapeDrawable().apply {
+            fillColor = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(context, R.color.catmap_surface_white)
+            )
+            setCornerSize(16f)
+        }
+        dialog.window?.setBackgroundDrawable(backgroundDrawable)
+
+        dialog.show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(
+            ContextCompat.getColor(context, R.color.catmap_accent)
+        )
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+            ContextCompat.getColor(context, R.color.catmap_text_muted)
+        )
     }
 
     private fun showPanel() {

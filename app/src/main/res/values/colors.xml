@@ -23,6 +23,8 @@
     <color name="catmap_text_muted">#64748B</color>
     <color name="catmap_text_light">#FFFFFF</color>
 
+    <color name="catmap_indicator_capsule">#4DFFFFFF</color>
+
     <color name="catmap_success">#10B981</color>
     <color name="catmap_error">#EF4444</color>
 

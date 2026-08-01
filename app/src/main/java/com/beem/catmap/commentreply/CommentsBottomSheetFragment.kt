@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.R
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.models.ReplyModel
 import com.beem.catmap.models.CommentModel
 import com.beem.catmap.data.session.CurrentUserManager
@@ -44,7 +45,6 @@ import kotlinx.coroutines.launch
 class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
     private val viewModel: CommentViewModel by viewModels()
-    private lateinit var currentUserManager: CurrentUserManager
     private lateinit var currentUser: Kullanici
 
     private lateinit var commentRecyclerView: RecyclerView
@@ -73,8 +73,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
         catId = arguments?.getString(ARG_CAT_ID).orEmpty()
 
-        currentUserManager = CurrentUserManager.getInstance(requireContext())
-        currentUser = currentUserManager.getCurrentUser()
+        currentUser = UserSession.user
     }
 
     override fun onCreateView(

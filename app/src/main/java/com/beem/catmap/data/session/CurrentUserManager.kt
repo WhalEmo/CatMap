@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.google.firebase.auth.FirebaseAuth
 
 class CurrentUserManager private constructor(context: Context) {
 
@@ -39,23 +40,30 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
-    // --- OTURUM / KULLANICI BİLGİLERİ ---
-
     fun getCurrentUser(): Kullanici {
-        if (currentUserCache == null) {
-            currentUserCache = sessionManager.getUserSession() ?: Kullanici()
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            clearLocalCache()
+            return Kullanici()
         }
-        return currentUserCache!!
+
+        if (currentUserCache == null) {
+            currentUserCache = sessionManager.getUserSession()
+        }
+        return currentUserCache ?: Kullanici()
     }
 
-    fun getCurrentUserId(): String = getCurrentUser().id
+    fun getCurrentUserId(): String {
+        return getCurrentUser().id
+    }
 
     fun setCurrentUser(kullanici: Kullanici) {
         this.currentUserCache = kullanici
         sessionManager.saveUserSession(kullanici)
     }
 
-    fun isUserLoggedIn(): Boolean = sessionManager.isLoggedIn()
+    fun isUserLoggedIn(): Boolean {
+        return FirebaseAuth.getInstance().currentUser != null && sessionManager.isLoggedIn()
+    }
 
     // --- REAKTİF PROFİL GÜNCELLEME METOTLARI ---
 
@@ -126,6 +134,12 @@ class CurrentUserManager private constructor(context: Context) {
     // --- ÇIKIŞ YAP (LOGOUT) ---
 
     fun logout() {
+        FirebaseAuth.getInstance().signOut()
+
+        clearLocalCache()
+    }
+
+    fun clearLocalCache() {
         currentUserCache = null
         sessionManager.clearSession()
         profileSessionManager.clearProfileCache()

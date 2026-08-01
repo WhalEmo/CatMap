@@ -1,6 +1,8 @@
 package com.beem.catmap.data.repository
 
+import com.beem.catmap.CatMapApp
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
+import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
