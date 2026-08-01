@@ -1,13 +1,18 @@
 package com.beem.catmap.ui.camera
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.databinding.BottomSheetGalleryBinding
@@ -38,6 +43,26 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         return binding.root
     }
 
+    private val requestGalleryPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val isGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            permissions[Manifest.permission.READ_MEDIA_IMAGES] == true ||
+                    permissions[Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED] == true
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
+        } else {
+            permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
+        }
+
+        if (isGranted) {
+            loadGalleryImages()
+        } else {
+            UiMessageManager.emitMessage(UiMessageState.Error("Galeriye erişim izni verilmedi."))
+            dismiss()
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -45,11 +70,10 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         adapter = GalleryAdapter(allImagesFromDevice)
         binding.recyclerViewGallery.adapter = adapter
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val deviceImages = loadImagesFromDevice()
-            withContext(Dispatchers.Main) {
-                adapter.updateMainImages(deviceImages)
-            }
+        if (hasGalleryPermission()) {
+            loadGalleryImages()
+        } else {
+            requestGalleryPermissions()
         }
 
         lifecycleScope.launchWhenStarted {
@@ -113,6 +137,42 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
                         binding.btnConfirmSelection.visibility = View.GONE
                     }.start()
             }
+        }
+    }
+
+    private fun loadGalleryImages() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val deviceImages = loadImagesFromDevice()
+            withContext(Dispatchers.Main) {
+                if (_binding != null) {
+                    adapter.updateMainImages(deviceImages)
+                }
+            }
+        }
+    }
+
+    private fun requestGalleryPermissions() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+            permissions.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        requestGalleryPermissionLauncher.launch(permissions.toTypedArray())
+    }
+
+    private fun hasGalleryPermission(): Boolean {
+        val context = context ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -192,6 +252,7 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
 
         override fun getItemCount(): Int = images.size
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()
