@@ -195,7 +195,6 @@ public class MesajFragment extends Fragment {
         engelKaldir.setOnClickListener(v-> { EngelKaldir(); });
 
         ScrollDinleyici();
-        // Burada RecyclerView kur, mesajları çek
         return view;
     }
 

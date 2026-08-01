@@ -57,6 +57,7 @@ import com.beem.catmap.mesaj.MesajlasmaYonetici;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.facebook.shimmer.ShimmerFrameLayout;
@@ -1077,11 +1078,7 @@ public class ProfilSayfasiFragment extends Fragment {
         alici.setID(yukleyenID);
         MesajlasmaYonetici.getInstance().setAlici(alici);
 
-        SmartNavigationEngine.navigateTo(
-                Screen.MESSAGE,
-                null,
-                yukleyenID
-        );
+        NavigationHelper.navigateToChat(alici.getID());
     }
 
     private void CikisYap(){

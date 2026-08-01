@@ -42,6 +42,7 @@ import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.auth.AuthFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
+import com.beem.catmap.ui.chat.ChatFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
@@ -108,7 +109,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new SohbetFragment();
                 case PROFILE -> setupFragment(new ProfilSayfasiFragment());
-                case MESSAGE -> new MesajFragment();
+                case MESSAGE -> setupFragment(new ChatFragment());
                 case BLOCKED_USERS -> new engellenenlerFragmnet();
                 case FOLLOWERS -> setupFragment(new TakiplerFragment());
                 case POST -> setupFragment(new GonderiDetayFragment());

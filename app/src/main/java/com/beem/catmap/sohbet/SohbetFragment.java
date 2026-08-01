@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.facebook.shimmer.ShimmerFrameLayout;
@@ -50,6 +51,8 @@ public class SohbetFragment extends Fragment {
         });
 
         adapter.setOnSohbetClickListener(sohbet ->{
+            NavigationHelper.navigateToChat(sohbet.getAlici().getID());
+            /*
             if (getActivity() instanceof MapsActivity) {
                 SmartNavigationEngine.navigateTo(
                         Screen.MESSAGE,
@@ -57,6 +60,8 @@ public class SohbetFragment extends Fragment {
                         sohbet.getSohbetID()
                 );
             }
+
+             */
         });
     }
 }
