@@ -17,6 +17,8 @@ data class ProfileState(
 data class UserProfileData(
     val userId: String,
     val kullaniciAdi: String = "",
+    val ad: String = "",
+    val soyad: String="",
     val fotoUrl: String? = null,
     val hakkinda: String = ""
 )

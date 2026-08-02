@@ -41,7 +41,6 @@
             app:layout_constraintStart_toEndOf="@id/btnBack"
             app:layout_constraintTop_toTopOf="parent" />
 
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
@@ -132,21 +131,72 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="24dp"
                 android:hint="Kullanıcı adı"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxStrokeColor="#FF9800"
-                app:hintTextColor="#FF9800"
-               >
+                app:hintTextColor="#FF9800">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editKullaniciAdi"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="#1E1E1E"
+                    android:textSize="15sp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Ad Input (YENİ EKLENDİ) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputLayoutAd"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Ad"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxStrokeColor="#FF9800"
+                app:hintTextColor="#FF9800">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editAd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName|textCapWords"
+                    android:maxLines="1"
+                    android:textColor="#1E1E1E"
+                    android:textSize="15sp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Soyad Input (YENİ EKLENDİ) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputLayoutSoyad"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Soyad"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxStrokeColor="#FF9800"
+                app:hintTextColor="#FF9800">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editSoyad"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName|textCapWords"
                     android:maxLines="1"
                     android:textColor="#1E1E1E"
                     android:textSize="15sp" />
@@ -168,8 +218,7 @@
                 app:boxStrokeColor="#FF9800"
                 app:counterEnabled="true"
                 app:counterMaxLength="150"
-                app:hintTextColor="#FF9800"
-                >
+                app:hintTextColor="#FF9800">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editBio"
@@ -181,30 +230,24 @@
                     android:textColor="#1E1E1E"
                     android:textSize="15sp" />
 
-                <Button
-                    android:id="@+id/kaydetButonu"
-                    android:layout_width="250dp"
-                    android:layout_height="wrap_content"
-                    android:text="Kaydet"
-                    android:textAllCaps="false"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="24dp"
-                    android:backgroundTint="#FF9800"
-                    android:textColor="@android:color/white"
-                    app:layout_constraintTop_toBottomOf="@id/editBio"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Kaydet Butonu -->
+            <Button
+                android:id="@+id/kaydetButonu"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="#FF9800"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="Kaydet"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white" />
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-

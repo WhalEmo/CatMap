@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -25,7 +26,6 @@ import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.bumptech.glide.Glide
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -37,15 +37,21 @@ class EditProfileFragment : Fragment() {
     private val profileViewModel: ProfileViewModel by viewModels()
 
     private lateinit var btnBack: ImageButton
-    private lateinit var kaydetButonu: MaterialButton
+    private lateinit var kaydetButonu: Button
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var btnCameraBadge: MaterialCardView
     private lateinit var fotoDegistirText: TextView
     private lateinit var inputLayoutKullaniciAdi: TextInputLayout
     private lateinit var editKullaniciAdi: TextInputEditText
+
+    // YENİ EKLENEN VİEW TANIŞTIRMALARI
+    private lateinit var inputLayoutAd: TextInputLayout
+    private lateinit var editAd: TextInputEditText
+    private lateinit var inputLayoutSoyad: TextInputLayout
+    private lateinit var editSoyad: TextInputEditText
+
     private lateinit var inputLayoutBio: TextInputLayout
     private lateinit var editBio: TextInputEditText
-    private lateinit var progressBarEdit: ProgressBar
 
     private var selectedImageUri: Uri? = null
     private val currentUserId: String = UserSession.userId
@@ -86,11 +92,18 @@ class EditProfileFragment : Fragment() {
         profilFotoImageView = view.findViewById(R.id.profilFotoImageViewDuzenle)
         btnCameraBadge = view.findViewById(R.id.btnCameraBadge)
         fotoDegistirText = view.findViewById(R.id.fotoDegistirText)
+
         inputLayoutKullaniciAdi = view.findViewById(R.id.inputLayoutKullaniciAdi)
         editKullaniciAdi = view.findViewById(R.id.editKullaniciAdi)
+
+        // AD VE SOYAD FİNDVIEWBYID
+        inputLayoutAd = view.findViewById(R.id.inputLayoutAd)
+        editAd = view.findViewById(R.id.editAd)
+        inputLayoutSoyad = view.findViewById(R.id.inputLayoutSoyad)
+        editSoyad = view.findViewById(R.id.editSoyad)
+
         inputLayoutBio = view.findViewById(R.id.inputLayoutBio)
         editBio = view.findViewById(R.id.editBio)
-        //progressBarEdit = view.findViewById(R.id.progressBarEdit)
     }
 
     private fun setupListeners() {
@@ -122,6 +135,14 @@ class EditProfileFragment : Fragment() {
                             if (editKullaniciAdi.text.isNullOrBlank()) {
                                 editKullaniciAdi.setText(data.kullaniciAdi)
                             }
+
+                            if (editAd.text.isNullOrBlank()) {
+                                editAd.setText(data.ad)
+                            }
+                            if (editSoyad.text.isNullOrBlank()) {
+                                editSoyad.setText(data.soyad)
+                            }
+
                             if (editBio.text.isNullOrBlank()) {
                                 editBio.setText(data.hakkinda)
                             }
@@ -169,6 +190,8 @@ class EditProfileFragment : Fragment() {
 
     private fun guncellemeyiBaslat() {
         val yeniKullaniciAdi = editKullaniciAdi.text?.toString()?.trim().orEmpty()
+        val yeniAd = editAd.text?.toString()?.trim().orEmpty()
+        val yeniSoyad = editSoyad.text?.toString()?.trim().orEmpty()
         val yeniBio = editBio.text?.toString()?.trim().orEmpty()
 
         inputLayoutKullaniciAdi.error = null
@@ -180,6 +203,8 @@ class EditProfileFragment : Fragment() {
 
         profileViewModel.tumProfilBilgileriniGuncelle(
             yeniKullaniciAdi = yeniKullaniciAdi,
+            yeniAd = yeniAd,
+            yeniSoyad = yeniSoyad,
             yeniHakkinda = yeniBio,
             yeniResimUri = selectedImageUri,
             currentUserId = currentUserId
@@ -187,21 +212,13 @@ class EditProfileFragment : Fragment() {
     }
 
     private fun setLoadingState(isLoading: Boolean) {
-        if (isLoading) {
-           // progressBarEdit.visibility = View.VISIBLE
-            kaydetButonu.isEnabled = false
-            editKullaniciAdi.isEnabled = false
-            editBio.isEnabled = false
-            btnCameraBadge.isEnabled = false
-            fotoDegistirText.isEnabled = false
-        } else {
-           // progressBarEdit.visibility = View.GONE
-            kaydetButonu.isEnabled = true
-            editKullaniciAdi.isEnabled = true
-            editBio.isEnabled = true
-            btnCameraBadge.isEnabled = true
-            fotoDegistirText.isEnabled = true
-        }
+        kaydetButonu.isEnabled = !isLoading
+        editKullaniciAdi.isEnabled = !isLoading
+        editAd.isEnabled = !isLoading
+        editSoyad.isEnabled = !isLoading
+        editBio.isEnabled = !isLoading
+        btnCameraBadge.isEnabled = !isLoading
+        fotoDegistirText.isEnabled = !isLoading
     }
 
     private fun klavyeyiKapat() {

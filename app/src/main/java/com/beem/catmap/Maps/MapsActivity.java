@@ -30,6 +30,7 @@ import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.EditProfileFragment;
 import com.beem.catmap.Profil.ProfilFragment;
+import com.beem.catmap.Profil.Takipler.TakiplerFragment;
 import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
@@ -114,10 +115,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     yield null;
                     //new engellenenlerFragmnet();
                 }
-                case FOLLOWERS -> {
-                    yield null;
-                    //setupFragment(new TakiplerFragment());
-                }
+                case FOLLOWERS -> setupFragment(new TakiplerFragment());
                 case POST -> setupFragment(new GonderiDetayFragment());
                 case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
                 case AUTH -> setupFragment(new AuthFragment());

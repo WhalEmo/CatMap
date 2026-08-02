@@ -6,11 +6,42 @@
     android:background="#FFFFFF"
     android:orientation="vertical">
 
+    <!-- ÜST HEADER / TOOLBAR (Geri Butonu ve Başlık) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_back" /> <!-- Projendeki geri oku ikonu (örn: ic_back veya ic_arrow_back) -->
+
+        <TextView
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Kullanıcı adı"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:tabIndicatorColor="#6200EE"
+        app:tabIndicatorColor="@color/catmap_accent"
         app:tabIndicatorHeight="3dp"
         app:tabSelectedTextColor="#000000"
         app:tabTextColor="#808080" />
@@ -19,4 +50,5 @@
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
 </LinearLayout>

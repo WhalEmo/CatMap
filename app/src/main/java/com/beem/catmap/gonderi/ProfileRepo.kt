@@ -9,7 +9,7 @@ import kotlinx.coroutines.tasks.await
 
 sealed class ProfileUpdateResult {
     object Idle : ProfileUpdateResult()
-    data class Success(val newPhotoUrl: String?, val newUsername: String, val newHakkinda: String) : ProfileUpdateResult()
+    data class Success(val newPhotoUrl: String?, val newUsername: String,val newAd: String,val newSoyad: String, val newHakkinda: String) : ProfileUpdateResult()
     object UsernameAlreadyTaken : ProfileUpdateResult()
     data class Error(val message: String) : ProfileUpdateResult()
     object Loading : ProfileUpdateResult()
@@ -35,6 +35,8 @@ class ProfileRepository {
             Log.d("PROFILE", "exists = ${snapshot.exists()}")
 
             if (snapshot.exists()) {
+                val ad = snapshot.getString("Ad") ?: ""
+                val soyad = snapshot.getString("Soyad") ?: ""
                 val kullaniciAdi = snapshot.getString("KullaniciAdi") ?: ""
                 val fotoUrl = snapshot.getString("profilFotoUrl")
                 val hakkinda = snapshot.getString("Hakkinda") ?: ""
@@ -44,6 +46,8 @@ class ProfileRepository {
                 UserProfileData(
                     userId = userId,
                     kullaniciAdi = kullaniciAdi,
+                    ad = ad,
+                    soyad = soyad,
                     fotoUrl = fotoUrl,
                     hakkinda = hakkinda
                 )
@@ -60,39 +64,33 @@ class ProfileRepository {
     /**
      * Tüm profil değişikliklerini Kontrol Edip Toplu Günceller
      */
-    suspend fun updateFullProfile(
-        context: Context,
-        currentUserId: String,
-        currentUsername: String,
-        newUsername: String,
-        newHakkinda: String,
-        newImageUri: Uri?
-    ): ProfileUpdateResult {
+    suspend fun updateFullProfile(currentUserId: String, currentUsername: String, newUsername: String, currentAd: String, newAd: String,currentSoyad: String,newSoyad: String,newHakkinda: String, newImageUri: Uri?): ProfileUpdateResult {
         return try {
             val updates = mutableMapOf<String, Any>()
             var uploadedPhotoUrl: String? = null
 
-            // 1. KULLANICI ADI KONTROLÜ VE GÜNCELLEMESİ
             if (newUsername.trim() != currentUsername.trim()) {
                 val isAvailable = checkUsernameAvailability(newUsername, currentUserId)
                 if (!isAvailable) {
                     return ProfileUpdateResult.UsernameAlreadyTaken
                 }
-                // Firestore alan adı Okuma ("KullaniciAdi") ile BİREBİR AYNI olmalı
                 updates["KullaniciAdi"] = newUsername.trim()
             }
 
-            // 2. FOTOĞRAF YÜKLEME
+            if (newAd.trim() != currentAd.trim()) {
+                updates["Ad"] = newAd.trim()
+            }
+
+            if (newSoyad.trim() != currentSoyad.trim()) {
+                updates["Soyad"] = newSoyad.trim()
+            }
+
             if (newImageUri != null) {
                 uploadedPhotoUrl = uploadProfilePhotoToStorage(newImageUri, currentUserId)
-                // Firestore alan adı Okuma ("profilFotoUrl") ile BİREBİR AYNI olmalı
                 updates["profilFotoUrl"] = uploadedPhotoUrl
             }
 
-            // 3. HAKKINDA / BİYOGRAFİ
             updates["Hakkinda"] = newHakkinda.trim()
-
-            // 4. FIRESTORE TOPLU GÜNCELLEME
             if (updates.isNotEmpty()) {
                 db.collection("users")
                     .document(currentUserId)
@@ -103,6 +101,8 @@ class ProfileRepository {
             ProfileUpdateResult.Success(
                 newPhotoUrl = uploadedPhotoUrl,
                 newUsername = newUsername.trim(),
+                newAd = newAd.trim(),
+                newSoyad = newSoyad.trim(),
                 newHakkinda = newHakkinda.trim()
             )
 
@@ -111,7 +111,6 @@ class ProfileRepository {
             ProfileUpdateResult.Error(e.localizedMessage ?: "Profil güncellenirken bir hata oluştu.")
         }
     }
-
     // --- YARDIMCI METOTLAR ---
 
     private suspend fun uploadProfilePhotoToStorage(imageUri: Uri, userId: String): String {

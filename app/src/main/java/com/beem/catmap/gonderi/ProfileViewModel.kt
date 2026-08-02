@@ -37,6 +37,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 val localProfile = UserProfileData(
                     userId = kullaniciId,
                     kullaniciAdi = cachedUser.getKullaniciAdi() ?: "",
+                    ad = cachedUser.getAd() ?:"",
+                    soyad = cachedUser.getSoyad(),
                     fotoUrl = cachedUser.getFotoUrl(),
                     hakkinda = cachedBiyografi
                 )
@@ -74,41 +76,50 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // UI bileşeni olan 'uyari' nesnesi buradan çıkarıldı!
     fun tumProfilBilgileriniGuncelle(
         yeniKullaniciAdi: String,
+        yeniAd: String,
+        yeniSoyad: String,
         yeniHakkinda: String,
         yeniResimUri: Uri?,
         currentUserId: String
     ) {
         viewModelScope.launch {
-            _profileUpdateState.value = ProfileUpdateResult.Loading // Yükleniyor durumu eklendi
+            _profileUpdateState.value = ProfileUpdateResult.Loading
 
             val currentUser = userManager.getCurrentUser()
             val currentUsername = currentUser.getKullaniciAdi() ?: ""
+            val currentAd = currentUser.getAd() ?: ""
+            val currentSoyad = currentUser.getSoyad() ?: ""
 
             val result = repository.updateFullProfile(
-                context = getApplication(),
                 currentUserId = currentUserId,
                 currentUsername = currentUsername,
                 newUsername = yeniKullaniciAdi,
+                currentAd = currentAd,
+                newAd = yeniAd,
+                currentSoyad = currentSoyad,
+                newSoyad = yeniSoyad,
                 newHakkinda = yeniHakkinda,
                 newImageUri = yeniResimUri
             )
 
             if (result is ProfileUpdateResult.Success) {
-                // 1. Önbellek Güncellemeleri
                 currentUser.setKullaniciAdi(result.newUsername)
+                currentUser.setAd(result.newAd)
+                currentUser.setSoyad(result.newSoyad)
                 result.newPhotoUrl?.let { currentUser.setFotoUrl(it) }
+
                 userManager.setCurrentUser(currentUser)
                 userManager.updateBiyografi(result.newHakkinda)
 
-                // 2. StateFlow Güncellemesi
                 val currentPhoto = (_userProfile.value as? UiState.Success)?.data?.fotoUrl
                 _userProfile.value = UiState.Success(
                     UserProfileData(
                         userId = currentUserId,
                         kullaniciAdi = result.newUsername,
+                        ad = result.newAd,
+                        soyad = result.newSoyad,
                         fotoUrl = result.newPhotoUrl ?: currentPhoto,
                         hakkinda = result.newHakkinda
                     )
@@ -118,7 +129,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             _profileUpdateState.value = result
         }
     }
-
     fun resetUpdateState() {
         _profileUpdateState.value = ProfileUpdateResult.Idle
     }
