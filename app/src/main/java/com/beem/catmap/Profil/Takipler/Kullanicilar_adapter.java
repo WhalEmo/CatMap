@@ -16,11 +16,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Maps.mapkedi.KullaniciAdiTiklamaListener;
 import com.beem.catmap.R;
-import com.beem.catmap.Profil.MainViewModel;
+
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
-
+/*
 public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adapter.ViewHolder> {
 
     private Context context;
@@ -91,3 +91,5 @@ public class Kullanicilar_adapter extends RecyclerView.Adapter<Kullanicilar_adap
         return kullaniciList.size();
     }
 }
+
+ */

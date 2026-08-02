@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Window;
@@ -27,13 +28,13 @@ import androidx.fragment.app.Fragment;
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.Profil.EditProfileFragment;
+import com.beem.catmap.Profil.ProfilFragment;
 import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
-import com.beem.catmap.Profil.MainViewModel;
-import com.beem.catmap.Profil.ProfilSayfasiFragment;
-import com.beem.catmap.Profil.Takipler.TakiplerFragment;
-import com.beem.catmap.Profil.engellenenler.engellenenlerFragmnet;
+
+
 import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
@@ -81,7 +82,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     public Marker sonTiklananMarker;
 
     private String gosterilecekKediID;
-    private MainViewModel mViewModel;
     private FrameLayout rightSlidingPanel;
     private boolean isPanelVisible = false;
     private ImageButton btnClose;
@@ -105,13 +105,20 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             return switch (screen) {
                 case MAP -> new CatMapFragment();
                 case UPLOAD -> new YuklemeArayuzuFragment();
-                case OTHER_PROFILE -> setupFragment(new ProfilSayfasiFragment());
+                case OTHER_PROFILE -> setupFragment(new ProfilFragment());
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new SohbetFragment();
-                case PROFILE -> setupFragment(new ProfilSayfasiFragment());
+                case PROFILE -> setupFragment(new ProfilFragment());
                 case MESSAGE -> setupFragment(new ChatFragment());
-                case BLOCKED_USERS -> new engellenenlerFragmnet();
-                case FOLLOWERS -> setupFragment(new TakiplerFragment());
+                case EDIT_PROFILE -> new EditProfileFragment();
+                case BLOCKED_USERS -> {
+                    yield null;
+                    //new engellenenlerFragmnet();
+                }
+                case FOLLOWERS -> {
+                    yield null;
+                    //setupFragment(new TakiplerFragment());
+                }
                 case POST -> setupFragment(new GonderiDetayFragment());
                 case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
                 case AUTH -> setupFragment(new AuthFragment());
@@ -212,10 +219,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
 
     public void yorumlarBottomSheetGoster(String catId) {
-        if (android.os.SystemClock.elapsedRealtime() - sonTiklamaZamani < 600) {
+        if (SystemClock.elapsedRealtime() - sonTiklamaZamani < 600) {
             return;
         }
-        sonTiklamaZamani = android.os.SystemClock.elapsedRealtime();
+        sonTiklamaZamani = SystemClock.elapsedRealtime();
         Fragment existing = getSupportFragmentManager().findFragmentByTag(CommentsBottomSheetFragment.TAG);
         if (existing != null && (existing.isAdded() || existing.isVisible())) {
             return;

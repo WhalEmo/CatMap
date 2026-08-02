@@ -37,8 +37,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.Maps.MapsActivity;
+import com.beem.catmap.Profil.ProfilFragment;
 import com.beem.catmap.R;
-import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
@@ -284,7 +284,7 @@ public class MesajFragment extends Fragment {
 
 
     private void ProfilSayfasinaYonlendir(){
-        Bundle args = ProfilSayfasiFragment.newArgs(mesajlasmaYonetici.getAlici().getID());
+        Bundle args = ProfilFragment.newArgs(mesajlasmaYonetici.getAlici().getID());
         SmartNavigationEngine.navigateTo(
                 Screen.OTHER_PROFILE,
                 args,

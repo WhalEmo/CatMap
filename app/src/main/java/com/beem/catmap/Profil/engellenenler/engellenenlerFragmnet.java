@@ -22,8 +22,6 @@ import android.view.ViewGroup;
 
 import com.beem.catmap.R;
 import com.beem.catmap.UyariMesaji;
-import com.beem.catmap.Profil.MainViewModel;
-import com.beem.catmap.Profil.ProfilSayfasiFragment;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
@@ -33,7 +31,7 @@ import java.util.ArrayList;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-
+/*
 public class engellenenlerFragmnet extends Fragment {
     private MainViewModel mViewModel;
     private RecyclerView recycler;
@@ -105,3 +103,5 @@ public class engellenenlerFragmnet extends Fragment {
     }
 
 }
+
+ */

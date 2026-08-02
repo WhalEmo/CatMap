@@ -2,11 +2,11 @@ package com.beem.catmap.ui.navigation
 
 import android.view.HapticFeedbackConstants
 import androidx.appcompat.app.AppCompatActivity
+import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.databinding.ActivityMapsBinding
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import java.lang.ref.WeakReference
-import com.beem.catmap.Profil.ProfilSayfasiFragment
 import com.beem.catmap.data.local.UserSession
 
 class CatMapNavigationEngine(
@@ -29,7 +29,7 @@ class CatMapNavigationEngine(
             SmartNavigationEngine.navigateTo(
                 targetScreen = targetScreen,
                 args = if (targetScreen == Screen.PROFILE)
-                    ProfilSayfasiFragment.newArgs(UserSession.userId) else null,
+                    ProfilFragment.newArgs(UserSession.userId) else null,
                 key = if (targetScreen == Screen.PROFILE)
                     UserSession.userId else null
             )

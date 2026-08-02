@@ -1,5 +1,5 @@
 package com.beem.catmap.Profil;
-
+/*
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.MODE_PRIVATE;
 
@@ -146,6 +146,30 @@ public class ProfilSayfasiFragment extends Fragment {
         }
     }
 
+
+    private fun setupRecyclerView() {
+        // Adapter'ı başlatıyoruz ve tıklanınca ne yapacağını söylüyoruz:
+        gonderiAdapter = GonderiAdapter { gonderi ->
+
+                // --- BURADA NE YAPILACAĞI TANIMLANIYOR ---
+
+                // 1. Detay sayfasına gönderilecek verileri paketliyoruz (Bundle)
+                val args = GonderiDetayFragment.newBundle(
+                ArrayList(gonderi.fotoUrlListesi),
+                gonderi.kediAdi ?: "",
+                gonderi.aciklama ?: "",
+                gonderi.begeniSayisi ?: 0L,
+                gonderi.kediID ?: ""
+        )
+
+            // 2. Sayfa yönlendirmesini yapıyoruz
+            SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
+        }
+
+        // RecyclerView'a adapter'ı bağlıyoruz
+        binding.recyclerView.adapter = gonderiAdapter
+    }
+
     private void fragmentiYenidenYukle_v2() {
         if (mViewModel != null && yukleyenID != null) {
             showLoading(true);
@@ -172,6 +196,7 @@ public class ProfilSayfasiFragment extends Fragment {
             }
         }
     }
+
 
     private void profilePhotoRefresh(String targetId) {
         print("profilePhotoRefresh(String targetId) - " + targetId);
@@ -448,7 +473,7 @@ public class ProfilSayfasiFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_main, container, false);
+        View view = inflater.inflate(R.layout.fragment_profil_sayfasi, container, false);
         engelLayout = view.findViewById(R.id.engelLayout);
         kullaniciadi= view.findViewById(R.id.KullaniciAdi);
         KullaniciAdiEngel=view.findViewById(R.id.KullaniciAdiEngel);
@@ -962,7 +987,7 @@ public class ProfilSayfasiFragment extends Fragment {
     }
     private void BottomSheetAc(){
         BottomSheetDialog bottom= new BottomSheetDialog(requireContext());
-        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_duzenle, null);
+        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.fragment_profili_duzenle, null);
 
         bottom.setOnShowListener(dialog -> {
             BottomSheetDialog d = (BottomSheetDialog) dialog;
@@ -979,7 +1004,7 @@ public class ProfilSayfasiFragment extends Fragment {
                 // 3. BottomSheet'i expanded moda al (tam ekran gibi)
                 behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
                 behavior.setSkipCollapsed(true);
-                
+
             }
         });
         EditText KullaniciAdi = sheetView.findViewById(R.id.editKullaniciAdi);
@@ -1210,3 +1235,5 @@ public class ProfilSayfasiFragment extends Fragment {
         Log.d("PROFILE_PRINT", safeMessage);
     }
 }
+
+ */

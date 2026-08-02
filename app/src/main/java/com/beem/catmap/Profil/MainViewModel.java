@@ -1,5 +1,5 @@
 package com.beem.catmap.Profil;
-
+/*
 import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
@@ -16,7 +16,6 @@ import androidx.lifecycle.ViewModel;
 import com.beem.catmap.CatMapApp;
 import com.beem.catmap.Profil.Gonderiler.GonderiYuklemeListener;
 import com.beem.catmap.KullaniciAuth.Kullanici;
-import com.beem.catmap.Profil.Gonderiler.Gonderi;
 import com.beem.catmap.UyariMesaji;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.google.firebase.Timestamp;
@@ -101,6 +100,7 @@ public class MainViewModel extends ViewModel {
         return yukleyenID;
     }
 
+    /*
     public void takipDurumlariniBirlestir() {
         takipDurumuCift.addSource(_takipDurumu, benimTakipDurumum ->
                 takipDurumuCift.setValue(new Pair<>(benimTakipDurumum, _beniTakipEdiyor.getValue()))
@@ -110,6 +110,8 @@ public class MainViewModel extends ViewModel {
                 takipDurumuCift.setValue(new Pair<>(_takipDurumu.getValue(), onunTakipDurumu))
         );
     }
+
+
 
     public LiveData<Pair<Boolean, Boolean>> getTakipDurumuCift() {
         return takipDurumuCift;
@@ -176,6 +178,9 @@ public class MainViewModel extends ViewModel {
                     Log.e("StorageUpload", "Profil fotoğrafı yüklenemedi!", e);
                 });
     }
+
+
+
 
     public void TakipEt(String TakipEttiginId){
         List<String> benimEngellediklerim = _benimEngellediklerim.getValue();
@@ -253,6 +258,9 @@ public class MainViewModel extends ViewModel {
         });
     }
 
+
+
+
     public void takipEdiliyorMu(String bakilanId){
         db.collection("users")
                 .document(getCurrentUserId())
@@ -282,7 +290,9 @@ public class MainViewModel extends ViewModel {
                 });
     }
 
+     */
 
+/*
     public void TakiptenCikarma(String TakiptenCiktiginId){
         DocumentReference mevcutKullaniciRef = db.collection("users").document(getCurrentUserId());
         DocumentReference TakipEtiginRef = db.collection("users").document(TakiptenCiktiginId);
@@ -396,6 +406,8 @@ public class MainViewModel extends ViewModel {
             Log.e("Firestore", "Takipçiden çıkarma işlemi başarısız", e);
         });
     }
+
+
 
 
     public void HakkindaDBEkle(String hakkindasi,Context context){
@@ -732,3 +744,4 @@ public class MainViewModel extends ViewModel {
     }
 
 }
+*/

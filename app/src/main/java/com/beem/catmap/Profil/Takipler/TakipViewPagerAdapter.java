@@ -6,7 +6,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
-
+/*
 public class TakipViewPagerAdapter extends FragmentStateAdapter {
     private final String profilID;
     public TakipViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, String profilID) {
@@ -39,3 +39,5 @@ public class TakipViewPagerAdapter extends FragmentStateAdapter {
         return 2;
     }
 }
+
+ */

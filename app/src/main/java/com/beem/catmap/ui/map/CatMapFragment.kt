@@ -342,6 +342,19 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                launch {
+                    mapViewModel?.deleteCatEvent?.collect { deletedCatId ->
+                        removeCatMarkerFromMap(deletedCatId)
+                    }
+                }
+            }
+        }
+
+        /*
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 catDetailViewModel.catDeletedSuccess.collect { isDeleted ->
@@ -356,6 +369,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 }
             }
         }
+        */
 
     }
 
