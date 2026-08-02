@@ -73,10 +73,30 @@ class ChatViewModel(
     private fun observeMessages(chatId: String) {
         messagesJob?.cancel()
         messagesJob = viewModelScope.launch {
-            repository.getMessagesFlow(chatId).collectLatest { messageList ->
-                _uiState.update { it.copy(messages = messageList) }
+            repository.getMessagesFlow(chatId, limit = 20).collectLatest { incomingLatestMessages ->
 
-                val unreadIdsFromOther = messageList
+                _uiState.update { currentState ->
+                    val existingList = currentState.messages.toMutableList()
+
+                    if (existingList.isEmpty()) {
+                        currentState.copy(messages = incomingLatestMessages)
+                    } else {
+                        incomingLatestMessages.forEach { incomingMsg ->
+                            val index = existingList.indexOfFirst { it.id == incomingMsg.id }
+                            if (index != -1) {
+                                existingList[index] = incomingMsg
+                            } else {
+                                existingList.add(incomingMsg)
+                            }
+                        }
+
+                        existingList.sortBy { it.timestamp }
+
+                        currentState.copy(messages = existingList)
+                    }
+                }
+
+                val unreadIdsFromOther = incomingLatestMessages
                     .filter { it.senderId != currentUserId && !it.isRead }
                     .map { it.id }
 
