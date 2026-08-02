@@ -44,7 +44,7 @@ class ProfilFragment : Fragment() {
 
     private val viewModel: PostViewModel by activityViewModels()
     private val followViewModel: FollowViewModel by viewModels()
-    private val profileViewModel: ProfileViewModel by viewModels()
+    private val profileViewModel: ProfileViewModel by activityViewModels()
 
     private lateinit var shimmerLayout: ShimmerFrameLayout // <-- SHIMMER DEĞİŞKENİ
     private lateinit var recyclerView: RecyclerView
@@ -235,24 +235,6 @@ class ProfilFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-
-                launch {
-                    profileViewModel.profileUpdateState.collect { state ->
-                        when (state) {
-                            is ProfileUpdateResult.Loading -> {}
-                            is ProfileUpdateResult.Success -> {
-                                Toast.makeText(requireContext(), "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show()
-                            }
-                            is ProfileUpdateResult.UsernameAlreadyTaken -> {
-                                Toast.makeText(requireContext(), "Bu kullanıcı adı daha önce alınmış.", Toast.LENGTH_SHORT).show()
-                            }
-                            is ProfileUpdateResult.Error -> {
-                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
-                            }
-                            ProfileUpdateResult.Idle -> {}
-                        }
-                    }
-                }
 
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
