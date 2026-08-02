@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.ChatRepository
@@ -34,6 +35,8 @@ class ChatViewModel(
     private var presenceJob: Job? = null
 
     private var isPagingLoading = false
+
+    private var hasMoreOlderMessages = true
 
     val currentUserId: String get() = currentUserManager.getCurrentUserId()
 
@@ -123,7 +126,9 @@ class ChatViewModel(
         val activeChatId = chatId ?: return
         val currentMessages = _uiState.value.messages
 
-        if (isPagingLoading || currentMessages.isEmpty()) return
+        if (isPagingLoading || !hasMoreOlderMessages || currentMessages.isEmpty()) {
+            return
+        }
 
         val oldestMessageTimestamp = currentMessages.first().timestamp
 
@@ -135,17 +140,22 @@ class ChatViewModel(
                 lastMessageTimestamp = oldestMessageTimestamp,
                 limit = 20
             )
-
             if (olderMessages.isNotEmpty()) {
                 _uiState.update { state ->
-                    // Yeni çekilen 20 eski mesajı listenin BAŞINA birleştiriyoruz
                     state.copy(messages = olderMessages + state.messages)
                 }
+
+                if (olderMessages.size < 20) {
+                    hasMoreOlderMessages = false
+                }
+            } else {
+                hasMoreOlderMessages = false
             }
 
             isPagingLoading = false
         }
     }
+
 
     fun sendMessage(text: String) {
         val activeChatId = chatId ?: return

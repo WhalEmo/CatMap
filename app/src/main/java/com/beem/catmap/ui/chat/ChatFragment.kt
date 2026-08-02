@@ -4,6 +4,7 @@ import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -151,12 +152,22 @@ class ChatFragment : Fragment() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
 
+                    // dy < 0: Kullanıcı parmağını aşağı çekip yukarıya (eski mesajlara) kaydırıyor demektir
                     if (dy < 0) {
                         val firstVisibleItemPosition = linearLayoutManager.findFirstVisibleItemPosition()
+                        val totalItemCount = linearLayoutManager.itemCount
+
+                        Log.d("ChatScrollDebug", "--------------------------------------------------")
+                        Log.d("ChatScrollDebug", "📜 Scroll Yapılıyor (YUKARI YÖNLÜ) -> dy: $dy")
+                        Log.d("ChatScrollDebug", "📌 İlk Görünür Eleman Pozisyonu: $firstVisibleItemPosition")
+                        Log.d("ChatScrollDebug", "📊 Toplam Mesaj Sayısı: $totalItemCount")
 
                         // Kullanıcı listenin en üstündeki ilk 3 mesajın sınırına geldi mi?
                         if (firstVisibleItemPosition <= 3 && firstVisibleItemPosition != -1) {
+                            Log.d("ChatScrollDebug", "🚀 SAYFALAMA TETİKLENDİ! -> viewModel.loadOlderMessages() çağrılıyor...")
                             viewModel.loadOlderMessages()
+                        } else {
+                            Log.d("ChatScrollDebug", "⏳ Henüz tetikleme sınırına (<= 3) gelinmedi.")
                         }
                     }
                 }

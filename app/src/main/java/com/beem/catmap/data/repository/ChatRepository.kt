@@ -1,5 +1,6 @@
 package com.beem.catmap.data.repository
 
+import android.util.Log
 import com.beem.catmap.mesaj.Mesaj
 import com.beem.catmap.mesaj.YanitMesaj
 import com.beem.catmap.models.ChatMessage
@@ -13,6 +14,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -23,6 +25,7 @@ class ChatRepository(
     private final val messageRefKey = "mesajlar_v2"
     private val messageRef = realDb.getReference(messageRefKey)
 
+    private val hasMoreOlderMessagesMap = ConcurrentHashMap<String, Boolean>()
 
     suspend fun getOrCreateChatId(senderId: String, receiverId: String): String = suspendCoroutine { continuation ->
         val id1 = "${receiverId}_$senderId"
@@ -132,21 +135,48 @@ class ChatRepository(
         }
     }
 
+    fun resetPagination(chatId: String) {
+        hasMoreOlderMessagesMap[chatId] = true
+    }
+
     suspend fun getOlderMessages(
         chatId: String,
         lastMessageTimestamp: Long,
         limit: Int = 20
     ): List<ChatMessage> {
+        if (hasMoreOlderMessagesMap[chatId] == false) {
+            Log.d("ChatRepository", "🛑 [KİLİTLİ] $chatId için daha eski mesaj yok. İstek engellendi.")
+            return emptyList()
+        }
+
         return try {
+            val targetTimestamp = (lastMessageTimestamp - 1).toDouble()
+
             val query = messageRef.child(chatId).child("anaMesaj")
                 .orderByChild("zaman")
-                .endBefore(lastMessageTimestamp.toDouble())
+                .endAt(targetTimestamp)
                 .limitToLast(limit)
 
             val snapshot = query.get().await()
-            snapshot.children.mapNotNull { it.toChatMessage() }
+
+            if (!snapshot.exists() || snapshot.childrenCount == 0L) {
+                hasMoreOlderMessagesMap[chatId] = false
+                Log.d("ChatRepository", "🔒 Veri kalmadı, sayfalama kilitlendi (chatId: $chatId).")
+                return emptyList()
+            }
+
+            val olderList = snapshot.children.mapNotNull { child ->
+                child.toChatMessage()
+            }
+
+            if (olderList.size < limit) {
+                hasMoreOlderMessagesMap[chatId] = false
+                Log.d("ChatRepository", "🔒 Son sayfa yüklendi (Gelen: ${olderList.size} < Limit: $limit). Sayfalama kilitlendi.")
+            }
+
+            olderList
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ChatRepository", "getOlderMessages Hata: ${e.localizedMessage}", e)
             emptyList()
         }
     }

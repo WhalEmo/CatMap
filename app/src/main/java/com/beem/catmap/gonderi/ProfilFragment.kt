@@ -34,6 +34,7 @@ import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.bumptech.glide.Glide
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
@@ -83,6 +84,8 @@ class ProfilFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        handleBackPressWithEngine()
 
         recyclerView = view.findViewById(R.id.gonderiRecyclerView)
         progressBar = view.findViewById(R.id.progressBarr)
@@ -401,7 +404,6 @@ class ProfilFragment : Fragment() {
             gonderi.begeniSayisi ?: 0L,
             gonderi.kediID ?: ""
         )
-
         SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
     }
 

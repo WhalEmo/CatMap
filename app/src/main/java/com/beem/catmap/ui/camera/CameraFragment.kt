@@ -85,16 +85,6 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    private val requestPermissionsLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.values.all { it }) startCamera()
-        else {
-            UiMessageManager.emitMessage(UiMessageState.Error("Kamera izinleri eksik!"))
-            parentFragmentManager.popBackStack()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Material_NoActionBar_Fullscreen)
