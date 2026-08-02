@@ -2,6 +2,7 @@ package com.beem.catmap.ui.chat
 
 import android.app.Activity.RESULT_OK
 import android.content.Intent
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -22,15 +23,15 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.Maps.MapsActivity
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
-import com.beem.catmap.mesaj.Mesaj
+import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.mesaj.MesajFotoGonderYonetici
 import com.beem.catmap.models.ChatMessage
 import com.beem.catmap.ui.chat.dialogs.EditMessageDialogFragment
@@ -43,7 +44,6 @@ class ChatFragment : Fragment() {
     private var _binding: MesajlasmaBinding? = null
     private val binding get() = _binding!!
 
-    // Alıcı Kullanıcı ID'sini Argument veya Navigation Engine üzerinden alıyoruz
     private val receiverId: String by lazy {
         arguments?.getString(ARG_RECEIVER_ID) ?: throw IllegalArgumentException("Receiver ID gerekli!")
     }
@@ -57,20 +57,27 @@ class ChatFragment : Fragment() {
 
     private lateinit var mesajAdapter: MessageAdapter
 
-    // Galeri Görsel Seçim Launcher'ı
     private val galeriLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data ?: return@registerForActivityResult
+            val selectedUris = mutableListOf<android.net.Uri>()
+
+            // Çoklu seçim kontrolü
             data.clipData?.let { clipData ->
                 for (i in 0 until clipData.itemCount) {
-                    MesajFotoGonderYonetici.getInstance().UriEkle(clipData.getItemAt(i).uri)
+                    selectedUris.add(clipData.getItemAt(i).uri)
                 }
             } ?: data.data?.let { uri ->
-                MesajFotoGonderYonetici.getInstance().UriEkle(uri)
+                // Tekli seçim kontrolü
+                selectedUris.add(uri)
             }
-            // MesajFotoGonderYonetici.getInstance().GondericiStart(mesajAdapter, requireContext())
+
+            if (selectedUris.isNotEmpty()) {
+                // 🚀 Singleton Yonetici yerine doğrudan ViewModel'a paslıyoruz!
+                viewModel.sendPhotos(selectedUris)
+            }
         }
     }
 
@@ -86,7 +93,6 @@ class ChatFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Bottom Navigation Bar'ı Gizle
         if (requireActivity() is MapsActivity) {
             requireActivity().findViewById<View>(R.id.bottom_navigation)?.isVisible = false
         }
@@ -113,31 +119,24 @@ class ChatFragment : Fragment() {
             },
         )
         val linearLayoutManager = LinearLayoutManager(context).apply {
-            stackFromEnd = true // İlk açılışta listenin en altından başlar
+            stackFromEnd = true
         }
+
         mesajAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                 super.onItemRangeInserted(positionStart, itemCount)
-
                 val totalItemCount = mesajAdapter.itemCount
-
-                // 🚨 SIFIRLA BÖLÜNME / NEGARİF İNDEKS KORUMASI
                 if (totalItemCount <= 0) return
 
                 val targetPosition = totalItemCount - 1
-                if (targetPosition < 0) return // Geçersiz pozisyon koruması
+                if (targetPosition < 0) return
 
                 val lastCompletelyVisiblePosition = linearLayoutManager.findLastCompletelyVisibleItemPosition()
-
-                // Sadece en alta yeni eleman eklendiyse
                 val isAddedToBottom = positionStart >= (totalItemCount - itemCount)
-
-                // Kullanıcı en altlarda mı? (Eğer liste çok kısaysa (örn 2 mesaj varsa) doğrudan true kabul et)
                 val isUserAtBottom = lastCompletelyVisiblePosition == -1 ||
                         lastCompletelyVisiblePosition >= (totalItemCount - itemCount - 4)
 
                 if (isAddedToBottom && isUserAtBottom) {
-                    // RecyclerView'ın layout hesaplamasını tamamlamasını bekleyip güvenle kaydırıyoruz
                     binding.mesajRecyclerView.post {
                         if (targetPosition < mesajAdapter.itemCount) {
                             binding.mesajRecyclerView.smoothScrollToPosition(targetPosition)
@@ -151,23 +150,10 @@ class ChatFragment : Fragment() {
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-
-                    // dy < 0: Kullanıcı parmağını aşağı çekip yukarıya (eski mesajlara) kaydırıyor demektir
                     if (dy < 0) {
                         val firstVisibleItemPosition = linearLayoutManager.findFirstVisibleItemPosition()
-                        val totalItemCount = linearLayoutManager.itemCount
-
-                        Log.d("ChatScrollDebug", "--------------------------------------------------")
-                        Log.d("ChatScrollDebug", "📜 Scroll Yapılıyor (YUKARI YÖNLÜ) -> dy: $dy")
-                        Log.d("ChatScrollDebug", "📌 İlk Görünür Eleman Pozisyonu: $firstVisibleItemPosition")
-                        Log.d("ChatScrollDebug", "📊 Toplam Mesaj Sayısı: $totalItemCount")
-
-                        // Kullanıcı listenin en üstündeki ilk 3 mesajın sınırına geldi mi?
                         if (firstVisibleItemPosition <= 3 && firstVisibleItemPosition != -1) {
-                            Log.d("ChatScrollDebug", "🚀 SAYFALAMA TETİKLENDİ! -> viewModel.loadOlderMessages() çağrılıyor...")
                             viewModel.loadOlderMessages()
-                        } else {
-                            Log.d("ChatScrollDebug", "⏳ Henüz tetikleme sınırına (<= 3) gelinmedi.")
                         }
                     }
                 }
@@ -176,6 +162,80 @@ class ChatFragment : Fragment() {
             adapter = mesajAdapter
             layoutManager = linearLayoutManager
         }
+
+        // 🎯 SAĞA KAYDIRARAK YANITLAMA (SWIPE TO REPLY) ENTEGRASYONU
+        setupSwipeToReply()
+    }
+
+    private fun setupSwipeToReply() {
+        // 1. Hem LEFT (Sola) hem RIGHT (Sağa) kaydırmaya izin veriyoruz
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+
+            // Dynamically allow swipe direction based on who sent the message
+            override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+                val position = viewHolder.bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION) return 0
+
+                val message = mesajAdapter.currentList[position]
+                val isMyMessage = message.senderId == UserSession.userId
+
+                // Kendi mesajımızsa SADECE SOLA (LEFT), karşı tarafınsa SADECE SAĞA (RIGHT) izin ver
+                return if (isMyMessage) ItemTouchHelper.LEFT else ItemTouchHelper.RIGHT
+            }
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val message = mesajAdapter.currentList[position]
+
+                    if (!mesajAdapter.isBlocked) {
+                        viewModel.setReplyMessage(message)
+                        binding.mesajEditText.requestFocus()
+                    }
+
+                    // Sağa/sola çekilen kartın ekrandan gitmeyip yerine geri esnemesi için:
+                    mesajAdapter.notifyItemChanged(position)
+                }
+            }
+
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float = 0.2f
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                // Maksimum kaydırma mesafesini limitleme (Sağ için +150px, Sol için -150px)
+                val maxSwipePx = 150f
+                val limitedDX = when {
+                    dX > maxSwipePx -> maxSwipePx
+                    dX < -maxSwipePx -> -maxSwipePx
+                    else -> dX
+                }
+
+                super.onChildDraw(
+                    c,
+                    recyclerView,
+                    viewHolder,
+                    limitedDX,
+                    dY,
+                    actionState,
+                    isCurrentlyActive
+                )
+            }
+        }
+
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(binding.mesajRecyclerView)
     }
 
     private fun setupListeners() {
@@ -183,19 +243,16 @@ class ChatFragment : Fragment() {
             SmartNavigationEngine.navigateBack()
         }
 
-        // Gönder Butonu
         binding.gonderButton.setOnClickListener {
             val text = binding.mesajEditText.text.toString()
             viewModel.sendMessage(text)
             binding.mesajEditText.text?.clear()
         }
 
-        // Yazıyor... Dinleyicisi
         binding.mesajEditText.doOnTextChanged { text, _, _, _ ->
             viewModel.onTextChanged(text.toString())
         }
 
-        // Galeri Butonu
         binding.fotoEkleButton.setOnClickListener {
             val intent = Intent(Intent.ACTION_PICK).apply {
                 type = "image/*"
@@ -204,7 +261,6 @@ class ChatFragment : Fragment() {
             galeriLauncher.launch(intent)
         }
 
-        // Engeli Kaldır Butonu
         binding.engelKaldir.setOnClickListener {
             viewModel.removeBlock()
         }
@@ -226,12 +282,10 @@ class ChatFragment : Fragment() {
     }
 
     private fun renderUi(state: ChatUiState) {
-
         if (state.receiverName.isNotEmpty()) {
             binding.kisiAdiText.text = state.receiverName
         }
 
-        // Picasso / Glide ile Profil Fotoğrafını Yükle
         if (state.receiverPhotoUrl.isNotEmpty()) {
             com.squareup.picasso.Picasso.get()
                 .load(state.receiverPhotoUrl)
@@ -240,23 +294,15 @@ class ChatFragment : Fragment() {
                 .into(binding.kisiProfilFoto)
         }
 
-        if (!state.isOtherUserTyping) {
-            binding.kisiDurumText.text = state.receiverStatus
-        } else {
-            binding.kisiDurumText.text = "Yazıyor..."
-        }
-
+        binding.kisiDurumText.text = if (state.isOtherUserTyping) "Yazıyor..." else state.receiverStatus
 
         if (mesajAdapter.currentList != state.messages) {
             mesajAdapter.submitList(state.messages)
         }
 
-        // 2. Yüklenme Durumu (ProgressBar)
         binding.yukleniyorProgress.isVisible = state.isLoading
         binding.mesajRecyclerView.isVisible = !state.isLoading
 
-
-        // 4. Engelleme UI Yönetimi
         val isBlocked = state.isBlockedByMe || state.isBlockedByOther
         mesajAdapter.isBlocked = isBlocked
 
@@ -273,8 +319,8 @@ class ChatFragment : Fragment() {
             binding.engelKaldir.isClickable = false
         }
 
-        // 5. Yanıtlama Kutusu (Reply Layout)
-        binding.cevapAlani.isVisible = state.replyMessage != null
+        // 🎯 YANITLAMA KUTUSU (REPLY LAYOUT) GÖRÜNÜRLÜK VE METİN DÜZENLEMESİ
+        binding.cevapAlani.isVisible = state.replyMessage != null && !isBlocked
         state.replyMessage?.let { msg ->
             binding.cevapMetni.text = when (msg) {
                 is ChatMessage.Text -> msg.message
@@ -288,7 +334,6 @@ class ChatFragment : Fragment() {
     }
 
     private fun setupKeyboardAdjustments() {
-        // Modern WindowInsets ile klavye yükseldiğinde mesaj alanını yukarı kaydırma
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -344,7 +389,6 @@ class ChatFragment : Fragment() {
         popupWindow.showAsDropDown(anchorView, 0, -anchorView.height / 2)
     }
 
-
     private fun showDeleteConfirmDialog(messageId: String) {
         val dialogBinding = DialogMessageDeleteBinding.inflate(layoutInflater)
 
@@ -354,7 +398,6 @@ class ChatFragment : Fragment() {
 
         dialog.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
 
-        // 4. Buton Tıklamaları
         dialogBinding.btnVazgec.setOnClickListener {
             dialog.dismiss()
         }
@@ -366,7 +409,6 @@ class ChatFragment : Fragment() {
 
         dialog.show()
 
-        // 5. Ekran genişliğine göre dialog'u %85 oranında hizala
         dialog.window?.setLayout(
             (resources.displayMetrics.widthPixels * 0.85).toInt(),
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT

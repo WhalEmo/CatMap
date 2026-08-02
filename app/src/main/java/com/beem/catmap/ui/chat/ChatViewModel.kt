@@ -107,6 +107,30 @@ class ChatViewModel(
         }
     }
 
+    fun sendPhotos(uris: List<android.net.Uri>) {
+        val activeChatId = chatId ?: return
+        val senderId = currentUserId ?: return
+        if (uris.isEmpty()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val replyMessage = _uiState.value.replyMessage
+            val success = repository.sendPhotoMessage(
+                chatId = activeChatId,
+                senderId = senderId,
+                imageUris = uris,
+                replyTo = replyMessage
+            )
+
+            if (success) {
+                _uiState.update { it.copy(replyMessage = null, isLoading = false) }
+            } else {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
     fun updateMessage(messageId: String, newText: String) {
         val activeChatId = chatId ?: return
         if (newText.trim().isEmpty()) return

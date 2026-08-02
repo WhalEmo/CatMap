@@ -10,6 +10,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -73,6 +74,59 @@ class ChatRepository(
         } catch (e: Exception) {
             e.printStackTrace()
             Pair("", "")
+        }
+    }
+
+    suspend fun sendPhotoMessage(
+        chatId: String,
+        senderId: String,
+        imageUris: List<android.net.Uri>,
+        replyTo: ChatMessage? = null
+    ): Boolean {
+        return try {
+            val storageRef = FirebaseStorage.getInstance().reference.child("mesaj_fotograflari")
+            val uploadedUrls = mutableListOf<String>()
+
+            for (uri in imageUris) {
+                val fileName = "${System.currentTimeMillis()}_${java.util.UUID.randomUUID()}.jpg"
+                val photoRef = storageRef.child(fileName)
+
+                val uploadTask = photoRef.putFile(uri).await()
+                val downloadUrl = photoRef.downloadUrl.await().toString()
+                uploadedUrls.add(downloadUrl)
+            }
+
+            if (uploadedUrls.isEmpty()) return false
+
+            val mesajKey = messageRef.child(chatId).child("anaMesaj").push().key ?: return false
+
+            // 2. Mesaj haritasını oluşturup veritabanına yazıyoruz
+            val photoMap = mutableMapOf<String, Any>(
+                "gonderen" to senderId,
+                "fotoUrlListesi" to uploadedUrls,
+                "zaman" to System.currentTimeMillis(),
+                "goruldu" to false,
+                "tur" to "foto"
+            )
+
+            // Yanıtlanan mesaj varsa ekle
+            if (replyTo != null) {
+                photoMap["yanitlananMesaj"] = mapOf(
+                    "mesajID" to replyTo.id,
+                    "gonderici" to replyTo.senderId,
+                    "mesaj" to when (replyTo) {
+                        is ChatMessage.Photo -> "📷 Fotoğraf"
+                        is ChatMessage.Text -> replyTo.message
+                        is ChatMessage.Reply -> replyTo.message
+                    }
+                )
+            }
+
+            messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(photoMap).await()
+            true
+        } catch (e: Exception) {
+            Log.e("ChatRepository", "Fotoğraf gönderme hatası: ${e.localizedMessage}", e)
+            false
         }
     }
 
