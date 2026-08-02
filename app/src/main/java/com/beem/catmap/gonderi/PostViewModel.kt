@@ -10,6 +10,10 @@ import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -48,6 +52,32 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     val isLastPage: Boolean
         get() = profileCache.get(_yukleyenID.value)?.isLastPage ?: false
+
+
+
+    init {
+        observeProfileEvents()
+    }
+
+    private fun observeProfileEvents() {
+        viewModelScope.launch {
+            ProfileEventBus.profileEvent.collect { event ->
+                when (event) {
+                    is ProfileEvent.PostAdded -> {
+                        gonderiKaydet(UserSession.userId, event.post)
+                    }
+                    is ProfileEvent.PostDeleted -> {
+                        event.catId?.let {
+                            removePostFromCacheAndUi(
+                                userId = UserSession.userId,
+                                kediId = event.catId
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fun setYukleyenID(id: String) {
         _yukleyenID.value = id
@@ -149,6 +179,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
     }
+
+
 
     fun gonderiSil(userId: String, kediId: String) {
         viewModelScope.launch {

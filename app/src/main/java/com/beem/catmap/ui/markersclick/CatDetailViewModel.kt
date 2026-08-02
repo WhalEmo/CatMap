@@ -9,6 +9,10 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -114,6 +118,17 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
                 val updatedList = _postsList.value.filterNot { it.kediID == currentCat.id }
                 _postsList.value = updatedList
                 _postCount.value = (_postCount.value - 1).coerceAtLeast(0)
+
+                ProfileEventBus.emitEvent(
+                    event = ProfileEvent.PostDeleted(
+                        catId = currentCat.id
+                    )
+                )
+                CatEventBus.emitEvent(
+                    event = CatMapEvent.Deleted(
+                        catId = currentCat.id
+                    )
+                )
 
                 _catDeletedSuccess.emit(true)
             }

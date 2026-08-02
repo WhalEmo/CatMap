@@ -1,6 +1,7 @@
 package com.beem.catmap.Profil
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -308,10 +309,19 @@ class ProfilFragment : Fragment() {
                                     tvEmpty.visibility = View.VISIBLE
                                     recyclerView.visibility = View.GONE
                                 } else {
+                                    val ilkGonderi = state.data.first()
+                                    Log.d("AdapterDebug", "🔍 [İLK ELEMAN / YENİ GÖNDERİ DETAYI]:")
+                                    Log.d("AdapterDebug", "   ➜ Kedi ID: ${ilkGonderi.kediID}")
+                                    Log.d("AdapterDebug", "   ➜ Kedi Adı: ${ilkGonderi.kediAdi}")
+                                    Log.d("AdapterDebug", "   ➜ Açıklama: ${ilkGonderi.aciklama}")
+                                    Log.d("AdapterDebug", "   ➜ Fotoğraflar (Size: ${ilkGonderi.fotoUrlListesi?.size}): ${ilkGonderi.fotoUrlListesi}")
+                                    Log.d("AdapterDebug", "   ➜ Tarih: ${ilkGonderi.tarih}")
                                     tvEmpty.visibility = View.GONE
                                     recyclerView.visibility = View.VISIBLE
+
+                                    Log.d("AdapterDebug", "🚀 Adapter'a submitList() çağrısı yapılıyor...")
                                     gonderiAdapter.submitList(state.data.toList()) {
-                                        // Yeni eleman eklendiğinde listenin en başına kaydır
+                                        Log.d("AdapterDebug", "✅ submitList Tamamlandı! RecyclerView 0. pozisyona kaydırılıyor.")
                                         recyclerView.scrollToPosition(0)
                                     }
                                 }
