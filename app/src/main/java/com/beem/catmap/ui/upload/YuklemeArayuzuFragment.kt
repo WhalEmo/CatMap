@@ -24,10 +24,14 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.models.CatModel
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.gms.ads.AdRequest
@@ -139,10 +143,9 @@ class YuklemeArayuzuFragment : Fragment() {
                             premiumDialog = null
                         }
 
-                        if (state.isAllDone && state.createdDocumentId != null) {
+                        if (state.isAllDone && state.createdDocument != null) {
+                            showPostSaveDialog(state.createdDocument)
                             viewModel.resetState()
-                            // showAdIfAvailable()
-                            showPostSaveDialog(state.createdDocumentId)
                             clearFormFields()
                         }
                     }
@@ -154,14 +157,7 @@ class YuklemeArayuzuFragment : Fragment() {
                             when (result) {
                                 is UiState.Success -> {
                                     messageManager.BasariliDurum("Eklendi", 1000)
-
-                                    val args = Bundle().apply {
-                                        putString("USER_ID", UserSession.userId)
-                                    }
-                                    SmartNavigationEngine.navigateTo(
-                                        Screen.PROFILE,
-                                        args
-                                    )
+                                    NavigationHelper.navigateToProfile(UserSession.userId)
                                 }
                                 is UiState.Error -> {
                                     messageManager.BasariliDurum("Ekleme başarısız", 1000)
@@ -209,7 +205,7 @@ class YuklemeArayuzuFragment : Fragment() {
         }
     }
 
-    private fun showPostSaveDialog(docId: String) {
+    private fun showPostSaveDialog(cat: CatModel) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.alert_dialog_tasarimi, null)
         val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.CatMapDialogTheme)
             .setView(dialogView)
@@ -219,23 +215,26 @@ class YuklemeArayuzuFragment : Fragment() {
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
             messageManager.YuklemeDurum("Profiline ekleniyor...")
 
-            val secilenFotografUrileri = viewModel.uiState.value.uploadedPhotoUrls
 
-            val yeniGonderi = Gonderi(
-                kediID = docId,
-                kediAdi = binding.isimText.text.toString(),
-                aciklama = binding.hakkindaText.text.toString(),
-                fotoUrlListesi = secilenFotografUrileri, // Ekrandaki fotoğrafların Uri/URL listesi
-                tarih = com.google.firebase.Timestamp.now(),
+            val newPost = Gonderi(
+                kediID = cat.id,
+                kediAdi = cat.kediAdi,
+                aciklama = cat.kediHakkinda,
+                fotoUrlListesi = cat.photoUri,
+                tarih = Timestamp.now(),
                 begeniSayisi = 0L
             )
 
-            // Doğrudan tam nesneyi veriyoruz
+            viewLifecycleOwner.lifecycleScope.launch {
+                ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
+            }
+            /*
             postViewModel.gonderiKaydet(
                 userId = UserSession.userId,
                 yeniGonderi = yeniGonderi
             )
 
+             */
             dialog.dismiss()
         }
 
