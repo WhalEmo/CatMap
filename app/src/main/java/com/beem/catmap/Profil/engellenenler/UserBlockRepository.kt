@@ -1,5 +1,7 @@
 package com.beem.catmap.data.repository
 
+import android.content.Context
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -7,22 +9,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-class UserBlockRepository(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val currentUserManager: CurrentUserManager
-) {
+class UserBlockRepository(context: Context) {
 
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val currentUserManager = CurrentUserManager.getInstance(context)
     private var lastDocument: DocumentSnapshot? = null
 
-    /**
-     * İlk sayfa engellenen kullanıcıları çeker.
-     * Eğer daha önce cache'lendi ise Firestore'a gitmeden cache'deki listeyi döndürebiliriz
-     * veya ilk sayfayı tazelemek için Firestore'dan çekip cache'i güncelleyebiliriz.
-     */
     suspend fun getBlockedUsersFirstPage(
         kisiId: String,
         limit: Long = 20
-    ): List<String> {
+    ): List<Kullanici> {
         lastDocument = null
 
         val query = db.collection("users")
@@ -34,21 +30,30 @@ class UserBlockRepository(
         val snapshot = query.get().await()
         lastDocument = snapshot.documents.lastOrNull()
 
-        val liste = snapshot.documents.map { it.id }
+        val liste = snapshot.documents.mapNotNull { doc ->
+            val id = doc.id
+            val kullaniciAdi = doc.getString("kullaniciAdi") ?: ""
+            val fotoUrl = doc.getString("fotoUrl") ?: ""
 
-        // Gelen güncel listeyi CurrentUserManager'a (SharedPreferences + StateFlow) kaydediyoruz
-        currentUserManager.updateBenimEngellediklerim(liste)
+            // Kullanici sınıfınızın yapısına göre bu alanları atıyoruz
+            Kullanici().apply {
+                this.id = id
+                this.kullaniciAdi = kullaniciAdi
+                this.fotoUrl = fotoUrl
+            }
+        }
+
+        // Cache için sadece ID listesini saklamaya devam edebilirsiniz
+        val idListesi = liste.mapNotNull { it.id }
+        currentUserManager.updateBenimEngellediklerim(idListesi)
 
         return liste
     }
 
-    /**
-     * Sonraki sayfa engellenen kullanıcıları çeker (Pagination)
-     */
     suspend fun getBlockedUsersNextPage(
         kisiId: String,
         limit: Long = 20
-    ): List<String> {
+    ): List<Kullanici> {
         val last = lastDocument ?: return emptyList()
 
         val query = db.collection("users")
@@ -61,12 +66,36 @@ class UserBlockRepository(
         val snapshot = query.get().await()
         lastDocument = snapshot.documents.lastOrNull()
 
-        return snapshot.documents.map { it.id }
+        val newListe = snapshot.documents.mapNotNull { doc ->
+            val id = doc.id
+            val kullaniciAdi = doc.getString("kullaniciAdi") ?: ""
+            val fotoUrl = doc.getString("fotoUrl") ?: ""
+
+            Kullanici().apply {
+                this.id = id
+                this.kullaniciAdi = kullaniciAdi
+                this.fotoUrl = fotoUrl
+            }
+        }
+
+        if (newListe.isNotEmpty()) {
+            val currentList = currentUserManager.benimEngellediklerimState.value.toMutableList()
+            val newIds = newListe.mapNotNull { it.id }
+            currentList.addAll(newIds)
+            currentUserManager.updateBenimEngellediklerim(currentList.distinct())
+        }
+
+        return newListe
     }
 
+    /**
+     * Kullanıcıyı engeller ve ad/pp bilgilerini kaydeder
+     */
     suspend fun blockUser(
         kisiId: String,
-        engellenecekKullaniciId: String
+        engellenecekKullaniciId: String,
+        kullaniciAdi: String,
+        fotoUrl: String
     ) {
         db.collection("users")
             .document(kisiId)
@@ -74,12 +103,13 @@ class UserBlockRepository(
             .document(engellenecekKullaniciId)
             .set(
                 mapOf(
-                    "blockedAt" to FieldValue.serverTimestamp()
+                    "blockedAt" to FieldValue.serverTimestamp(),
+                    "kullaniciAdi" to kullaniciAdi,
+                    "fotoUrl" to fotoUrl
                 )
             )
             .await()
 
-        // Cache listesini anlık güncelle (StateFlow ve SharedPreferences)
         val currentList = currentUserManager.benimEngellediklerimState.value.toMutableList()
         if (!currentList.contains(engellenecekKullaniciId)) {
             currentList.add(0, engellenecekKullaniciId)
@@ -98,7 +128,6 @@ class UserBlockRepository(
             .delete()
             .await()
 
-        // Cache listesini anlık güncelle
         val currentList = currentUserManager.benimEngellediklerimState.value.toMutableList()
         if (currentList.contains(engeliKaldirilacakId)) {
             currentList.remove(engeliKaldirilacakId)
