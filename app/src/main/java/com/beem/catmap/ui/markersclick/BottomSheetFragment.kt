@@ -269,8 +269,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                         .setTitle("Ekleme")
                         .setMessage("Bu kediyi gönderilerinize eklemek istiyor musunuz?")
                         .setPositiveButton("Evet") { _, _ ->
-                            UiMessageManager.emitMessage(UiMessageState.Info("Gönderi ekleniyor..."))
-
                             val newPost = Gonderi(
                                 kediID = currentCat.id,
                                 kediAdi = currentCat.isim,
@@ -280,7 +278,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                                 begeniSayisi = likeCount.toLong()
                             )
 
-                            dialog?.dismiss()
+                            viewModel.addCatToUserPosts(newPost)
+                            dismiss()
                         }
                         .setNegativeButton("Hayır", null)
                         .show()
