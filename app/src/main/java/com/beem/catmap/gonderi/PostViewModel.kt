@@ -69,7 +69,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                                 kediId = event.catId
                             )
                         }
-                    }
+                    }else->{}
                 }
             }
         }
@@ -109,8 +109,17 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun gonderileriGetir(userId: String, forceRefresh: Boolean = false) {
+    fun gonderileriGetir(
+        userId: String,
+        isFollowing: Boolean = false,
+        forceRefresh: Boolean = false,
+    ) {
         if (userId.isBlank()) return
+
+        if (!isFollowing) {
+            _gonderilerState.value = UiState.AccessDenied
+            return
+        }
 
         val cachedData = profileCache.get(userId)
         if (cachedData != null && !forceRefresh) {
@@ -295,7 +304,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                             }
                     }
                     else {
-                        gonderileriGetir(userId,true)
+                        gonderileriGetir(userId,true,true)
                     }
 
                     UiMessageManager.emitMessage(UiMessageState.Success("Gönderi başarıyla paylaşıldı."))

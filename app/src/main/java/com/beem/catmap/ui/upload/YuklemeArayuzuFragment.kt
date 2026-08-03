@@ -52,7 +52,7 @@ class YuklemeArayuzuFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: UploadViewModel by viewModels()
-    private val postViewModel: PostViewModel by activityViewModels()
+    private val postViewModel: PostViewModel by viewModels()
     private lateinit var locationClient: FusedLocationProviderClient
     private lateinit var messageManager: UyariMesaji
 
@@ -153,7 +153,6 @@ class YuklemeArayuzuFragment : Fragment() {
 
                 /***
                 launch {
-                    launch {
                         postViewModel.islemSonucu.collectLatest { result ->
                             when (result) {
                                 is UiState.Success -> {
@@ -167,9 +166,9 @@ class YuklemeArayuzuFragment : Fragment() {
                                 is UiState.Loading -> {
 
                                 }
-                                UiState.Idle -> {}
+                                is UiState.Idle -> {}
+                                else -> {}
                             }
-                        }
                     }
                 }
                 ***/

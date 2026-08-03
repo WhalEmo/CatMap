@@ -13,14 +13,21 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewModelScope
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -33,7 +40,7 @@ import kotlinx.coroutines.launch
 
 class EditProfileFragment : Fragment() {
 
-    private val profileViewModel: ProfileViewModel by activityViewModels()
+    private val profileViewModel: ProfileViewModel by viewModels()
 
     private lateinit var btnBack: ImageButton
     private lateinit var kaydetButonu: Button
@@ -85,6 +92,7 @@ class EditProfileFragment : Fragment() {
             profileViewModel.profilBilgileriniYukle(currentUserId)
         }
     }
+
 
     private fun initViews(view: View) {
         btnBack = view.findViewById(R.id.btnBack)
@@ -168,6 +176,20 @@ class EditProfileFragment : Fragment() {
                                 setLoadingState(false)
                                 UiMessageManager.emitMessage(UiMessageState.Success("Profil başarıyla güncellendi."))
                                 profileViewModel.resetUpdateState()
+
+                                val guncelKullanici = Kullanici(
+                                    currentUserId,
+                                    editKullaniciAdi.text?.toString()?.trim().orEmpty(),
+                                    editAd.text?.toString()?.trim().orEmpty(),
+                                    editSoyad.text?.toString()?.trim().orEmpty(),
+                                    editBio.text?.toString()?.trim().orEmpty(),
+                                    selectedImageUri?.toString() ?: (profileViewModel.userProfile.value as? UiState.Success)?.data?.fotoUrl
+                                )
+
+                                // Event ile fırlatıyoruz
+                                lifecycleScope.launch {
+                                    ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelKullanici))
+                                }
                                 SmartNavigationEngine.navigateBack()
                             }
                             is ProfileUpdateResult.UsernameAlreadyTaken -> {
