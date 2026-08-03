@@ -6,6 +6,7 @@ import com.beem.catmap.models.CatModel
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -85,10 +86,19 @@ class MapRepository {
 
                 catsCollection.add(catData)
                     .addOnSuccessListener { documentRef ->
+                        val newCat = CatModel(
+                            id = documentRef.id,
+                            kediAdi = catName,
+                            kediHakkinda = catAbout,
+                            latitude = latitude,
+                            longitude = longitude,
+                            photoUri = uploadedUrls.toList(),
+                            YukleyenKullaniciID = userId,
+                            createdAt = Timestamp.now().toDate()
+                        )
                         trySend(
                             UploadProgressState.Success(
-                                documentId = documentRef.id,
-                                imageUrls = uploadedUrls.toList()
+                                catModel = newCat
                             )
                         )
                         close()

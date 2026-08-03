@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.models.CatModel
 import com.beem.catmap.data.repository.MapRepository
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.map.LoadingState
@@ -30,11 +32,19 @@ class MapViewModel : ViewModel() {
     private val _zoomToCatEvent = MutableSharedFlow<CatModel>(replay = 0, extraBufferCapacity = 1)
     val zoomToCatEvent = _zoomToCatEvent.asSharedFlow()
 
+    private val _deleteCatEvent = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
+    val deleteCatEvent = _deleteCatEvent.asSharedFlow()
+
     private val _loadingState = MutableStateFlow<LoadingState>(LoadingState.Idle)
     val loadingState = _loadingState.asStateFlow()
 
     private var lastFetchedLocation: Location? = null
     private val FETCH_THRESHOLD_METERS = 500f
+
+
+    init {
+        observeCatEvents()
+    }
 
 
     fun requestZoomToCat(catId: String) {
@@ -133,6 +143,44 @@ class MapViewModel : ViewModel() {
                 UiMessageManager.emitMessage(UiMessageState.Error("Tarama esnasında bir hata oluştu."))
             } finally {
                 _loadingState.value = LoadingState.Idle
+            }
+        }
+    }
+
+
+    private fun observeCatEvents() {
+        viewModelScope.launch {
+            CatEventBus.catMapEvent.collect { event ->
+                val currentList = _catsList.value?.toMutableList() ?: mutableListOf()
+
+                when (event) {
+                    is CatMapEvent.Created -> {
+                        if (!currentList.any { it.id == event.cat.id }) {
+                            currentList.add(0, event.cat)
+
+                            _catsList.postValue(currentList)
+                        }
+
+                        _zoomToCatEvent.emit(event.cat)
+                    }
+
+                    is CatMapEvent.Updated -> {
+                        val index = currentList.indexOfFirst { it.id == event.cat.id }
+                        if (index != -1) {
+                            currentList[index] = event.cat
+                            _catsList.postValue(currentList)
+                        }
+                    }
+
+                    is CatMapEvent.Deleted -> {
+                        val removed = currentList.removeAll { it.id == event.catId }
+                        if (removed) {
+                            _catsList.postValue(currentList)
+
+                            _deleteCatEvent.emit(event.catId)
+                        }
+                    }
+                }
             }
         }
     }

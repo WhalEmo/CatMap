@@ -1,10 +1,13 @@
 package com.beem.catmap.Profil.Gonderiler
+
+
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -12,23 +15,27 @@ import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
+import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.beem.catmap.Maps.FotoYuklemeListener
 import com.beem.catmap.Maps.MapViewModel
-import com.beem.catmap.Maps.MapsActivity
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
+
 
 class GonderiDetayFragment : Fragment() {
 
@@ -42,6 +49,14 @@ class GonderiDetayFragment : Fragment() {
     private var aciklama: String? = null
     private var begeni: Long = 0L
     private var kediid: String? = null
+
+    private var photoPager: ViewPager2? = null
+    private var photoDotsContainer: LinearLayout? = null
+    private var photoIndicatorCapsule: MaterialCardView? = null
+
+    private val photoIndicatorDots: MutableList<View?> = ArrayList<View?>()
+
+    private var photoPageChangeCallback: OnPageChangeCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,18 +95,18 @@ class GonderiDetayFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false)
 
-        val viewPager: ViewPager2 = view.findViewById(R.id.fotoPager)
         val kediAdiText: TextView = view.findViewById(R.id.kediAdiText)
         val aciklamaText: TextView = view.findViewById(R.id.kediAciklama)
         val begeniBilgiTextView: TextView = view.findViewById(R.id.begeniBilgiTextView)
         val gonderiMenu: ImageView = view.findViewById(R.id.GonderiMenu)
 
+
+        photoPager = view.findViewById(R.id.fotoPager);
+        photoDotsContainer = view.findViewById(R.id.fotoDotsContainer);
+        photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule);
+
         val currentUserManager = CurrentUserManager.getInstance(requireContext())
 
-        viewPager.adapter = FotoAdapter(fotoListesi ?: arrayListOf(), object : FotoYuklemeListener {
-            override fun onTumFotograflarYuklendi() {
-            }
-        })
 
         kediAdiText.text = kediAdi
         if (aciklama.isNullOrBlank()) {
@@ -164,7 +179,9 @@ class GonderiDetayFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 postViewModel.haritaSilindiEvent.collect { silindi ->
                     if (silindi) {
-                        (activity as? MapsActivity)?.sonTiklananMarkeriSil()
+                        kediid?.let { id ->
+                            CatEventBus.emitEvent(CatMapEvent.Deleted(catId = id))
+                        }
                         SmartNavigationEngine.navigateBack()
                     }
                 }
@@ -175,6 +192,8 @@ class GonderiDetayFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        handleBackPressWithEngine()
 
         val haritadaGorButton: MaterialButton = view.findViewById(R.id.haritadaGorButon)
         val toolbar: MaterialToolbar = view.findViewById(R.id.toolbar)
@@ -189,6 +208,26 @@ class GonderiDetayFragment : Fragment() {
                 mapViewModel.requestZoomToCat(kediid!!)
             }
         }
+
+
+        val safePhotoList = fotoListesi ?: arrayListOf()
+
+        photoPager!!.setAdapter(FotoAdapter(fotoListesi, object : FotoYuklemeListener {
+            override fun onTumFotograflarYuklendi() {
+            }
+        }))
+
+        setupPhotoIndicator(safePhotoList.size)
+
+        photoPageChangeCallback = object : OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                updatePhotoIndicator(position)
+            }
+        }
+
+        photoPager!!.registerOnPageChangeCallback(photoPageChangeCallback!!)
+
     }
 
     companion object {
@@ -214,5 +253,97 @@ class GonderiDetayFragment : Fragment() {
                 ARG_KEDIID to kediid
             )
         }
+    }
+
+    override fun onDestroyView() {
+        if (photoPager != null && photoPageChangeCallback != null) {
+            photoPager!!.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
+        }
+
+        photoPager = null
+        photoDotsContainer = null
+        photoIndicatorCapsule = null
+        photoPageChangeCallback = null
+
+        photoIndicatorDots.clear()
+
+        super.onDestroyView()
+    }
+
+    private fun setupPhotoIndicator(photoCount: Int) {
+        photoDotsContainer!!.removeAllViews()
+        photoIndicatorDots.clear()
+
+        if (photoCount <= 1) {
+            photoIndicatorCapsule!!.setVisibility(View.GONE)
+            return
+        }
+
+        photoIndicatorCapsule!!.setVisibility(View.VISIBLE)
+
+        for (i in 0..<photoCount) {
+            val dot = View(requireContext())
+
+            val isSelected = i == 0
+
+            val dotSize = dpToPx(if (isSelected) 8 else 6)
+            val dotMargin = dpToPx(3)
+
+            val layoutParams =
+                LinearLayout.LayoutParams(dotSize, dotSize)
+
+            layoutParams.setMargins(
+                dotMargin,
+                0,
+                dotMargin,
+                0
+            )
+
+            dot.setLayoutParams(layoutParams)
+
+            dot.setBackground(
+                ContextCompat.getDrawable(
+                    requireContext(),
+                    if (isSelected) R.drawable.dot_active else R.drawable.dot_inactive
+                )
+            )
+
+            photoDotsContainer!!.addView(dot)
+            photoIndicatorDots.add(dot)
+        }
+    }
+
+    private fun updatePhotoIndicator(selectedPosition: Int) {
+        for (i in photoIndicatorDots.indices) {
+            val dot: View = photoIndicatorDots.get(i)!!
+
+            val isSelected = i == selectedPosition
+
+            val dotSize = dpToPx(if (isSelected) 8 else 6)
+
+            val layoutParams =
+                dot.getLayoutParams() as LinearLayout.LayoutParams
+
+            layoutParams.width = dotSize
+            layoutParams.height = dotSize
+
+            dot.setLayoutParams(layoutParams)
+
+            dot.setBackground(
+                ContextCompat.getDrawable(
+                    requireContext(),
+                    if (isSelected)
+                        R.drawable.dot_active
+                    else
+                        R.drawable.dot_inactive
+                )
+            )
+        }
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return Math.round(
+            dp * getResources().getDisplayMetrics().density
+        )
     }
 }
