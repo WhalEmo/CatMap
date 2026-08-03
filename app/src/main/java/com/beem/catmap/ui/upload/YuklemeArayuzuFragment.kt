@@ -151,6 +151,7 @@ class YuklemeArayuzuFragment : Fragment() {
                     }
                 }
 
+                /***
                 launch {
                         postViewModel.islemSonucu.collectLatest { result ->
                             when (result) {
@@ -170,6 +171,7 @@ class YuklemeArayuzuFragment : Fragment() {
                             }
                     }
                 }
+                ***/
             }
         }
     }
@@ -227,13 +229,6 @@ class YuklemeArayuzuFragment : Fragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
             }
-            /*
-            postViewModel.gonderiKaydet(
-                userId = UserSession.userId,
-                yeniGonderi = yeniGonderi
-            )
-
-             */
             dialog.dismiss()
         }
 

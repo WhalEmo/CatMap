@@ -32,6 +32,10 @@ import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
+
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
+
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.Screen
@@ -160,7 +164,8 @@ class ProfilFragment : Fragment() {
                         val totalItemCount = gridLayoutManager.itemCount
                         val firstVisibleItemPosition = gridLayoutManager.findFirstVisibleItemPosition()
 
-                        if (!viewModel.isLoadingMore && !viewModel.isLastPage) {
+                        val state = viewModel.uiState.value
+                        if (!state.isMoreLoading && !viewModel.isLastPage) {
                             if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 3) {
                                 viewModel.dahaFazlaGonderiGetir()
                             }
@@ -307,12 +312,6 @@ class ProfilFragment : Fragment() {
                                 takipEdilenSayisiTextView.text = sayi.toString()
                             }
                         }
-
-                        launch {
-                            viewModel.gonderiSayisi.collect { sayi ->
-                                gonderiSayisiTextView.text = sayi.toString()
-                            }
-                        }
                     }
                 }
 
@@ -355,6 +354,15 @@ class ProfilFragment : Fragment() {
                 }
 
                 launch {
+                  // feature/cat-detail-add-post
+                    viewModel.uiState.collect { state ->
+                     
+                        if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
+                            progressBar.visibility = View.VISIBLE
+                        } else {
+                            progressBar.visibility = View.GONE
+                            swipeRefreshLayout.isRefreshing = false
+/// ayıraç
                     viewModel.gonderiSayisi.collect { sayi ->
                         gonderiSayisiTextView.text = sayi.toString()
                     }
@@ -413,23 +421,27 @@ class ProfilFragment : Fragment() {
                                 progressBar.visibility = View.GONE
                                 swipeRefreshLayout.isRefreshing = false
                             }
-
+// master
                         }
-                    }
-                }
 
-                launch {
-                    viewModel.islemSonucu.collect { result ->
-                        when (result) {
-                            is UiState.Loading -> {}
-                            is UiState.Success -> {
-                                Toast.makeText(requireContext(), result.data, Toast.LENGTH_SHORT).show()
+                        gonderiSayisiTextView.text = state.postCount.toString()
+
+                        if (state.isEmpty) {
+                            tvEmpty.visibility = View.VISIBLE
+                            recyclerView.visibility = View.GONE
+                        } else {
+                            tvEmpty.visibility = View.GONE
+                            recyclerView.visibility = View.VISIBLE
+
+                            gonderiAdapter.submitList(state.posts) {
+                                recyclerView.scrollToPosition(0)
                             }
-                            is UiState.Error -> {
-                                Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
-                            }
+                          // feature/cat-detail-add-post
+                          
+                          // ayıraç
                             UiState.Idle -> {}
                             else ->{}
+                            // master
                         }
                     }
                 }

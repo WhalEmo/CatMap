@@ -45,6 +45,9 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
     private val _postsList = MutableStateFlow<List<Gonderi>>(emptyList())
     val postsList: StateFlow<List<Gonderi>> = _postsList.asStateFlow()
 
+    private val _isAlreadyAdded = MutableStateFlow(false)
+    val isAlreadyAdded: StateFlow<Boolean> = _isAlreadyAdded.asStateFlow()
+
     fun setCatData(cat: Kediler) {
         _selectedCat.value = cat
 
@@ -91,16 +94,27 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun markAsAddedLocal() {
+        _isAlreadyAdded.value = true
+    }
+
     fun loadOwnerInfo(ownerId: String) {
         viewModelScope.launch {
             val currentUserId = UserSession.userId
             _isMyCat.value = (ownerId == currentUserId)
 
             val userData = repository.getUserInfo(ownerId)
-            userData?.let {
-                val username = it["KullaniciAdi"] as? String ?: "Bilinmeyen"
-                val photoUrl = it["profilFotoUrl"] as? String
+            userData?.let { data ->
+                val username = data["KullaniciAdi"] as? String ?: "Bilinmeyen"
+                val photoUrl = data["profilFotoUrl"] as? String
                 _ownerInfo.value = Pair(username, photoUrl)
+
+                val currentCatId = _selectedCat.value?.id
+                if (currentCatId != null) {
+                    val posts = data["GonderilenKediler"] as? List<Map<String, Any>>
+                    val exists = posts?.any { it["kediID"] == currentCatId } ?: false
+                    _isAlreadyAdded.value = exists
+                }
             }
         }
     }

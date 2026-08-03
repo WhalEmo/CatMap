@@ -14,6 +14,8 @@ import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,15 +32,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PostRepository = PostRepository()
     private val userManager = CurrentUserManager.getInstance(application)
 
-    private val _gonderilerState = MutableStateFlow<UiState<List<Gonderi>>>(UiState.Idle)
-    val gonderilerState: StateFlow<UiState<List<Gonderi>>> = _gonderilerState.asStateFlow()
-
-    private val _gonderiSayisi = MutableStateFlow<Int>(0)
-    val gonderiSayisi: StateFlow<Int> = _gonderiSayisi.asStateFlow()
-
-    // Single event'ler için replay = 0 yapıldı (Tekrarlayan Toast/SnackBar engellemek için)
-    private val _islemSonucu = MutableSharedFlow<UiState<String>>(replay = 0)
-    val islemSonucu: SharedFlow<UiState<String>> = _islemSonucu.asSharedFlow()
+    private val _uiState = MutableStateFlow(ProfilePostUiState())
+    val uiState: StateFlow<ProfilePostUiState> = _uiState.asStateFlow()
 
     private val _haritaSilindiEvent = MutableSharedFlow<Boolean>(replay = 0)
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
@@ -90,14 +86,26 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         val cached = profileCache.get(targetUserId)
         if (cached != null) {
             Log.d("CACHED", "Cache dolu geldi: ${cached.idList.size}")
-            _gonderiSayisi.value = cached.idList.size
-            _gonderilerState.value = UiState.Success(cached.posts)
+            _uiState.update {
+                it.copy(
+                    posts = cached.posts,
+                    postCount = cached.idList.size,
+                    isEmpty = cached.posts.isEmpty(),
+                    isLoading = false
+                )
+            }
             if (isSelf) {
                 userManager.updateGonderiSayisi(cached.idList.size.toLong())
             }
         } else {
-            _gonderiSayisi.value = 0
-            _gonderilerState.value = UiState.Idle
+            _uiState.update {
+                it.copy(
+                    posts = emptyList(),
+                    postCount = 0,
+                    isEmpty = true,
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -115,17 +123,22 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
         val cachedData = profileCache.get(userId)
         if (cachedData != null && !forceRefresh) {
-            _gonderiSayisi.value = cachedData.idList.size
-            _gonderilerState.value = UiState.Success(cachedData.posts)
+            _uiState.update {
+                it.copy(
+                    posts = cachedData.posts,
+                    postCount = cachedData.idList.size,
+                    isEmpty = cachedData.posts.isEmpty(),
+                    isLoading = false
+                )
+            }
             return
         }
 
         viewModelScope.launch {
-            _gonderilerState.value = UiState.Loading
+            _uiState.update { it.copy(isLoading = true) }
 
             repository.getKullaniciGonderiIdListesi(userId)
                 .onSuccess { fullIdList ->
-                    _gonderiSayisi.value = fullIdList.size
 
                     if (userId == UserSession.userId) {
                         userManager.updateGonderiSayisi(fullIdList.size.toLong())
@@ -133,7 +146,9 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
                     if (fullIdList.isEmpty()) {
                         saveToCache(userId, emptyList(), emptyList(), 0, true)
-                        _gonderilerState.value = UiState.Success(emptyList())
+                        _uiState.update {
+                            it.copy(posts = emptyList(), postCount = 0, isEmpty = true, isLoading = false)
+                        }
                         return@launch
                     }
 
@@ -143,18 +158,23 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                     repository.getGonderiDetaylariByIds(firstBatch)
                         .onSuccess { gonderiler ->
                             saveToCache(userId, gonderiler, fullIdList, firstBatch.size, isLast)
-                            _gonderilerState.value = UiState.Success(gonderiler)
+                            _uiState.update {
+                                it.copy(
+                                    posts = gonderiler,
+                                    postCount = fullIdList.size,
+                                    isEmpty = gonderiler.isEmpty(),
+                                    isLoading = false
+                                )
+                            }
                         }
                         .onFailure { exception ->
-                            _gonderilerState.value = UiState.Error(
-                                exception.localizedMessage ?: "Gönderi detayları alınamadı."
-                            )
+                            _uiState.update { it.copy(isLoading = false) }
+                            UiMessageManager.emitMessage(UiMessageState.Error(exception.localizedMessage ?: "Gönderiler yüklenemedi."))
                         }
                 }
                 .onFailure { exception ->
-                    _gonderilerState.value = UiState.Error(
-                        exception.localizedMessage ?: "Gönderiler yüklenirken hata oluştu."
-                    )
+                    _uiState.update { it.copy(isLoading = false) }
+                    UiMessageManager.emitMessage(UiMessageState.Error(exception.localizedMessage ?: "Hata oluştu."))
                 }
         }
     }
@@ -169,6 +189,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         if (currentOffset >= cachedData.idList.size) return
 
         isLoadingMore = true
+        _uiState.update { it.copy(isMoreLoading = true) }
 
         viewModelScope.launch {
             val nextOffset = (currentOffset + PAGE_SIZE).coerceAtMost(cachedData.idList.size)
@@ -179,11 +200,16 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 .onSuccess { newGonderiler ->
                     val updatedPosts = cachedData.posts + newGonderiler
                     saveToCache(userId, updatedPosts, cachedData.idList, nextOffset, isLast)
-
-                    _gonderilerState.value = UiState.Success(updatedPosts)
+                    _uiState.update {
+                        it.copy(
+                            posts = updatedPosts,
+                            isMoreLoading = false
+                        )
+                    }
                     isLoadingMore = false
                 }
                 .onFailure {
+                    _uiState.update { it.copy(isMoreLoading = false) }
                     isLoadingMore = false
                 }
         }
@@ -193,17 +219,16 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     fun gonderiSil(userId: String, kediId: String) {
         viewModelScope.launch {
-            _islemSonucu.emit(UiState.Loading)
+            _uiState.update { it.copy(isLoading = true) }
 
             repository.kullaniciGonderiSil(userId, kediId)
                 .onSuccess {
-                    _islemSonucu.emit(UiState.Success("Gönderi başarıyla silindi."))
+                    UiMessageManager.emitMessage(UiMessageState.Success("Gönderi başarıyla silindi."))
                     removePostFromCacheAndUi(userId, kediId)
                 }
                 .onFailure { exception ->
-                    _islemSonucu.emit(
-                        UiState.Error(exception.localizedMessage ?: "Gönderi silinemedi.")
-                    )
+                    _uiState.update { it.copy(isLoading = false) }
+                    UiMessageManager.emitMessage(UiMessageState.Error(exception.localizedMessage ?: "Gönderi silinemedi."))
                 }
         }
     }
@@ -211,7 +236,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     fun haritadanVeGonderilerdenSil(userId: String, kediId: String) {
         if (kediId.isBlank()) return
         viewModelScope.launch {
-            _islemSonucu.emit(UiState.Loading)
+            _uiState.update { it.copy(isLoading = true) }
 
             runCatching {
                 coroutineScope {
@@ -226,9 +251,10 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             }.onSuccess {
                 removePostFromCacheAndUi(userId, kediId)
                 _haritaSilindiEvent.emit(true)
-                _islemSonucu.emit(UiState.Success("Haritadan silindi."))
+                UiMessageManager.emitMessage(UiMessageState.Success("Haritadan silindi."))
             }.onFailure { exception ->
-                _islemSonucu.emit(UiState.Error(exception.localizedMessage ?: "Hata oluştu."))
+                _uiState.update { it.copy(isLoading = false) }
+                UiMessageManager.emitMessage(UiMessageState.Error(exception.localizedMessage ?: "Hata oluştu."))
             }
         }
     }
@@ -237,7 +263,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         val kediId = yeniGonderi.kediID ?: return
 
         viewModelScope.launch {
-            _islemSonucu.emit(UiState.Loading)
+            _uiState.update { it.copy(isLoading = true) }
 
             repository.kullaniciGonderiKaydet(userId, kediId)
                 .onSuccess {
@@ -259,27 +285,32 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                                     offset = firstPageIds.size,
                                     isLastPage = isLast
                                 )
-                                _gonderiSayisi.value = updatedIdList.size
 
-                                _gonderilerState.value =
-                                    UiState.Success(yeniListe)
+                                if(userId == UserSession.userId){
+                                    userManager.updateGonderiSayisi(updatedIdList.size.toLong())
+                                }
 
-                                if(userId == UserSession.userId){ userManager.updateGonderiSayisi(updatedIdList.size.toLong()) }
+                                _uiState.update {
+                                    it.copy(
+                                        posts = yeniListe,
+                                        postCount = updatedIdList.size,
+                                        isEmpty = yeniListe.isEmpty(),
+                                        isLoading = false
+                                    )
+                                }
                             }
                             .onFailure {
-                                _islemSonucu.emit(UiState.Error("Gönderi yenilenemedi"))
+                                UiMessageManager.emitMessage(UiMessageState.Error("Gönderi yenilenemedi"))
                             }
                     }
                     else {
                         gonderileriGetir(userId,true,true)
                     }
 
-                    _islemSonucu.emit(UiState.Success("Gönderi başarıyla paylaşıldı."))
+                    UiMessageManager.emitMessage(UiMessageState.Success("Gönderi başarıyla paylaşıldı."))
                 }
                 .onFailure { exception ->
-                    _islemSonucu.emit(
-                        UiState.Error(exception.localizedMessage ?: "Gönderi paylaşılırken hata oluştu.")
-                    )
+                    UiMessageManager.emitMessage(UiMessageState.Error(exception.localizedMessage ?: "Hata oluştu."))
                 }
         }
     }
@@ -299,7 +330,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun removePostFromCacheAndUi(userId: String, kediId: String) {
         val cachedData = profileCache.get(userId)
-        val activePosts = (_gonderilerState.value as? UiState.Success)?.data ?: emptyList()
+        val activePosts = _uiState.value.posts
 
         // Ekranda gösterilen listeden silinen gönderiyi çıkar
         val updatedPosts = activePosts.filterNot { it.kediID == kediId }
@@ -318,8 +349,13 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             saveToCache(userId, updatedPosts, updatedIdList, updatedOffset, cachedData.isLastPage)
         }
 
-        // UI'daki toplam sayıyı da doğru güncelliyoruz
-        _gonderiSayisi.value = updatedIdList.size
-        _gonderilerState.value = UiState.Success(updatedPosts)
+        _uiState.update {
+            it.copy(
+                posts = updatedPosts,
+                postCount = updatedIdList.size,
+                isEmpty = updatedPosts.isEmpty(),
+                isLoading = false
+            )
+        }
     }
 }
