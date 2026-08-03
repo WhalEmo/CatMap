@@ -32,6 +32,8 @@ import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
@@ -368,10 +370,16 @@ class ProfilFragment : Fragment() {
                         when (result) {
                             is UiState.Loading -> {}
                             is UiState.Success -> {
-                                Toast.makeText(requireContext(), result.data, Toast.LENGTH_SHORT).show()
+                                UiMessageManager.emitMessage(
+                                    UiMessageState.Success(result.data)
+                                )
+                                //Toast.makeText(requireContext(), result.data, Toast.LENGTH_SHORT).show()
                             }
                             is UiState.Error -> {
-                                Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                                UiMessageManager.emitMessage(
+                                    UiMessageState.Error(result.message)
+                                )
+                                //Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
                             }
                             UiState.Idle -> {}
                         }
