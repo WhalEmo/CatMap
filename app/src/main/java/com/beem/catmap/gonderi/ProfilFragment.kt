@@ -13,7 +13,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -28,21 +27,16 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.FollowUiState
 import com.beem.catmap.gonderi.FollowViewModel
 import com.beem.catmap.gonderi.PostViewModel
-import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
-
-import com.beem.catmap.ui.manager.UiMessageManager
-import com.beem.catmap.ui.manager.UiMessageState
-
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.bumptech.glide.Glide
-import com.facebook.shimmer.ShimmerFrameLayout // <-- SHIMMER IMPORT
+import com.facebook.shimmer.ShimmerFrameLayout
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -54,7 +48,7 @@ class ProfilFragment : Fragment() {
     private val profileViewModel: ProfileViewModel by viewModels()
     private var postsLoaded = false
 
-    private lateinit var shimmerLayout: ShimmerFrameLayout // <-- SHIMMER DEĞİŞKENİ
+    private lateinit var shimmerLayout: ShimmerFrameLayout
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressFollow: ProgressBar
@@ -122,7 +116,6 @@ class ProfilFragment : Fragment() {
         profilFotoImageView = view.findViewById(R.id.profilFotoImageView)
         postSectionHeader = view.findViewById(R.id.postSectionHeader)
 
-        // Initial Shimmer Başlatma
         shimmerLayout.startShimmer()
         shimmerLayout.visibility = View.VISIBLE
         swipeRefreshLayout.visibility = View.GONE
@@ -137,8 +130,6 @@ class ProfilFragment : Fragment() {
             followViewModel.targetUserClearOrPrepare(userId)
             followViewModel.takipTakipciSayisiGetir(userId, false)
             profileViewModel.profilBilgileriniYukle(userId)
-
-            //viewModel.gonderileriGetir(userId, forceRefresh = false)
             followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = false)
         }
     }
@@ -260,7 +251,6 @@ class ProfilFragment : Fragment() {
                         when (event) {
                             is ProfileEvent.ProfileUpdated -> {
                                 val guncelKullanici = event.updatedUser
-
                                 if (targetUserId == myUserId && guncelKullanici != null) {
                                     profileViewModel.lokalProfilVerisiniGuncelle(guncelKullanici)
                                 }
@@ -269,6 +259,7 @@ class ProfilFragment : Fragment() {
                         }
                     }
                 }
+
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
                         renderProfileButtons(state)
@@ -293,6 +284,7 @@ class ProfilFragment : Fragment() {
                         }
                     }
                 }
+
                 launch {
                     if (targetUserId == myUserId) {
                         followViewModel.profileState.collect { profileState ->
@@ -326,7 +318,6 @@ class ProfilFragment : Fragment() {
                                 }
                             }
                             is UiState.Success -> {
-                                // VERİ YÜKLENDİ: Shimmer kapat, ekranı göster
                                 shimmerLayout.stopShimmer()
                                 shimmerLayout.visibility = View.GONE
                                 swipeRefreshLayout.visibility = View.VISIBLE
@@ -342,106 +333,44 @@ class ProfilFragment : Fragment() {
                                     .into(profilFotoImageView)
                             }
                             is UiState.Error -> {
-                                // HATA DURUMU: Shimmer kapat, ekranı göster
                                 shimmerLayout.stopShimmer()
                                 shimmerLayout.visibility = View.GONE
                                 swipeRefreshLayout.visibility = View.VISIBLE
                             }
-                            is UiState.Idle -> {}
-                            else ->{}
+                            else -> {}
                         }
                     }
                 }
 
                 launch {
-                  // feature/cat-detail-add-post
                     viewModel.uiState.collect { state ->
-                     
+                        gonderiSayisiTextView.text = state.postCount.toString()
+
                         if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
                             progressBar.visibility = View.VISIBLE
                         } else {
                             progressBar.visibility = View.GONE
                             swipeRefreshLayout.isRefreshing = false
-/// ayıraç
-                    viewModel.gonderiSayisi.collect { sayi ->
-                        gonderiSayisiTextView.text = sayi.toString()
-                    }
-                }
-
-                launch {
-                    viewModel.gonderilerState.collect { state ->
-                        when (state) {
-                            is UiState.Loading -> {
-                                if (!swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE ) {
-                                    progressBar.visibility = View.VISIBLE
-                                }
-                                tvEmpty.visibility = View.GONE
-                            }
-                            is UiState.AccessDenied -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                                recyclerView.visibility = View.GONE
-                                postSectionHeader.visibility = View.GONE
-
-                                tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
-                                tvEmpty.visibility = View.VISIBLE
-                            }
-                            is UiState.Success -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                                postSectionHeader.visibility = View.VISIBLE
-
-                                if (state.data.isEmpty()) {
-                                    tvEmpty.text = "Henüz gönderi yok"
-                                    tvEmpty.visibility = View.VISIBLE
-                                    recyclerView.visibility = View.GONE
-                                } else {
-                                    val ilkGonderi = state.data.first()
-                                    Log.d("AdapterDebug", "🔍 [İLK ELEMAN / YENİ GÖNDERİ DETAYI]:")
-                                    Log.d("AdapterDebug", "   ➜ Kedi ID: ${ilkGonderi.kediID}")
-                                    Log.d("AdapterDebug", "   ➜ Kedi Adı: ${ilkGonderi.kediAdi}")
-                                    Log.d("AdapterDebug", "   ➜ Açıklama: ${ilkGonderi.aciklama}")
-                                    Log.d("AdapterDebug", "   ➜ Fotoğraflar (Size: ${ilkGonderi.fotoUrlListesi?.size}): ${ilkGonderi.fotoUrlListesi}")
-                                    Log.d("AdapterDebug", "   ➜ Tarih: ${ilkGonderi.tarih}")
-                                    tvEmpty.visibility = View.GONE
-                                    recyclerView.visibility = View.VISIBLE
-                                    gonderiAdapter.submitList(state.data.toList()) {
-
-                            
-                                        recyclerView.scrollToPosition(0)
-                                    }
-                                }
-                            }
-                            is UiState.Error -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
-                            }
-                            UiState.Idle -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                            }
-// master
                         }
 
-                        gonderiSayisiTextView.text = state.postCount.toString()
-
-                        if (state.isEmpty) {
-                            tvEmpty.visibility = View.VISIBLE
+                        if (state.isAccessDenied) {
                             recyclerView.visibility = View.GONE
+                            postSectionHeader.visibility = View.GONE
+                            tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
+                            tvEmpty.visibility = View.VISIBLE
                         } else {
-                            tvEmpty.visibility = View.GONE
-                            recyclerView.visibility = View.VISIBLE
-
-                            gonderiAdapter.submitList(state.posts) {
-                                recyclerView.scrollToPosition(0)
+                            postSectionHeader.visibility = View.VISIBLE
+                            if (state.isEmpty) {
+                                tvEmpty.text = "Henüz gönderi yok"
+                                tvEmpty.visibility = View.VISIBLE
+                                recyclerView.visibility = View.GONE
+                            } else {
+                                tvEmpty.visibility = View.GONE
+                                recyclerView.visibility = View.VISIBLE
+                                gonderiAdapter.submitList(state.posts) {
+                                    recyclerView.scrollToPosition(0)
+                                }
                             }
-                          // feature/cat-detail-add-post
-                          
-                          // ayıraç
-                            UiState.Idle -> {}
-                            else ->{}
-                            // master
                         }
                     }
                 }
@@ -491,7 +420,7 @@ class ProfilFragment : Fragment() {
             gonderi.aciklama ?: "",
             gonderi.begeniSayisi ?: 0L,
             gonderi.kediID ?: "",
-            targetUserId?: ""
+            targetUserId ?: ""
         )
 
         SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
