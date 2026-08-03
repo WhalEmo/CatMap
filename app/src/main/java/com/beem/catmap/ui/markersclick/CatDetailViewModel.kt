@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatRepository()
 
-    private val postRepository = PostRepository()
+    private val postRepository = PostRepository
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()
@@ -147,11 +147,11 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         val userId = UserSession.userId ?: return
 
         viewModelScope.launch {
-            val isRemovedFromUser = repository.removeCatFromUserPosts(userId, currentCat.id)
+            val isRemovedFromUser = postRepository.kullaniciGonderiSil(userId, currentCat.id)
 
             val isDeletedFromMap = repository.deleteCatFromMap(currentCat.id)
 
-            if (isRemovedFromUser || isDeletedFromMap) {
+            if (isRemovedFromUser.isSuccess || isDeletedFromMap) {
                 val updatedList = _postsList.value.filterNot { it.kediID == currentCat.id }
                 _postsList.value = updatedList
                 _postCount.value = (_postCount.value - 1).coerceAtLeast(0)
