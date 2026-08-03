@@ -10,6 +10,8 @@ import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -54,9 +56,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private fun observeProfileEvents() {
         viewModelScope.launch {
             ProfileEventBus.profileEvent.collect { event ->
+                Log.d("POST_FLOW_DEBUG", "PostViewModel: Eventbus'tan Dinlendi -> $event")
                 when (event) {
                     is ProfileEvent.PostAdded -> {
-                        gonderiKaydet(UserSession.userId, event.post)
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderiKaydet() çağrılıyor...")
+                        onPostAddedRemote(UserSession.userId, event.post)
                     }
                     is ProfileEvent.PostDeleted -> {
                         event.catId?.let {
@@ -192,6 +196,59 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun onPostAddedRemote(userId: String, yeniGonderi: Gonderi) {
+        val kediId = yeniGonderi.kediID ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val yeniKediItem = GonderilenKediItem(
+                kediID = kediId,
+                tarih = yeniGonderi.tarih
+            )
+            val cachedData = profileCache.get(userId)
+
+            if (cachedData != null) {
+                val updatedIdList = listOf(yeniKediItem) + cachedData.idList
+                val firstPageIds = updatedIdList.take(PAGE_SIZE)
+
+                repository.getGonderiDetaylariByIds(firstPageIds)
+                    .onSuccess { yeniListe ->
+                        val isLast = firstPageIds.size >= updatedIdList.size
+                        saveToCache(
+                            userId = userId,
+                            posts = yeniListe,
+                            idList = updatedIdList,
+                            offset = firstPageIds.size,
+                            isLastPage = isLast
+                        )
+
+                        if (userId == UserSession.userId) {
+                            userManager.updateGonderiSayisi(updatedIdList.size.toLong())
+                        }
+
+                        _uiState.update {
+                            it.copy(
+                                posts = yeniListe,
+                                postCount = updatedIdList.size,
+                                isEmpty = yeniListe.isEmpty(),
+                                isLoading = false,
+                                isAccessDenied = false
+                            )
+                        }
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: Önbellek ve UI State başarıyla güncellendi.")
+                    }
+                    .onFailure {
+                        _uiState.update { it.copy(isLoading = false) }
+                        UiMessageManager.emitMessage(UiMessageState.Error("Profil önbelleği yenilenemedi."))
+                    }
+            } else {
+                // Önbellek yoksa doğrudan uzak sunucudan güncel listeyi çekmesini söylüyoruz
+                gonderileriGetir(userId, isFollowing = true, forceRefresh = true)
+            }
+        }
+    }
+
     fun dahaFazlaGonderiGetir() {
         val userId = _yukleyenID.value
         if (userId.isBlank() || isLoadingMore || isLastPage) return
@@ -263,6 +320,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }.onSuccess {
                 removePostFromCacheAndUi(userId, kediId)
+
+                CatEventBus.emitEvent(CatMapEvent.Deleted(catId = kediId))
                 _haritaSilindiEvent.emit(true)
                 UiMessageManager.emitMessage(UiMessageState.Success("Haritadan silindi."))
             }.onFailure { exception ->
@@ -335,6 +394,83 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun gonderiKaydet_v2(userId: String, yeniGonderi: Gonderi) {
+        val kediId = yeniGonderi.kediID ?: run {
+            Log.e("POST_FLOW_DEBUG", "PostViewModel: Kedi ID NULL geldi! İşlem iptal.")
+            return
+        }
+
+        Log.d("POST_FLOW_DEBUG", "PostViewModel: gonderiKaydet Başladı. UserId: $userId, KediId: $kediId")
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            repository.kullaniciGonderiKaydet(userId, kediId)
+                .onSuccess {
+                    Log.d("POST_FLOW_DEBUG", "PostViewModel: repository.kullaniciGonderiKaydet BAŞARILI!")
+
+                    val yeniKediItem = GonderilenKediItem(
+                        kediID = kediId,
+                        tarih = yeniGonderi.tarih
+                    )
+                    val cachedData = profileCache.get(userId)
+                    if (cachedData != null) {
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: Önbellek DOLU, detaylar çekiliyor...")
+                        val updatedIdList = listOf(yeniKediItem) + cachedData.idList
+                        val firstPageIds = updatedIdList.take(PAGE_SIZE)
+
+                        repository.getGonderiDetaylariByIds(firstPageIds)
+                            .onSuccess { yeniListe ->
+                                val isLast = firstPageIds.size >= updatedIdList.size
+                                saveToCache(
+                                    userId = userId,
+                                    posts = yeniListe,
+                                    idList = updatedIdList,
+                                    offset = firstPageIds.size,
+                                    isLastPage = isLast
+                                )
+
+                                if (userId == UserSession.userId) {
+                                    userManager.updateGonderiSayisi(updatedIdList.size.toLong())
+                                }
+
+                                _uiState.update {
+                                    it.copy(
+                                        posts = yeniListe,
+                                        postCount = updatedIdList.size,
+                                        isEmpty = yeniListe.isEmpty(),
+                                        isLoading = false,
+                                        isAccessDenied = false
+                                    )
+                                }
+                                UiMessageManager.emitMessage(UiMessageState.Success("Gönderi başarıyla paylaşıldı."))
+
+                                Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdded(isSuccess=true) Fırlatılıyor! [Cache Var]")
+                            }
+                            .onFailure {
+                                _uiState.update { it.copy(isLoading = false) }
+                                UiMessageManager.emitMessage(UiMessageState.Error("Gönderi yenilenemedi"))
+
+                                Log.e("POST_FLOW_DEBUG", "PostViewModel: Detaylar alınamadı! PostAdded(isSuccess=false) Fırlatılıyor!")
+                            }
+                    } else {
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: Önbellek BOŞ, gonderileriGetir tetikleniyor...")
+                        gonderileriGetir(userId, isFollowing = true, forceRefresh = true)
+                        UiMessageManager.emitMessage(UiMessageState.Success("Gönderi başarıyla paylaşıldı."))
+
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdded(isSuccess=true) Fırlatılıyor! [Cache Yok]")
+                    }
+                }
+                .onFailure { exception ->
+                    Log.e("POST_FLOW_DEBUG", "PostViewModel: repository.kullaniciGonderiKaydet BAŞARISIZ! Hata: ${exception.localizedMessage}")
+                    _uiState.update { it.copy(isLoading = false) }
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error(exception.localizedMessage ?: "Hata oluştu.")
+                    )
+                }
+        }
+    }
+
     private fun saveToCache(
         userId: String,
         posts: List<Gonderi>,
@@ -354,7 +490,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
         // Silinecek eleman ekranda var mı?
         val wasInLoadedPosts = activePosts.any { it.kediID == kediId }
-        val updatedPosts = activePosts.filterNot { it.kediID == kediId }
+        val updatedPosts = activePosts.filterNot { it.kediID == kediId }.toList()
 
         val updatedIdList = cachedData?.idList?.filterNot { it.kediID == kediId } ?: emptyList()
 

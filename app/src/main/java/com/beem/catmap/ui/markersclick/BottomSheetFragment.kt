@@ -243,6 +243,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
+
     private fun showOptionMenu(view: View) {
         val popupMenu = PopupMenu(requireContext(), view)
         popupMenu.menuInflater.inflate(R.menu.kediyi_gosterme_uc_nokta, popupMenu.menu)
@@ -268,7 +269,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                         .setTitle("Ekleme")
                         .setMessage("Bu kediyi gönderilerinize eklemek istiyor musunuz?")
                         .setPositiveButton("Evet") { _, _ ->
-                            UiMessageManager.emitMessage(UiMessageState.Info("İşlem gerçekleştiriliyor..."))
+                            UiMessageManager.emitMessage(UiMessageState.Info("Gönderi ekleniyor..."))
 
                             val newPost = Gonderi(
                                 kediID = currentCat.id,
@@ -279,15 +280,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                                 begeniSayisi = likeCount.toLong()
                             )
 
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
-                                viewModel.markAsAddedLocal()
-                            }
                             dialog?.dismiss()
-                            this.dismiss()
-
-                            NavigationHelper.navigateToProfile(UserSession.userId)
-
                         }
                         .setNegativeButton("Hayır", null)
                         .show()

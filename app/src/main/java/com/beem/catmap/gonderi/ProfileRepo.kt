@@ -1,6 +1,5 @@
 package com.beem.catmap.gonderi
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
