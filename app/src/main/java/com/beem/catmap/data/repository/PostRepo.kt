@@ -3,7 +3,6 @@ package com.beem.catmap.data.repository
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.beem.catmap.Profil.ProfileCacheManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
 import com.google.firebase.Timestamp
