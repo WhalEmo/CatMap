@@ -15,6 +15,7 @@ import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -42,13 +43,14 @@ class GonderiDetayFragment : Fragment() {
     private lateinit var uyari: UyariMesaji
 
     private val mapViewModel: MapViewModel by activityViewModels()
-    private val postViewModel: PostViewModel by activityViewModels()
+    private val postViewModel: PostViewModel by viewModels()
 
     private var fotoListesi: ArrayList<String>? = null
     private var kediAdi: String? = null
     private var aciklama: String? = null
     private var begeni: Long = 0L
     private var kediid: String? = null
+    private var yukleyenId: String? = null
 
     private var photoPager: ViewPager2? = null
     private var photoDotsContainer: LinearLayout? = null
@@ -66,6 +68,7 @@ class GonderiDetayFragment : Fragment() {
             aciklama = it.getString(ARG_ACIKLAMA)
             begeni = it.getLong(ARG_BEGENİ, 0L)
             kediid = it.getString(ARG_KEDIID)
+            yukleyenId = it.getString(ARG_YUKLEYEN_ID)
         }
         uyari = UyariMesaji(requireContext(), true)
     }
@@ -195,6 +198,10 @@ class GonderiDetayFragment : Fragment() {
 
         handleBackPressWithEngine()
 
+        yukleyenId?.let { id ->
+            postViewModel.setYukleyenID(id)
+        }
+
         val haritadaGorButton: MaterialButton = view.findViewById(R.id.haritadaGorButon)
         val toolbar: MaterialToolbar = view.findViewById(R.id.toolbar)
 
@@ -236,6 +243,7 @@ class GonderiDetayFragment : Fragment() {
         private const val ARG_ACIKLAMA = "aciklama"
         private const val ARG_BEGENİ = "begeni"
         private const val ARG_KEDIID = "kediid"
+        private const val ARG_YUKLEYEN_ID = "yukleyenId"
 
         @JvmStatic
         fun newBundle(
@@ -243,14 +251,16 @@ class GonderiDetayFragment : Fragment() {
             kediAdi: String,
             aciklama: String,
             begeni: Long?,
-            kediid: String
+            kediid: String,
+            yukleyenId: String?,
         ): Bundle {
             return bundleOf(
                 ARG_FOTO_LIST to fotoListesi,
                 ARG_KEDI_ADI to kediAdi,
                 ARG_ACIKLAMA to aciklama,
                 ARG_BEGENİ to (begeni ?: 0L),
-                ARG_KEDIID to kediid
+                ARG_KEDIID to kediid,
+                ARG_YUKLEYEN_ID to yukleyenId
             )
         }
     }

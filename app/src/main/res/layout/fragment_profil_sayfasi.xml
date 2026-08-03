@@ -468,22 +468,43 @@
                 app:barrierDirection="bottom"
                 app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout,progressFollow" />
 
-            <TextView
-                android:id="@+id/gonderilerBaslikTextView"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/postSectionHeader"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/gonderiler_background"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:letterSpacing="0.05"
-                android:paddingVertical="10dp"
-                android:text="Gönderiler"
-                android:textColor="@color/catmap_text_dark"
-                android:textSize="15sp"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="15dp"
+                android:gravity="center_vertical"
+                android:visibility="visible"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toBottomOf="@id/buttonBarrier"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/buttonBarrier" />
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#E6E6E6"/>
+
+                <TextView
+                    android:id="@+id/gonderilerBaslikTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="14dp"
+                    android:text="GÖNDERİLER"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:letterSpacing="0.10"
+                    android:fontFamily="sans-serif-medium"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#E6E6E6"/>
+
+            </LinearLayout>
             <ProgressBar
                 android:id="@+id/progressBarr"
                 android:layout_width="40dp"
@@ -491,7 +512,7 @@
                 android:layout_marginTop="24dp"
                 android:indeterminate="true"
                 android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/gonderilerBaslikTextView"
+                app:layout_constraintTop_toBottomOf="@id/postSectionHeader"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -499,7 +520,7 @@
                 android:id="@+id/gonderiRecyclerView"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="15dp"
                 android:clipToPadding="false"
                 android:overScrollMode="never"
                 android:paddingHorizontal="2dp"
@@ -507,7 +528,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/gonderilerBaslikTextView" />
+                app:layout_constraintTop_toBottomOf="@id/postSectionHeader" />
 
             <TextView
                 android:id="@+id/emptyTextView"
@@ -525,9 +546,6 @@
                 app:layout_constraintTop_toTopOf="@id/gonderiRecyclerView" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-
 
 </FrameLayout>
