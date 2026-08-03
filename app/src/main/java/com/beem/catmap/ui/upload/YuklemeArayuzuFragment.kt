@@ -151,6 +151,7 @@ class YuklemeArayuzuFragment : Fragment() {
                     }
                 }
 
+                /***
                 launch {
                     launch {
                         postViewModel.islemSonucu.collectLatest { result ->
@@ -171,6 +172,7 @@ class YuklemeArayuzuFragment : Fragment() {
                         }
                     }
                 }
+                ***/
             }
         }
     }

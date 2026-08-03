@@ -157,7 +157,8 @@ class ProfilFragment : Fragment() {
                         val totalItemCount = gridLayoutManager.itemCount
                         val firstVisibleItemPosition = gridLayoutManager.findFirstVisibleItemPosition()
 
-                        if (!viewModel.isLoadingMore && !viewModel.isLastPage) {
+                        val state = viewModel.uiState.value
+                        if (!state.isMoreLoading && !viewModel.isLastPage) {
                             if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 3) {
                                 viewModel.dahaFazlaGonderiGetir()
                             }
@@ -264,12 +265,6 @@ class ProfilFragment : Fragment() {
                                 takipEdilenSayisiTextView.text = sayi.toString()
                             }
                         }
-
-                        launch {
-                            viewModel.gonderiSayisi.collect { sayi ->
-                                gonderiSayisiTextView.text = sayi.toString()
-                            }
-                        }
                     }
                 }
 
@@ -312,76 +307,26 @@ class ProfilFragment : Fragment() {
                 }
 
                 launch {
-                    viewModel.gonderiSayisi.collect { sayi ->
-                        gonderiSayisiTextView.text = sayi.toString()
-                    }
-                }
-
-                launch {
-                    viewModel.gonderilerState.collect { state ->
-                        when (state) {
-                            is UiState.Loading -> {
-                                if (!swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE ) {
-                                    progressBar.visibility = View.VISIBLE
-                                }
-                                tvEmpty.visibility = View.GONE
-                            }
-                            is UiState.Success -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-
-                                if (state.data.isEmpty()) {
-                                    tvEmpty.visibility = View.VISIBLE
-                                    recyclerView.visibility = View.GONE
-                                } else {
-                                    val ilkGonderi = state.data.first()
-                                    Log.d("AdapterDebug", "🔍 [İLK ELEMAN / YENİ GÖNDERİ DETAYI]:")
-                                    Log.d("AdapterDebug", "   ➜ Kedi ID: ${ilkGonderi.kediID}")
-                                    Log.d("AdapterDebug", "   ➜ Kedi Adı: ${ilkGonderi.kediAdi}")
-                                    Log.d("AdapterDebug", "   ➜ Açıklama: ${ilkGonderi.aciklama}")
-                                    Log.d("AdapterDebug", "   ➜ Fotoğraflar (Size: ${ilkGonderi.fotoUrlListesi?.size}): ${ilkGonderi.fotoUrlListesi}")
-                                    Log.d("AdapterDebug", "   ➜ Tarih: ${ilkGonderi.tarih}")
-                                    tvEmpty.visibility = View.GONE
-                                    recyclerView.visibility = View.VISIBLE
-
-                            
-                                    gonderiAdapter.submitList(state.data.toList()) {
-
-                            
-                                        recyclerView.scrollToPosition(0)
-                                    }
-                                }
-                            }
-                            is UiState.Error -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
-                            }
-                            UiState.Idle -> {
-                                progressBar.visibility = View.GONE
-                                swipeRefreshLayout.isRefreshing = false
-                            }
+                    viewModel.uiState.collect { state ->
+                        if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
+                            progressBar.visibility = View.VISIBLE
+                        } else {
+                            progressBar.visibility = View.GONE
+                            swipeRefreshLayout.isRefreshing = false
                         }
-                    }
-                }
 
-                launch {
-                    viewModel.islemSonucu.collect { result ->
-                        when (result) {
-                            is UiState.Loading -> {}
-                            is UiState.Success -> {
-                                UiMessageManager.emitMessage(
-                                    UiMessageState.Success(result.data)
-                                )
-                                //Toast.makeText(requireContext(), result.data, Toast.LENGTH_SHORT).show()
+                        gonderiSayisiTextView.text = state.postCount.toString()
+
+                        if (state.isEmpty) {
+                            tvEmpty.visibility = View.VISIBLE
+                            recyclerView.visibility = View.GONE
+                        } else {
+                            tvEmpty.visibility = View.GONE
+                            recyclerView.visibility = View.VISIBLE
+
+                            gonderiAdapter.submitList(state.posts) {
+                                recyclerView.scrollToPosition(0)
                             }
-                            is UiState.Error -> {
-                                UiMessageManager.emitMessage(
-                                    UiMessageState.Error(result.message)
-                                )
-                                //Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
-                            }
-                            UiState.Idle -> {}
                         }
                     }
                 }
