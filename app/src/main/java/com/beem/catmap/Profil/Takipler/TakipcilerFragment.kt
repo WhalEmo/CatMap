@@ -14,12 +14,10 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.R
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.navigation.NavigationHelper
-import com.beem.catmap.ui.navigation.Screen
-import com.beem.catmap.ui.navigation.SmartNavigationEngine
+
 import com.facebook.shimmer.ShimmerFrameLayout
 import kotlinx.coroutines.launch
 

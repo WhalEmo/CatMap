@@ -13,14 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// UI'daki Butonların Anlık Durum Modeli
-data class FollowUiState(
-    val isSelfProfile: Boolean = false,
-    val isFollowing: Boolean = false,
-    val isFollowed: Boolean = false,
-    val isLoadingFollowState: Boolean = false
-)
-
 
 class FollowViewModel(application: Application) : AndroidViewModel(application) {
 

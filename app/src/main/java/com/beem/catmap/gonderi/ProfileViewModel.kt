@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,41 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _profileUpdateState = MutableStateFlow<ProfileUpdateResult>(ProfileUpdateResult.Idle)
     val profileUpdateState: StateFlow<ProfileUpdateResult> = _profileUpdateState.asStateFlow()
 
+    // ProfileViewModel.kt içine eklenecek:
+    fun lokalProfilVerisiniGuncelle(guncelKullanici: Kullanici) {
+        val currentState = _userProfile.value
+        if (currentState is UiState.Success) {
+            val eskiData = currentState.data
+
+            // Kullanici nesnesinden gelen yeni değerleri alıyoruz (Null ise eski veriyi koruyoruz)
+            val yeniKullaniciAdi = guncelKullanici.kullaniciAdi?.takeIf { it.isNotBlank() } ?: eskiData.kullaniciAdi
+            val yeniAd = guncelKullanici.ad?.takeIf { it.isNotBlank() } ?: eskiData.ad
+            val yeniSoyad = guncelKullanici.soyad ?: eskiData.soyad
+            val yeniBio = guncelKullanici.biyografi ?: eskiData.hakkinda
+            val yeniFotoUrl = guncelKullanici.fotoUrl?.takeIf { it.isNotBlank() } ?: eskiData.fotoUrl
+
+            // 1. ViewModel'deki UI State'i doğrudan güncelliyoruz
+            val yeniProfileData = UserProfileData(
+                userId = eskiData.userId,
+                kullaniciAdi = yeniKullaniciAdi,
+                ad = yeniAd,
+                soyad = yeniSoyad,
+                fotoUrl = yeniFotoUrl,
+                hakkinda = yeniBio
+            )
+            _userProfile.value = UiState.Success(yeniProfileData)
+
+            // 2. Local Cache / UserManager nesnelerimizi de senkronize tutuyoruz
+            userManager.updateBiyografi(yeniBio)
+            val currentUser = userManager.getCurrentUser().apply {
+                setKullaniciAdi(yeniKullaniciAdi)
+                setAd(yeniAd)
+                setSoyad(yeniSoyad)
+                yeniFotoUrl?.let { setFotoUrl(it) }
+            }
+            userManager.setCurrentUser(currentUser)
+        }
+    }
     fun profilBilgileriniYukle(kullaniciId: String) {
         viewModelScope.launch {
             _userProfile.value = UiState.Loading

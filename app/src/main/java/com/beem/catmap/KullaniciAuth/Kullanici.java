@@ -42,6 +42,15 @@ public class Kullanici {
     private Long takipEdilenSayisi= 0L;
     private String biyografi= "";
 
+    public Kullanici(String ID, String kullaniciAdi, String ad, String soyad, String biyografi, String fotoUrl) {
+        this.ID = ID;
+        this.KullaniciAdi = kullaniciAdi;
+        this.Ad = ad;
+        this.Soyad = soyad;
+        this.biyografi = biyografi;
+        this.FotoUrl = fotoUrl;
+    }
+
 
     public boolean isCevrimiciMi() {
         return cevrimiciMi;
