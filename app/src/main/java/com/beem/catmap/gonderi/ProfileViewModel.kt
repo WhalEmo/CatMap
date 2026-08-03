@@ -37,6 +37,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 val localProfile = UserProfileData(
                     userId = kullaniciId,
                     kullaniciAdi = cachedUser.getKullaniciAdi() ?: "",
+                    ad = cachedUser.getAd() ?:"",
+                    soyad = cachedUser.getSoyad(),
                     fotoUrl = cachedUser.getFotoUrl(),
                     hakkinda = cachedBiyografi
                 )
@@ -64,6 +66,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 userManager.updateBiyografi(profileData.hakkinda)
                 val currentUser = userManager.getCurrentUser().apply {
                     setKullaniciAdi(profileData.kullaniciAdi)
+                    setAd(profileData.ad)
+                    setSoyad(profileData.soyad)
                     profileData.fotoUrl?.let { setFotoUrl(it) }
                 }
                 userManager.setCurrentUser(currentUser)
@@ -73,52 +77,87 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             _userProfile.value = UiState.Error("Kullanıcı bilgileri alınamadı.")
         }
     }
-
-    // UI bileşeni olan 'uyari' nesnesi buradan çıkarıldı!
     fun tumProfilBilgileriniGuncelle(
         yeniKullaniciAdi: String,
+        yeniAd: String,
+        yeniSoyad: String,
         yeniHakkinda: String,
         yeniResimUri: Uri?,
         currentUserId: String
     ) {
-        viewModelScope.launch {
-            _profileUpdateState.value = ProfileUpdateResult.Loading // Yükleniyor durumu eklendi
+        // 1. Halihazırda güncelleme yapılıyorsa tekrar başlatma
+        if (_profileUpdateState.value is ProfileUpdateResult.Loading) return
 
-            val currentUser = userManager.getCurrentUser()
-            val currentUsername = currentUser.getKullaniciAdi() ?: ""
+        // 2. Mevcut profil verilerini al
+        val currentProfile = (_userProfile.value as? UiState.Success)?.data
+        val currentUser = userManager.getCurrentUser()
 
-            val result = repository.updateFullProfile(
-                context = getApplication(),
-                currentUserId = currentUserId,
-                currentUsername = currentUsername,
-                newUsername = yeniKullaniciAdi,
-                newHakkinda = yeniHakkinda,
-                newImageUri = yeniResimUri
+        val currentUsername = currentProfile?.kullaniciAdi ?: currentUser.getKullaniciAdi() ?: ""
+        val currentAd = currentProfile?.ad ?: currentUser.getAd() ?: ""
+        val currentSoyad = currentProfile?.soyad ?: currentUser.getSoyad() ?: ""
+        val currentBio = currentProfile?.hakkinda ?: userManager.profileState.value.biyografi ?: ""
+
+        // 3. Değişiklik kontrolü: Herhangi bir alan değişmiş mi ya da yeni resim seçilmiş mi?
+        val isUsernameChanged = yeniKullaniciAdi != currentUsername
+        val isAdChanged = yeniAd != currentAd
+        val isSoyadChanged = yeniSoyad != currentSoyad
+        val isBioChanged = yeniHakkinda != currentBio
+        val isImageChanged = yeniResimUri != null
+
+        if (!isUsernameChanged && !isAdChanged && !isSoyadChanged && !isBioChanged && !isImageChanged) {
+            _profileUpdateState.value = ProfileUpdateResult.Success(
+                newUsername = currentUsername,
+                newAd = currentAd,
+                newSoyad = currentSoyad,
+                newHakkinda = currentBio,
+                newPhotoUrl = currentProfile?.fotoUrl
             )
+            return
+        }
 
-            if (result is ProfileUpdateResult.Success) {
-                // 1. Önbellek Güncellemeleri
-                currentUser.setKullaniciAdi(result.newUsername)
-                result.newPhotoUrl?.let { currentUser.setFotoUrl(it) }
-                userManager.setCurrentUser(currentUser)
-                userManager.updateBiyografi(result.newHakkinda)
+        viewModelScope.launch {
+            _profileUpdateState.value = ProfileUpdateResult.Loading
 
-                // 2. StateFlow Güncellemesi
-                val currentPhoto = (_userProfile.value as? UiState.Success)?.data?.fotoUrl
-                _userProfile.value = UiState.Success(
-                    UserProfileData(
-                        userId = currentUserId,
-                        kullaniciAdi = result.newUsername,
-                        fotoUrl = result.newPhotoUrl ?: currentPhoto,
-                        hakkinda = result.newHakkinda
-                    )
+            try {
+                val result = repository.updateFullProfile(
+                    currentUserId = currentUserId,
+                    currentUsername = currentUsername,
+                    newUsername = yeniKullaniciAdi,
+                    currentAd = currentAd,
+                    newAd = yeniAd,
+                    currentSoyad = currentSoyad,
+                    newSoyad = yeniSoyad,
+                    newHakkinda = yeniHakkinda,
+                    newImageUri = yeniResimUri
                 )
-            }
 
-            _profileUpdateState.value = result
+                if (result is ProfileUpdateResult.Success) {
+                    currentUser.setKullaniciAdi(result.newUsername)
+                    currentUser.setAd(result.newAd)
+                    currentUser.setSoyad(result.newSoyad)
+                    result.newPhotoUrl?.let { currentUser.setFotoUrl(it) }
+
+                    userManager.setCurrentUser(currentUser)
+                    userManager.updateBiyografi(result.newHakkinda)
+
+                    val currentPhoto = (_userProfile.value as? UiState.Success)?.data?.fotoUrl
+                    _userProfile.value = UiState.Success(
+                        UserProfileData(
+                            userId = currentUserId,
+                            kullaniciAdi = result.newUsername,
+                            ad = result.newAd,
+                            soyad = result.newSoyad,
+                            fotoUrl = result.newPhotoUrl ?: currentPhoto,
+                            hakkinda = result.newHakkinda
+                        )
+                    )
+                }
+                _profileUpdateState.value = result
+            } catch (e: Exception) {
+                _profileUpdateState.value = ProfileUpdateResult.Error(e.localizedMessage ?: "Bilinmeyen bir hata oluştu.")
+            }
         }
     }
-
     fun resetUpdateState() {
         _profileUpdateState.value = ProfileUpdateResult.Idle
     }

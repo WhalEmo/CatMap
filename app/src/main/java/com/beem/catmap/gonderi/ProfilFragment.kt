@@ -34,7 +34,9 @@ import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.bumptech.glide.Glide
+import com.facebook.shimmer.ShimmerFrameLayout // <-- SHIMMER IMPORT
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -43,8 +45,9 @@ class ProfilFragment : Fragment() {
 
     private val viewModel: PostViewModel by activityViewModels()
     private val followViewModel: FollowViewModel by viewModels()
-    private val profileViewModel: ProfileViewModel by viewModels()
+    private val profileViewModel: ProfileViewModel by activityViewModels()
 
+    private lateinit var shimmerLayout: ShimmerFrameLayout // <-- SHIMMER DEĞİŞKENİ
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressFollow: ProgressBar
@@ -57,10 +60,13 @@ class ProfilFragment : Fragment() {
     private lateinit var takipEdiliyorButonu: Button
     private lateinit var sohbetButon: Button
     private lateinit var takipciSayisiTextView: TextView
+    private lateinit var takipciSayisiLayout: LinearLayout
+    private lateinit var takipEdilenSayisiLayout: LinearLayout
     private lateinit var takipEdilenSayisiTextView: TextView
     private lateinit var gonderiSayisiTextView: TextView
     private lateinit var bioTextView: TextView
     private lateinit var KullaniciAdi: TextView
+    private lateinit var tvAd: TextView
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var gonderiAdapter: GonderiAdapter
     val myUserId = UserSession.userId
@@ -83,7 +89,9 @@ class ProfilFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        handleBackPressWithEngine()
 
+        shimmerLayout = view.findViewById(R.id.shimmerLayout)
         recyclerView = view.findViewById(R.id.gonderiRecyclerView)
         progressBar = view.findViewById(R.id.progressBarr)
         progressFollow = view.findViewById(R.id.progressFollow)
@@ -96,26 +104,31 @@ class ProfilFragment : Fragment() {
         takipEdiliyorButonu = view.findViewById(R.id.takipEdiliyorButonu)
         sohbetButon = view.findViewById(R.id.sohbetButon)
         takipciSayisiTextView = view.findViewById(R.id.takipciSayisiTextView)
+        takipciSayisiLayout = view.findViewById(R.id.takipciSayisiLayout)
+        takipEdilenSayisiLayout = view.findViewById(R.id.takipEdilenSayisiLayout)
         takipEdilenSayisiTextView = view.findViewById(R.id.takipEdilenSayisiTextView)
         gonderiSayisiTextView = view.findViewById(R.id.gonderiSayisiTextView)
         bioTextView = view.findViewById(R.id.bioTextView)
         KullaniciAdi = view.findViewById(R.id.KullaniciAdi)
+        tvAd = view.findViewById(R.id.tvAdSoyad)
         profilFotoImageView = view.findViewById(R.id.profilFotoImageView)
+
+        // Initial Shimmer Başlatma
+        shimmerLayout.startShimmer()
+        shimmerLayout.visibility = View.VISIBLE
+        swipeRefreshLayout.visibility = View.GONE
 
         setupRecyclerView()
         setupListeners()
         observeViewModel()
 
         targetUserId?.let { userId ->
-            // 1. Önce ViewModel'deki Cache durumunu hazırla
             viewModel.profilDurumunuHazirla(userId)
             followViewModel.profilDurumunuHazirla(userId)
             followViewModel.targetUserClearOrPrepare(userId)
             followViewModel.takipTakipciSayisiGetir(userId, false)
             profileViewModel.profilBilgileriniYukle(userId)
 
-            // 2. YALNIZCA cache boşsa sunucudan veri çek!
-            // gonderiKaydet ile cache zaten güncellendiği için forceRefresh = false ile çağırıyoruz.
             viewModel.gonderileriGetir(userId, forceRefresh = false)
             followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = false)
         }
@@ -172,6 +185,26 @@ class ProfilFragment : Fragment() {
                 }
             }
         }
+        takipciSayisiLayout.setOnClickListener {
+            targetUserId?.let { userId ->
+                val args = bundleOf(
+                    "yukleyenID" to userId,
+                    "startPage" to 0,
+                    "kullaniciAdi" to KullaniciAdi.text.toString(),
+                )
+                SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "FOLLOWERS_$userId")
+            }
+        }
+        takipEdilenSayisiLayout.setOnClickListener {
+            targetUserId?.let { userId ->
+                val args = bundleOf(
+                    "yukleyenID" to userId,
+                    "startPage" to 1,
+                    "kullaniciAdi" to KullaniciAdi.text.toString(),
+                )
+                SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "FOLLOWERS_$userId")
+            }
+        }
 
         takipEdiliyorButonu.setOnClickListener {
             targetUserId?.let { targetId ->
@@ -204,26 +237,6 @@ class ProfilFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                // 1. Profil Güncelleme Durumu
-                launch {
-                    profileViewModel.profileUpdateState.collect { state ->
-                        when (state) {
-                            is ProfileUpdateResult.Loading -> {}
-                            is ProfileUpdateResult.Success -> {
-                                Toast.makeText(requireContext(), "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show()
-                            }
-                            is ProfileUpdateResult.UsernameAlreadyTaken -> {
-                                Toast.makeText(requireContext(), "Bu kullanıcı adı daha önce alınmış.", Toast.LENGTH_SHORT).show()
-                            }
-                            is ProfileUpdateResult.Error -> {
-                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
-                            }
-                            ProfileUpdateResult.Idle -> {}
-                        }
-                    }
-                }
-
-
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
                         renderProfileButtons(state)
@@ -231,22 +244,13 @@ class ProfilFragment : Fragment() {
                 }
 
                 launch {
-
                     if (targetUserId == myUserId) {
-
                         followViewModel.profileState.collect { profileState ->
-                            takipciSayisiTextView.text =
-                                profileState.takipciSayisi.toString()
-
-                            takipEdilenSayisiTextView.text =
-                                profileState.takipEdilenSayisi.toString()
-
-                            gonderiSayisiTextView.text =
-                                profileState.gonderiSayisi.toString()
+                            takipciSayisiTextView.text = profileState.takipciSayisi.toString()
+                            takipEdilenSayisiTextView.text = profileState.takipEdilenSayisi.toString()
+                            gonderiSayisiTextView.text = profileState.gonderiSayisi.toString()
                         }
-
                     } else {
-
                         launch {
                             followViewModel.targetUserTakipciSayisi.collect { sayi ->
                                 takipciSayisiTextView.text = sayi.toString()
@@ -267,11 +271,25 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
+                // --- 2. SHIMMER DURUM KONTROLÜ (Gelen Profil Verisi) ---
                 launch {
                     profileViewModel.userProfile.collect { state ->
                         when (state) {
+                            is UiState.Loading -> {
+                                if (!swipeRefreshLayout.isRefreshing) {
+                                    shimmerLayout.startShimmer()
+                                    shimmerLayout.visibility = View.VISIBLE
+                                    swipeRefreshLayout.visibility = View.GONE
+                                }
+                            }
                             is UiState.Success -> {
+                                // VERİ YÜKLENDİ: Shimmer kapat, ekranı göster
+                                shimmerLayout.stopShimmer()
+                                shimmerLayout.visibility = View.GONE
+                                swipeRefreshLayout.visibility = View.VISIBLE
+
                                 KullaniciAdi.text = state.data.kullaniciAdi
+                                tvAd.text = state.data.ad
                                 bioTextView.text = state.data.hakkinda
 
                                 Glide.with(requireContext())
@@ -280,23 +298,28 @@ class ProfilFragment : Fragment() {
                                     .error(R.drawable.kullanici)
                                     .into(profilFotoImageView)
                             }
-                            else -> {}
+                            is UiState.Error -> {
+                                // HATA DURUMU: Shimmer kapat, ekranı göster
+                                shimmerLayout.stopShimmer()
+                                shimmerLayout.visibility = View.GONE
+                                swipeRefreshLayout.visibility = View.VISIBLE
+                            }
+                            UiState.Idle -> {}
                         }
                     }
                 }
-                // 6. Gönderi Sayısı
+
                 launch {
                     viewModel.gonderiSayisi.collect { sayi ->
-                            gonderiSayisiTextView.text = sayi.toString()
+                        gonderiSayisiTextView.text = sayi.toString()
                     }
                 }
 
-                // 7. Gönderi Listesinin Durumu
                 launch {
                     viewModel.gonderilerState.collect { state ->
                         when (state) {
                             is UiState.Loading -> {
-                                if (!swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0) {
+                                if (!swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE ) {
                                     progressBar.visibility = View.VISIBLE
                                 }
                                 tvEmpty.visibility = View.GONE
@@ -319,9 +342,10 @@ class ProfilFragment : Fragment() {
                                     tvEmpty.visibility = View.GONE
                                     recyclerView.visibility = View.VISIBLE
 
-                                    Log.d("AdapterDebug", "🚀 Adapter'a submitList() çağrısı yapılıyor...")
+                            
                                     gonderiAdapter.submitList(state.data.toList()) {
-                                        Log.d("AdapterDebug", "✅ submitList Tamamlandı! RecyclerView 0. pozisyona kaydırılıyor.")
+
+                            
                                         recyclerView.scrollToPosition(0)
                                     }
                                 }
@@ -339,7 +363,6 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
-                // 8. Genel İşlem Sonucu Bildirimleri
                 launch {
                     viewModel.islemSonucu.collect { result ->
                         when (result) {

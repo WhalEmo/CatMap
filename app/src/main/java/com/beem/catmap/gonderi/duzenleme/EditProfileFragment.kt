@@ -7,14 +7,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
 import android.widget.ImageButton
-import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -23,9 +21,10 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.bumptech.glide.Glide
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -34,23 +33,30 @@ import kotlinx.coroutines.launch
 
 class EditProfileFragment : Fragment() {
 
-    private val profileViewModel: ProfileViewModel by viewModels()
+    private val profileViewModel: ProfileViewModel by activityViewModels()
 
     private lateinit var btnBack: ImageButton
-    private lateinit var kaydetButonu: MaterialButton
+    private lateinit var kaydetButonu: Button
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var btnCameraBadge: MaterialCardView
     private lateinit var fotoDegistirText: TextView
     private lateinit var inputLayoutKullaniciAdi: TextInputLayout
     private lateinit var editKullaniciAdi: TextInputEditText
+
+    private lateinit var inputLayoutAd: TextInputLayout
+    private lateinit var editAd: TextInputEditText
+    private lateinit var inputLayoutSoyad: TextInputLayout
+    private lateinit var editSoyad: TextInputEditText
+
     private lateinit var inputLayoutBio: TextInputLayout
     private lateinit var editBio: TextInputEditText
-    private lateinit var progressBarEdit: ProgressBar
+
+    private lateinit var loadingOverlay: View
 
     private var selectedImageUri: Uri? = null
     private val currentUserId: String = UserSession.userId
 
-    private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+    private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             selectedImageUri = uri
             Glide.with(this)
@@ -86,21 +92,30 @@ class EditProfileFragment : Fragment() {
         profilFotoImageView = view.findViewById(R.id.profilFotoImageViewDuzenle)
         btnCameraBadge = view.findViewById(R.id.btnCameraBadge)
         fotoDegistirText = view.findViewById(R.id.fotoDegistirText)
+
         inputLayoutKullaniciAdi = view.findViewById(R.id.inputLayoutKullaniciAdi)
         editKullaniciAdi = view.findViewById(R.id.editKullaniciAdi)
+
+        inputLayoutAd = view.findViewById(R.id.inputLayoutAd)
+        editAd = view.findViewById(R.id.editAd)
+        inputLayoutSoyad = view.findViewById(R.id.inputLayoutSoyad)
+        editSoyad = view.findViewById(R.id.editSoyad)
+
         inputLayoutBio = view.findViewById(R.id.inputLayoutBio)
         editBio = view.findViewById(R.id.editBio)
-        //progressBarEdit = view.findViewById(R.id.progressBarEdit)
+
+        loadingOverlay = view.findViewById(R.id.loadingOverlay)
     }
 
     private fun setupListeners() {
         btnBack.setOnClickListener {
             klavyeyiKapat()
+            clearEditState()
             SmartNavigationEngine.navigateBack()
         }
 
         val fotoSecAction = View.OnClickListener {
-            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            pickMedia.launch("image/*")
         }
 
         btnCameraBadge.setOnClickListener(fotoSecAction)
@@ -115,21 +130,29 @@ class EditProfileFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
                 launch {
                     profileViewModel.userProfile.collect { state ->
                         if (state is UiState.Success) {
                             val data = state.data
-                            if (editKullaniciAdi.text.isNullOrBlank()) {
-                                editKullaniciAdi.setText(data.kullaniciAdi)
-                            }
-                            if (editBio.text.isNullOrBlank()) {
-                                editBio.setText(data.hakkinda)
-                            }
                             if (selectedImageUri == null && !data.fotoUrl.isNullOrBlank()) {
                                 Glide.with(this@EditProfileFragment)
                                     .load(data.fotoUrl)
                                     .placeholder(R.drawable.kullanici)
                                     .into(profilFotoImageView)
+                            }
+                            // Metinler boşsa doldur
+                            if (editKullaniciAdi.text.isNullOrBlank()) {
+                                editKullaniciAdi.setText(data.kullaniciAdi)
+                            }
+                            if (editAd.text.isNullOrBlank()) {
+                                editAd.setText(data.ad)
+                            }
+                            if (editSoyad.text.isNullOrBlank()) {
+                                editSoyad.setText(data.soyad)
+                            }
+                            if (editBio.text.isNullOrBlank()) {
+                                editBio.setText(data.hakkinda)
                             }
                         }
                     }
@@ -143,9 +166,9 @@ class EditProfileFragment : Fragment() {
                             }
                             is ProfileUpdateResult.Success -> {
                                 setLoadingState(false)
-                                Toast.makeText(requireContext(), "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show()
+                                UiMessageManager.emitMessage(UiMessageState.Success("Profil başarıyla güncellendi."))
                                 profileViewModel.resetUpdateState()
-                                requireActivity().onBackPressedDispatcher.onBackPressed()
+                                SmartNavigationEngine.navigateBack()
                             }
                             is ProfileUpdateResult.UsernameAlreadyTaken -> {
                                 setLoadingState(false)
@@ -154,7 +177,7 @@ class EditProfileFragment : Fragment() {
                             }
                             is ProfileUpdateResult.Error -> {
                                 setLoadingState(false)
-                                Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                                UiMessageManager.emitMessage(UiMessageState.Error(result.message))
                                 profileViewModel.resetUpdateState()
                             }
                             ProfileUpdateResult.Idle -> {
@@ -167,19 +190,55 @@ class EditProfileFragment : Fragment() {
         }
     }
 
+    private fun clearEditState() {
+        selectedImageUri = null
+        val currentState = profileViewModel.userProfile.value
+        if (currentState is UiState.Success && !currentState.data.fotoUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .load(currentState.data.fotoUrl)
+                .placeholder(R.drawable.kullanici)
+                .into(profilFotoImageView)
+        } else {
+            profilFotoImageView.setImageResource(R.drawable.kullanici)
+        }
+
+        profileViewModel.resetUpdateState()
+    }
+
     private fun guncellemeyiBaslat() {
         val yeniKullaniciAdi = editKullaniciAdi.text?.toString()?.trim().orEmpty()
+        val yeniAd = editAd.text?.toString()?.trim().orEmpty()
+        val yeniSoyad = editSoyad.text?.toString()?.trim().orEmpty()
         val yeniBio = editBio.text?.toString()?.trim().orEmpty()
 
         inputLayoutKullaniciAdi.error = null
+        inputLayoutAd.error = null
+        inputLayoutSoyad.error = null
+
+        var hasError = false
 
         if (yeniKullaniciAdi.isBlank()) {
             inputLayoutKullaniciAdi.error = "Kullanıcı adı boş bırakılamaz."
-            return
+            hasError = true
         }
 
+        if (yeniAd.isBlank()) {
+            inputLayoutAd.error = "Ad boş bırakılamaz."
+            hasError = true
+        }
+
+        if (yeniSoyad.isBlank()) {
+            inputLayoutSoyad.error = "Soyad boş bırakılamaz."
+            hasError = true
+        }
+
+        if (hasError) return
+
+        setLoadingState(true)
         profileViewModel.tumProfilBilgileriniGuncelle(
             yeniKullaniciAdi = yeniKullaniciAdi,
+            yeniAd = yeniAd,
+            yeniSoyad = yeniSoyad,
             yeniHakkinda = yeniBio,
             yeniResimUri = selectedImageUri,
             currentUserId = currentUserId
@@ -187,21 +246,7 @@ class EditProfileFragment : Fragment() {
     }
 
     private fun setLoadingState(isLoading: Boolean) {
-        if (isLoading) {
-           // progressBarEdit.visibility = View.VISIBLE
-            kaydetButonu.isEnabled = false
-            editKullaniciAdi.isEnabled = false
-            editBio.isEnabled = false
-            btnCameraBadge.isEnabled = false
-            fotoDegistirText.isEnabled = false
-        } else {
-           // progressBarEdit.visibility = View.GONE
-            kaydetButonu.isEnabled = true
-            editKullaniciAdi.isEnabled = true
-            editBio.isEnabled = true
-            btnCameraBadge.isEnabled = true
-            fotoDegistirText.isEnabled = true
-        }
+        loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
     private fun klavyeyiKapat() {

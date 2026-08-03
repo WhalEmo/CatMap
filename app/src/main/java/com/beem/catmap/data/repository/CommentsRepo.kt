@@ -137,18 +137,32 @@ class CommentsRepo {
 
     suspend fun deleteComment(catId: String, yorumId: String): Boolean {
         return try {
-            val repliesSnapshot = db.collection("cats").document(catId)
-                .collection("yorumlar").document(yorumId)
-                .collection("yanitlar").get().await()
+            val commentRef = db.collection("cats")
+                .document(catId)
+                .collection("yorumlar")
+                .document(yorumId)
+
+            val repliesSnapshot = commentRef
+                .collection("yanitlar")
+                .get()
+                .await()
+
+            val likesSnapshot = commentRef
+                .collection("begenenler")
+                .get()
+                .await()
+
+            val batch = db.batch()
 
             for (doc in repliesSnapshot.documents) {
-                doc.reference.delete().await()
+                batch.delete(doc.reference)
             }
 
-            db.collection("cats").document(catId)
-                .collection("yorumlar").document(yorumId)
-                .delete()
-                .await()
+            for (doc in likesSnapshot.documents) {
+                batch.delete(doc.reference)
+            }
+            batch.delete(commentRef)
+            batch.commit().await()
             true
         } catch (e: Exception) {
             false

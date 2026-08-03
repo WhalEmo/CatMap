@@ -47,7 +47,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     private val profileCache = LruCache<String, ProfilePostCacheData>(3)
 
-    private val PAGE_SIZE = 12
+    private val PAGE_SIZE = 10
     var isLoadingMore = false
 
     val isLastPage: Boolean
@@ -236,23 +236,32 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                         kediID = kediId,
                         tarih = yeniGonderi.tarih
                     )
-
                     val cachedData = profileCache.get(userId)
-
                     if (cachedData != null) {
-                        val updatedPosts = listOf(yeniGonderi) + cachedData.posts
                         val updatedIdList = listOf(yeniKediItem) + cachedData.idList
+                        val firstPageIds = updatedIdList.take(PAGE_SIZE)
+                        repository.getGonderiDetaylariByIds(firstPageIds)
+                            .onSuccess { yeniListe ->
+                                val isLast = firstPageIds.size >= updatedIdList.size
+                                saveToCache(
+                                    userId = userId,
+                                    posts = yeniListe,
+                                    idList = updatedIdList,
+                                    offset = firstPageIds.size,
+                                    isLastPage = isLast
+                                )
+                                _gonderiSayisi.value = updatedIdList.size
 
-                        if (userId == UserSession.userId) {
-                            userManager.updateGonderiSayisi(updatedIdList.size.toLong())
-                        }
+                                _gonderilerState.value =
+                                    UiState.Success(yeniListe)
 
-                        val newOffset = cachedData.offset + 1
-                        saveToCache(userId, updatedPosts, updatedIdList, newOffset, cachedData.isLastPage)
-
-                        _gonderiSayisi.value = updatedIdList.size
-                        _gonderilerState.value = UiState.Success(updatedPosts)
-                    } else {
+                                if(userId == UserSession.userId){ userManager.updateGonderiSayisi(updatedIdList.size.toLong()) }
+                            }
+                            .onFailure {
+                                _islemSonucu.emit(UiState.Error("Gönderi yenilenemedi"))
+                            }
+                    }
+                    else {
                         gonderileriGetir(userId,true)
                     }
 
