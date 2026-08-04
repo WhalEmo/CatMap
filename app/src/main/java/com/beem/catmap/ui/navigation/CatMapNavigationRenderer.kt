@@ -6,11 +6,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.R
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class CatMapNavigationRenderer(
     private val activity: AppCompatActivity,
@@ -22,10 +25,10 @@ class CatMapNavigationRenderer(
         activity.lifecycle.addObserver(this)
     }
 
-    override fun onStart(owner: LifecycleOwner) {
-        SmartNavigationEngine.navigationState
-            .onEach { state ->
-                if (state is NavigationState.Active) {
+    override fun onCreate(owner: LifecycleOwner) {
+        activity.lifecycleScope.launch {
+            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SmartNavigationEngine.navigationEvents.collect { state ->
                     render(
                         targetScreen = state.screen,
                         trigger = state.trigger,
@@ -34,12 +37,15 @@ class CatMapNavigationRenderer(
                     )
                 }
             }
-            .launchIn(activity.lifecycleScope)
+        }
     }
 
 
     private fun render(targetScreen: Screen, trigger: NavigationTrigger, newArgs: Bundle, targetScreenId: String) {
         val fm = activity.supportFragmentManager
+
+        if (fm.isStateSaved) return
+
         val transaction = fm.beginTransaction()
 
         val oldScreen = SmartNavigationEngine.getOldScreen() ?: SmartNavigationEngine.getCurrentScreen()

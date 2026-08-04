@@ -13,13 +13,6 @@ fun Fragment.handleBackPressWithEngine() {
     })
 }
 
-fun setupFragment(fragment: Fragment): Fragment{
-    val args = SmartNavigationEngine.consumeArguments()
-    args?.let {
-        fragment.arguments = args
-    }
-    return fragment
-}
 
 fun Fragment.fragmentLog(durum: String) {
     val tagStr = this.tag ?: "TAG_YOK"
