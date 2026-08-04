@@ -2,6 +2,7 @@ package com.beem.catmap.ui.auth
 
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
@@ -104,7 +105,11 @@ class AuthFragment : Fragment() {
         val username = loginBinding.usernameEditText.text.toString().trim()
         val password = loginBinding.passwordEditText.text.toString().trim()
 
+        Log.d("AUTH_DEBUG", "--------------------------------------------------")
+        Log.d("AUTH_DEBUG", ">>> Giriş denemesi başladı. Kullanıcı Adı: '$username'")
+
         if (username.isEmpty() || password.isEmpty()) {
+            Log.w("AUTH_DEBUG", "HATA: Kullanıcı adı veya şifre boş bırakıldı.")
             uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun", 1000)
             return
         }
@@ -112,35 +117,67 @@ class AuthFragment : Fragment() {
         uyariMesaji.YuklemeDurum("Giriş Yapılıyor...")
         val user = Kullanici(username, password)
 
+        Log.d("AUTH_DEBUG", "Firestore 'users' koleksiyonunda 'KullaniciAdi == $username' sorgusu atılıyor...")
+
         db.collection("users")
             .whereEqualTo("KullaniciAdi", username)
+            .limit(1)
             .get()
             .addOnSuccessListener { query ->
-                if (!isAdded) return@addOnSuccessListener
+                Log.d("AUTH_DEBUG", "Firestore yanıt verdi. Bulunan doküman sayısı: ${query.size()}")
+
+                if (!isAdded) {
+                    Log.w("AUTH_DEBUG", "UYARI: Fragment (isAdded = false) durumunda, işlem iptal edildi.")
+                    return@addOnSuccessListener
+                }
 
                 if (query.isEmpty) {
+                    Log.e("AUTH_DEBUG", "HATA: Firestore'da '$username' kullanıcı adına sahip doküman BULUNAMADI.")
                     uyariMesaji.BasarisizDurum("Kullanıcı adı bulunamadı!", 1000)
                     return@addOnSuccessListener
                 }
 
                 val doc = query.documents[0]
+                val emailFromDb = doc.getString("Email")
+
+                Log.d("AUTH_DEBUG", "Kullanıcı Firestore'da bulundu! Doc ID (UID): ${doc.id} | Email: $emailFromDb")
+
                 user.ad = doc.getString("Ad")
                 user.soyad = doc.getString("Soyad")
-                user.email = doc.getString("Email")
-                // Doküman ID'si zaten Auth UID ile aynıdır
+                user.email = emailFromDb
                 user.setID(doc.id)
+
+                if (user.email.isNullOrEmpty()) {
+                    Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore'dan 'Email' alanı boş veya null geldi!")
+                    uyariMesaji.BasarisizDurum("Kullanıcı mail bilgisi eksik!", 1000)
+                    return@addOnSuccessListener
+                }
+
+                Log.d("AUTH_DEBUG", "Firebase Auth'a mail ve şifre gönderiliyor... (Email: ${user.email})")
 
                 val ynt = DogrulamaKodYonetici()
                 ynt.girisYap(user.email, user.sifre) { basarili ->
                     if (basarili) {
+                        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+                        Log.d("AUTH_DEBUG", ">>> GİRİŞ BAŞARILI! Firebase Auth Current User UID: $currentUid")
+
                         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                         CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
                         saveUserLocallyAndNavigate(user)
                         uyariMesaji.BasariliDurum("Giriş Başarılı...", 1000)
                     } else {
-                        uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
+                        Log.e("AUTH_DEBUG", "HATA: Firebase Auth maile/şifreye onay vermedi! (Giriş Başarısız)")
+                        uyariMesaji.BasarisizDurum("Şifre hatalı veya giriş başarısız...", 1000)
                     }
+                    Log.d("AUTH_DEBUG", "--------------------------------------------------")
                 }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore sorgusu tamamen FAILED oldu!", exception)
+                if (isAdded) {
+                    uyariMesaji.BasarisizDurum("Bağlantı hatası oluştu!", 1000)
+                }
+                Log.d("AUTH_DEBUG", "--------------------------------------------------")
             }
     }
 
