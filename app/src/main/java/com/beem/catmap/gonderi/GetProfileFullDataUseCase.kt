@@ -12,11 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-
 class GetProfileFullDataUseCase(
     private val profileRepository: ProfileRepository,
-    private val postRepository: PostRepository,
-    private val followRepository: FollowRepository
+    private val postRepository: PostRepository
 ) {
     suspend operator fun invoke(
         targetUserId: String,
@@ -29,57 +27,38 @@ class GetProfileFullDataUseCase(
         try {
             val isSelf = (targetUserId == UserSession.userId)
 
-            val result: Result<FullProfileData> = coroutineScope {
-                // 1. Profil Bilgilerini Async Çek
+            coroutineScope {
                 val profileDeferred = async {
                     profileRepository.getUserProfile(targetUserId, forceRefresh)
                 }
 
-                // 2. Post Bilgilerini Async Çek
                 val postsDeferred = async {
                     postRepository.getUserPosts(targetUserId, forceRefresh)
                 }
 
-                // 3. Takip/Takipçi Sayılarını Async Çek
-                val followCountsDeferred = async {
-                    followRepository.fetchAndCacheFollowCounts(
-                        userId = targetUserId,
-                        isMyProfile = isSelf,
-                        forceRefresh = forceRefresh
-                    )
-                }
-
-                // Tüm async işlemlerin tamamlanmasını bekle
                 val profileState = profileDeferred.await()
                 val postsResult = postsDeferred.await()
-                val followCountsResult = followCountsDeferred.await()
 
-                // Profil Verisini Doğrula
                 val profileData = (profileState as? UiState.Success)?.data
                     ?: return@coroutineScope Result.failure(
                         Exception((profileState as? UiState.Error)?.message ?: "Profil yüklenemedi.")
                     )
 
-                // Post Verisini Doğrula (Ağ hatası alsa bile boş liste ile devam etsin, ekran çökmesin)
                 val postsCache = postsResult.getOrElse {
                     ProfilePostCacheData(emptyList(), emptyList(), 0, true)
                 }
-
-                // Takip Sayılarını Doğrula
-                val followCounts = followCountsResult.getOrDefault(FollowCounts(0L, 0L))
 
                 Result.success(
                     FullProfileData(
                         profile = profileData,
                         postsCache = postsCache,
-                        followerCount = followCounts.followerCount,
-                        followingCount = followCounts.followingCount,
-                        isSelfProfile = isSelf,
+                        followerCount = profileData.takipciSayisi,
+                        followingCount = profileData.takipEdilenSayisi,
+                        postCount = profileData.gonderiSayisi,
+                        isSelfProfile = isSelf
                     )
                 )
             }
-
-            result
         } catch (e: Exception) {
             Result.failure(e)
         }

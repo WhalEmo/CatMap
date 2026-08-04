@@ -124,10 +124,16 @@ class AuthFragment : Fragment() {
                 }
 
                 val doc = query.documents[0]
+                user.kullaniciAdi = doc.getString("KullaniciAdi") ?: username // <-- EKLENDİ
                 user.ad = doc.getString("Ad")
                 user.soyad = doc.getString("Soyad")
                 user.email = doc.getString("Email")
-                // Doküman ID'si zaten Auth UID ile aynıdır
+                user.fotoUrl = doc.getString("profilFotoUrl")
+                user.biyografi = doc.getString("Hakkinda")
+                user.takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
+                user.takipciSayisi = doc.getLong("takipciSayisi")
+                user.gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
+
                 user.setID(doc.id)
 
                 val ynt = DogrulamaKodYonetici()

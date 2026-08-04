@@ -17,13 +17,10 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: ProfileRepository = ProfileRepository(application)
-    private val postRepository = PostRepository
-    private val followRepository = FollowRepository(application)
-
+    private val postRepository :PostRepository = PostRepository(application)
     private val getProfileFullDataUseCase = GetProfileFullDataUseCase(
         profileRepository = repository,
         postRepository = postRepository,
-        followRepository = followRepository
     )
 
     // Artık Tek Kaynak (Single Source of Truth) Olarak _fullProfileState Kullanıyoruz
@@ -120,7 +117,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                         ad = result.newAd,
                         soyad = result.newSoyad,
                         fotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl,
-                        hakkinda = result.newHakkinda
+                        hakkinda = result.newHakkinda,
                     )
 
                     _fullProfileState.value = UiState.Success(

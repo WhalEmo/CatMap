@@ -26,8 +26,7 @@ import kotlinx.coroutines.launch
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: PostRepository = PostRepository
-    private val userManager = CurrentUserManager.getInstance(application)
+    private val repository: PostRepository = PostRepository(application)
 
     private val _uiState = MutableStateFlow(ProfilePostUiState())
     val uiState: StateFlow<ProfilePostUiState> = _uiState.asStateFlow()
@@ -54,10 +53,10 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 when (event) {
                     is ProfileEvent.PostAdded -> {
                         Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderileriGetir çağrılıyor...")
-                        gonderileriGetir(UserSession.userId, forceRefresh = false)
+                        gonderileriGetir(UserSession.userId, forceRefresh = true)
                     }
                     is ProfileEvent.PostDeleted -> {
-                        gonderileriGetir(UserSession.userId, forceRefresh = false)
+                        gonderileriGetir(UserSession.userId, forceRefresh = true)
                     }
                     else -> {}
                 }
@@ -69,38 +68,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         _yukleyenID.value = id
     }
 
-    fun profilDurumunuHazirla(targetUserId: String) {
-        setYukleyenID(targetUserId)
-        val isSelf = (targetUserId == UserSession.userId)
-
-        // Veriyi ViewModel önbelleği yerine tek kaynak olan Repository'den istiyoruz
-        val cached = repository.getCachedProfileData(targetUserId)
-        if (cached != null) {
-            Log.d("CACHED", "Cache dolu geldi: ${cached.idList.size}")
-            _uiState.update {
-                it.copy(
-                    posts = cached.posts,
-                    postCount = cached.idList.size,
-                    isEmpty = cached.posts.isEmpty(),
-                    isLoading = false,
-                    isAccessDenied = false
-                )
-            }
-            if (isSelf) {
-                userManager.updateGonderiSayisi(cached.idList.size.toLong())
-            }
-        } else {
-            _uiState.update {
-                it.copy(
-                    posts = emptyList(),
-                    postCount = 0,
-                    isEmpty = true,
-                    isLoading = false,
-                    isAccessDenied = false
-                )
-            }
-        }
-    }
 
     fun gonderileriGetir(userId: String, isFollowing: Boolean = true, forceRefresh: Boolean = false) {
         if (userId.isBlank()) return
@@ -111,14 +78,9 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             repository.getUserPosts(userId, forceRefresh)
                 .onSuccess { cacheData ->
-                    if (userId == UserSession.userId) {
-                        userManager.updateGonderiSayisi(cacheData.idList.size.toLong())
-                    }
-
                     _uiState.update {
                         it.copy(
                             posts = cacheData.posts,
-                            postCount = cacheData.idList.size,
                             isEmpty = cacheData.posts.isEmpty(),
                             isLoading = false,
                             isAccessDenied = false
@@ -145,7 +107,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             repository.dahaFazlaGonderiGetir(userId)
                 .onSuccess { cacheData ->
                     _uiState.update {
-                        it.copy(posts = cacheData.posts, isMoreLoading = false)
+                        it.copy(
+                            posts = cacheData.posts,
+                            isEmpty = cacheData.posts.isEmpty(),
+                            isMoreLoading = false
+                        )
                     }
                     isLoadingMore = false
                 }
@@ -203,23 +169,17 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // PostViewModel.kt içerisine eklenecek metot:
     fun setupFromFullProfile(userId: String, cacheData: ProfilePostCacheData) {
         setYukleyenID(userId)
 
-        // UseCase'den hazır gelen post verisini UI State'e aktar
         _uiState.update {
             it.copy(
                 posts = cacheData.posts,
-                postCount = cacheData.idList.size,
+
                 isEmpty = cacheData.posts.isEmpty(),
                 isLoading = false,
                 isAccessDenied = false
             )
-        }
-
-        if (userId == UserSession.userId) {
-            userManager.updateGonderiSayisi(cacheData.idList.size.toLong())
         }
     }
 }

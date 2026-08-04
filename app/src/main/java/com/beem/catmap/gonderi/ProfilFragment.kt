@@ -348,7 +348,6 @@ class ProfilFragment : Fragment() {
                 // 5. Post RecyclerView ve UI State Dinleyici
                 launch {
                     viewModel.uiState.collect { state ->
-                        gonderiSayisiTextView.text = state.postCount.toString()
 
                         if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
                             progressBar.visibility = View.VISIBLE
@@ -371,9 +370,7 @@ class ProfilFragment : Fragment() {
                             } else {
                                 tvEmpty.visibility = View.GONE
                                 recyclerView.visibility = View.VISIBLE
-                                gonderiAdapter.submitList(state.posts) {
-                                    recyclerView.scrollToPosition(0)
-                                }
+                                gonderiAdapter.submitList(state.posts)
                             }
                         }
                     }
@@ -386,6 +383,8 @@ class ProfilFragment : Fragment() {
         KullaniciAdi.text = profileData.kullaniciAdi
         tvAd.text = profileData.ad
         bioTextView.text = profileData.hakkinda
+
+        gonderiSayisiTextView.text = profileData.gonderiSayisi.toString()
 
         Glide.with(requireContext())
             .load(profileData.fotoUrl)

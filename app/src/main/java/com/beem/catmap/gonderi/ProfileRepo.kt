@@ -40,7 +40,7 @@ class ProfileRepository(private val context: Context) {
         // 1. Kendi profilimiz ise ve yenileme istenmiyorsa CurrentUserManager'dan al
         if (isMyProfile && !forceRefresh) {
             val cachedUser = userManager.getCurrentUser()
-            val cachedBiyografi = userManager.profileState.value.biyografi ?: ""
+            val profileState = userManager.profileState.value
 
             val localProfile = UserProfileData(
                 userId = userId,
@@ -48,7 +48,10 @@ class ProfileRepository(private val context: Context) {
                 ad = cachedUser.getAd() ?: "",
                 soyad = cachedUser.getSoyad(),
                 fotoUrl = cachedUser.getFotoUrl(),
-                hakkinda = cachedBiyografi
+                hakkinda = profileState.biyografi ?: "",
+                takipciSayisi = profileState.takipciSayisi,
+                takipEdilenSayisi = profileState.takipEdilenSayisi,
+                gonderiSayisi = profileState.gonderiSayisi
             )
 
             if (localProfile.kullaniciAdi.isNotBlank()) {
@@ -64,7 +67,7 @@ class ProfileRepository(private val context: Context) {
             }
         }
 
-        // 3. Önbellekte yoksa Firestore'dan çek ve önbellekle
+        // 3. Firestore'dan TEK SEFERDE çek ve önbellekle
         return fetchAndCacheFromFirestore(userId, isMyProfile)
     }
 
@@ -82,23 +85,34 @@ class ProfileRepository(private val context: Context) {
                 val fotoUrl = snapshot.getString("profilFotoUrl")
                 val hakkinda = snapshot.getString("Hakkinda") ?: ""
 
+                // Sayıları TEK BİR belgeden alıyoruz
+                val takipci = snapshot.getLong("takipciSayisi") ?: 0L
+                val takipEdilen = snapshot.getLong("TakipEdilenSayisi") ?: 0L
+                val gonderi = snapshot.getLong("gonderiSayisi") ?: 0L
+
                 val profileData = UserProfileData(
                     userId = userId,
                     kullaniciAdi = kullaniciAdi,
                     ad = ad,
                     soyad = soyad,
                     fotoUrl = fotoUrl,
-                    hakkinda = hakkinda
+                    hakkinda = hakkinda,
+                    takipciSayisi = takipci,
+                    takipEdilenSayisi = takipEdilen,
+                    gonderiSayisi = gonderi
                 )
 
                 // Önbellek güncellemeleri
                 if (isMyProfile) {
-                    updateLocalUserManager(
-                        kullaniciAdi = kullaniciAdi,
+                    userManager.updateProfileDetails(
                         ad = ad,
                         soyad = soyad,
-                        fotoUrl = fotoUrl,
-                        hakkinda = hakkinda
+                        kullaniciAdi = kullaniciAdi,
+                        takipci = takipci,
+                        takipEdilen = takipEdilen,
+                        gonderiSayisi = gonderi,
+                        biyografi = hakkinda,
+                        fotoUrl = fotoUrl
                     )
                 } else {
                     otherUserProfileCache.put(userId, profileData)

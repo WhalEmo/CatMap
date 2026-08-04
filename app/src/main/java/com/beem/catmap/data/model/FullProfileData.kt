@@ -8,5 +8,6 @@ data class FullProfileData(
     val postsCache: ProfilePostCacheData,
     val followerCount: Long,
     val followingCount: Long,
+    val postCount:Long,
     val isSelfProfile: Boolean,
 )
