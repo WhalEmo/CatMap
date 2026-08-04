@@ -2,21 +2,24 @@ package com.beem.catmap.ui.navigation
 
 import android.os.Bundle
 import android.util.Log
+import kotlinx.coroutines.flow.MutableSharedFlow
 import java.util.Stack
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object SmartNavigationEngine {
 
-    private val _navigationState = MutableStateFlow<NavigationState>(NavigationState.Initial)
-    val navigationState: StateFlow<NavigationState> = _navigationState.asStateFlow()
+    private val _navigationEvents = MutableSharedFlow<NavigationState.Active>(
+        replay = 1,
+        extraBufferCapacity = 64
+    )
+    val navigationEvents: SharedFlow<NavigationState.Active> = _navigationEvents.asSharedFlow()
 
-    private val backStack = Stack<Pair<Screen, String>>()
+    private val backStack = ArrayDeque<NavBackStackEntry>()
     private var uiBridge: CatMapNavigationEngine? = null
-
-    private var currentArguments: Bundle? = null
-
 
     @get:JvmName("getInternalCurrentScreen")
     @JvmStatic
@@ -35,15 +38,16 @@ object SmartNavigationEngine {
         this.uiBridge = uiBridge
         backStack.clear()
         val initialId = generateScreenId(initialScreen)
-        backStack.push(Pair(initialScreen, initialId))
+        val initialEntry = NavBackStackEntry(
+            screenId = initialId,
+            screen = initialScreen,
+            args = Bundle(),
+            trigger = NavigationTrigger.INITIAL
+        )
+        backStack.addLast(initialEntry)
         currentScreen = initialScreen
         currentNode = initialScreen
-        emitCurrentState(
-            screen = initialScreen,
-            trigger = NavigationTrigger.INITIAL,
-            screenId = initialId,
-            args = Bundle()
-        )
+        emitCurrentState(initialEntry)
     }
 
     @JvmStatic
@@ -60,30 +64,28 @@ object SmartNavigationEngine {
     fun navigateTo(targetScreen: Screen, args: Bundle? = null, key: String? = null) {
         val targetScreenId = generateScreenId(targetScreen, key)
 
-        if (backStack.isNotEmpty() && backStack.peek().second == targetScreenId && args == null) return
+        if (backStack.isNotEmpty() && backStack.last().screenId == targetScreenId && args == null) return
 
         oldScreen = currentScreen
 
-        currentArguments = args
-
-        val targetScreenWrapper = Pair(targetScreen, targetScreenId)
+        val newEntry = NavBackStackEntry(
+            screen = targetScreen,
+            screenId = targetScreenId,
+            args = args ?: Bundle(),
+            trigger = NavigationTrigger.FORWARD
+        )
 
         if (targetScreen.isNode){
             backStack.clear()
-            backStack.push(targetScreenWrapper)
+            backStack.addLast(newEntry)
         } else {
-            backStack.push(targetScreenWrapper)
+            backStack.addLast(newEntry)
         }
 
 
         currentScreen = targetScreen
         currentNode = if(currentScreen.isNode) currentScreen else currentNode
-        emitCurrentState(
-            screen = targetScreen,
-            trigger = NavigationTrigger.FORWARD,
-            screenId = targetScreenId,
-            args = Bundle()
-        )
+        emitCurrentState(newEntry)
     }
 
     @JvmStatic
@@ -99,28 +101,41 @@ object SmartNavigationEngine {
         }
 
         if (backStack.size > 1) {
-            backStack.pop()
-            val previousPair = backStack.peek()
-            val previousScreen = previousPair.first
-            val previousKey = previousPair.second
-            if(previousScreen.isNode){
+            backStack.removeLast()
+            val previousEntry = backStack.last().copy(trigger = NavigationTrigger.BACKWARD)
+
+            if(previousEntry.screen.isNode){
                 backStack.clear()
-                backStack.push(previousPair)
-                currentNode = previousScreen
+                backStack.addLast(previousEntry)
+                currentNode = previousEntry.screen
             }
             oldScreen = currentScreen
-            currentScreen = previousScreen
-            emitCurrentState(previousScreen, NavigationTrigger.BACKWARD, Bundle(), previousKey)
+            currentScreen = previousEntry.screen
+            emitCurrentState(previousEntry)
         } else {
-            val defaultId = generateScreenId(currentNode, null)
-            backStack.clear()
-            backStack.push(Pair(currentNode, defaultId))
-            oldScreen = currentScreen
-            currentScreen = currentNode
-            emitCurrentState(currentScreen, NavigationTrigger.INITIAL, Bundle(), defaultId)
 
-            Log.d("NAV_BACK_DEDEKTOR", "Kaptan: Geri gidecek yer kalmadı, uygulamadan çıkılıyor.")
-            onSystemExit?.invoke()
+            if (currentScreen == Screen.MAP) {
+                Log.d("NAV_ENGINE", "Kaptan: Haritadayız ve yığın boş. Çıkış diyalogu tetiklenebilir.")
+                onSystemExit?.invoke()
+
+            } else {
+                Log.d("NAV_ENGINE", "Kaptan: Son elemandan geri basıldı, Haritaya (MAP) dönülüyor.")
+
+                backStack.clear()
+                val mapEntry = NavBackStackEntry(
+                    screen = Screen.MAP,
+                    screenId = generateScreenId(Screen.MAP, null),
+                    args = Bundle(),
+                    trigger = NavigationTrigger.BACKWARD
+                )
+                backStack.addLast(mapEntry)
+
+                oldScreen = currentScreen
+                currentScreen = Screen.MAP
+                currentNode = Screen.MAP
+
+                emitCurrentState(mapEntry)
+            }
         }
 
         val stackAfter = backStack.joinToString(separator = " -> ") { printWrapper(it) }
@@ -130,28 +145,18 @@ object SmartNavigationEngine {
         Log.d("NAV_BACK_DEDEKTOR", "---------------------------")
     }
 
-    private fun emitCurrentState(
-        screen: Screen,
-        trigger: NavigationTrigger,
-        args: Bundle,
-        screenId: String
-    ) {
-        uiBridge?.updateUISilently(screen)
-        _navigationState.value = NavigationState
-            .Active(
-                screen = screen,
-                trigger = trigger,
-                args = args,
-                screenId = screenId
+    private fun emitCurrentState(entry: NavBackStackEntry) {
+        uiBridge?.updateUISilently(entry.screen)
+        _navigationEvents.tryEmit(
+            NavigationState.Active(
+                screen = entry.screen,
+                trigger = entry.trigger,
+                args = entry.args,
+                screenId = entry.screenId
             )
+        )
     }
 
-    @JvmStatic
-    fun consumeArguments(): Bundle? {
-        val args = currentArguments
-        currentArguments = null
-        return args
-    }
 
     @JvmStatic
     fun generateScreenId(screen: Screen, key: String? = null): String{
@@ -168,7 +173,7 @@ object SmartNavigationEngine {
         return oldScreen
     }
 
-    private fun printWrapper(wrapper: Pair<Screen, String>): String{
-        return "[${wrapper.first.name} key: ${wrapper.second}]"
+    private fun printWrapper(wrapper: NavBackStackEntry): String{
+        return "[--${wrapper.screenId}]"
     }
 }
