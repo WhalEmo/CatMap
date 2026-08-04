@@ -24,7 +24,17 @@ object PostRepository {
     private val catsCollection = db.collection("cats")
 
     private val profileCache = LruCache<String, ProfilePostCacheData>(5)
-    private val PAGE_SIZE = 10
+    private const val PAGE_SIZE = 10
+
+    // Önbellekte yer alan veriyi ViewModel'a hazır sunmak için yardımcı metot
+    fun getCachedProfileData(userId: String): ProfilePostCacheData? {
+        return profileCache.get(userId)
+    }
+
+    // İlgili kullanıcının sayfalama sonuna ulaşıp ulaşmadığını döndürür
+    fun isLastPage(userId: String): Boolean {
+        return profileCache.get(userId)?.isLastPage ?: false
+    }
 
     // Kullanıcının profilindeki tüm kedi ID ve tarihlerini 1 KERE çeker
     suspend fun getKullaniciGonderiIdListesi(userId: String): Result<List<GonderilenKediItem>> {
@@ -84,7 +94,6 @@ object PostRepository {
                 return@withContext Result.success(emptyCache)
             }
 
-            // 2. İlk batch'i çek
             val firstBatch = fullIdList.take(PAGE_SIZE)
             val isLast = firstBatch.size >= fullIdList.size
             val gonderiler = fetchGonderilerByIdsInternal(firstBatch)

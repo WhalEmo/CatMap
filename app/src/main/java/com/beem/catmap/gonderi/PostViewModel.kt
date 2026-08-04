@@ -2,14 +2,11 @@ package com.beem.catmap.gonderi
 
 import android.app.Application
 import android.util.Log
-import androidx.collection.LruCache
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.models.Gonderi
-import com.beem.catmap.models.GonderilenKediItem
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -38,16 +35,13 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _haritaSilindiEvent = MutableSharedFlow<Boolean>(replay = 0)
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
 
-    private val _yukleyenID = MutableStateFlow<String>("")
+    private val _yukleyenID = MutableStateFlow("")
     val yukleyenID: StateFlow<String> = _yukleyenID.asStateFlow()
 
-    private val profileCache = LruCache<String, ProfilePostCacheData>(3)
-
-    private val PAGE_SIZE = 10
     var isLoadingMore = false
 
     val isLastPage: Boolean
-        get() = profileCache.get(_yukleyenID.value)?.isLastPage ?: false
+        get() = repository.isLastPage(_yukleyenID.value)
 
     init {
         observeProfileEvents()
@@ -59,7 +53,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d("POST_FLOW_DEBUG", "PostViewModel: Eventbus'tan Dinlendi -> $event")
                 when (event) {
                     is ProfileEvent.PostAdded -> {
-                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderiKaydet() çağrılıyor...")
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderileriGetir çağrılıyor...")
                         gonderileriGetir(UserSession.userId, forceRefresh = false)
                     }
                     is ProfileEvent.PostDeleted -> {
@@ -79,7 +73,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         setYukleyenID(targetUserId)
         val isSelf = (targetUserId == UserSession.userId)
 
-        val cached = profileCache.get(targetUserId)
+        // Veriyi ViewModel önbelleği yerine tek kaynak olan Repository'den istiyoruz
+        val cached = repository.getCachedProfileData(targetUserId)
         if (cached != null) {
             Log.d("CACHED", "Cache dolu geldi: ${cached.idList.size}")
             _uiState.update {
@@ -179,7 +174,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun haritadanVeGonderilerdenSil(userId: String, kediId: String) {
         if (kediId.isBlank()) return
         viewModelScope.launch {
@@ -209,4 +203,23 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // PostViewModel.kt içerisine eklenecek metot:
+    fun setupFromFullProfile(userId: String, cacheData: ProfilePostCacheData) {
+        setYukleyenID(userId)
+
+        // UseCase'den hazır gelen post verisini UI State'e aktar
+        _uiState.update {
+            it.copy(
+                posts = cacheData.posts,
+                postCount = cacheData.idList.size,
+                isEmpty = cacheData.posts.isEmpty(),
+                isLoading = false,
+                isAccessDenied = false
+            )
+        }
+
+        if (userId == UserSession.userId) {
+            userManager.updateGonderiSayisi(cacheData.idList.size.toLong())
+        }
+    }
 }

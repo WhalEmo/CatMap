@@ -12,20 +12,16 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
-import com.beem.catmap.ui.manager.CatEventBus
-import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -89,10 +85,10 @@ class EditProfileFragment : Fragment() {
         observeViewModel()
 
         if (currentUserId.isNotBlank()) {
-            profileViewModel.profilBilgileriniYukle(currentUserId)
+            // Tek kaynak UseCase üzerinden tüm verileri yüklüyoruz
+            profileViewModel.tumProfilVerileriniYukle(currentUserId, forceRefresh = false)
         }
     }
-
 
     private fun initViews(view: View) {
         btnBack = view.findViewById(R.id.btnBack)
@@ -139,17 +135,21 @@ class EditProfileFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+                // 1. Profil İlk Bilgilerini fullProfileState Üzerinden Dinle
                 launch {
-                    profileViewModel.userProfile.collect { state ->
+                    profileViewModel.fullProfileState.collect { state ->
                         if (state is UiState.Success) {
-                            val data = state.data
+                            val data = state.data.profile
+
+                            // Fotoğraf henüz galeriden seçilmediyse Firestore'daki güncel fotoğrafı bas
                             if (selectedImageUri == null && !data.fotoUrl.isNullOrBlank()) {
                                 Glide.with(this@EditProfileFragment)
                                     .load(data.fotoUrl)
                                     .placeholder(R.drawable.kullanici)
                                     .into(profilFotoImageView)
                             }
-                            // Metinler boşsa doldur
+
+                            // Input alanları henüz doldurulmadıysa değerleri yerleştir
                             if (editKullaniciAdi.text.isNullOrBlank()) {
                                 editKullaniciAdi.setText(data.kullaniciAdi)
                             }
@@ -166,6 +166,7 @@ class EditProfileFragment : Fragment() {
                     }
                 }
 
+                // 2. Profil Güncelleme Durumunu Dinle
                 launch {
                     profileViewModel.profileUpdateState.collect { result ->
                         when (result) {
@@ -177,16 +178,19 @@ class EditProfileFragment : Fragment() {
                                 UiMessageManager.emitMessage(UiMessageState.Success("Profil başarıyla güncellendi."))
                                 profileViewModel.resetUpdateState()
 
+                                // Güncellenmiş profil verisini almak için mevcut state'i okuyoruz
+                                val currentData = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+
                                 val guncelKullanici = Kullanici(
                                     currentUserId,
                                     editKullaniciAdi.text?.toString()?.trim().orEmpty(),
                                     editAd.text?.toString()?.trim().orEmpty(),
                                     editSoyad.text?.toString()?.trim().orEmpty(),
                                     editBio.text?.toString()?.trim().orEmpty(),
-                                    selectedImageUri?.toString() ?: (profileViewModel.userProfile.value as? UiState.Success)?.data?.fotoUrl
+                                    currentData?.fotoUrl // Yüklenmiş gerçek sunucu URL'si
                                 )
 
-                                // Event ile fırlatıyoruz
+                                // EventBus ile tüm dinleyicilere fırlatıyoruz
                                 lifecycleScope.launch {
                                     ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelKullanici))
                                 }
@@ -214,10 +218,10 @@ class EditProfileFragment : Fragment() {
 
     private fun clearEditState() {
         selectedImageUri = null
-        val currentState = profileViewModel.userProfile.value
-        if (currentState is UiState.Success && !currentState.data.fotoUrl.isNullOrBlank()) {
+        val currentState = profileViewModel.fullProfileState.value
+        if (currentState is UiState.Success && !currentState.data.profile.fotoUrl.isNullOrBlank()) {
             Glide.with(this)
-                .load(currentState.data.fotoUrl)
+                .load(currentState.data.profile.fotoUrl)
                 .placeholder(R.drawable.kullanici)
                 .into(profilFotoImageView)
         } else {
