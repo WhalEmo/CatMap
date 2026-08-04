@@ -27,6 +27,7 @@ import com.beem.catmap.databinding.SifremiUnuttumBinding
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class AuthFragment : Fragment() {
@@ -126,6 +127,7 @@ class AuthFragment : Fragment() {
                 user.ad = doc.getString("Ad")
                 user.soyad = doc.getString("Soyad")
                 user.email = doc.getString("Email")
+                // Doküman ID'si zaten Auth UID ile aynıdır
                 user.setID(doc.id)
 
                 val ynt = DogrulamaKodYonetici()
@@ -206,20 +208,29 @@ class AuthFragment : Fragment() {
                                 val ynt = DogrulamaKodYonetici()
                                 ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
                                     if (basarili) {
-                                        db.collection("users")
-                                            .add(user.KullaniciData())
-                                            .addOnSuccessListener { docRef ->
-                                                if (!isAdded) return@addOnSuccessListener
+                                        // Firebase Auth'ta oluşturan kullanıcının UID'sini alıyoruz
+                                        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
 
-                                                user.setID(docRef.id)
-                                                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                                                CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
-                                                saveUserLocallyAndNavigate(user)
-                                                uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
-                                            }
-                                            .addOnFailureListener {
-                                                if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
-                                            }
+                                        if (currentUserUid != null) {
+                                            // Doküman ID'sini rastgele üretmek (.add) yerine Auth UID yaparak (.document(uid).set) kaydediyoruz
+                                            db.collection("users")
+                                                .document(currentUserUid)
+                                                .set(user.KullaniciData())
+                                                .addOnSuccessListener {
+                                                    if (!isAdded) return@addOnSuccessListener
+
+                                                    user.setID(currentUserUid)
+                                                    CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
+                                                    CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
+                                                    saveUserLocallyAndNavigate(user)
+                                                    uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
+                                                }
+                                                .addOnFailureListener {
+                                                    if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
+                                                }
+                                        } else {
+                                            if (isAdded) uyariMesaji.BasarisizDurum("Kullanıcı UID alınamadı!", 1000)
+                                        }
                                     } else {
                                         if (isAdded) Toast.makeText(requireContext(), "Email veya şifre kaydı başarısız", Toast.LENGTH_SHORT).show()
                                     }
