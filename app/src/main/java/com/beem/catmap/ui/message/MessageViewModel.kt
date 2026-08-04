@@ -1,4 +1,4 @@
-package com.beem.catmap.ui.chat
+package com.beem.catmap.ui.message
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.ChatRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.mesaj.Mesaj
 import com.beem.catmap.models.ChatMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,15 +17,15 @@ import kotlinx.coroutines.launch
 import java.util.Timer
 import java.util.TimerTask
 
-class ChatViewModel(
+class MessageViewModel(
     private val repository: ChatRepository = ChatRepository(),
     private val userRepo: UserRepository = UserRepository(),
     private val currentUserManager: CurrentUserManager,
     private val receiverId: String
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ChatUiState())
-    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(MessageUiState())
+    val uiState: StateFlow<MessageUiState> = _uiState.asStateFlow()
 
     private var chatId: String? = null
     private var typingTimer: Timer? = null
@@ -95,14 +94,28 @@ class ChatViewModel(
                         currentState.copy(messages = existingList)
                     }
                 }
+            }
+        }
+    }
 
-                val unreadIdsFromOther = incomingLatestMessages
-                    .filter { it.senderId != currentUserId && !it.isRead }
-                    .map { it.id }
+    fun markUnreadMessagesAsRead() {
+        val activeChatId = chatId ?: run {
+            Log.w("LifecycleDebug", "⚠️ markUnreadMessagesAsRead CANCELLED: chatId null!")
+            return
+        }
 
-                if (unreadIdsFromOther.isNotEmpty()) {
-                    repository.markMessagesAsReadByIds(chatId, unreadIdsFromOther)
-                }
+        val currentMessages = _uiState.value.messages
+
+        val unreadIdsFromOther = currentMessages
+            .filter { it.senderId != currentUserId && !it.isRead }
+            .map { it.id }
+
+        Log.d("LifecycleDebug", "🔍 Okunmamış mesaj taraması yapıldı. Bulunan Okunmamış ID'ler: $unreadIdsFromOther")
+
+        if (unreadIdsFromOther.isNotEmpty()) {
+            viewModelScope.launch {
+                Log.d("LifecycleDebug", "🔥 VERİTABANINDA OKUNDU YAPILIYOR! ID'ler: $unreadIdsFromOther")
+                repository.markMessagesAsReadByIds(activeChatId, unreadIdsFromOther)
             }
         }
     }

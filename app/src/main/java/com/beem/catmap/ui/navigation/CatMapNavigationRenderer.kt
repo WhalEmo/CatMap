@@ -65,6 +65,7 @@ class CatMapNavigationRenderer(
                             f.view?.clearAnimation()
                             transaction.hide(f)
                         }
+                        transaction.setMaxLifecycle(f, androidx.lifecycle.Lifecycle.State.STARTED)
                     }
                 }
             }
@@ -80,7 +81,7 @@ class CatMapNavigationRenderer(
                     }
 
                     transaction.add(containerId, newFragment, targetScreenId)
-
+                    transaction.setMaxLifecycle(newFragment, androidx.lifecycle.Lifecycle.State.RESUMED)
                     newFragment.fragmentLog("CREATE FRAGMENT")
                 }
             }
@@ -89,6 +90,7 @@ class CatMapNavigationRenderer(
                     transaction.attach(targetFragment)
                 }
                 transaction.show(targetFragment)
+                transaction.setMaxLifecycle(targetFragment, androidx.lifecycle.Lifecycle.State.RESUMED)
 
                 targetFragment.fragmentLog("CACHE FRAGMENT")
             }

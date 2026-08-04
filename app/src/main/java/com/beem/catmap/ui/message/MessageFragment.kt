@@ -1,4 +1,4 @@
-package com.beem.catmap.ui.chat
+package com.beem.catmap.ui.message
 
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -32,14 +32,13 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
 import com.beem.catmap.databinding.MesajlasmaBinding
-import com.beem.catmap.mesaj.MesajFotoGonderYonetici
 import com.beem.catmap.models.ChatMessage
-import com.beem.catmap.ui.chat.dialogs.EditMessageDialogFragment
+import com.beem.catmap.ui.message.dialogs.EditMessageDialogFragment
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class ChatFragment : Fragment() {
+class MessageFragment : Fragment() {
 
     private var _binding: MesajlasmaBinding? = null
     private val binding get() = _binding!!
@@ -48,8 +47,8 @@ class ChatFragment : Fragment() {
         arguments?.getString(ARG_RECEIVER_ID) ?: throw IllegalArgumentException("Receiver ID gerekli!")
     }
 
-    private val viewModel: ChatViewModel by viewModels {
-        ChatViewModelFactory(
+    private val viewModel: MessageViewModel by viewModels {
+        MessageViewModelFactory(
             currentUserManager = CurrentUserManager.getInstance(requireContext()),
             receiverId = receiverId
         )
@@ -163,15 +162,12 @@ class ChatFragment : Fragment() {
             layoutManager = linearLayoutManager
         }
 
-        // 🎯 SAĞA KAYDIRARAK YANITLAMA (SWIPE TO REPLY) ENTEGRASYONU
         setupSwipeToReply()
     }
 
     private fun setupSwipeToReply() {
-        // 1. Hem LEFT (Sola) hem RIGHT (Sağa) kaydırmaya izin veriyoruz
         val swipeHandler = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
-            // Dynamically allow swipe direction based on who sent the message
             override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
                 val position = viewHolder.bindingAdapterPosition
                 if (position == RecyclerView.NO_POSITION) return 0
@@ -271,17 +267,36 @@ class ChatFragment : Fragment() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        Log.d("LifecycleDebug", "⏸️ Fragment onPause() - Ekran arka plana gidiyor veya kapandı!")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("LifecycleDebug", "🛑 Fragment onStop() - Ekran artık görünmüyor!")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("LifecycleDebug", "▶️ Fragment onResume() - Ekran tam ön planda!")
+    }
+
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                Log.d("LifecycleDebug", "🟢 repeatOnLifecycle(RESUMED) Bloğuna GİRİLDİ")
+
                 viewModel.uiState.collectLatest { state ->
+                    Log.d("LifecycleDebug", "📩 uiState Emit Geldi! (Mesaj Sayısı: ${state.messages.size})")
                     renderUi(state)
+                    viewModel.markUnreadMessagesAsRead()
                 }
             }
         }
     }
 
-    private fun renderUi(state: ChatUiState) {
+    private fun renderUi(state: MessageUiState) {
         if (state.receiverName.isNotEmpty()) {
             binding.kisiAdiText.text = state.receiverName
         }
@@ -431,8 +446,8 @@ class ChatFragment : Fragment() {
     companion object {
         const val ARG_RECEIVER_ID = "arg_receiver_id"
 
-        fun newInstance(receiverId: String): ChatFragment {
-            return ChatFragment().apply {
+        fun newInstance(receiverId: String): MessageFragment {
+            return MessageFragment().apply {
                 arguments = newArgs(receiverId)
             }
         }

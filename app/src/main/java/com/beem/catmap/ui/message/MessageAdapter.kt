@@ -1,17 +1,20 @@
-package com.beem.catmap.ui.chat
+package com.beem.catmap.ui.message
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AnimationUtils
+import android.widget.GridLayout
+import android.widget.ImageView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.R
 import com.beem.catmap.databinding.MesajBinding
-import com.beem.catmap.mesaj.MesajFotoGonderYonetici
 import com.beem.catmap.models.ChatMessage
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,7 +71,7 @@ class MessageAdapter(
                 }
             }
 
-            // 3. Mesaj Türüne Göre Rendering (Pattern Matching)
+            // 3. Mesaj Türüne Göre Rendering
             when (message) {
                 is ChatMessage.Text, is ChatMessage.Reply -> {
                     val messageContent = if (message is ChatMessage.Text) message.message else (message as ChatMessage.Reply).message
@@ -98,13 +101,19 @@ class MessageAdapter(
                             if (message.isRead) R.drawable.patidolu else R.drawable.patibos
                         )
                         binding.sagplaceholder.isVisible = false
+
+                        // 🚨 Giden mesajın fotoğraflarını dinamik dolduruyoruz
+                        yukleFotograflar(context, binding.sagFotoLayout, message.photoUrls)
                     } else {
                         binding.solMesajLayout.isVisible = true
                         binding.solFotoLayout.isVisible = true
                         binding.solZaman.text = formattedTime
+
+                        // 🚨 Gelen mesajın fotoğraflarını dinamik dolduruyoruz
+                        yukleFotograflar(context, binding.solFotoLayout, message.photoUrls)
                     }
 
-                    // Fotoğraf Detayı Tıklaması
+                    // Fotoğraf Grubu Tıklaması
                     val targetLayout = if (isMyMessage) binding.sagFotoLayout else binding.solFotoLayout
                     targetLayout.setOnClickListener {
                         onPhotoClick(message.photoUrls)
@@ -121,6 +130,43 @@ class MessageAdapter(
             }
         }
 
+        /**
+         * Dynamic Photo Rendering Engine
+         * RecyclerView view recycling olaylarında eski resimlerin çakışmaması için
+         * GridLayout temizlenir ve Glide ile yeni resimler eklenir.
+         */
+        private fun yukleFotograflar(context: Context, gridLayout: GridLayout, photoUrls: List<String>) {
+            // Placeholder hariç dinamik eklenen resimleri temizle
+            gridLayout.removeAllViews()
+
+            if (photoUrls.isEmpty()) return
+
+            val sizeInDp = 140
+            val density = context.resources.displayMetrics.density
+            val sizeInPx = (sizeInDp * density).toInt()
+
+            photoUrls.forEach { url ->
+                val imageView = ImageView(context).apply {
+                    layoutParams = GridLayout.LayoutParams().apply {
+                        width = sizeInPx
+                        height = sizeInPx
+                        setMargins(6, 6, 6, 6)
+                    }
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setBackgroundResource(R.drawable.foto_background_ortak)
+                }
+
+                Glide.with(context)
+                    .load(url)
+                    .transform(RoundedCorners((12 * density).toInt()))
+                    .placeholder(R.drawable.placeholder)
+                    .error(R.drawable.placeholder)
+                    .into(imageView)
+
+                gridLayout.addView(imageView)
+            }
+        }
+
         private fun resetViews() {
             binding.solMesajLayout.isVisible = false
             binding.sagMesajLayout.isVisible = false
@@ -130,6 +176,10 @@ class MessageAdapter(
             binding.solMesajText.isVisible = false
             binding.SolcevapKutusu.isVisible = false
             binding.cevapKutusu.isVisible = false
+
+            // Grid'leri reset anında da temizliyoruz
+            binding.solFotoLayout.removeAllViews()
+            binding.sagFotoLayout.removeAllViews()
         }
 
         private fun formatTimestamp(timestamp: Long): String {
@@ -140,9 +190,6 @@ class MessageAdapter(
     }
 }
 
-/**
- * Modern ChatMessage Yapısıyla Uyumlu DiffUtil
- */
 class MessageDiffCallback : DiffUtil.ItemCallback<ChatMessage>() {
     override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
         return oldItem.id == newItem.id

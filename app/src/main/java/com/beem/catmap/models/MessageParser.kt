@@ -1,5 +1,6 @@
 package com.beem.catmap.models
 
+import android.util.Log
 import com.google.firebase.database.DataSnapshot
 
 fun DataSnapshot.toChatMessage(): ChatMessage? {
@@ -29,9 +30,15 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
         }
 
         MessageType.PHOTO -> {
-            val photoUrls = child("fotoUrlleri").children.mapNotNull {
+            val photoUrls = child("fotoUrlListesi").children.mapNotNull {
                 it.getValue(String::class.java)
             }
+
+            Log.d("ChatDebug", "----------------------------------------")
+            Log.d("ChatDebug", "📷 Fotoğraf Mesajı Bulundu! ID: $id")
+            Log.d("ChatDebug", "🔹 Çekilen URL Listesi: $photoUrls")
+            Log.d("ChatDebug", "----------------------------------------")
+
             ChatMessage.Photo(
                 id = id,
                 senderId = senderId,

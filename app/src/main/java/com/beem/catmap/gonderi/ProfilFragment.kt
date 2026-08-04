@@ -32,6 +32,7 @@ import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
@@ -187,7 +188,11 @@ class ProfilFragment : Fragment() {
             }
         }
 
-        sohbetButon.setOnClickListener { }
+        sohbetButon.setOnClickListener {
+            targetUserId?.let {
+                NavigationHelper.navigateToChat(it)
+            }
+        }
 
         profiliDuzenleTiklandi.setOnClickListener {
             SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE)

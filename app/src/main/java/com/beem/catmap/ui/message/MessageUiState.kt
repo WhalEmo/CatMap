@@ -1,8 +1,8 @@
-package com.beem.catmap.ui.chat
+package com.beem.catmap.ui.message
 
 import com.beem.catmap.models.ChatMessage
 
-data class ChatUiState(
+data class MessageUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
     val isBlockedByMe: Boolean = false,

@@ -39,11 +39,11 @@ import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
 import com.beem.catmap.mesaj.MesajFotoGosterFragment;
-import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.auth.AuthFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
-import com.beem.catmap.ui.chat.ChatFragment;
+import com.beem.catmap.ui.chatlist.ChatFragment;
+import com.beem.catmap.ui.message.MessageFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
@@ -107,9 +107,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case UPLOAD -> new YuklemeArayuzuFragment();
                 case OTHER_PROFILE -> setupFragment(new ProfilFragment());
                 case CAMERA -> new CameraFragment();
-                case CHAT -> new SohbetFragment();
+                case CHAT -> new ChatFragment();
                 case PROFILE -> setupFragment(new ProfilFragment());
-                case MESSAGE -> setupFragment(new ChatFragment());
+                case MESSAGE -> setupFragment(new MessageFragment());
                 case EDIT_PROFILE -> new EditProfileFragment();
                 case BLOCKED_USERS -> {
                     yield null;
