@@ -19,10 +19,10 @@ import java.util.ArrayList;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class engellenenlerAdapter extends RecyclerView.Adapter<engellenenlerAdapter.engellenenViewHolder> {
+public class engellenenlerAdaptereski extends RecyclerView.Adapter<engellenenlerAdaptereski.engellenenViewHolder> {
     Context context;
     private RecyclerView recyclerView;
-    private engellenenlerAdapter  adapter;
+    private engellenenlerAdaptereski adapter;
     private ArrayList<Kullanici> engellenenlerList = new ArrayList<>();
     private OnEngelClickListener listener;
     private onKullaniciTiklandi klistener;
@@ -47,7 +47,7 @@ public class engellenenlerAdapter extends RecyclerView.Adapter<engellenenlerAdap
         }
     }
 
-    public engellenenlerAdapter(Context context, ArrayList<Kullanici> engellenenlerList) {
+    public engellenenlerAdaptereski(Context context, ArrayList<Kullanici> engellenenlerList) {
         this.context = context;
         this.engellenenlerList = engellenenlerList;
     }
@@ -62,7 +62,7 @@ public class engellenenlerAdapter extends RecyclerView.Adapter<engellenenlerAdap
         return new engellenenViewHolder(view);
     }
     @Override
-    public void onBindViewHolder(@NonNull engellenenlerAdapter.engellenenViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull engellenenlerAdaptereski.engellenenViewHolder holder, int position) {
         Kullanici kullanici = engellenenlerList.get(position);
 
         holder.RecyclerkullaniciAdi.setText(kullanici.getKullaniciAdi());

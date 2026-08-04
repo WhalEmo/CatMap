@@ -128,7 +128,6 @@ class ProfilFragment : Fragment() {
             viewModel.profilDurumunuHazirla(userId)
             followViewModel.profilDurumunuHazirla(userId)
             followViewModel.targetUserClearOrPrepare(userId)
-            followViewModel.takipTakipciSayisiGetir(userId, false)
             profileViewModel.profilBilgileriniYukle(userId)
             followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = false)
         }
@@ -290,7 +289,6 @@ class ProfilFragment : Fragment() {
                         followViewModel.profileState.collect { profileState ->
                             takipciSayisiTextView.text = profileState.takipciSayisi.toString()
                             takipEdilenSayisiTextView.text = profileState.takipEdilenSayisi.toString()
-                            gonderiSayisiTextView.text = profileState.gonderiSayisi.toString()
                         }
                     } else {
                         launch {

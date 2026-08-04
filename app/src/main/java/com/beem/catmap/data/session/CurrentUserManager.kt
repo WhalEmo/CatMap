@@ -13,11 +13,11 @@ class CurrentUserManager private constructor(context: Context) {
 
     private val sessionManager = UserSessionManager.getInstance(context)
     private val profileSessionManager = ProfileSessionManager.getInstance(context)
+    private val blockSessionManager = BlockSessionManager.getInstance(context) // <-- Eklendi
 
     private var currentUserCache: Kullanici? = null
 
-    // --- STATEFLOW TANIMLAMASI ---
-    // Başlangıç değerlerini SharedPreferences'tan okuyarak yüklüyoruz
+    // --- STATEFLOW TANIMLAMALARI ---
     private val _profileState = MutableStateFlow(
         ProfileState(
             takipciSayisi = profileSessionManager.getTakipciSayisi(),
@@ -26,8 +26,10 @@ class CurrentUserManager private constructor(context: Context) {
             biyografi = profileSessionManager.getBiyografi()
         )
     )
-    // Dışarıya sadece okunabilir (Read-Only) StateFlow sunuyoruz
     val profileState: StateFlow<ProfileState> = _profileState.asStateFlow()
+
+    private val _benimEngellediklerimState = MutableStateFlow(blockSessionManager.getBenimEngellediklerim())
+    val benimEngellediklerimState: StateFlow<List<String>> = _benimEngellediklerimState.asStateFlow()
 
     companion object {
         @Volatile
@@ -65,18 +67,13 @@ class CurrentUserManager private constructor(context: Context) {
         return FirebaseAuth.getInstance().currentUser != null && sessionManager.isLoggedIn()
     }
 
-    // --- REAKTİF PROFİL GÜNCELLEME METOTLARI ---
 
-    /**
-     * Tüm profil istatistiklerini günceller. Hem SharedPreferences'a yazar hem Flow'a yayınlar.
-     */
     fun updateProfileDetails(
         takipci: Long,
         takipEdilen: Long,
         gonderiSayisi: Long = 0L,
         biyografi: String? = null
     ) {
-        // 1. SharedPreferences'ı güncelle
         profileSessionManager.saveProfileDetails(
             takipciSayisi = takipci,
             takipEdilenSayisi = takipEdilen,
@@ -84,7 +81,6 @@ class CurrentUserManager private constructor(context: Context) {
             biyografi = biyografi
         )
 
-        // 2. StateFlow'u güncelle (Abone olan tüm UI'lar anında tetiklenir)
         _profileState.update { currentState ->
             currentState.copy(
                 takipciSayisi = takipci,
@@ -95,9 +91,6 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
-    /**
-     * Sadece takip/takipçi sayılarını anlık günceller.
-     */
     fun updateFollowCounts(takipciSayisi: Long, takipEdilenSayisi: Long) {
         profileSessionManager.saveFollowCounts(takipciSayisi, takipEdilenSayisi)
 
@@ -109,9 +102,6 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
-    /**
-     * Sadece gönderi sayısını anlık günceller.
-     */
     fun updateGonderiSayisi(gonderiSayisi: Long) {
         profileSessionManager.saveGonderiSayisi(gonderiSayisi)
 
@@ -120,9 +110,6 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
-    /**
-     * Sadece biyografiyi anlık günceller.
-     */
     fun updateBiyografi(biyografi: String) {
         profileSessionManager.saveBiyografi(biyografi)
 
@@ -131,11 +118,26 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
+    /**
+     * Engellenenler listesini hem SharedPreferences'a yazar hem de Flow'u günceller.
+     */
+    private var blockedUsersLoaded = false
+
+    fun isBlockedUsersLoaded(): Boolean = blockedUsersLoaded
+
+    fun setBlockedUsersLoaded(loaded: Boolean) {
+        blockedUsersLoaded = loaded
+    }
+    fun updateBenimEngellediklerim(liste: List<String>) {
+        blockSessionManager.saveBenimEngellediklerim(liste)
+        _benimEngellediklerimState.value = liste
+        blockedUsersLoaded = true
+    }
+
     // --- ÇIKIŞ YAP (LOGOUT) ---
 
     fun logout() {
         FirebaseAuth.getInstance().signOut()
-
         clearLocalCache()
     }
 
@@ -143,8 +145,11 @@ class CurrentUserManager private constructor(context: Context) {
         currentUserCache = null
         sessionManager.clearSession()
         profileSessionManager.clearProfileCache()
+        blockSessionManager.clearBlockCache()
 
-        // Flow'u sıfırla
         _profileState.value = ProfileState()
+        _benimEngellediklerimState.value = emptyList()
+
+        blockedUsersLoaded = false
     }
 }

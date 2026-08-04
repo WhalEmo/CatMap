@@ -7,12 +7,15 @@ import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
+import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +25,8 @@ import kotlinx.coroutines.launch
 
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatRepository()
+
+    private val postRepository = PostRepository
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()
@@ -61,6 +66,24 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val count = repository.getCatLikeCount(catId)
             _likeCount.value = count.toInt()
+        }
+    }
+
+    fun addCatToUserPosts(newPost: Gonderi) {
+        val catId = newPost.kediID ?: return
+        val userId = UserSession.userId
+
+        viewModelScope.launch {
+            postRepository.kullaniciGonderiKaydet(userId, catId)
+                .onSuccess {
+                    UiMessageManager.emitMessage(UiMessageState.Success("Gönderi profilinize eklendi!"))
+                    ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
+                }
+                .onFailure { exception ->
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error(exception.localizedMessage ?: "Gönderi eklenirken bir hata oluştu.")
+                    )
+                }
         }
     }
 
@@ -124,11 +147,11 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         val userId = UserSession.userId ?: return
 
         viewModelScope.launch {
-            val isRemovedFromUser = repository.removeCatFromUserPosts(userId, currentCat.id)
+            val isRemovedFromUser = postRepository.kullaniciGonderiSil(userId, currentCat.id)
 
             val isDeletedFromMap = repository.deleteCatFromMap(currentCat.id)
 
-            if (isRemovedFromUser || isDeletedFromMap) {
+            if (isRemovedFromUser.isSuccess || isDeletedFromMap) {
                 val updatedList = _postsList.value.filterNot { it.kediID == currentCat.id }
                 _postsList.value = updatedList
                 _postCount.value = (_postCount.value - 1).coerceAtLeast(0)
