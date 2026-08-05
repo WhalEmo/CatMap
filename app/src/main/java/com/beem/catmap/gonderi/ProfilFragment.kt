@@ -10,7 +10,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -100,7 +99,6 @@ class ProfilFragment : Fragment() {
         handleBackPressWithEngine()
 
         initViews(view)
-        showShimmerLoading()
 
         setupRecyclerView()
         setupListeners()
@@ -259,9 +257,6 @@ class ProfilFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-
-                // 1. Ana Profil Verisi Akışı (Single Source of Truth)
-                // 1. Ana Profil Verisi Akışı (Single Source of Truth)
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
                         when (state) {
@@ -270,6 +265,8 @@ class ProfilFragment : Fragment() {
                             }
                             is UiState.Success -> {
                                 hideShimmerLoading()
+                                swipeRefreshLayout.isRefreshing = false
+
                                 val fullData = state.data
                                 val targetId = targetUserId ?: UserSession.userId.orEmpty()
 
@@ -288,18 +285,20 @@ class ProfilFragment : Fragment() {
                                     isSelf = fullData.isSelfProfile
                                 )
 
-                                // Header profil bilgilerini bağla
                                 bindUserProfileData(fullData.profile)
                             }
                             is UiState.Blocked -> {
                                 hideShimmerLoading()
+                                swipeRefreshLayout.isRefreshing = false
                                 handleBlockedUiState()
                             }
                             is UiState.Error -> {
                                 hideShimmerLoading()
                                 swipeRefreshLayout.isRefreshing = false
                             }
-                            else -> {}
+                            else -> {
+                                swipeRefreshLayout.isRefreshing = false
+                            }
                         }
                     }
                 }
@@ -329,9 +328,10 @@ class ProfilFragment : Fragment() {
                 // 4. Takipçi / Takip Edilen Sayıları Dinleyici
                 launch {
                     if (targetUserId == myUserId) {
-                        followViewModel.profileState.collect { profileState ->
+                        profileViewModel.profileState.collect { profileState ->
                             takipciSayisiTextView.text = profileState.takipciSayisi.toString()
                             takipEdilenSayisiTextView.text = profileState.takipEdilenSayisi.toString()
+                            gonderiSayisiTextView.text = profileState.gonderiSayisi.toString()
                         }
                     } else {
                         launch {
@@ -362,6 +362,7 @@ class ProfilFragment : Fragment() {
                         if (state.isAccessDenied) {
                             recyclerView.visibility = View.GONE
                             postSectionHeader.visibility = View.GONE
+                            swipeRefreshLayout.isRefreshing = false
                             tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
                             tvEmpty.visibility = View.VISIBLE
                         } else {

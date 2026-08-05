@@ -47,13 +47,13 @@ public class SohbetAdapter extends RecyclerView.Adapter<SohbetAdapter.SohbetView
     @Override
     public void onBindViewHolder(@NonNull SohbetAdapter.SohbetViewHolder holder, int position) {
         Sohbet sohbet = sohbetArrayList.get(position);
-        holder.kisi_adi.setText(sohbet.getAlici().getKullaniciAdi());
+        holder.kisi_adi.setText(sohbet.getAlici().kullaniciAdi);
         if(sohbet.getMesaj() != null){
             holder.son_mesaj.setText(sohbet.getMesaj().getMesaj());
             holder.mesaj_saat.setText(sohbet.getMesaj().getStringZaman());
         }
-        if(sohbet.getAlici().getFotoBitmap() != null && !sohbet.isEngelliSohbetMi()){
-            holder.kisi_foto.setImageBitmap(sohbet.getAlici().getFotoBitmap());
+        if(sohbet.getAlici().fotoBitmap != null && !sohbet.isEngelliSohbetMi()){
+            holder.kisi_foto.setImageBitmap(sohbet.getAlici().fotoBitmap);
         }
         else {
             holder.kisi_foto.setImageResource(R.drawable.kullanici);

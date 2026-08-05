@@ -1,8 +1,8 @@
 package com.beem.catmap.data.repository
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.beem.catmap.data.local.UserSession
-
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -10,17 +10,32 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlin.math.max
 
-
 data class FollowResult(
-    val currentFollowingCount: Long, // İşlemi yapan kullanıcının güncel takip edilen sayısı
-    val targetFollowerCount: Long    // Hedef kullanıcının güncel takipçi sayısı
+    val currentFollowingCount: Long,
+    val targetFollowerCount: Long
 )
 
 data class RemoveFollowerResult(
-    val currentFollowerCount: Long,   // İşlemi yapan kullanıcının güncel takipçi sayısı
-    val followerFollowingCount: Long  // Çıkarılan kullanıcının güncel takip edilen sayısı
+    val currentFollowerCount: Long,
+    val followerFollowingCount: Long
 )
-class FollowRepository(private val context: Context) {
+
+class FollowRepository private constructor(context: Context) {
+
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        @Volatile
+        private var INSTANCE: FollowRepository? = null
+
+        fun getInstance(context: Context): FollowRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: FollowRepository(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     private val currentUserId: String?

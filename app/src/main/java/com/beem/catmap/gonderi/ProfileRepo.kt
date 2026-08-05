@@ -1,10 +1,10 @@
 package com.beem.catmap.gonderi
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.KullaniciAuth.copy
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.FirebaseFirestore
@@ -28,11 +28,25 @@ sealed class ProfileUpdateResult {
     object Loading : ProfileUpdateResult()
 }
 
-class ProfileRepository(context: Context) {
+class ProfileRepository private constructor(context: Context) {
 
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val userManager = CurrentUserManager.getInstance(context)
+
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        @Volatile
+        private var INSTANCE: ProfileRepository? = null
+
+        fun getInstance(context: Context): ProfileRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ProfileRepository(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
 
     suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<Kullanici> = withContext(Dispatchers.IO) {
         val isMyProfile = userId == UserSession.userId
@@ -60,7 +74,7 @@ class ProfileRepository(context: Context) {
                     ad = snapshot.getString("Ad").orEmpty()
                     soyad = snapshot.getString("Soyad").orEmpty()
                     kullaniciAdi = snapshot.getString("KullaniciAdi").orEmpty()
-                    fotoUrl = snapshot.getString("profilFotoUrl")
+                    fotoUrl = snapshot.getString("profilFotoUrl").orEmpty()
                     biyografi = snapshot.getString("Hakkinda").orEmpty()
                     takipciSayisi = snapshot.getLong("takipciSayisi") ?: 0L
                     takipEdilenSayisi = snapshot.getLong("TakipEdilenSayisi") ?: 0L

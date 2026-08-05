@@ -14,10 +14,8 @@ import kotlinx.coroutines.launch
 
 class FollowViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: FollowRepository = FollowRepository(application)
+    private val repository = FollowRepository.getInstance(application)
     private val userManager = CurrentUserManager.getInstance(application)
-
-    val profileState: StateFlow<ProfileState> = userManager.profileState
 
     private val _benimEngellediklerim = MutableStateFlow<List<String>>(emptyList())
     val benimEngellediklerim: StateFlow<List<String>> = _benimEngellediklerim.asStateFlow()

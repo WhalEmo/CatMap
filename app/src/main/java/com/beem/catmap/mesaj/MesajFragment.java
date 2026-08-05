@@ -285,11 +285,11 @@ public class MesajFragment extends Fragment {
 
 
     private void ProfilSayfasinaYonlendir(){
-        Bundle args = ProfilFragment.newArgs(mesajlasmaYonetici.getAlici().getID());
+        Bundle args = ProfilFragment.newArgs(mesajlasmaYonetici.getAlici().id);
         SmartNavigationEngine.navigateTo(
                 Screen.OTHER_PROFILE,
                 args,
-                mesajlasmaYonetici.getAlici().getID()
+                mesajlasmaYonetici.getAlici().id
         );
     }
 
@@ -389,14 +389,14 @@ public class MesajFragment extends Fragment {
     }
 
     private void EngelKontrol(){
-        if(mesajlasmaYonetici.getAlici()==null || mesajlasmaYonetici.getAlici().getID() == null){
+        if(mesajlasmaYonetici.getAlici()==null || mesajlasmaYonetici.getAlici().id == null){
             return;
         }
         ValueEventListener event = new ValueEventListener() {
             @Override
             public void onDataChange(@androidx.annotation.NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()) {
-                    Boolean  engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().getID()).getValue(Boolean.class);
+                    Boolean  engellendinMi = snapshot.child(MesajlasmaYonetici.getInstance().getAlici().id).getValue(Boolean.class);
                     Boolean  engelledinMi = snapshot.child(currentUserManager.getCurrentUserId()).getValue(Boolean.class);
                     engellendim = engellendinMi != null && engellendinMi;
                     engelledim = engelledinMi != null && engelledinMi;
@@ -424,7 +424,7 @@ public class MesajFragment extends Fragment {
         };
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("mesajlar");
         if(mesajlasmaYonetici.getSohbetID()==null){
-            mesajlasmaYonetici.sohbetIDOlustur(currentUserManager.getCurrentUserId(),mesajlasmaYonetici.getAlici().getID(), id->{
+            mesajlasmaYonetici.sohbetIDOlustur(currentUserManager.getCurrentUserId(),mesajlasmaYonetici.getAlici().id, id->{
                 ref.child(id)
                         .child("engelliMi")
                         .addListenerForSingleValueEvent(event);
@@ -483,11 +483,11 @@ public class MesajFragment extends Fragment {
         kisiDurumText.setVisibility(View.VISIBLE);
         engelKaldir.setVisibility(View.GONE);
         mesaj_gonder_layout.setVisibility(View.VISIBLE);
-        if(mesajlasmaYonetici.getAlici().getFotoBitmap()==null){
+        if(mesajlasmaYonetici.getAlici().fotoBitmap==null){
             kisiProfilFoto.setImageResource(R.drawable.kullanici);
         }
         else{
-            kisiProfilFoto.setImageBitmap(mesajlasmaYonetici.getAlici().getFotoBitmap());
+            kisiProfilFoto.setImageBitmap(mesajlasmaYonetici.getAlici().fotoBitmap);
         }
     }
 

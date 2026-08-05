@@ -1,6 +1,5 @@
 package com.beem.catmap.Profil.Takipler
 
-import androidx.collection.LruCache
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -12,30 +11,26 @@ data class PaginatedResult<T>(
     val isLastPage: Boolean = false
 )
 
-class TakiplerRepository(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-) {
+class TakiplerRepository private constructor() {
 
-    // Son 3 kullanıcının verilerini saklamak için LRU Cache (3 kullanıcı x 2 liste = 6 giriş)
-    private val memoryCache = LruCache<String, PaginatedResult<Kullanici>>(6)
+    private val db = FirebaseFirestore.getInstance()
+
+    companion object {
+        @Volatile
+        private var INSTANCE: TakiplerRepository? = null
+
+        fun getInstance(): TakiplerRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TakiplerRepository().also { INSTANCE = it }
+            }
+        }
+    }
 
     suspend fun getTakipciler(
         userId: String,
         limit: Long = 10,
-        lastDocument: DocumentSnapshot? = null,
-        forceRefresh: Boolean = false
+        lastDocument: DocumentSnapshot? = null
     ): Result<PaginatedResult<Kullanici>> = runCatching {
-
-        val cacheKey = "takipciler_$userId"
-
-        // İlk sayfa isteniyorsa ve yenileme zorlanmıyorsa, direkt RAM'den dön
-        if (lastDocument == null && !forceRefresh) {
-            val cachedData = memoryCache.get(cacheKey)
-            if (cachedData != null) {
-                return Result.success(cachedData)
-            }
-        }
-
         var query = db.collection("users")
             .document(userId)
             .collection("takipciler")
@@ -48,56 +43,25 @@ class TakiplerRepository(
         val snapshot = query.get().await()
         val items = snapshot.documents.mapNotNull { doc ->
             Kullanici().apply {
-                kullaniciAdi = doc.getString("KullaniciAdi")
-                fotoUrl = doc.getString("profilFotoUrl")
-                id = doc.getString("ID")
-                TakipciMi = 2
+                id = doc.getString("ID") ?: doc.id
+                kullaniciAdi = doc.getString("KullaniciAdi") ?: ""
+                fotoUrl = doc.getString("profilFotoUrl") ?: ""
+                takipciMi = 2
             }
         }
 
-        val isLastPage = items.size < limit
-        val lastDoc = snapshot.documents.lastOrNull()
-
-        val newResult = PaginatedResult(
+        PaginatedResult(
             items = items,
-            lastDocument = lastDoc,
-            isLastPage = isLastPage
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
         )
-
-        // Cache Güncelleme Mantığı (DÜZELTİLDİ):
-        if (lastDocument == null) {
-            // İlk sayfa çekildiğinde (ister ilk açılış ister refresh olsun) RAM cache'i taze veriyle güncelle
-            memoryCache.put(cacheKey, newResult)
-        } else {
-            // Sonraki sayfaları çekiyorsak eski listeye ekle
-            memoryCache.get(cacheKey)?.let { oldCache ->
-                val combinedList = oldCache.items + items
-                memoryCache.put(
-                    cacheKey,
-                    PaginatedResult(combinedList, lastDoc, isLastPage)
-                )
-            }
-        }
-
-        newResult
     }
 
     suspend fun getTakipEdilenler(
         userId: String,
         limit: Long = 10,
-        lastDocument: DocumentSnapshot? = null,
-        forceRefresh: Boolean = false // <-- EKLENDİ
+        lastDocument: DocumentSnapshot? = null
     ): Result<PaginatedResult<Kullanici>> = runCatching {
-
-        val cacheKey = "takipEdilenler_$userId"
-
-        if (lastDocument == null && !forceRefresh) { // <-- DÜZELTİLDİ
-            val cachedData = memoryCache.get(cacheKey)
-            if (cachedData != null) {
-                return Result.success(cachedData)
-            }
-        }
-
         var query = db.collection("users")
             .document(userId)
             .collection("takipEdilenler")
@@ -110,34 +74,17 @@ class TakiplerRepository(
         val snapshot = query.get().await()
         val items = snapshot.documents.mapNotNull { doc ->
             Kullanici().apply {
-                kullaniciAdi = doc.getString("KullaniciAdi")
-                fotoUrl = doc.getString("profilFotoUrl")
-                id = doc.getString("ID")
-                TakipEdiyorMuyum = 2
+                kullaniciAdi = doc.getString("KullaniciAdi") ?: ""
+                fotoUrl = doc.getString("profilFotoUrl") ?: ""
+                id = doc.getString("ID") ?: ""
+                takipEdiyorMuyum = 2
             }
         }
 
-        val isLastPage = items.size < limit
-        val lastDoc = snapshot.documents.lastOrNull()
-
-        val newResult = PaginatedResult(
+        PaginatedResult(
             items = items,
-            lastDocument = lastDoc,
-            isLastPage = isLastPage
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
         )
-
-        if (lastDocument == null) { // <-- DÜZELTİLDİ
-            memoryCache.put(cacheKey, newResult)
-        } else {
-            memoryCache.get(cacheKey)?.let { oldCache ->
-                val combinedList = oldCache.items + items
-                memoryCache.put(
-                    cacheKey,
-                    PaginatedResult(combinedList, lastDoc, isLastPage)
-                )
-            }
-        }
-
-        newResult
     }
 }

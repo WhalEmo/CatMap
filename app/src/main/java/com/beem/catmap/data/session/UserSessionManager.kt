@@ -2,8 +2,8 @@ package com.beem.catmap.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.beem.catmap.KullaniciAuth.Kullanici
 import androidx.core.content.edit
+import com.beem.catmap.KullaniciAuth.Kullanici
 
 class UserSessionManager private constructor(context: Context) {
 
@@ -53,9 +53,9 @@ class UserSessionManager private constructor(context: Context) {
             putString(KEY_PASSWORD, kullanici.sifre)
             putString(KEY_FOTO_URL, kullanici.fotoUrl)
             putBoolean(KEY_IS_LOGGED_IN, true)
-            putLong(KEY_POST_COUNT, kullanici.gonderiSayisi)
-            putLong(KEY_TAKIPCI_SAYISI,kullanici.takipciSayisi)
-            putLong(KEY_TAKIP_EDILEN_SAYISI,kullanici.takipEdilenSayisi)
+            kullanici.gonderiSayisi?.let { putLong(KEY_POST_COUNT, it) }
+            kullanici.takipciSayisi?.let { putLong(KEY_TAKIPCI_SAYISI,it) }
+            kullanici.takipEdilenSayisi?.let { putLong(KEY_TAKIP_EDILEN_SAYISI,it) }
             putString(KEY_BIYOGRAFI,kullanici.biyografi)
             apply() // Disk yazımını arka planda asenkron yapar
         }

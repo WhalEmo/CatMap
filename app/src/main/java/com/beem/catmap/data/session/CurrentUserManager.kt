@@ -91,10 +91,10 @@ class CurrentUserManager private constructor(context: Context) {
     /**
      * Kullanıcı nesnesinin belirli alanlarını güvenli bir şekilde güncellemek için yardımcı metot.
      */
-    fun updateCurrentUser(updateBlock: (Kullanici) -> Unit) {
+    fun updateCurrentUser(updateBlock: (Kullanici) -> Kullanici) {
         val currentUser = _currentUserState.value
-        updateBlock(currentUser)
-        setCurrentUser(currentUser)
+        val updatedUser = updateBlock(currentUser)
+        setCurrentUser(updatedUser)
     }
 
     // --- ALAN BAZLI GÜNCELLEMELER ---
@@ -110,40 +110,43 @@ class CurrentUserManager private constructor(context: Context) {
         fotoUrl: String? = null
     ) {
         updateCurrentUser { user ->
-            if (ad != null) user.ad = ad
-            if (soyad != null) user.soyad = soyad
-            if (kullaniciAdi != null) user.kullaniciAdi = kullaniciAdi
-            if (takipci != null) user.takipciSayisi = takipci
-            if (takipEdilen != null) user.takipEdilenSayisi = takipEdilen
-            if (gonderiSayisi != null) user.gonderiSayisi = gonderiSayisi
-            if (biyografi != null) user.biyografi = biyografi
-            if (fotoUrl != null) user.fotoUrl = fotoUrl
+            user.copy(
+                ad = ad ?: user.ad,
+                soyad = soyad ?: user.soyad,
+                kullaniciAdi = kullaniciAdi ?: user.kullaniciAdi,
+                takipciSayisi = takipci ?: user.takipciSayisi,
+                takipEdilenSayisi = takipEdilen ?: user.takipEdilenSayisi,
+                gonderiSayisi = gonderiSayisi ?: user.gonderiSayisi,
+                biyografi = biyografi ?: user.biyografi,
+                fotoUrl = fotoUrl ?: user.fotoUrl
+            )
         }
     }
 
-
     fun updateFollowCounts(takipciSayisi: Long, takipEdilenSayisi: Long) {
         updateCurrentUser { user ->
-            user.takipciSayisi = takipciSayisi
-            user.takipEdilenSayisi = takipEdilenSayisi
+            user.copy(
+                takipciSayisi = takipciSayisi,
+                takipEdilenSayisi = takipEdilenSayisi
+            )
         }
     }
 
     fun updateGonderiSayisi(gonderiSayisi: Long) {
         updateCurrentUser { user ->
-            user.gonderiSayisi = gonderiSayisi
+            user.copy(gonderiSayisi = gonderiSayisi)
         }
     }
 
     fun updateBiyografi(biyografi: String) {
         updateCurrentUser { user ->
-            user.biyografi = biyografi
+            user.copy(biyografi = biyografi)
         }
     }
 
     fun updateFotoUrl(fotoUrl: String) {
         updateCurrentUser { user ->
-            user.fotoUrl = fotoUrl
+            user.copy(fotoUrl = fotoUrl)
         }
     }
 

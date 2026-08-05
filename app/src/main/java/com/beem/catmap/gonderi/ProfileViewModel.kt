@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.KullaniciAuth.copy
 import com.beem.catmap.data.model.FullProfileData
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
@@ -21,7 +20,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val repository: ProfileRepository = ProfileRepository(application)
     private val postRepository = PostRepository.getInstance(application)
 
-    private val currentUserManager = CurrentUserManager.getInstance(application)
+    private val userManager = CurrentUserManager.getInstance(application)
+
+    val profileState: StateFlow<ProfileState> = userManager.profileState
     private val getProfileFullDataUseCase = GetProfileFullDataUseCase(
         profileRepository = repository,
         postRepository = postRepository

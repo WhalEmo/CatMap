@@ -181,7 +181,7 @@ class EditProfileFragment : Fragment() {
                                     ad = result.newAd
                                     soyad = result.newSoyad
                                     biyografi = result.newHakkinda
-                                    fotoUrl = result.newPhotoUrl
+                                    fotoUrl = result.newPhotoUrl ?:""
                                 }
 
                                 lifecycleScope.launch {
