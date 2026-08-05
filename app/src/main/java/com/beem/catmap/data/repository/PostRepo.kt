@@ -1,61 +1,69 @@
 package com.beem.catmap.data.repository
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.util.Log
 import androidx.collection.LruCache
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.gonderi.ProfilePostCacheData
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.models.GonderilenKediItem
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 
-object PostRepository {
+class PostRepository(private val context: Context) {
     @SuppressLint("StaticFieldLeak")
     private val db = FirebaseFirestore.getInstance()
     private val usersCollection = db.collection("users")
     private val catsCollection = db.collection("cats")
 
-    private val profileCache = LruCache<String, ProfilePostCacheData>(5)
-    private val PAGE_SIZE = 10
+    private val userManager = CurrentUserManager.getInstance(context)
 
-    // Kullanıcının profilindeki tüm kedi ID ve tarihlerini 1 KERE çeker
+    private val profileCache = LruCache<String, ProfilePostCacheData>(5)
+    private val PAGE_SIZE = 10L
+
+    // Son çekilen belgeyi tutmak için sayfalama takibi (UserId -> LastDocument)
+    private val lastDocumentMap = mutableMapOf<String, DocumentSnapshot?>()
+
+
+    fun isLastPage(userId: String): Boolean {
+        return profileCache.get(userId)?.isLastPage ?: false
+    }
+
     suspend fun getKullaniciGonderiIdListesi(userId: String): Result<List<GonderilenKediItem>> {
         return try {
             val snapshot = usersCollection
                 .document(userId)
+                .collection("GonderilenKediler")
+                .orderBy("tarih", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
-            if (!snapshot.exists()) {
-                Result.success(emptyList())
-            } else {
-                val rawList = snapshot.get("GonderilenKediler") as? List<Map<String, Any>> ?: emptyList()
-                val items = rawList.mapNotNull { map ->
-                    val kediID = map["kediID"] as? String
-                    val tarih = map["tarih"] as? Timestamp
-                    if (kediID != null) {
-                        GonderilenKediItem(kediID = kediID, tarih = tarih)
-                    } else {
-                        null
-                    }
-                }.sortedByDescending { it.tarih } // En yeni en üstte
-
-                Result.success(items)
+            val items = snapshot.documents.mapNotNull { doc ->
+                val kediID = doc.getString("kediID")
+                val tarih = doc.getTimestamp("tarih")
+                if (kediID != null) GonderilenKediItem(kediID = kediID, tarih = tarih) else null
             }
+
+            Result.success(items)
         } catch (e: Exception) {
             Log.e("PostRepository", "Kullanıcı kedi ID listesi alınamadı: ${e.message}")
             Result.failure(e)
         }
     }
 
+    // İlk sayfayı Firestore Alt Koleksiyonundan çeker
     suspend fun getUserPosts(
         userId: String,
         forceRefresh: Boolean = false
@@ -68,37 +76,44 @@ object PostRepository {
             return@withContext Result.success(cachedData)
         }
 
+        lastDocumentMap[userId] = null
+
         try {
-            val snapshot = usersCollection.document(userId).get().await()
-            val rawList = snapshot.get("GonderilenKediler") as? List<Map<String, Any>> ?: emptyList()
+            val query = usersCollection
+                .document(userId)
+                .collection("GonderilenKediler")
+                .orderBy("tarih", Query.Direction.DESCENDING)
+                .limit(PAGE_SIZE)
 
-            val fullIdList = rawList.mapNotNull { map ->
-                val kediID = map["kediID"] as? String
-                val tarih = map["tarih"] as? Timestamp
-                if (kediID != null) GonderilenKediItem(kediID = kediID, tarih = tarih) else null
-            }.sortedByDescending { it.tarih }
+            val snapshot = query.get().await()
 
-            if (fullIdList.isEmpty()) {
+            if (snapshot.isEmpty) {
                 val emptyCache = ProfilePostCacheData(emptyList(), emptyList(), 0, true)
                 profileCache.put(userId, emptyCache)
+                lastDocumentMap[userId] = null
                 return@withContext Result.success(emptyCache)
             }
 
-            // 2. İlk batch'i çek
-            val firstBatch = fullIdList.take(PAGE_SIZE)
-            val isLast = firstBatch.size >= fullIdList.size
-            val gonderiler = fetchGonderilerByIdsInternal(firstBatch)
+            // Son belgeyi sayfalama için kaydet
+            lastDocumentMap[userId] = snapshot.documents.lastOrNull()
+
+            val batchItems = snapshot.documents.mapNotNull { doc ->
+                val kediID = doc.getString("kediID")
+                val tarih = doc.getTimestamp("tarih")
+                if (kediID != null) GonderilenKediItem(kediID = kediID, tarih = tarih) else null
+            }
+
+            val isLast = snapshot.size() < PAGE_SIZE
+            val gonderiler = fetchGonderilerByIdsInternal(batchItems)
 
             val newCacheData = ProfilePostCacheData(
                 posts = gonderiler,
-                idList = fullIdList,
-                offset = firstBatch.size,
+                idList = batchItems,
+                offset = batchItems.size,
                 isLastPage = isLast
             )
 
             profileCache.put(userId, newCacheData)
-            Log.d("POST_REPO_DEBUG", "Veriler FIRESTORE'dan çekilip ÖNBELLEĞE yazıldı.")
-
             Result.success(newCacheData)
         } catch (e: Exception) {
             Log.e("POST_REPO_DEBUG", "Gönderiler çekilirken hata: ${e.message}")
@@ -106,27 +121,55 @@ object PostRepository {
         }
     }
 
+    // Sayfalama (Pagination): Son kalınan belgeden itibaren sonraki PAGE_SIZE kadar veriyi çeker
     suspend fun dahaFazlaGonderiGetir(userId: String): Result<ProfilePostCacheData> = withContext(Dispatchers.IO) {
         val cachedData = profileCache.get(userId)
             ?: return@withContext Result.failure(Exception("Önbellek bulunamadı!"))
 
-        if (cachedData.isLastPage || cachedData.offset >= cachedData.idList.size) {
+        val lastDoc = lastDocumentMap[userId]
+        if (cachedData.isLastPage || lastDoc == null) {
             return@withContext Result.success(cachedData)
         }
 
         try {
-            val currentOffset = cachedData.offset
-            val nextOffset = (currentOffset + PAGE_SIZE).coerceAtMost(cachedData.idList.size)
-            val nextBatch = cachedData.idList.subList(currentOffset, nextOffset)
-            val isLast = nextOffset >= cachedData.idList.size
+            val query = usersCollection
+                .document(userId)
+                .collection("GonderilenKediler")
+                .orderBy("tarih", Query.Direction.DESCENDING)
+                .startAfter(lastDoc)
+                .limit(PAGE_SIZE)
 
-            val newGonderiler = fetchGonderilerByIdsInternal(nextBatch)
+            val snapshot = query.get().await()
+
+            if (snapshot.isEmpty) {
+                val updatedCache = ProfilePostCacheData(
+                    posts = cachedData.posts,
+                    idList = cachedData.idList,
+                    offset = cachedData.offset,
+                    isLastPage = true
+                )
+                profileCache.put(userId, updatedCache)
+                return@withContext Result.success(updatedCache)
+            }
+
+            lastDocumentMap[userId] = snapshot.documents.lastOrNull()
+
+            val newBatchItems = snapshot.documents.mapNotNull { doc ->
+                val kediID = doc.getString("kediID")
+                val tarih = doc.getTimestamp("tarih")
+                if (kediID != null) GonderilenKediItem(kediID = kediID, tarih = tarih) else null
+            }
+
+            val isLast = snapshot.size() < PAGE_SIZE
+            val newGonderiler = fetchGonderilerByIdsInternal(newBatchItems)
+
             val updatedPosts = cachedData.posts + newGonderiler
+            val updatedIdList = cachedData.idList + newBatchItems
 
             val updatedCache = ProfilePostCacheData(
                 posts = updatedPosts,
-                idList = cachedData.idList,
-                offset = nextOffset,
+                idList = updatedIdList,
+                offset = updatedPosts.size,
                 isLastPage = isLast
             )
 
@@ -141,58 +184,49 @@ object PostRepository {
         if (items.isEmpty()) return Result.success(emptyList())
 
         return try {
-            val tarihMap = items.associate { it.kediID to it.tarih }
-            val kediIds = items.map { it.kediID }.distinct()
-            val chunks = kediIds.chunked(30)
-
-            val gonderiler = coroutineScope {
-                chunks.map { chunk ->
-                    async {
-                        val snapshot = catsCollection
-                            .whereIn(FieldPath.documentId(), chunk)
-                            .get()
-                            .await()
-
-                        snapshot.documents.mapNotNull { doc ->
-                            val fotoList = doc.get("photoUri") as? List<String> ?: emptyList()
-                            if (fotoList.isEmpty()) return@mapNotNull null
-
-                            Gonderi(
-                                kediID = doc.id,
-                                fotoUrlListesi = fotoList,
-                                aciklama = doc.getString("kediHakkinda"),
-                                kediAdi = doc.getString("kediAdi"),
-                                tarih = tarihMap[doc.id],
-                                begeniSayisi = doc.getLong("begeniSayisi") ?: 0L
-                            )
-                        }
-                    }
-                }.awaitAll().flatten()
-            }
-
-            val sortedList = gonderiler.sortedByDescending { it.tarih }
-            Result.success(sortedList)
+            val gonderiler = fetchGonderilerByIdsInternal(items)
+            Result.success(gonderiler)
         } catch (e: Exception) {
             Log.e("PostRepository", "Gönderi detayları çekilirken hata: ${e.message}")
             Result.failure(e)
         }
     }
 
-    suspend fun kullaniciGonderiSil(userId: String, kediId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun kullaniciGonderiSil(
+        userId: String,
+        kediId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val snapshot = usersCollection.document(userId).get().await()
-            val rawList = snapshot.get("GonderilenKediler") as? List<Map<String, Any>> ?: emptyList()
-            val silinecek = rawList.firstOrNull { it["kediID"] == kediId }
-                ?: throw Exception("Silinecek gönderi bulunamadı.")
+            val userRef = usersCollection.document(userId)
+            val subCollRef = userRef.collection("GonderilenKediler")
 
-            usersCollection.document(userId)
-                .update("GonderilenKediler", FieldValue.arrayRemove(silinecek))
-                .await()
+            val querySnapshot = subCollRef.whereEqualTo("kediID", kediId).get().await()
 
+            db.runTransaction { transaction ->
+                val userSnap = transaction.get(userRef)
+                val currentPostCount = userSnap.getLong("gonderiSayisi") ?: 0L
+
+                for (doc in querySnapshot.documents) {
+                    transaction.delete(doc.reference)
+                }
+
+                if (querySnapshot.documents.isNotEmpty()) {
+                    val newCount = max(currentPostCount - 1, 0L)
+                    transaction.update(userRef, "gonderiSayisi", newCount)
+                }
+                null
+            }.await()
+
+            // Local cache ve session güncellemesi
             removePostFromCacheInternal(userId, kediId)
 
+            if (userId == UserSession.userId) {
+                val currentCount = userManager.profileState.value.gonderiSayisi
+                userManager.updateGonderiSayisi(max(currentCount - 1, 0L))
+            }
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("PostRepository", "Gönderi silinirken hata: ${e.message}")
             Result.failure(e)
         }
     }
@@ -201,20 +235,39 @@ object PostRepository {
         catsCollection.document(kediId).delete().await()
     }
 
-    suspend fun kullaniciGonderiKaydet(userId: String, kediId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun kullaniciGonderiKaydet(
+        userId: String,
+        kediId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val yeniKedi = mapOf(
+            val userRef = usersCollection.document(userId)
+            val subCollRef = userRef.collection("GonderilenKediler")
+
+            val yeniKediDoc = subCollRef.document()
+            val yeniKediData = mapOf(
                 "kediID" to kediId,
                 "tarih" to Timestamp.now()
             )
-            usersCollection.document(userId)
-                .update("GonderilenKediler", FieldValue.arrayUnion(yeniKedi))
-                .await()
+
+            db.runTransaction { transaction ->
+                val userSnap = transaction.get(userRef)
+                val currentPostCount = userSnap.getLong("gonderiSayisi") ?: 0L
+
+                transaction.set(yeniKediDoc, yeniKediData)
+                transaction.update(userRef, "gonderiSayisi", currentPostCount + 1)
+                null
+            }.await()
 
             addPostToCacheInternal(userId, kediId)
 
+            if (userId == UserSession.userId) {
+                val currentCount = userManager.profileState.value.gonderiSayisi
+                userManager.updateGonderiSayisi(currentCount + 1)
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("PostRepository", "Gönderi kaydedilirken hata: ${e.message}")
             Result.failure(e)
         }
     }
@@ -236,14 +289,12 @@ object PostRepository {
         val cachedData = profileCache.get(userId) ?: return
         val yeniKediItem = GonderilenKediItem(kediID = kediId, tarih = Timestamp.now())
         val updatedIdList = listOf(yeniKediItem) + cachedData.idList
-        val firstBatchIds = updatedIdList.take(PAGE_SIZE)
 
-        val yeniListe = fetchGonderilerByIdsInternal(firstBatchIds)
-        val isLast = firstBatchIds.size >= updatedIdList.size
+        val yeniListe = fetchGonderilerByIdsInternal(listOf(yeniKediItem)) + cachedData.posts
 
         profileCache.put(
             userId,
-            ProfilePostCacheData(yeniListe, updatedIdList, firstBatchIds.size, isLast)
+            ProfilePostCacheData(yeniListe, updatedIdList, cachedData.offset + 1, cachedData.isLastPage)
         )
     }
 

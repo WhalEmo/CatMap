@@ -1,208 +1,209 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- SHIMMER LAYOUT -->
-    <com.facebook.shimmer.ShimmerFrameLayout
-        android:id="@+id/shimmerLayout"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp"
-        android:visibility="gone"
-        app:shimmer_auto_start="true">
+        android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <!-- 1. SHIMMER LAYOUT -->
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/shimmerLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            android:visibility="gone"
+            app:shimmer_auto_start="true">
 
-            <!-- Shimmer Üst Bar (Back + Username) -->
-            <View
-                android:id="@+id/shimmerBtnBack"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-            <View
-                android:id="@+id/shimmerTopUsername"
-                android:layout_width="120dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="12dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintBottom_toBottomOf="@id/shimmerBtnBack"
-                app:layout_constraintStart_toEndOf="@id/shimmerBtnBack"
-                app:layout_constraintTop_toTopOf="@id/shimmerBtnBack" />
-
-            <!-- Profil Fotoğrafı Placeholder -->
-            <View
-                android:id="@+id/shimmerAvatar"
-                android:layout_width="90dp"
-                android:layout_height="90dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/shimmer_placeholder_circle"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/shimmerBtnBack" />
-
-            <!-- Ad Soyad Placeholder (Fotoğrafın Yanındaki) -->
-            <View
-                android:id="@+id/shimmerFullName"
-                android:layout_width="140dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="16dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintStart_toEndOf="@id/shimmerAvatar"
-                app:layout_constraintTop_toTopOf="@id/shimmerAvatar" />
-
-            <!-- Sayılar Placeholder -->
-            <LinearLayout
-                android:id="@+id/shimmerStats"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/shimmerAvatar"
-                app:layout_constraintTop_toBottomOf="@id/shimmerFullName">
+                <!-- Shimmer Üst Bar (Back + Username) -->
+                <View
+                    android:id="@+id/shimmerBtnBack"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <View
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginHorizontal="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/shimmer_placeholder" />
+                    android:id="@+id/shimmerTopUsername"
+                    android:layout_width="120dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintBottom_toBottomOf="@id/shimmerBtnBack"
+                    app:layout_constraintStart_toEndOf="@id/shimmerBtnBack"
+                    app:layout_constraintTop_toTopOf="@id/shimmerBtnBack" />
 
+                <!-- Profil Fotoğrafı Placeholder -->
                 <View
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginHorizontal="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/shimmer_placeholder" />
+                    android:id="@+id/shimmerAvatar"
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/shimmer_placeholder_circle"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerBtnBack" />
 
+                <!-- Ad Soyad Placeholder -->
                 <View
-                    android:layout_width="0dp"
-                    android:layout_height="32dp"
-                    android:layout_marginHorizontal="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/shimmer_placeholder" />
-            </LinearLayout>
+                    android:id="@+id/shimmerFullName"
+                    android:layout_width="140dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintStart_toEndOf="@id/shimmerAvatar"
+                    app:layout_constraintTop_toTopOf="@id/shimmerAvatar" />
 
-            <!-- Biyografi Placeholder -->
-            <View
-                android:id="@+id/shimmerBio1"
-                android:layout_width="180dp"
-                android:layout_height="14dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/shimmerAvatar" />
-
-            <View
-                android:id="@+id/shimmerBio2"
-                android:layout_width="240dp"
-                android:layout_height="14dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/shimmerBio1" />
-
-            <!-- Buton Placeholder -->
-            <View
-                android:id="@+id/shimmerButton"
-                android:layout_width="0dp"
-                android:layout_height="42dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/shimmer_placeholder"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/shimmerBio2" />
-
-            <!-- Gönderiler Grid Placeholder -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginTop="20dp"
-                android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/shimmerButton">
-
+                <!-- Sayılar Placeholder -->
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="120dp"
-                    android:layout_marginBottom="4dp"
-                    android:orientation="horizontal">
+                    android:id="@+id/shimmerStats"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/shimmerAvatar"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerFullName">
 
                     <View
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="2dp"
+                        android:layout_height="32dp"
+                        android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/shimmer_placeholder" />
 
                     <View
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginHorizontal="2dp"
+                        android:layout_height="32dp"
+                        android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/shimmer_placeholder" />
 
                     <View
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="2dp"
+                        android:layout_height="32dp"
+                        android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
                         android:background="@drawable/shimmer_placeholder" />
                 </LinearLayout>
 
+                <!-- Biyografi Placeholder -->
+                <View
+                    android:id="@+id/shimmerBio1"
+                    android:layout_width="180dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerAvatar" />
+
+                <View
+                    android:id="@+id/shimmerBio2"
+                    android:layout_width="240dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerBio1" />
+
+                <!-- Buton Placeholder -->
+                <View
+                    android:id="@+id/shimmerButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/shimmer_placeholder"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerBio2" />
+
+                <!-- Gönderiler Grid Placeholder -->
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="120dp"
-                    android:orientation="horizontal">
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="20dp"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/shimmerButton">
 
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="2dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/shimmer_placeholder" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:layout_marginBottom="4dp"
+                        android:orientation="horizontal">
 
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginHorizontal="2dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/shimmer_placeholder" />
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
 
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="2dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/shimmer_placeholder" />
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="2dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shimmer_placeholder" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </com.facebook.shimmer.ShimmerFrameLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.facebook.shimmer.ShimmerFrameLayout>
 
-    <!-- GERÇEK İÇERİK -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefreshLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible">
-
+        <!-- 2. GERÇEK İÇERİK LAYOUT -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/myConstraintLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:visibility="visible">
 
             <!-- Geri Butonu -->
             <ImageButton
@@ -216,7 +217,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:tint="#000000" />
 
-            <!-- KULLANICI ADI (Geri Butonunun Yanına Taşındı) -->
+            <!-- KULLANICI ADI -->
             <TextView
                 android:id="@+id/KullaniciAdi"
                 android:layout_width="0dp"
@@ -262,7 +263,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnBack" />
 
-            <!-- AD SOYAD (Eski KullaniciAdi Yeri) -->
+            <!-- AD SOYAD -->
             <TextView
                 android:id="@+id/tvAdSoyad"
                 android:layout_width="0dp"
@@ -290,7 +291,6 @@
                 app:layout_constraintStart_toEndOf="@id/profilFotoImageView"
                 app:layout_constraintTop_toBottomOf="@id/tvAdSoyad">
 
-                <!-- Gönderi -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -314,7 +314,6 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Takipçi -->
                 <LinearLayout
                     android:id="@+id/takipciSayisiLayout"
                     android:layout_width="0dp"
@@ -339,7 +338,6 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Takip -->
                 <LinearLayout
                     android:id="@+id/takipEdilenSayisiLayout"
                     android:layout_width="0dp"
@@ -474,37 +472,38 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:gravity="center_vertical"
-                android:visibility="visible"
                 android:orientation="horizontal"
-                app:layout_constraintTop_toBottomOf="@id/buttonBarrier"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/buttonBarrier">
 
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="#E6E6E6"/>
+                    android:background="#E6E6E6" />
 
                 <TextView
                     android:id="@+id/gonderilerBaslikTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="14dp"
-                    android:text="GÖNDERİLER"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:textColor="#666666"
+                    android:fontFamily="sans-serif-medium"
                     android:letterSpacing="0.10"
-                    android:fontFamily="sans-serif-medium"/>
+                    android:text="GÖNDERİLER"
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="#E6E6E6"/>
+                    android:background="#E6E6E6" />
 
             </LinearLayout>
+
             <ProgressBar
                 android:id="@+id/progressBarr"
                 android:layout_width="40dp"
@@ -512,9 +511,9 @@
                 android:layout_marginTop="24dp"
                 android:indeterminate="true"
                 android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/postSectionHeader"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintTop_toBottomOf="@id/postSectionHeader" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/gonderiRecyclerView"
@@ -546,6 +545,76 @@
                 app:layout_constraintTop_toTopOf="@id/gonderiRecyclerView" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-</FrameLayout>
+        <!-- 3. ENGEL EKRANI LAYOUT (ARTIK SWIPEREFRESH YAPISI İÇİNDE) -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/blockedUserLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/white"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <!-- Geri Butonu -->
+            <ImageButton
+                android:id="@+id/btnBackEngel"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Geri Dön"
+                android:src="?attr/homeAsUpIndicator"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#000000" />
+
+            <!-- KULLANICI ADI -->
+            <TextView
+                android:id="@+id/KullaniciAdiEngel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="kullanici_adi"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBackEngel"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBackEngel"
+                app:layout_constraintTop_toTopOf="@id/btnBackEngel" />
+
+            <!-- Ekran Ortasında Uyarı Mesajları -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bu kullanıcı sizi engelledi."
+                    android:textColor="#444444"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="24dp"
+                    android:text="Bu profile erişemezsiniz."
+                    android:textColor="#888888"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </FrameLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

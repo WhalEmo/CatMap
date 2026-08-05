@@ -1,7 +1,6 @@
 package com.beem.catmap.gonderi
 
 import android.app.Application
-import androidx.collection.LruCache
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
@@ -13,15 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 class FollowViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: FollowRepository = FollowRepository()
+    private val repository: FollowRepository = FollowRepository(application)
     private val userManager = CurrentUserManager.getInstance(application)
 
     val profileState: StateFlow<ProfileState> = userManager.profileState
-
-    private val targetUserCache = LruCache<String, TargetUserFollowData>(3)
 
     private val _benimEngellediklerim = MutableStateFlow<List<String>>(emptyList())
     val benimEngellediklerim: StateFlow<List<String>> = _benimEngellediklerim.asStateFlow()
@@ -29,14 +25,13 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     private val _beniEngelleyenler = MutableStateFlow<List<String>>(emptyList())
     val beniEngelleyenler: StateFlow<List<String>> = _beniEngelleyenler.asStateFlow()
 
-    // Profil Butonlarının State'i
     private val _followUiState = MutableStateFlow(FollowUiState())
     val followUiState: StateFlow<FollowUiState> = _followUiState.asStateFlow()
 
-    private val _targetUserTakipEdilenSayisi = MutableStateFlow<Long>(0L)
+    private val _targetUserTakipEdilenSayisi = MutableStateFlow(0L)
     val targetUserTakipEdilenSayisi: StateFlow<Long> = _targetUserTakipEdilenSayisi.asStateFlow()
 
-    private val _targetUserTakipciSayisi = MutableStateFlow<Long>(0L)
+    private val _targetUserTakipciSayisi = MutableStateFlow(0L)
     val targetUserTakipciSayisi: StateFlow<Long> = _targetUserTakipciSayisi.asStateFlow()
 
     fun profilDurumunuHazirla(targetUserId: String) {
@@ -70,24 +65,12 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     fun takipTakipciSayisiGetir(userId: String, forceRefresh: Boolean = false) {
         val isMyProfile = (userId == userManager.getCurrentUserId())
 
-        if (isMyProfile) {
-            val currentProfile = userManager.profileState.value
-            val hasCachedData = currentProfile.takipciSayisi > 0L || currentProfile.takipEdilenSayisi > 0L
-
-            if (hasCachedData && !forceRefresh) {
-                return
-            }
-        } else {
-            val cachedData = targetUserCache.get(userId)
-            if (cachedData != null && !forceRefresh) {
-                _targetUserTakipciSayisi.value = cachedData.followerCount
-                _targetUserTakipEdilenSayisi.value = cachedData.followingCount
-                return
-            }
-        }
-
         viewModelScope.launch {
-            val result = repository.fetchAndCacheFollowCounts(getApplication<Application>(), userId)
+            val result = repository.fetchAndCacheFollowCounts(
+                userId = userId,
+                isMyProfile = isMyProfile,
+                forceRefresh = forceRefresh
+            )
 
             result.onSuccess { counts ->
                 if (isMyProfile) {
@@ -98,17 +81,9 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 } else {
                     _targetUserTakipciSayisi.value = counts.followerCount
                     _targetUserTakipEdilenSayisi.value = counts.followingCount
-
-                    targetUserCache.put(
-                        userId,
-                        TargetUserFollowData(
-                            followerCount = counts.followerCount,
-                            followingCount = counts.followingCount
-                        )
-                    )
                 }
             }.onFailure {
-                if (!isMyProfile && targetUserCache.get(userId) == null) {
+                if (!isMyProfile) {
                     _targetUserTakipciSayisi.value = 0L
                     _targetUserTakipEdilenSayisi.value = 0L
                 }
@@ -117,7 +92,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun targetUserClearOrPrepare(targetUserId: String) {
-        val cached = targetUserCache.get(targetUserId)
+        val cached = repository.getCachedTargetUserData(targetUserId)
         if (cached != null) {
             _targetUserTakipciSayisi.value = cached.followerCount
             _targetUserTakipEdilenSayisi.value = cached.followingCount
@@ -127,9 +102,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    // Takip Et (Optimistic UI destekli)
     fun takipEt(takipEttiginId: String, currentUserId: String) {
-        // Anında UI güncellemesi (Buton saniyesinde 'Takip Ediliyor'a geçer)
         _followUiState.update { it.copy(isFollowing = true) }
 
         viewModelScope.launch {
@@ -147,24 +120,17 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                     takipEdilenSayisi = currentProfile.takipEdilenSayisi + 1
                 )
 
-                val targetCache = targetUserCache.get(takipEttiginId)
-                val newFollowerCount = (targetCache?.followerCount ?: _targetUserTakipciSayisi.value) + 1
-                val newFollowingCount = targetCache?.followingCount ?: _targetUserTakipEdilenSayisi.value
-
-                val updatedData = TargetUserFollowData(newFollowerCount, newFollowingCount)
-                targetUserCache.put(takipEttiginId, updatedData)
-
-                _targetUserTakipciSayisi.value = newFollowerCount
+                // Güncellenmiş sayıyı Repository önbelleğinden alıp UI'a yansıt
+                repository.getCachedTargetUserData(takipEttiginId)?.let { cachedData ->
+                    _targetUserTakipciSayisi.value = cachedData.followerCount
+                }
             }.onFailure {
-                // Hata durumunda butonu eski haline (false) geri çek
                 _followUiState.update { it.copy(isFollowing = false) }
             }
         }
     }
 
-    // Takipten Çıkar (Optimistic UI destekli)
     fun takiptenCikar(takiptenCiktiginId: String, currentUserId: String) {
-        // Anında UI güncellemesi (Buton saniyesinde 'Takip Et'e geçer)
         _followUiState.update { it.copy(isFollowing = false) }
 
         viewModelScope.launch {
@@ -182,15 +148,11 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                     takipEdilenSayisi = yeniTakipEdilen
                 )
 
-                val targetCache = targetUserCache.get(takiptenCiktiginId)
-                val currentCount = targetCache?.followerCount ?: _targetUserTakipciSayisi.value
-                val newCount = if (currentCount > 0) currentCount - 1 else 0L
-                val newFollowingCount = targetCache?.followingCount ?: _targetUserTakipEdilenSayisi.value
-
-                targetUserCache.put(takiptenCiktiginId, TargetUserFollowData(newCount, newFollowingCount))
-                _targetUserTakipciSayisi.value = newCount
+                // Güncellenmiş sayıyı Repository önbelleğinden alıp UI'a yansıt
+                repository.getCachedTargetUserData(takiptenCiktiginId)?.let { cachedData ->
+                    _targetUserTakipciSayisi.value = cachedData.followerCount
+                }
             }.onFailure {
-                // Hata durumunda butonu eski haline (true) geri çek
                 _followUiState.update { it.copy(isFollowing = true) }
             }
         }
@@ -212,6 +174,27 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                     takipEdilenSayisi = currentProfile.takipEdilenSayisi
                 )
             }
+        }
+    }
+    // FollowViewModel.kt içerisine eklenecek metot:
+    fun setupFromFullProfile(
+        followerCount: Long,
+        followingCount: Long,
+        isSelf: Boolean
+    ) {
+        _followUiState.update { it.copy(isSelfProfile = isSelf) }
+
+        if (isSelf) {
+            // Kendi profilimizse sayıları CurrentUserManager zaten yönetiyor/senkronize ediyor
+            userManager.updateFollowCounts(
+                takipciSayisi = followerCount,
+                takipEdilenSayisi = followingCount
+            )
+        } else {
+            // Başka kullanıcı ise ViewModel state'lerini güncelliyoruz
+            _targetUserTakipciSayisi.value = followerCount
+            _targetUserTakipEdilenSayisi.value = followingCount
+
         }
     }
 }

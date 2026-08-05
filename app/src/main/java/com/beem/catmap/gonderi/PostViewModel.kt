@@ -2,14 +2,11 @@ package com.beem.catmap.gonderi
 
 import android.app.Application
 import android.util.Log
-import androidx.collection.LruCache
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.models.Gonderi
-import com.beem.catmap.models.GonderilenKediItem
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -29,8 +26,7 @@ import kotlinx.coroutines.launch
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: PostRepository = PostRepository
-    private val userManager = CurrentUserManager.getInstance(application)
+    private val repository: PostRepository = PostRepository(application)
 
     private val _uiState = MutableStateFlow(ProfilePostUiState())
     val uiState: StateFlow<ProfilePostUiState> = _uiState.asStateFlow()
@@ -38,16 +34,13 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _haritaSilindiEvent = MutableSharedFlow<Boolean>(replay = 0)
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
 
-    private val _yukleyenID = MutableStateFlow<String>("")
+    private val _yukleyenID = MutableStateFlow("")
     val yukleyenID: StateFlow<String> = _yukleyenID.asStateFlow()
 
-    private val profileCache = LruCache<String, ProfilePostCacheData>(3)
-
-    private val PAGE_SIZE = 10
     var isLoadingMore = false
 
     val isLastPage: Boolean
-        get() = profileCache.get(_yukleyenID.value)?.isLastPage ?: false
+        get() = repository.isLastPage(_yukleyenID.value)
 
     init {
         observeProfileEvents()
@@ -59,11 +52,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d("POST_FLOW_DEBUG", "PostViewModel: Eventbus'tan Dinlendi -> $event")
                 when (event) {
                     is ProfileEvent.PostAdded -> {
-                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderiKaydet() çağrılıyor...")
-                        gonderileriGetir(UserSession.userId, forceRefresh = false)
+                        Log.d("POST_FLOW_DEBUG", "PostViewModel: PostAdd isteği yakalandı. gonderileriGetir çağrılıyor...")
+                        gonderileriGetir(UserSession.userId, forceRefresh = true)
                     }
                     is ProfileEvent.PostDeleted -> {
-                        gonderileriGetir(UserSession.userId, forceRefresh = false)
+                        gonderileriGetir(UserSession.userId, forceRefresh = true)
                     }
                     else -> {}
                 }
@@ -75,37 +68,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         _yukleyenID.value = id
     }
 
-    fun profilDurumunuHazirla(targetUserId: String) {
-        setYukleyenID(targetUserId)
-        val isSelf = (targetUserId == UserSession.userId)
-
-        val cached = profileCache.get(targetUserId)
-        if (cached != null) {
-            Log.d("CACHED", "Cache dolu geldi: ${cached.idList.size}")
-            _uiState.update {
-                it.copy(
-                    posts = cached.posts,
-                    postCount = cached.idList.size,
-                    isEmpty = cached.posts.isEmpty(),
-                    isLoading = false,
-                    isAccessDenied = false
-                )
-            }
-            if (isSelf) {
-                userManager.updateGonderiSayisi(cached.idList.size.toLong())
-            }
-        } else {
-            _uiState.update {
-                it.copy(
-                    posts = emptyList(),
-                    postCount = 0,
-                    isEmpty = true,
-                    isLoading = false,
-                    isAccessDenied = false
-                )
-            }
-        }
-    }
 
     fun gonderileriGetir(userId: String, isFollowing: Boolean = true, forceRefresh: Boolean = false) {
         if (userId.isBlank()) return
@@ -116,14 +78,9 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             repository.getUserPosts(userId, forceRefresh)
                 .onSuccess { cacheData ->
-                    if (userId == UserSession.userId) {
-                        userManager.updateGonderiSayisi(cacheData.idList.size.toLong())
-                    }
-
                     _uiState.update {
                         it.copy(
                             posts = cacheData.posts,
-                            postCount = cacheData.idList.size,
                             isEmpty = cacheData.posts.isEmpty(),
                             isLoading = false,
                             isAccessDenied = false
@@ -150,7 +107,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             repository.dahaFazlaGonderiGetir(userId)
                 .onSuccess { cacheData ->
                     _uiState.update {
-                        it.copy(posts = cacheData.posts, isMoreLoading = false)
+                        it.copy(
+                            posts = cacheData.posts,
+                            isEmpty = cacheData.posts.isEmpty(),
+                            isMoreLoading = false
+                        )
                     }
                     isLoadingMore = false
                 }
@@ -178,7 +139,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
     }
-
 
     fun haritadanVeGonderilerdenSil(userId: String, kediId: String) {
         if (kediId.isBlank()) return
@@ -209,4 +169,17 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setupFromFullProfile(userId: String, cacheData: ProfilePostCacheData) {
+        setYukleyenID(userId)
+
+        _uiState.update {
+            it.copy(
+                posts = cacheData.posts,
+
+                isEmpty = cacheData.posts.isEmpty(),
+                isLoading = false,
+                isAccessDenied = false
+            )
+        }
+    }
 }

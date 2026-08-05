@@ -105,11 +105,7 @@ class AuthFragment : Fragment() {
         val username = loginBinding.usernameEditText.text.toString().trim()
         val password = loginBinding.passwordEditText.text.toString().trim()
 
-        Log.d("AUTH_DEBUG", "--------------------------------------------------")
-        Log.d("AUTH_DEBUG", ">>> Giriş denemesi başladı. Kullanıcı Adı: '$username'")
-
         if (username.isEmpty() || password.isEmpty()) {
-            Log.w("AUTH_DEBUG", "HATA: Kullanıcı adı veya şifre boş bırakıldı.")
             uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun", 1000)
             return
         }
@@ -117,34 +113,29 @@ class AuthFragment : Fragment() {
         uyariMesaji.YuklemeDurum("Giriş Yapılıyor...")
         val user = Kullanici(username, password)
 
-        Log.d("AUTH_DEBUG", "Firestore 'users' koleksiyonunda 'KullaniciAdi == $username' sorgusu atılıyor...")
-
         db.collection("users")
             .whereEqualTo("KullaniciAdi", username)
             .limit(1)
             .get()
             .addOnSuccessListener { query ->
-                Log.d("AUTH_DEBUG", "Firestore yanıt verdi. Bulunan doküman sayısı: ${query.size()}")
-
-                if (!isAdded) {
-                    Log.w("AUTH_DEBUG", "UYARI: Fragment (isAdded = false) durumunda, işlem iptal edildi.")
-                    return@addOnSuccessListener
-                }
+                if (!isAdded) return@addOnSuccessListener
 
                 if (query.isEmpty) {
-                    Log.e("AUTH_DEBUG", "HATA: Firestore'da '$username' kullanıcı adına sahip doküman BULUNAMADI.")
                     uyariMesaji.BasarisizDurum("Kullanıcı adı bulunamadı!", 1000)
                     return@addOnSuccessListener
                 }
 
                 val doc = query.documents[0]
-                val emailFromDb = doc.getString("Email")
-
-                Log.d("AUTH_DEBUG", "Kullanıcı Firestore'da bulundu! Doc ID (UID): ${doc.id} | Email: $emailFromDb")
-
+                user.kullaniciAdi = doc.getString("KullaniciAdi") ?: username // <-- EKLENDİ
                 user.ad = doc.getString("Ad")
                 user.soyad = doc.getString("Soyad")
-                user.email = emailFromDb
+                user.email = doc.getString("Email")
+                user.fotoUrl = doc.getString("profilFotoUrl")
+                user.biyografi = doc.getString("Hakkinda")
+                user.takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
+                user.takipciSayisi = doc.getLong("takipciSayisi")
+                user.gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
+
                 user.setID(doc.id)
 
                 if (user.email.isNullOrEmpty()) {
@@ -166,10 +157,8 @@ class AuthFragment : Fragment() {
                         saveUserLocallyAndNavigate(user)
                         uyariMesaji.BasariliDurum("Giriş Başarılı...", 1000)
                     } else {
-                        Log.e("AUTH_DEBUG", "HATA: Firebase Auth maile/şifreye onay vermedi! (Giriş Başarısız)")
-                        uyariMesaji.BasarisizDurum("Şifre hatalı veya giriş başarısız...", 1000)
+                        uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
                     }
-                    Log.d("AUTH_DEBUG", "--------------------------------------------------")
                 }
             }
             .addOnFailureListener { exception ->

@@ -1,21 +1,28 @@
-package com.beem.catmap.data.repository;
+package com.beem.catmap.data.repository
+
 import android.content.Context
-import androidx.core.content.edit
+import androidx.collection.LruCache
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.gonderi.TargetUserFollowData
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlin.math.max
-
-class FollowRepository(
-) {
+class FollowRepository(private val context: Context) {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val userManager = CurrentUserManager.getInstance(context)
+
+    private val targetUserCache = LruCache<String, TargetUserFollowData>(10)
+
     private val currentUserId: String?
         get() = UserSession.userId
-    //benım takıp ettıklşerım
-    suspend fun isFollowing(targetUserId: String): Result<Boolean> {
-        val userId = currentUserId ?: return Result.failure(Exception("Oturum açık değil"))
-        return try {
+
+    suspend fun isFollowing(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+        return@withContext try {
             val documentSnapshot = db.collection("users")
                 .document(userId)
                 .collection("takipEdilenler")
@@ -28,11 +35,11 @@ class FollowRepository(
             Result.failure(e)
         }
     }
-    //benı takıp edenler
-    suspend fun isFollowedBy(targetUserId: String): Result<Boolean> {
-        val userId = currentUserId ?: return Result.failure(Exception("Oturum açık değil"))
 
-        return try {
+    suspend fun isFollowedBy(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+
+        return@withContext try {
             val documentSnapshot = db.collection("users")
                 .document(userId)
                 .collection("takipciler")
@@ -45,23 +52,73 @@ class FollowRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun fetchAndCacheFollowCounts(
+        userId: String,
+        isMyProfile: Boolean,
+        forceRefresh: Boolean = false
+    ): Result<FollowCounts> = withContext(Dispatchers.IO) {
+
+        if (isMyProfile && !forceRefresh) {
+            val followerCount = userManager.profileState.value.takipciSayisi
+            val followingCount = userManager.profileState.value.takipEdilenSayisi
+            return@withContext Result.success(FollowCounts(followingCount, followerCount))
+        }
+
+        if (!isMyProfile && !forceRefresh) {
+            val cachedData = targetUserCache.get(userId)
+            if (cachedData != null) {
+                return@withContext Result.success(FollowCounts(cachedData.followingCount, cachedData.followerCount))
+            }
+        }
+
+        try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                val followingCount = snapshot.getLong("TakipEdilenSayisi") ?: 0L
+                val followerCount = snapshot.getLong("takipciSayisi") ?: 0L
+
+                if (isMyProfile) {
+                    userManager.updateFollowCounts(followerCount, followingCount)
+                } else {
+                    targetUserCache.put(userId, TargetUserFollowData(followerCount, followingCount))
+                }
+
+                Result.success(FollowCounts(followingCount, followerCount))
+            } else {
+                Result.success(FollowCounts(0L, 0L))
+            }
+        } catch (e: Exception) {
+            if (!isMyProfile) {
+                val cached = targetUserCache.get(userId)
+                if (cached != null) {
+                    return@withContext Result.success(FollowCounts(cached.followingCount, cached.followerCount))
+                }
+            }
+            Result.failure(e)
+        }
+    }
+
     suspend fun takipet(
         currentUserId: String,
         targetUserId: String,
         myBlockedList: List<String>?,
         blockedMeList: List<String>?
-    ): Result<Unit> {
-        // Engelleme kontrolleri
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         if ((myBlockedList?.contains(targetUserId) == true) ||
             (blockedMeList?.contains(currentUserId) == true)
         ) {
-            return Result.failure(IllegalStateException("Engelleme durumundan dolayı takip edilemez."))
+            return@withContext Result.failure(IllegalStateException("Engelleme durumundan dolayı takip edilemez."))
         }
 
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
 
-        return try {
+        return@withContext try {
             db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val targetSnap = transaction.get(targetUserRef)
@@ -111,16 +168,28 @@ class FollowRepository(
                 null
             }.await()
 
+            // Target Cache güncelleme
+            val currentCache = targetUserCache.get(targetUserId)
+            val newFollowerCount = (currentCache?.followerCount ?: 0L) + 1
+            val newFollowingCount = currentCache?.followingCount ?: 0L
+            targetUserCache.put(targetUserId, TargetUserFollowData(newFollowerCount, newFollowingCount))
+
+            // Kendi profil sayılarını güncelleme
+            val myCurrentFollower = userManager.profileState.value.takipciSayisi
+            val myCurrentFollowing = userManager.profileState.value.takipEdilenSayisi
+            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing + 1)
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }// --- YENİ: TAKİPTEN ÇIKARMA METODU ---
-    suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> {
+    }
+
+    suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
 
-        return try {
+        return@withContext try {
             db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val targetSnap = transaction.get(targetUserRef)
@@ -155,18 +224,29 @@ class FollowRepository(
                 null
             }.await()
 
+            // Target Cache güncelleme
+            val currentCache = targetUserCache.get(targetUserId)
+            if (currentCache != null) {
+                val newFollowerCount = max(currentCache.followerCount - 1, 0L)
+                targetUserCache.put(targetUserId, TargetUserFollowData(newFollowerCount, currentCache.followingCount))
+            }
+
+            // Kendi profil sayılarını güncelleme
+            val myCurrentFollower = userManager.profileState.value.takipciSayisi
+            val myCurrentFollowing = max(userManager.profileState.value.takipEdilenSayisi - 1, 0L)
+            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing)
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // --- YENİ: TAKİPÇİDEN ÇIKARMA (TAKİPÇİYİ SİLME) METODU ---
-    suspend fun removeFollower(currentUserId: String, followerId: String): Result<Unit> {
+    suspend fun removeFollower(currentUserId: String, followerId: String): Result<Unit> = withContext(Dispatchers.IO) {
         val currentUserRef = db.collection("users").document(currentUserId)
         val followerRef = db.collection("users").document(followerId)
 
-        return try {
+        return@withContext try {
             db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val followerSnap = transaction.get(followerRef)
@@ -201,36 +281,17 @@ class FollowRepository(
                 null
             }.await()
 
+            val myCurrentFollower = max(userManager.profileState.value.takipciSayisi - 1, 0L)
+            val myCurrentFollowing = userManager.profileState.value.takipEdilenSayisi
+            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing)
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun fetchAndCacheFollowCounts(context: Context, userId: String): Result<FollowCounts> {
-        return try {
-            val snapshot = db.collection("users")
-                .document(userId)
-                .get()
-                .await()
-
-            if (snapshot.exists()) {
-                val followingCount = snapshot.getLong("TakipEdilenSayisi") ?: 0L
-                val followerCount = snapshot.getLong("takipciSayisi") ?: 0L
-
-                // SharedPreferences önbellekleme
-                val sp = context.getSharedPreferences("ProfilPrefs", Context.MODE_PRIVATE)
-                sp.edit {
-                    putLong("cache_takip", followingCount)
-                    putLong("cache_takipci", followerCount)
-                }
-
-                Result.success(FollowCounts(followingCount, followerCount))
-            } else {
-                Result.success(FollowCounts(0L, 0L))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    fun getCachedTargetUserData(userId: String): TargetUserFollowData? {
+        return targetUserCache.get(userId)
     }
 }

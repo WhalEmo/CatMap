@@ -10,7 +10,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -47,7 +47,9 @@ class ProfilFragment : Fragment() {
     private val followViewModel: FollowViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
     private var postsLoaded = false
-
+    private lateinit var blockedUserLayout: View
+    private lateinit var btnBackEngel: ImageButton
+    private lateinit var KullaniciAdiEngel: TextView
     private lateinit var shimmerLayout: ShimmerFrameLayout
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -71,6 +73,7 @@ class ProfilFragment : Fragment() {
     private lateinit var tvAd: TextView
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var gonderiAdapter: GonderiAdapter
+
     val myUserId = UserSession.userId
     private var targetUserId: String? = null
 
@@ -93,6 +96,20 @@ class ProfilFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         handleBackPressWithEngine()
 
+        initViews(view)
+        showShimmerLoading()
+
+        setupRecyclerView()
+        setupListeners()
+        observeViewModel()
+
+        targetUserId?.let { userId ->
+            followViewModel.profilDurumunuHazirla(userId)///kenı prfılım, takıp takıpcı mı durumalrına bakıyoe
+            profileViewModel.tumProfilVerileriniYukle(userId, forceRefresh = false)
+        }
+    }
+
+    private fun initViews(view: View) {
         shimmerLayout = view.findViewById(R.id.shimmerLayout)
         recyclerView = view.findViewById(R.id.gonderiRecyclerView)
         progressBar = view.findViewById(R.id.progressBarr)
@@ -115,22 +132,25 @@ class ProfilFragment : Fragment() {
         tvAd = view.findViewById(R.id.tvAdSoyad)
         profilFotoImageView = view.findViewById(R.id.profilFotoImageView)
         postSectionHeader = view.findViewById(R.id.postSectionHeader)
+        blockedUserLayout = view.findViewById(R.id.blockedUserLayout)
+        btnBackEngel = view.findViewById(R.id.btnBackEngel)
+        KullaniciAdiEngel = view.findViewById(R.id.KullaniciAdiEngel)
+    }
 
-        shimmerLayout.startShimmer()
-        shimmerLayout.visibility = View.VISIBLE
-        swipeRefreshLayout.visibility = View.GONE
+    // --- UI GÖRÜNÜRLÜK VE SHIMMER METODLARI ---
 
-        setupRecyclerView()
-        setupListeners()
-        observeViewModel()
-
-        targetUserId?.let { userId ->
-            viewModel.profilDurumunuHazirla(userId)
-            followViewModel.profilDurumunuHazirla(userId)
-            followViewModel.targetUserClearOrPrepare(userId)
-            profileViewModel.profilBilgileriniYukle(userId)
-            followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = false)
+    private fun showShimmerLoading() {
+        if (!swipeRefreshLayout.isRefreshing) {
+            shimmerLayout.startShimmer()
+            shimmerLayout.visibility = View.VISIBLE
+            swipeRefreshLayout.visibility = View.GONE
         }
+    }
+
+    private fun hideShimmerLoading() {
+        shimmerLayout.stopShimmer()
+        shimmerLayout.visibility = View.GONE
+        swipeRefreshLayout.visibility = View.VISIBLE
     }
 
     private fun setupRecyclerView() {
@@ -185,6 +205,7 @@ class ProfilFragment : Fragment() {
                 }
             }
         }
+
         takipciSayisiLayout.setOnClickListener {
             targetUserId?.let { userId ->
                 val args = bundleOf(
@@ -195,6 +216,7 @@ class ProfilFragment : Fragment() {
                 SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, userId)
             }
         }
+
         takipEdilenSayisiLayout.setOnClickListener {
             targetUserId?.let { userId ->
                 val args = bundleOf(
@@ -224,18 +246,11 @@ class ProfilFragment : Fragment() {
         }
     }
 
+
     private fun yukleVerileri(forceRefresh: Boolean = false) {
         targetUserId?.let { userId ->
-            val currentState = followViewModel.followUiState.value
-            val canLoadPosts = currentState.isFollowing || currentState.isSelfProfile
-
-            followViewModel.takipTakipciSayisiGetir(userId, forceRefresh = forceRefresh)
-
-            viewModel.gonderileriGetir(
-                userId = userId,
-                isFollowing = canLoadPosts,
-                forceRefresh = forceRefresh
-            )
+            followViewModel.profilDurumunuHazirla(userId)///
+            profileViewModel.tumProfilVerileriniYukle(userId, forceRefresh = forceRefresh)
         } ?: run {
             swipeRefreshLayout.isRefreshing = false
         }
@@ -245,6 +260,48 @@ class ProfilFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+                // 1. Ana Profil Verisi Akışı (Single Source of Truth)
+                launch {
+                    profileViewModel.fullProfileState.collect { state ->
+                        when (state) {
+                            is UiState.Loading -> {
+                                showShimmerLoading()
+                            }
+                            is UiState.Success -> {
+                                hideShimmerLoading()
+                                val fullData = state.data
+                                val targetId = targetUserId ?: UserSession.userId ?: ""
+
+                                // PostViewModel'in Paging yapısını verilerle doldur
+                                viewModel.setupFromFullProfile(
+                                    userId = targetId,
+                                    cacheData = fullData.postsCache
+                                )
+
+                                // FollowViewModel'i hazır verilerle doldur
+                                followViewModel.setupFromFullProfile(
+                                    followerCount = fullData.followerCount,
+                                    followingCount = fullData.followingCount,
+                                    isSelf = fullData.isSelfProfile
+                                )
+
+                                // Header profil bilgilerini bağla
+                                bindUserProfileData(fullData.profile)
+                            }
+                            is UiState.Blocked -> {
+                                hideShimmerLoading()
+                                handleBlockedUiState()
+                            }
+                            is UiState.Error -> {
+                                hideShimmerLoading()
+                                swipeRefreshLayout.isRefreshing = false
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+
+                // 2. Profil Güncelleme EventBus Takibi
                 launch {
                     ProfileEventBus.profileEvent.collect { event ->
                         when (event) {
@@ -259,31 +316,14 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
+                // 3. Takip Et / Takipten Çık Buton Durumu Dinleyici
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
                         renderProfileButtons(state)
-
-                        targetUserId?.let { userId ->
-                            val canLoadPosts = state.isFollowing || state.isSelfProfile
-
-                            if (!postsLoaded) {
-                                viewModel.gonderileriGetir(
-                                    userId = userId,
-                                    isFollowing = canLoadPosts,
-                                    forceRefresh = false
-                                )
-                                postsLoaded = true
-                            } else {
-                                viewModel.gonderileriGetir(
-                                    userId = userId,
-                                    isFollowing = canLoadPosts,
-                                    forceRefresh = false
-                                )
-                            }
-                        }
                     }
                 }
 
+                // 4. Takipçi / Takip Edilen Sayıları Dinleyici
                 launch {
                     if (targetUserId == myUserId) {
                         followViewModel.profileState.collect { profileState ->
@@ -305,44 +345,9 @@ class ProfilFragment : Fragment() {
                     }
                 }
 
-                launch {
-                    profileViewModel.userProfile.collect { state ->
-                        when (state) {
-                            is UiState.Loading -> {
-                                if (!swipeRefreshLayout.isRefreshing) {
-                                    shimmerLayout.startShimmer()
-                                    shimmerLayout.visibility = View.VISIBLE
-                                    swipeRefreshLayout.visibility = View.GONE
-                                }
-                            }
-                            is UiState.Success -> {
-                                shimmerLayout.stopShimmer()
-                                shimmerLayout.visibility = View.GONE
-                                swipeRefreshLayout.visibility = View.VISIBLE
-
-                                KullaniciAdi.text = state.data.kullaniciAdi
-                                tvAd.text = state.data.ad
-                                bioTextView.text = state.data.hakkinda
-
-                                Glide.with(requireContext())
-                                    .load(state.data.fotoUrl)
-                                    .placeholder(R.drawable.kullanici)
-                                    .error(R.drawable.kullanici)
-                                    .into(profilFotoImageView)
-                            }
-                            is UiState.Error -> {
-                                shimmerLayout.stopShimmer()
-                                shimmerLayout.visibility = View.GONE
-                                swipeRefreshLayout.visibility = View.VISIBLE
-                            }
-                            else -> {}
-                        }
-                    }
-                }
-
+                // 5. Post RecyclerView ve UI State Dinleyici
                 launch {
                     viewModel.uiState.collect { state ->
-                        gonderiSayisiTextView.text = state.postCount.toString()
 
                         if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
                             progressBar.visibility = View.VISIBLE
@@ -365,15 +370,31 @@ class ProfilFragment : Fragment() {
                             } else {
                                 tvEmpty.visibility = View.GONE
                                 recyclerView.visibility = View.VISIBLE
-                                gonderiAdapter.submitList(state.posts) {
-                                    recyclerView.scrollToPosition(0)
-                                }
+                                gonderiAdapter.submitList(state.posts)
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun bindUserProfileData(profileData: com.beem.catmap.gonderi.UserProfileData) {
+        KullaniciAdi.text = profileData.kullaniciAdi
+        tvAd.text = profileData.ad
+        bioTextView.text = profileData.hakkinda
+
+        gonderiSayisiTextView.text = profileData.gonderiSayisi.toString()
+
+        Glide.with(requireContext())
+            .load(profileData.fotoUrl)
+            .placeholder(R.drawable.kullanici)
+            .error(R.drawable.kullanici)
+            .into(profilFotoImageView)
+    }
+
+    private fun handleBlockedUiState() {
+        blockedUserLayout.visibility= View.VISIBLE
     }
 
     private fun renderProfileButtons(state: FollowUiState) {
