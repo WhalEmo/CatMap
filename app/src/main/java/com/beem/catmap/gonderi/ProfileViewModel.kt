@@ -5,25 +5,29 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.KullaniciAuth.copy
 import com.beem.catmap.data.model.FullProfileData
-import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.data.repository.PostRepository
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.domain.usecase.GetProfileFullDataUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: ProfileRepository = ProfileRepository(application)
-    private val postRepository :PostRepository = PostRepository(application)
+    private val postRepository = PostRepository.getInstance(application)
+
+    private val currentUserManager = CurrentUserManager.getInstance(application)
     private val getProfileFullDataUseCase = GetProfileFullDataUseCase(
         profileRepository = repository,
-        postRepository = postRepository,
+        postRepository = postRepository
+
     )
 
-    // Artık Tek Kaynak (Single Source of Truth) Olarak _fullProfileState Kullanıyoruz
     private val _fullProfileState = MutableStateFlow<UiState<FullProfileData>>(UiState.Idle)
     val fullProfileState: StateFlow<UiState<FullProfileData>> = _fullProfileState.asStateFlow()
 
@@ -31,6 +35,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val profileUpdateState: StateFlow<ProfileUpdateResult> = _profileUpdateState.asStateFlow()
 
     fun tumProfilVerileriniYukle(targetUserId: String, forceRefresh: Boolean = false) {
+        if (targetUserId.isBlank()) return
+
         viewModelScope.launch {
             _fullProfileState.value = UiState.Loading
             getProfileFullDataUseCase(targetUserId, forceRefresh)
@@ -38,21 +44,24 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     _fullProfileState.value = UiState.Success(fullData)
                 }
                 .onFailure { exception ->
-                    _fullProfileState.value = UiState.Error(exception.localizedMessage ?: "Profil yüklenemedi.")
+                    _fullProfileState.value = UiState.Error(
+                        exception.localizedMessage ?: "Profil yüklenemedi."
+                    )
                 }
         }
     }
 
+    /**
+     * Dışarıdan (örneğin EventBus dinleyicisinden) gelen güncel kullanıcı
+     * verisini UI State'e yansıtmak için kullanılır.
+     */
     fun lokalProfilVerisiniGuncelle(guncelKullanici: Kullanici) {
-        val currentState = _fullProfileState.value
-        if (currentState is UiState.Success) {
-            val mevcutFullData = currentState.data
-            val yeniProfileData = repository.updateLokalUserSession(guncelKullanici, mevcutFullData.profile)
-
-            // FullProfileData içerisindeki profile nesnesini güncelleyip State'e yazıyoruz
-            _fullProfileState.value = UiState.Success(
-                mevcutFullData.copy(profile = yeniProfileData)
-            )
+        _fullProfileState.update { currentState ->
+            if (currentState is UiState.Success) {
+                UiState.Success(currentState.data.copy(profile = guncelKullanici))
+            } else {
+                currentState
+            }
         }
     }
 
@@ -66,14 +75,19 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     ) {
         if (_profileUpdateState.value is ProfileUpdateResult.Loading) return
 
-        // Mevcut profil verisini _fullProfileState içerisinden alıyoruz
         val currentFullData = (_fullProfileState.value as? UiState.Success)?.data
         val currentProfile = currentFullData?.profile
 
-        val currentUsername = currentProfile?.kullaniciAdi ?: ""
-        val currentAd = currentProfile?.ad ?: ""
-        val currentSoyad = currentProfile?.soyad ?: ""
-        val currentBio = currentProfile?.hakkinda ?: ""
+        // Güvenlik Koruması: Eğer state yoksa işlemi başlatma
+        if (currentProfile == null) {
+            _profileUpdateState.value = ProfileUpdateResult.Error("Profil verisi henüz yüklenmedi.")
+            return
+        }
+
+        val currentUsername = currentProfile.kullaniciAdi.orEmpty()
+        val currentAd = currentProfile.ad.orEmpty()
+        val currentSoyad = currentProfile.soyad.orEmpty()
+        val currentBio = currentProfile.biyografi.orEmpty()
 
         val isUsernameChanged = yeniKullaniciAdi != currentUsername
         val isAdChanged = yeniAd != currentAd
@@ -81,14 +95,14 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         val isBioChanged = yeniHakkinda != currentBio
         val isImageChanged = yeniResimUri != null
 
-        // Hiçbir değişiklik yoksa işlemi sonlandır
+        // Hiçbir değişiklik yapılmadıysa doğrudan mevcut değerlerle Success dön
         if (!isUsernameChanged && !isAdChanged && !isSoyadChanged && !isBioChanged && !isImageChanged) {
             _profileUpdateState.value = ProfileUpdateResult.Success(
                 newUsername = currentUsername,
                 newAd = currentAd,
                 newSoyad = currentSoyad,
                 newHakkinda = currentBio,
-                newPhotoUrl = currentProfile?.fotoUrl
+                newPhotoUrl = currentProfile.fotoUrl
             )
             return
         }
@@ -109,20 +123,17 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             )
 
             if (result is ProfileUpdateResult.Success) {
-                // Başarılı güncelleme sonrası mevcut FullProfileData nesnesini güncelliyoruz
-                if (currentFullData != null && currentProfile != null) {
-                    val guncellenmisProfileData = UserProfileData(
-                        userId = currentUserId,
-                        kullaniciAdi = result.newUsername,
-                        ad = result.newAd,
-                        soyad = result.newSoyad,
-                        fotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl,
-                        hakkinda = result.newHakkinda,
-                    )
+                val guncellenmisProfileData = currentProfile.copy(
+                    kullaniciAdi = result.newUsername,
+                    ad = result.newAd,
+                    soyad = result.newSoyad,
+                    fotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl,
+                    biyografi = result.newHakkinda
+                )
 
-                    _fullProfileState.value = UiState.Success(
-                        currentFullData.copy(profile = guncellenmisProfileData)
-                    )
+                // StateThread-Safe şekilde güncelleniyor
+                _fullProfileState.update {
+                    UiState.Success(currentFullData.copy(profile = guncellenmisProfileData))
                 }
             }
             _profileUpdateState.value = result

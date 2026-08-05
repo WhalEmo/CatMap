@@ -3,14 +3,16 @@ package com.beem.catmap.gonderi
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.collection.LruCache
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.KullaniciAuth.copy
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 sealed class ProfileUpdateResult {
     object Idle : ProfileUpdateResult()
@@ -26,52 +28,26 @@ sealed class ProfileUpdateResult {
     object Loading : ProfileUpdateResult()
 }
 
-class ProfileRepository(private val context: Context) {
+class ProfileRepository(context: Context) {
 
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val userManager = CurrentUserManager.getInstance(context)
 
-    private val otherUserProfileCache = LruCache<String, UserProfileData>(10)
-
-    suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<UserProfileData> {
+    suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<Kullanici> = withContext(Dispatchers.IO) {
         val isMyProfile = userId == UserSession.userId
 
-        // 1. Kendi profilimiz ise ve yenileme istenmiyorsa CurrentUserManager'dan al
         if (isMyProfile && !forceRefresh) {
             val cachedUser = userManager.getCurrentUser()
-            val profileState = userManager.profileState.value
-
-            val localProfile = UserProfileData(
-                userId = userId,
-                kullaniciAdi = cachedUser.getKullaniciAdi() ?: "",
-                ad = cachedUser.getAd() ?: "",
-                soyad = cachedUser.getSoyad(),
-                fotoUrl = cachedUser.getFotoUrl(),
-                hakkinda = profileState.biyografi ?: "",
-                takipciSayisi = profileState.takipciSayisi,
-                takipEdilenSayisi = profileState.takipEdilenSayisi,
-                gonderiSayisi = profileState.gonderiSayisi
-            )
-
-            if (localProfile.kullaniciAdi.isNotBlank()) {
-                return UiState.Success(localProfile)
+            if (!cachedUser.kullaniciAdi.isNullOrBlank()) {
+                return@withContext UiState.Success(cachedUser)
             }
         }
 
-        // 2. Başka bir kullanıcının profili ise ve yenileme istenmiyorsa LruCache'den al
-        if (!isMyProfile && !forceRefresh) {
-            val cachedData = otherUserProfileCache.get(userId)
-            if (cachedData != null) {
-                return UiState.Success(cachedData)
-            }
-        }
-
-        // 3. Firestore'dan TEK SEFERDE çek ve önbellekle
-        return fetchAndCacheFromFirestore(userId, isMyProfile)
+        fetchFromFirestore(userId, isMyProfile)
     }
 
-    private suspend fun fetchAndCacheFromFirestore(userId: String, isMyProfile: Boolean): UiState<UserProfileData> {
+    private suspend fun fetchFromFirestore(userId: String, isMyProfile: Boolean): UiState<Kullanici> {
         return try {
             val snapshot = db.collection("users")
                 .document(userId)
@@ -79,43 +55,20 @@ class ProfileRepository(private val context: Context) {
                 .await()
 
             if (snapshot.exists()) {
-                val ad = snapshot.getString("Ad") ?: ""
-                val soyad = snapshot.getString("Soyad") ?: ""
-                val kullaniciAdi = snapshot.getString("KullaniciAdi") ?: ""
-                val fotoUrl = snapshot.getString("profilFotoUrl")
-                val hakkinda = snapshot.getString("Hakkinda") ?: ""
+                val profileData = Kullanici().apply {
+                    id = userId
+                    ad = snapshot.getString("Ad").orEmpty()
+                    soyad = snapshot.getString("Soyad").orEmpty()
+                    kullaniciAdi = snapshot.getString("KullaniciAdi").orEmpty()
+                    fotoUrl = snapshot.getString("profilFotoUrl")
+                    biyografi = snapshot.getString("Hakkinda").orEmpty()
+                    takipciSayisi = snapshot.getLong("takipciSayisi") ?: 0L
+                    takipEdilenSayisi = snapshot.getLong("TakipEdilenSayisi") ?: 0L
+                    gonderiSayisi = snapshot.getLong("gonderiSayisi") ?: 0L
+                }
 
-                // Sayıları TEK BİR belgeden alıyoruz
-                val takipci = snapshot.getLong("takipciSayisi") ?: 0L
-                val takipEdilen = snapshot.getLong("TakipEdilenSayisi") ?: 0L
-                val gonderi = snapshot.getLong("gonderiSayisi") ?: 0L
-
-                val profileData = UserProfileData(
-                    userId = userId,
-                    kullaniciAdi = kullaniciAdi,
-                    ad = ad,
-                    soyad = soyad,
-                    fotoUrl = fotoUrl,
-                    hakkinda = hakkinda,
-                    takipciSayisi = takipci,
-                    takipEdilenSayisi = takipEdilen,
-                    gonderiSayisi = gonderi
-                )
-
-                // Önbellek güncellemeleri
                 if (isMyProfile) {
-                    userManager.updateProfileDetails(
-                        ad = ad,
-                        soyad = soyad,
-                        kullaniciAdi = kullaniciAdi,
-                        takipci = takipci,
-                        takipEdilen = takipEdilen,
-                        gonderiSayisi = gonderi,
-                        biyografi = hakkinda,
-                        fotoUrl = fotoUrl
-                    )
-                } else {
-                    otherUserProfileCache.put(userId, profileData)
+                    updateLocalSession(profileData)
                 }
 
                 UiState.Success(profileData)
@@ -133,31 +86,6 @@ class ProfileRepository(private val context: Context) {
         }
     }
 
-    fun updateLokalUserSession(guncelKullanici: Kullanici, eskiProfileData: UserProfileData): UserProfileData {
-        val yeniKullaniciAdi = guncelKullanici.kullaniciAdi?.takeIf { it.isNotBlank() } ?: eskiProfileData.kullaniciAdi
-        val yeniAd = guncelKullanici.ad?.takeIf { it.isNotBlank() } ?: eskiProfileData.ad
-        val yeniSoyad = guncelKullanici.soyad ?: eskiProfileData.soyad
-        val yeniBio = guncelKullanici.biyografi ?: eskiProfileData.hakkinda
-        val yeniFotoUrl = guncelKullanici.fotoUrl?.takeIf { it.isNotBlank() } ?: eskiProfileData.fotoUrl
-
-        updateLocalUserManager(
-            kullaniciAdi = yeniKullaniciAdi,
-            ad = yeniAd,
-            soyad = yeniSoyad,
-            fotoUrl = yeniFotoUrl,
-            hakkinda = yeniBio
-        )
-
-        return UserProfileData(
-            userId = eskiProfileData.userId,
-            kullaniciAdi = yeniKullaniciAdi,
-            ad = yeniAd,
-            soyad = yeniSoyad,
-            fotoUrl = yeniFotoUrl,
-            hakkinda = yeniBio
-        )
-    }
-
     suspend fun updateFullProfile(
         currentUserId: String,
         currentUsername: String,
@@ -168,25 +96,30 @@ class ProfileRepository(private val context: Context) {
         newSoyad: String,
         newHakkinda: String,
         newImageUri: Uri?
-    ): ProfileUpdateResult {
-        return try {
+    ): ProfileUpdateResult = withContext(Dispatchers.IO) {
+        try {
             val updates = mutableMapOf<String, Any>()
             var uploadedPhotoUrl: String? = null
 
-            if (newUsername.trim() != currentUsername.trim()) {
-                val isAvailable = checkUsernameAvailability(newUsername, currentUserId)
+            val finalUsername = newUsername.trim()
+            val finalAd = newAd.trim()
+            val finalSoyad = newSoyad.trim()
+            val finalHakkinda = newHakkinda.trim()
+
+            if (finalUsername != currentUsername.trim()) {
+                val isAvailable = checkUsernameAvailability(finalUsername, currentUserId)
                 if (!isAvailable) {
-                    return ProfileUpdateResult.UsernameAlreadyTaken
+                    return@withContext ProfileUpdateResult.UsernameAlreadyTaken
                 }
-                updates["KullaniciAdi"] = newUsername.trim()
+                updates["KullaniciAdi"] = finalUsername
             }
 
-            if (newAd.trim() != currentAd.trim()) {
-                updates["Ad"] = newAd.trim()
+            if (finalAd != currentAd.trim()) {
+                updates["Ad"] = finalAd
             }
 
-            if (newSoyad.trim() != currentSoyad.trim()) {
-                updates["Soyad"] = newSoyad.trim()
+            if (finalSoyad != currentSoyad.trim()) {
+                updates["Soyad"] = finalSoyad
             }
 
             if (newImageUri != null) {
@@ -194,7 +127,7 @@ class ProfileRepository(private val context: Context) {
                 updates["profilFotoUrl"] = uploadedPhotoUrl
             }
 
-            updates["Hakkinda"] = newHakkinda.trim()
+            updates["Hakkinda"] = finalHakkinda
             if (updates.isNotEmpty()) {
                 db.collection("users")
                     .document(currentUserId)
@@ -202,49 +135,45 @@ class ProfileRepository(private val context: Context) {
                     .await()
             }
 
-            val finalUsername = newUsername.trim()
-            val finalAd = newAd.trim()
-            val finalSoyad = newSoyad.trim()
-            val finalHakkinda = newHakkinda.trim()
+            val currentUser = userManager.getCurrentUser()
+            val finalPhotoUrl = uploadedPhotoUrl ?: currentUser.fotoUrl
 
-            // Yerel cache/UserManager güncellemesini Repository üstlenir
-            updateLocalUserManager(
+            val updatedUser = currentUser.copy(
                 kullaniciAdi = finalUsername,
                 ad = finalAd,
                 soyad = finalSoyad,
-                fotoUrl = uploadedPhotoUrl,
-                hakkinda = finalHakkinda
+                biyografi = finalHakkinda,
+                fotoUrl = finalPhotoUrl
             )
 
+            // Tek bir noktadan yerel session güncellenir
+            updateLocalSession(updatedUser)
+
             ProfileUpdateResult.Success(
-                newPhotoUrl = uploadedPhotoUrl,
+                newPhotoUrl = finalPhotoUrl,
                 newUsername = finalUsername,
                 newAd = finalAd,
                 newSoyad = finalSoyad,
                 newHakkinda = finalHakkinda
             )
-
         } catch (e: Exception) {
             Log.e("PROFILE", "updateFullProfile hata", e)
             ProfileUpdateResult.Error(e.localizedMessage ?: "Profil güncellenirken bir hata oluştu.")
         }
     }
 
-    private fun updateLocalUserManager(
-        kullaniciAdi: String,
-        ad: String,
-        soyad: String?,
-        fotoUrl: String?,
-        hakkinda: String
-    ) {
-        userManager.updateBiyografi(hakkinda)
-        val currentUser = userManager.getCurrentUser().apply {
-            setKullaniciAdi(kullaniciAdi)
-            setAd(ad)
-            setSoyad(soyad ?: "")
-            fotoUrl?.let { setFotoUrl(it) }
-        }
-        userManager.setCurrentUser(currentUser)
+    private fun updateLocalSession(user: Kullanici) {
+        userManager.updateProfileDetails(
+            ad = user.ad.orEmpty(),
+            soyad = user.soyad.orEmpty(),
+            kullaniciAdi = user.kullaniciAdi.orEmpty(),
+            takipci = user.takipciSayisi ?: 0L,
+            takipEdilen = user.takipEdilenSayisi ?: 0L,
+            gonderiSayisi = user.gonderiSayisi ?: 0L,
+            biyografi = user.biyografi.orEmpty(),
+            fotoUrl = user.fotoUrl
+        )
+        userManager.setCurrentUser(user)
     }
 
     private suspend fun uploadProfilePhotoToStorage(imageUri: Uri, userId: String): String {

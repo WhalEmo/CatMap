@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 object ProfileEventBus {
     private val _profileEvent = MutableSharedFlow<ProfileEvent>(
-        replay = 1,
+        replay = 0,
         extraBufferCapacity = 64
     )
     val profileEvent = _profileEvent.asSharedFlow()

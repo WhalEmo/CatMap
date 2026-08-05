@@ -121,13 +121,6 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
-    fun updateUserInfo(ad: String, soyad: String, kullaniciAdi: String) {
-        updateCurrentUser { user ->
-            user.ad = ad
-            user.soyad = soyad
-            user.kullaniciAdi = kullaniciAdi
-        }
-    }
 
     fun updateFollowCounts(takipciSayisi: Long, takipEdilenSayisi: Long) {
         updateCurrentUser { user ->

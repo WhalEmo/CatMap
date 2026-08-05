@@ -62,76 +62,64 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun takipTakipciSayisiGetir(userId: String, forceRefresh: Boolean = false) {
-        val isMyProfile = (userId == userManager.getCurrentUserId())
+    fun setupFromFullProfile(
+        followerCount: Long,
+        followingCount: Long,
+        isSelf: Boolean
+    ) {
+        _followUiState.update { it.copy(isSelfProfile = isSelf) }
 
-        viewModelScope.launch {
-            val result = repository.fetchAndCacheFollowCounts(
-                userId = userId,
-                isMyProfile = isMyProfile,
-                forceRefresh = forceRefresh
+        if (isSelf) {
+            userManager.updateFollowCounts(
+                takipciSayisi = followerCount,
+                takipEdilenSayisi = followingCount
             )
-
-            result.onSuccess { counts ->
-                if (isMyProfile) {
-                    userManager.updateFollowCounts(
-                        takipciSayisi = counts.followerCount,
-                        takipEdilenSayisi = counts.followingCount
-                    )
-                } else {
-                    _targetUserTakipciSayisi.value = counts.followerCount
-                    _targetUserTakipEdilenSayisi.value = counts.followingCount
-                }
-            }.onFailure {
-                if (!isMyProfile) {
-                    _targetUserTakipciSayisi.value = 0L
-                    _targetUserTakipEdilenSayisi.value = 0L
-                }
-            }
-        }
-    }
-
-    fun targetUserClearOrPrepare(targetUserId: String) {
-        val cached = repository.getCachedTargetUserData(targetUserId)
-        if (cached != null) {
-            _targetUserTakipciSayisi.value = cached.followerCount
-            _targetUserTakipEdilenSayisi.value = cached.followingCount
         } else {
-            _targetUserTakipciSayisi.value = 0L
-            _targetUserTakipEdilenSayisi.value = 0L
+            _targetUserTakipciSayisi.value = followerCount
+            _targetUserTakipEdilenSayisi.value = followingCount
         }
     }
 
     fun takipEt(takipEttiginId: String, currentUserId: String) {
+        // Optimistic UI Güncellemesi
+        val previousFollowerCount = _targetUserTakipciSayisi.value
         _followUiState.update { it.copy(isFollowing = true) }
+        _targetUserTakipciSayisi.value = previousFollowerCount + 1
 
         viewModelScope.launch {
-            val result = repository.takipet(
+            val result = repository.takipEt(
                 currentUserId = currentUserId,
                 targetUserId = takipEttiginId,
                 myBlockedList = _benimEngellediklerim.value,
                 blockedMeList = _beniEngelleyenler.value
             )
 
-            result.onSuccess {
+            result.onSuccess { followResult ->
+                // Kendi takip ettiğimiz sayıyı CurrentUserManager aracılığıyla güncelle
                 val currentProfile = userManager.profileState.value
                 userManager.updateFollowCounts(
                     takipciSayisi = currentProfile.takipciSayisi,
-                    takipEdilenSayisi = currentProfile.takipEdilenSayisi + 1
+                    takipEdilenSayisi = followResult.currentFollowingCount
                 )
 
-                // Güncellenmiş sayıyı Repository önbelleğinden alıp UI'a yansıt
-                repository.getCachedTargetUserData(takipEttiginId)?.let { cachedData ->
-                    _targetUserTakipciSayisi.value = cachedData.followerCount
-                }
+                // Hedef kullanıcının Firestore'dan onaylanan gerçek takipçi sayısını yaz
+                _targetUserTakipciSayisi.value = followResult.targetFollowerCount
+
             }.onFailure {
+                // Hata durumunda rollback (Geri Al)
                 _followUiState.update { it.copy(isFollowing = false) }
+                _targetUserTakipciSayisi.value = previousFollowerCount
             }
         }
     }
 
     fun takiptenCikar(takiptenCiktiginId: String, currentUserId: String) {
+        // Optimistic UI Güncellemesi
+        val previousFollowerCount = _targetUserTakipciSayisi.value
+        val newOptimisticCount = if (previousFollowerCount > 0) previousFollowerCount - 1 else 0L
+
         _followUiState.update { it.copy(isFollowing = false) }
+        _targetUserTakipciSayisi.value = newOptimisticCount
 
         viewModelScope.launch {
             val result = repository.unfollowUser(
@@ -139,21 +127,20 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 targetUserId = takiptenCiktiginId
             )
 
-            result.onSuccess {
+            result.onSuccess { followResult ->
                 val currentProfile = userManager.profileState.value
-                val yeniTakipEdilen = if (currentProfile.takipEdilenSayisi > 0) currentProfile.takipEdilenSayisi - 1 else 0L
-
                 userManager.updateFollowCounts(
                     takipciSayisi = currentProfile.takipciSayisi,
-                    takipEdilenSayisi = yeniTakipEdilen
+                    takipEdilenSayisi = followResult.currentFollowingCount
                 )
 
-                // Güncellenmiş sayıyı Repository önbelleğinden alıp UI'a yansıt
-                repository.getCachedTargetUserData(takiptenCiktiginId)?.let { cachedData ->
-                    _targetUserTakipciSayisi.value = cachedData.followerCount
-                }
+                // Hedef kullanıcının Firestore onaylı güncel takipçi sayısı
+                _targetUserTakipciSayisi.value = followResult.targetFollowerCount
+
             }.onFailure {
+                // Rollback
                 _followUiState.update { it.copy(isFollowing = true) }
+                _targetUserTakipciSayisi.value = previousFollowerCount
             }
         }
     }
@@ -165,36 +152,15 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 followerId = takipciId
             )
 
-            result.onSuccess {
+            result.onSuccess { removeResult ->
                 val currentProfile = userManager.profileState.value
-                val yeniTakipci = if (currentProfile.takipciSayisi > 0) currentProfile.takipciSayisi - 1 else 0L
 
+                // Kendi hesabımızın güncellenmiş takipçi sayısını yansıt
                 userManager.updateFollowCounts(
-                    takipciSayisi = yeniTakipci,
+                    takipciSayisi = removeResult.currentFollowerCount,
                     takipEdilenSayisi = currentProfile.takipEdilenSayisi
                 )
             }
-        }
-    }
-    // FollowViewModel.kt içerisine eklenecek metot:
-    fun setupFromFullProfile(
-        followerCount: Long,
-        followingCount: Long,
-        isSelf: Boolean
-    ) {
-        _followUiState.update { it.copy(isSelfProfile = isSelf) }
-
-        if (isSelf) {
-            // Kendi profilimizse sayıları CurrentUserManager zaten yönetiyor/senkronize ediyor
-            userManager.updateFollowCounts(
-                takipciSayisi = followerCount,
-                takipEdilenSayisi = followingCount
-            )
-        } else {
-            // Başka kullanıcı ise ViewModel state'lerini güncelliyoruz
-            _targetUserTakipciSayisi.value = followerCount
-            _targetUserTakipEdilenSayisi.value = followingCount
-
         }
     }
 }

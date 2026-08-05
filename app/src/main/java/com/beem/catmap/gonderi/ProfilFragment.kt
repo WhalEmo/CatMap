@@ -20,6 +20,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
 import com.beem.catmap.R
@@ -46,7 +47,7 @@ class ProfilFragment : Fragment() {
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
-    private var postsLoaded = false
+
     private lateinit var blockedUserLayout: View
     private lateinit var btnBackEngel: ImageButton
     private lateinit var KullaniciAdiEngel: TextView
@@ -81,6 +82,8 @@ class ProfilFragment : Fragment() {
         super.onCreate(savedInstanceState)
         arguments?.let {
             targetUserId = it.getString(ARG_USER_ID)
+
+            Log.d("TARGET",targetUserId.toString())
         }
     }
 
@@ -104,7 +107,7 @@ class ProfilFragment : Fragment() {
         observeViewModel()
 
         targetUserId?.let { userId ->
-            followViewModel.profilDurumunuHazirla(userId)///kenı prfılım, takıp takıpcı mı durumalrına bakıyoe
+            followViewModel.profilDurumunuHazirla(userId)
             profileViewModel.tumProfilVerileriniYukle(userId, forceRefresh = false)
         }
     }
@@ -136,8 +139,6 @@ class ProfilFragment : Fragment() {
         btnBackEngel = view.findViewById(R.id.btnBackEngel)
         KullaniciAdiEngel = view.findViewById(R.id.KullaniciAdiEngel)
     }
-
-    // --- UI GÖRÜNÜRLÜK VE SHIMMER METODLARI ---
 
     private fun showShimmerLoading() {
         if (!swipeRefreshLayout.isRefreshing) {
@@ -246,10 +247,9 @@ class ProfilFragment : Fragment() {
         }
     }
 
-
     private fun yukleVerileri(forceRefresh: Boolean = false) {
         targetUserId?.let { userId ->
-            followViewModel.profilDurumunuHazirla(userId)///
+            followViewModel.profilDurumunuHazirla(userId)
             profileViewModel.tumProfilVerileriniYukle(userId, forceRefresh = forceRefresh)
         } ?: run {
             swipeRefreshLayout.isRefreshing = false
@@ -261,6 +261,7 @@ class ProfilFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 // 1. Ana Profil Verisi Akışı (Single Source of Truth)
+                // 1. Ana Profil Verisi Akışı (Single Source of Truth)
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
                         when (state) {
@@ -270,12 +271,14 @@ class ProfilFragment : Fragment() {
                             is UiState.Success -> {
                                 hideShimmerLoading()
                                 val fullData = state.data
-                                val targetId = targetUserId ?: UserSession.userId ?: ""
+                                val targetId = targetUserId ?: UserSession.userId.orEmpty()
 
-                                // PostViewModel'in Paging yapısını verilerle doldur
+                                // PostViewModel'e gönderi listesini ve varsa paging cursor bilgilerini aktarın
                                 viewModel.setupFromFullProfile(
                                     userId = targetId,
-                                    cacheData = fullData.postsCache
+                                    initialPosts = fullData.posts,
+                                    lastDoc = fullData.lastDocument,
+                                    isLast = fullData.isLastPage
                                 )
 
                                 // FollowViewModel'i hazır verilerle doldur
@@ -379,22 +382,26 @@ class ProfilFragment : Fragment() {
         }
     }
 
-    private fun bindUserProfileData(profileData: com.beem.catmap.gonderi.UserProfileData) {
-        KullaniciAdi.text = profileData.kullaniciAdi
-        tvAd.text = profileData.ad
-        bioTextView.text = profileData.hakkinda
+    // DÜZELTME: Model türü UserProfileData yerine Kullanici yapıldı
+    private fun bindUserProfileData(kullanici: Kullanici) {
+        KullaniciAdi.text = kullanici.kullaniciAdi.orEmpty()
 
-        gonderiSayisiTextView.text = profileData.gonderiSayisi.toString()
+        val tamAd = kullanici.ad.trim()
+        tvAd.text = tamAd
+
+        bioTextView.text = kullanici.biyografi.orEmpty()
+
+        gonderiSayisiTextView.text = (kullanici.gonderiSayisi ?: 0L).toString()
 
         Glide.with(requireContext())
-            .load(profileData.fotoUrl)
+            .load(kullanici.fotoUrl)
             .placeholder(R.drawable.kullanici)
             .error(R.drawable.kullanici)
             .into(profilFotoImageView)
     }
 
     private fun handleBlockedUiState() {
-        blockedUserLayout.visibility= View.VISIBLE
+        blockedUserLayout.visibility = View.VISIBLE
     }
 
     private fun renderProfileButtons(state: FollowUiState) {
@@ -414,7 +421,7 @@ class ProfilFragment : Fragment() {
                     takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
                     takipEtButonu.visibility = View.GONE
                 } else if (state.isFollowed) {
-                    takipEtButonu.text = "Sende takip et"
+                    takipEtButonu.text = "Sen de takip et"
                     takipEtButonu.visibility = View.VISIBLE
                     takipEdiliyorVeMesajLayout.visibility = View.GONE
                 } else {

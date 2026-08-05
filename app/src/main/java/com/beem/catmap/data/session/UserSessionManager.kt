@@ -3,6 +3,7 @@ package com.beem.catmap.data.session
 import android.content.Context
 import android.content.SharedPreferences
 import com.beem.catmap.KullaniciAuth.Kullanici
+import androidx.core.content.edit
 
 class UserSessionManager private constructor(context: Context) {
 
@@ -27,6 +28,7 @@ class UserSessionManager private constructor(context: Context) {
         private const val KEY_TAKIPCI_SAYISI = "TakipciSayisi"
         private const val KEY_TAKIP_EDILEN_SAYISI = "TakipEdilenSayisi"
         private const val KEY_BIYOGRAFI = "Biyografi"
+        private const val KEY_POST_COUNT = "PostCount"
 
         @Volatile
         private var INSTANCE: UserSessionManager? = null
@@ -51,6 +53,10 @@ class UserSessionManager private constructor(context: Context) {
             putString(KEY_PASSWORD, kullanici.sifre)
             putString(KEY_FOTO_URL, kullanici.fotoUrl)
             putBoolean(KEY_IS_LOGGED_IN, true)
+            putLong(KEY_POST_COUNT, kullanici.gonderiSayisi)
+            putLong(KEY_TAKIPCI_SAYISI,kullanici.takipciSayisi)
+            putLong(KEY_TAKIP_EDILEN_SAYISI,kullanici.takipEdilenSayisi)
+            putString(KEY_BIYOGRAFI,kullanici.biyografi)
             apply() // Disk yazımını arka planda asenkron yapar
         }
     }
@@ -70,6 +76,10 @@ class UserSessionManager private constructor(context: Context) {
             kullaniciAdi = prefs.getString(KEY_USERNAME, "") ?: ""
             sifre = prefs.getString(KEY_PASSWORD, "") ?: ""
             fotoUrl = prefs.getString(KEY_FOTO_URL, "") ?: ""
+            biyografi = prefs.getString(KEY_BIYOGRAFI,"") ?: ""
+            takipciSayisi = prefs.getLong(KEY_TAKIPCI_SAYISI,0)
+            takipEdilenSayisi = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI,0)
+            gonderiSayisi = prefs.getLong(KEY_POST_COUNT,0)
         }
     }
 
@@ -84,6 +94,6 @@ class UserSessionManager private constructor(context: Context) {
      * Çıkış Yap (Logout) - Yerel veriyi sıfırlar
      */
     fun clearSession() {
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
     }
 }
