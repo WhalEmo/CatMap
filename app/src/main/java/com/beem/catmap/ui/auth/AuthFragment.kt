@@ -2,6 +2,7 @@ package com.beem.catmap.ui.auth
 
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
@@ -114,6 +115,7 @@ class AuthFragment : Fragment() {
 
         db.collection("users")
             .whereEqualTo("KullaniciAdi", username)
+            .limit(1)
             .get()
             .addOnSuccessListener { query ->
                 if (!isAdded) return@addOnSuccessListener
@@ -136,9 +138,20 @@ class AuthFragment : Fragment() {
 
                 user.setID(doc.id)
 
+                if (user.email.isNullOrEmpty()) {
+                    Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore'dan 'Email' alanı boş veya null geldi!")
+                    uyariMesaji.BasarisizDurum("Kullanıcı mail bilgisi eksik!", 1000)
+                    return@addOnSuccessListener
+                }
+
+                Log.d("AUTH_DEBUG", "Firebase Auth'a mail ve şifre gönderiliyor... (Email: ${user.email})")
+
                 val ynt = DogrulamaKodYonetici()
                 ynt.girisYap(user.email, user.sifre) { basarili ->
                     if (basarili) {
+                        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+                        Log.d("AUTH_DEBUG", ">>> GİRİŞ BAŞARILI! Firebase Auth Current User UID: $currentUid")
+
                         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                         CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
                         saveUserLocallyAndNavigate(user)
@@ -147,6 +160,13 @@ class AuthFragment : Fragment() {
                         uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
                     }
                 }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore sorgusu tamamen FAILED oldu!", exception)
+                if (isAdded) {
+                    uyariMesaji.BasarisizDurum("Bağlantı hatası oluştu!", 1000)
+                }
+                Log.d("AUTH_DEBUG", "--------------------------------------------------")
             }
     }
 

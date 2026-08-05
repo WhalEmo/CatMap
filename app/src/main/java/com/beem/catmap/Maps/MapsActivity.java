@@ -1,6 +1,5 @@
 package com.beem.catmap.Maps;
 
-import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.setupFragment;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -105,20 +104,20 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             return switch (screen) {
                 case MAP -> new CatMapFragment();
                 case UPLOAD -> new YuklemeArayuzuFragment();
-                case OTHER_PROFILE -> setupFragment(new ProfilFragment());
+                case OTHER_PROFILE -> new ProfilFragment();
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new SohbetFragment();
-                case PROFILE -> setupFragment(new ProfilFragment());
+                case PROFILE -> new ProfilFragment();
                 case MESSAGE -> new MesajFragment();
                 case EDIT_PROFILE -> new EditProfileFragment();
                 case BLOCKED_USERS -> {
                     yield null;
                     //new engellenenlerFragmnet();
                 }
-                case FOLLOWERS -> setupFragment(new TakiplerFragment());
-                case POST -> setupFragment(new GonderiDetayFragment());
-                case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
-                case AUTH -> setupFragment(new AuthFragment());
+                case FOLLOWERS -> new TakiplerFragment();
+                case POST -> new GonderiDetayFragment();
+                case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
+                case AUTH -> new AuthFragment();
             };
         }
     };
