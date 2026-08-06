@@ -48,59 +48,59 @@ public class MesajlasmaYonetici {
     private boolean engelledim = false;
     private boolean engelledi = false;
 
-
-
-    public static MesajlasmaYonetici getInstance(){
-        if(yonetici == null){
+    public static MesajlasmaYonetici getInstance() {
+        if (yonetici == null) {
             yonetici = new MesajlasmaYonetici();
         }
         return yonetici;
     }
 
     public void MesajlasmaYoneticiStart(Runnable mesajlaricek) {
-        if(alici == null || alici.getID() == null){
-            geriDon.run();
+        if (alici == null || alici.id == null || gonderen == null || gonderen.id == null) {
+            if (geriDon != null) geriDon.run();
             return;
         }
-        sohbetIDOlustur(gonderen.getID(),alici.getID(),sohbetID1->{
+        sohbetIDOlustur(gonderen.id, alici.id, sohbetID1 -> {
             this.sohbetID = sohbetID1;
             System.out.println("çektim");
-            mesajlaricek.run();
+            if (mesajlaricek != null) mesajlaricek.run();
         });
     }
 
-    public MesajlasmaYonetici(){
+    public MesajlasmaYonetici() {
     }
 
-
-    public void MesajGonder(String mesaj, MesajAdapter adapter){
+    public void MesajGonder(String mesaj, MesajAdapter adapter) {
+        if (sohbetID == null) return;
         String mesajID = mesajlar.push().getKey();
         Map<String, Object> veri = new HashMap<>();
-        veri.put("gonderen",gonderen.getID());
-        veri.put("mesaj",mesaj);
-        veri.put("zaman",System.currentTimeMillis());
-        veri.put("goruldu",false);
-        veri.put("tur","metin");
+        veri.put("gonderen", gonderen.id);
+        veri.put("mesaj", mesaj);
+        veri.put("zaman", System.currentTimeMillis());
+        veri.put("goruldu", false);
+        veri.put("tur", "metin");
         mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).setValue(veri);
-        mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.getID()).setValue(false);
-        mesajMap.put(mesajID,null);
-        Mesaj yeniMesaj = new Mesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false);
+        mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.id).setValue(false);
+        mesajMap.put(mesajID, null);
+        Mesaj yeniMesaj = new Mesaj(gonderen.id, mesaj, System.currentTimeMillis(), mesajID, false);
         yeniMesaj.setTur("metin");
         adapter.getMesajArrayList().add(yeniMesaj);
-        adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
+        adapter.notifyItemInserted(adapter.getMesajArrayList().size() - 1);
     }
 
-    public void MesajGonder(Mesaj yanitlananMesaj, String mesaj, MesajAdapter adapter){
+    public void MesajGonder(Mesaj yanitlananMesaj, String mesaj, MesajAdapter adapter) {
+        if (sohbetID == null) return;
         String mesajID = mesajlar.push().getKey();
-        YanitMesaj yanit = new YanitMesaj(gonderen.getID(),mesaj,System.currentTimeMillis(),mesajID,false,yanitlananMesaj);
-        if (yanitlananMesaj.getTur().equals("foto")) yanitlananMesaj.setMesaj("\uD83D\uDCF7  Fotoğraf");
-        mesajMap.put(mesajID,null);
+        YanitMesaj yanit = new YanitMesaj(gonderen.id, mesaj, System.currentTimeMillis(), mesajID, false, yanitlananMesaj);
+        if ("foto".equals(yanitlananMesaj.getTur())) yanitlananMesaj.setMesaj("\uD83D\uDCF7  Fotoğraf");
+        mesajMap.put(mesajID, null);
         mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).setValue(yanit);
         adapter.getMesajArrayList().add(yanit);
-        adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
+        adapter.notifyItemInserted(adapter.getMesajArrayList().size() - 1);
     }
 
-    public void MesajlariCek(MesajAdapter adapter,int adet, ProgressBar yukleniyor, RecyclerView mesajkutucuklari, Runnable dinleme){
+    public void MesajlariCek(MesajAdapter adapter, int adet, ProgressBar yukleniyor, RecyclerView mesajkutucuklari, Runnable dinleme) {
+        if (sohbetID == null) return;
         mesajkutucuklari.setVisibility(View.GONE);
         yukleniyor.setVisibility(View.VISIBLE);
         System.out.println("ilk cekme");
@@ -112,25 +112,29 @@ public class MesajlasmaYonetici {
             public void onDataChange(DataSnapshot snapshot) {
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     Mesaj mesaj = MesajOlustur(msgSnap);
-                    Goruldu(mesaj,adapter);
-                    adapter.getMesajArrayList().add(mesaj);
-                    mesajMap.put(mesaj.getMesajID(),null);
+                    if (mesaj != null) {
+                        Goruldu(mesaj, adapter);
+                        adapter.getMesajArrayList().add(mesaj);
+                        mesajMap.put(mesaj.getMesajID(), null);
+                    }
                 }
                 adapter.notifyDataSetChanged();
                 yukleniyor.setVisibility(View.GONE);
                 mesajkutucuklari.setVisibility(View.VISIBLE);
                 System.out.println("ilkçekme bitti");
-                dinleme.run();
+                if (dinleme != null) dinleme.run();
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
-                // Hata yönetimi
+                yukleniyor.setVisibility(View.GONE);
+                mesajkutucuklari.setVisibility(View.VISIBLE);
             }
         });
     }
-    public void MesajlariCek(long enEskiZaman, MesajAdapter adapter, int adet, Runnable tamamdir){
-        if(adapter.getMesajArrayList().size()<adet) return;
+
+    public void MesajlariCek(long enEskiZaman, MesajAdapter adapter, int adet, Runnable tamamdir) {
+        if (adapter.getMesajArrayList().size() < adet || sohbetID == null) return;
         System.out.println("aktif cekme");
         Query eskiMesajlar = mesajlar.child(sohbetID).child("anaMesaj")
                 .orderByChild("zaman")
@@ -143,86 +147,76 @@ public class MesajlasmaYonetici {
                 ArrayList<Mesaj> yeniMesajlar = new ArrayList<>();
                 for (DataSnapshot msgSnap : snapshot.getChildren()) {
                     Mesaj mesaj = MesajOlustur(msgSnap);
-                    yeniMesajlar.add(mesaj);
-                    Goruldu(mesaj,adapter);
+                    if (mesaj != null) {
+                        yeniMesajlar.add(mesaj);
+                        Goruldu(mesaj, adapter);
+                    }
                 }
                 adapter.getMesajArrayList().addAll(0, yeniMesajlar);
-                adapter.notifyItemRangeInserted(0, yeniMesajlar.size()-1);
-                tamamdir.run();
+                adapter.notifyItemRangeInserted(0, yeniMesajlar.size());
+                if (tamamdir != null) tamamdir.run();
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
-                tamamdir.run();
+                if (tamamdir != null) tamamdir.run();
             }
         });
     }
 
     private HashMap<String, Object> mesajMap = new HashMap<>();
-    public void MesajlariDinle(MesajAdapter adapter, Runnable tamamdir){
+
+    public void MesajlariDinle(MesajAdapter adapter, Runnable tamamdir) {
         System.out.println("dinleyici");
         dinleyici = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
-                System.out.println("Added");
                 String mesajID = snapshot.getKey();
-                if(mesajMap.containsKey(mesajID)) return;
+                if (mesajMap.containsKey(mesajID)) return;
                 Mesaj mesaj = MesajOlustur(snapshot);
-                mesajMap.put(mesajID,null);
-                adapter.getMesajArrayList().add(mesaj);
-                adapter.notifyItemInserted(adapter.getMesajArrayList().size()-1);
-
-                System.out.println("tammadir1-:"+mesaj.getMesaj());
-                Goruldu(mesaj,adapter);
-                tamamdir.run();
-
-                // Yeni mesajı listeye ekle ve ekranda göster
+                if (mesaj != null) {
+                    mesajMap.put(mesajID, null);
+                    adapter.getMesajArrayList().add(mesaj);
+                    adapter.notifyItemInserted(adapter.getMesajArrayList().size() - 1);
+                    Goruldu(mesaj, adapter);
+                    if (tamamdir != null) tamamdir.run();
+                }
             }
 
             @Override
             public void onChildChanged(DataSnapshot snapshot, String previousChildName) {
-                System.out.println("Changed");
                 String mesajID = snapshot.getKey();
-                if (mesajID.equals("yaziyorMu")) return;
-                boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
-                for (int i=0; i<adapter.getMesajArrayList().size(); i++) {
-                    if(adapter.getMesajArrayList().get(i).getMesajID().equals(mesajID)){
+                if ("yaziyorMu".equals(mesajID)) return;
+                Boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
+                if (goruldu == null) return;
+                for (int i = 0; i < adapter.getMesajArrayList().size(); i++) {
+                    if (adapter.getMesajArrayList().get(i).getMesajID().equals(mesajID)) {
                         adapter.getMesajArrayList().get(i).setGoruldu(goruldu);
                         adapter.notifyItemChanged(i);
                         break;
                     }
                 }
-
-                // Gerekirse mesaj güncellenirse burası çalışır
             }
 
             @Override
-            public void onChildRemoved(DataSnapshot snapshot) {
-                System.out.println("Removed");
-                // Mesaj silinirse burası çalışır (gerekirse listeden çıkar)
-            }
+            public void onChildRemoved(DataSnapshot snapshot) {}
 
             @Override
-            public void onChildMoved(DataSnapshot snapshot, String previousChildName) {
-                System.out.println("Moved");
-            }
+            public void onChildMoved(DataSnapshot snapshot, String previousChildName) {}
 
             @Override
-            public void onCancelled(DatabaseError error) {
-                System.out.println("Cancelled");
-                // Hata yönetimi
-            }
+            public void onCancelled(DatabaseError error) {}
         };
-        if(sohbetID==null){
-            sohbetIDOlustur(gonderen.getID(),alici.getID(),sohbetID1->{
+
+        if (sohbetID == null) {
+            sohbetIDOlustur(gonderen.id, alici.id, sohbetID1 -> {
                 this.sohbetID = sohbetID1;
                 mesajlar.child(sohbetID).child("anaMesaj")
                         .orderByChild("zaman")
                         .limitToLast(20)
                         .addChildEventListener(dinleyici);
             });
-        }
-        else{
+        } else {
             mesajlar.child(sohbetID).child("anaMesaj")
                     .orderByChild("zaman")
                     .limitToLast(20)
@@ -230,23 +224,22 @@ public class MesajlasmaYonetici {
         }
     }
 
-
     public interface SohbetIDCallback {
         void onResult(String sohbetID);
     }
 
-    public void sohbetIDOlustur(String gonderen, String alici, SohbetIDCallback callback){
-        String sohbetID = alici+"_"+gonderen;
-        String sohbetID2 = gonderen+"_"+alici;
+    public void sohbetIDOlustur(String gonderenId, String aliciId, SohbetIDCallback callback) {
+        String sohbetID1 = aliciId + "_" + gonderenId;
+        String sohbetID2 = gonderenId + "_" + aliciId;
 
-        DatabaseReference ref1 = mesajlar.child(sohbetID);
+        DatabaseReference ref1 = mesajlar.child(sohbetID1);
         DatabaseReference ref2 = mesajlar.child(sohbetID2);
 
         ref1.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    callback.onResult(sohbetID);
+                    callback.onResult(sohbetID1);
                 } else {
                     ref2.addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -254,91 +247,86 @@ public class MesajlasmaYonetici {
                             if (dataSnapshot.exists()) {
                                 callback.onResult(sohbetID2);
                             } else {
-                                ref1.child("yaziyorMu").child(gonderen).setValue(false);
-                                ref1.child("yaziyorMu").child(alici).setValue(false);
-                                callback.onResult(sohbetID);
+                                ref1.child("yaziyorMu").child(gonderenId).setValue(false);
+                                ref1.child("yaziyorMu").child(aliciId).setValue(false);
+                                callback.onResult(sohbetID1);
                             }
                         }
 
                         @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-
-                        }
+                        public void onCancelled(@NonNull DatabaseError error) {}
                     });
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto,TextView durum){
-        if(alici==null || alici.getID()==null){
-            geriDon.run();
+    public void ProfilCubugunuDoldur(TextView kisiAdiText, ImageView kisiProfilFoto, TextView durum) {
+        if (alici == null || alici.id == null) {
+            if (geriDon != null) geriDon.run();
             return;
         }
-        if(SohbetYonetici.getInstance().getKullanicilar().containsKey(alici.getID())){
-            alici = (Kullanici) SohbetYonetici.getInstance().getKullanicilar().get(alici.getID());
+        if (SohbetYonetici.getInstance().getKullanicilar().containsKey(alici.id)) {
+            alici = (Kullanici) SohbetYonetici.getInstance().getKullanicilar().get(alici.id);
         }
-        if(alici.getKullaniciAdi()!=null){
-            if(!alici.getKullaniciAdi().isEmpty()) {
-                kisiAdiText.setText(alici.getKullaniciAdi());
-                if (alici.isCevrimiciMi()) {
-                    durum.setText("Çevrimiçi");
-                    System.out.println("çevrimiçi");
-                } else {
-                    durum.setText("Son Görülme: "+alici.getSonGorulme());
-                }
-                if (alici.getFotoBitmap() != null) {
-                    kisiProfilFoto.setImageBitmap(alici.getFotoBitmap());
-                    return;
-                } else if (alici.getFotoUrl() == null) {
-                    kisiProfilFoto.setImageResource(R.drawable.kullanici);
-                } else if (alici.getFotoUrl().isEmpty()) {
-                    kisiProfilFoto.setImageResource(R.drawable.kullanici);
-                    return;
-                }
+        if (alici.kullaniciAdi != null && !alici.kullaniciAdi.isEmpty()) {
+            kisiAdiText.setText(alici.kullaniciAdi);
+            if (alici.isCevrimiciMi) {
+                durum.setText("Çevrimiçi");
+            } else {
+                durum.setText("Son Görülme: " + alici.sonGorulme);
+            }
+            if (alici.fotoBitmap != null) {
+                kisiProfilFoto.setImageBitmap(alici.fotoBitmap);
+                return;
+            } else if (alici.fotoUrl == null || alici.fotoUrl.isEmpty()) {
+                kisiProfilFoto.setImageResource(R.drawable.kullanici);
+                return;
             }
         }
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("users")
-                .document(alici.getID())
+                .document(alici.id)
                 .get()
-                .addOnSuccessListener(veri ->{
-                    if(veri.exists()){
-                        alici.setAd(veri.getString("Ad"));
-                        alici.setFotoUrl(veri.getString("profilFotoUrl"));
-                        alici.setSoyad(veri.getString("Soyad"));
-                        alici.setKullaniciAdi(veri.getString("KullaniciAdi"));
-                        kisiAdiText.setText(alici.getKullaniciAdi());
-                        if(engelledim || engelledi) return;
-                        Picasso.get()
-                                .load(alici.getFotoUrl())
-                                .placeholder(R.drawable.kullanici)
-                                .error(R.drawable.kullanici)
-                                .into(kisiProfilFoto);
+                .addOnSuccessListener(veri -> {
+                    if (veri.exists()) {
+                        alici.ad = veri.getString("Ad");
+                        alici.fotoUrl = veri.getString("profilFotoUrl");
+                        alici.soyad = veri.getString("Soyad");
+                        alici.kullaniciAdi = veri.getString("KullaniciAdi");
+                        kisiAdiText.setText(alici.kullaniciAdi);
+                        if (engelledim || engelledi) return;
+
+                        if (alici.fotoUrl != null && !alici.fotoUrl.isEmpty()) {
+                            Picasso.get()
+                                    .load(alici.fotoUrl)
+                                    .placeholder(R.drawable.kullanici)
+                                    .error(R.drawable.kullanici)
+                                    .into(kisiProfilFoto);
+                        } else {
+                            kisiProfilFoto.setImageResource(R.drawable.kullanici);
+                        }
                     }
                 });
-
     }
 
-    public void YaziyorDinleyici(TextView kisiDurumText){
+    public void YaziyorDinleyici(TextView kisiDurumText) {
+        if (sohbetID == null) return;
         yaziyorDinleyici = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean yaziyor = snapshot.getValue(Boolean.class);
-                if(yaziyor == null) return;
-                if(yaziyor){
+                if (yaziyor == null) return;
+                if (yaziyor) {
                     kisiDurumText.setText("Yazıyor...");
-                }
-                else{
-                    if(!alici.isCevrimiciMi()){
-                        kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
-                    }
-                    else {
+                } else {
+                    if (!alici.isCevrimiciMi) {
+                        kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
+                    } else {
                         kisiDurumText.setText("Çevrimiçi");
                     }
                 }
@@ -346,51 +334,51 @@ public class MesajlasmaYonetici {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
+                kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
             }
         };
 
         mesajlar.child(sohbetID)
                 .child("yaziyorMu")
-                .child(alici.getID())
+                .child(alici.id)
                 .addValueEventListener(yaziyorDinleyici);
     }
 
-    public void CevrimIciDinleyici(TextView kisiDurumText){
+    public void CevrimIciDinleyici(TextView kisiDurumText) {
+        if (alici == null || alici.id == null) return;
         cevrimiciDinleyici = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean cevrimiciMi = snapshot.child("cevrimici").getValue(Boolean.class);
-                long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
-                alici.setCevrimiciMi(cevrimiciMi);
-                alici.setSonGorulme(sonGorulme);
-                if(cevrimiciMi){
+                Long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
+                alici.isCevrimiciMi = cevrimiciMi != null && cevrimiciMi;
+                alici.sonGorulme = sonGorulme != null ? sonGorulme : 0L;
+
+                if (alici.isCevrimiciMi) {
                     kisiDurumText.setText("Çevrimiçi");
-                }
-                else{
-                    kisiDurumText.setText("Son Görülme: "+alici.getSonGorulme());
+                } else {
+                    kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         };
 
         FirebaseDatabase.getInstance().getReference("durumlar")
-                .child(alici.getID())
+                .child(alici.id)
                 .addValueEventListener(cevrimiciDinleyici);
-
     }
 
-    public void SilDinleyici(MesajAdapter adapter){
+    public void SilDinleyici(MesajAdapter adapter) {
+        if (sohbetID == null) return;
         silDinleyici = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 String mesajID = snapshot.getValue(String.class);
-                for (int i=0; i<adapter.getMesajArrayList().size(); i++){
-                    if(adapter.getMesajArrayList().get(i).getMesajID().equals(mesajID)){
+                if (mesajID == null) return;
+                for (int i = 0; i < adapter.getMesajArrayList().size(); i++) {
+                    if (adapter.getMesajArrayList().get(i).getMesajID().equals(mesajID)) {
                         adapter.getMesajArrayList().remove(i);
                         adapter.notifyItemRemoved(i);
                         mesajlar.child(sohbetID).child("anaMesaj").child(mesajID).removeValue();
@@ -400,187 +388,180 @@ public class MesajlasmaYonetici {
             }
 
             @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-            }
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
 
             @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
-            }
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {}
 
             @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-            }
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         };
         mesajlar.child(sohbetID).child("silMesaj")
                 .limitToLast(10)
                 .addChildEventListener(silDinleyici);
     }
-    public void GuncelleDinleyici(MesajAdapter adapter){
+
+    public void GuncelleDinleyici(MesajAdapter adapter) {
+        if (sohbetID == null) return;
         guncellemeDinleyici = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 String yeniMesajID = snapshot.child("ID").getValue(String.class);
                 String yeniMesaj = snapshot.child("mesaj").getValue(String.class);
-                System.out.println("guncelleme dinleyici "+yeniMesaj);
-                for (int i=0; i<adapter.getMesajArrayList().size(); i++){
-                    if(adapter.getMesajArrayList().get(i).getMesajID().equals(yeniMesajID)) {
-                        System.out.println("guncelleme dinleyici** "+yeniMesaj);
+                if (yeniMesajID == null || yeniMesaj == null) return;
+
+                for (int i = 0; i < adapter.getMesajArrayList().size(); i++) {
+                    if (adapter.getMesajArrayList().get(i).getMesajID().equals(yeniMesajID)) {
                         adapter.getMesajArrayList().get(i).setMesaj(yeniMesaj);
                         adapter.notifyItemChanged(i);
-                        yolla(yeniMesajID,yeniMesaj);
+                        yolla(yeniMesajID, yeniMesaj);
                         break;
                     }
                 }
             }
 
             @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-            }
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
 
             @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
-            }
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {}
 
             @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-            }
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         };
         mesajlar.child(sohbetID).child("gunMesaj")
                 .limitToLast(10)
                 .addChildEventListener(guncellemeDinleyici);
     }
 
-    private void Goruldu(Mesaj mesaj, MesajAdapter adapter){
-        if(mesaj.isGoruldu()){
+    private void Goruldu(Mesaj mesaj, MesajAdapter adapter) {
+        if (mesaj == null || sohbetID == null) return;
+        if (mesaj.isGoruldu()) {
             adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
             return;
         }
-        if(!mesaj.getGonderici().equals(UserSession.INSTANCE.getUserId())) {
+        if (!mesaj.getGonderici().equals(UserSession.INSTANCE.getUserId())) {
             mesajlar.child(sohbetID).child("anaMesaj").child(mesaj.getMesajID()).child("goruldu").setValue(true)
                     .addOnSuccessListener(basarili -> {
-                        System.out.println("calisiyor");
                         mesaj.setGoruldu(true);
-                        adapter.notifyItemChanged(adapter.getMesajArrayList().indexOf(mesaj));
+                        int index = adapter.getMesajArrayList().indexOf(mesaj);
+                        if (index != -1) {
+                            adapter.notifyItemChanged(index);
+                        }
                     });
         }
     }
+
     private HashMap<String, Mesaj> silinenMesajlar = new HashMap<>();
-    public void MesajSil(String MesajID){
-        silinenMesajlar.put(MesajID,null);
+
+    public void MesajSil(String MesajID) {
+        if (sohbetID == null) return;
+        silinenMesajlar.put(MesajID, null);
         mesajlar.child(sohbetID).child("silMesaj").push().setValue(MesajID);
     }
-    public void MesajGuncelle(String mesajID, String yeniMesaj){
+
+    public void MesajGuncelle(String mesajID, String yeniMesaj) {
+        if (sohbetID == null) return;
         Map<String, Object> veri = new HashMap<>();
-        veri.put("mesaj",yeniMesaj);
-        veri.put("ID",mesajID);
+        veri.put("mesaj", yeniMesaj);
+        veri.put("ID", mesajID);
         mesajlar.child(sohbetID).child("gunMesaj").push().setValue(veri);
     }
 
-    private Mesaj MesajOlustur(DataSnapshot snapshot){
-        Mesaj mesaj;
+    private Mesaj MesajOlustur(DataSnapshot snapshot) {
         String tur = snapshot.child("tur").getValue(String.class);
-        if(tur.equals("metin")){
+        if (tur == null) return null;
+
+        if ("metin".equals(tur)) {
             String mesajID = snapshot.getKey();
             String gonderen = snapshot.child("gonderen").getValue(String.class);
             Long zaman = snapshot.child("zaman").getValue(Long.class);
             String mesajicerik = snapshot.child("mesaj").getValue(String.class);
-            mesaj = new Mesaj(gonderen, mesajicerik, zaman, mesajID,false);
+            Boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
+
+            Mesaj mesaj = new Mesaj(gonderen, mesajicerik, zaman != null ? zaman : 0L, mesajID, false);
             mesaj.setTur(tur);
-            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
-        }
-        else if(tur.equals("yanit")){
-            mesaj = snapshot.getValue(YanitMesaj.class);
-        }
-        else{
+            mesaj.setGoruldu(goruldu != null && goruldu);
+            return mesaj;
+        } else if ("yanit".equals(tur)) {
+            return snapshot.getValue(YanitMesaj.class);
+        } else {
             String mesajID = snapshot.getKey();
             String gonderen = snapshot.child("gonderen").getValue(String.class);
             Long zaman = snapshot.child("zaman").getValue(Long.class);
             ArrayList<String> fotoUrl = snapshot.child("fotoUrlleri").getValue(type);
-            mesaj = new Mesaj(gonderen,fotoUrl,zaman,mesajID,false);
+            Boolean goruldu = snapshot.child("goruldu").getValue(Boolean.class);
+
+            Mesaj mesaj = new Mesaj(gonderen, fotoUrl, zaman != null ? zaman : 0L, mesajID, false);
             mesaj.setTur(tur);
-            mesaj.setGoruldu(snapshot.child("goruldu").getValue(Boolean.class));
+            mesaj.setGoruldu(goruldu != null && goruldu);
             mesaj.setYuklendiMi(true);
+            return mesaj;
         }
-        return mesaj;
     }
 
-    public void EngelleDinleyici(Runnable engellendin,Runnable engelAcildi){
+    public void EngelleDinleyici(Runnable engellendin, Runnable engelAcildi) {
+        if (sohbetID == null || alici == null || alici.id == null) return;
         engellenenDinleyici = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean engel = snapshot.getValue(Boolean.class);
-                if(engel == null){
-                    engelledi = false;
-                }
-                else{
-                    engelledi = engel;
-                }
-                if(engelledi){
+                engelledi = engel != null && engel;
+
+                if (engelledi && engellendin != null) {
                     engellendin.run();
-                }
-                else if(!(engelledim || engelledi)){
+                } else if (!(engelledim || engelledi) && engelAcildi != null) {
                     engelAcildi.run();
                 }
             }
+
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         };
 
         mesajlar.child(sohbetID)
                 .child("engelliMi")
-                .child(alici.getID())
+                .child(alici.id)
                 .addValueEventListener(engellenenDinleyici);
     }
 
-
-    public void DinleyiciKaldir(){
-        if(dinleyici == null && yaziyorDinleyici==null && cevrimiciDinleyici==null && silDinleyici==null && engellenenDinleyici==null){
-            return;
-        }
-        if(yaziyorDinleyici != null){
-            mesajlar.child(sohbetID).child("yaziyorMu").child(alici.getID()).removeEventListener(yaziyorDinleyici);
+    public void DinleyiciKaldir() {
+        if (sohbetID == null) return;
+        if (yaziyorDinleyici != null && alici != null && alici.id != null) {
+            mesajlar.child(sohbetID).child("yaziyorMu").child(alici.id).removeEventListener(yaziyorDinleyici);
             yaziyorDinleyici = null;
         }
-        if(cevrimiciDinleyici != null){
-            FirebaseDatabase.getInstance().getReference("durumlar").child(alici.getID()).removeEventListener(cevrimiciDinleyici);
+        if (cevrimiciDinleyici != null && alici != null && alici.id != null) {
+            FirebaseDatabase.getInstance().getReference("durumlar").child(alici.id).removeEventListener(cevrimiciDinleyici);
             cevrimiciDinleyici = null;
         }
-        if(silDinleyici != null){
+        if (silDinleyici != null) {
             mesajlar.child(sohbetID).child("silMesaj").removeEventListener(silDinleyici);
             silDinleyici = null;
         }
-        if(guncellemeDinleyici != null){
+        if (guncellemeDinleyici != null) {
             mesajlar.child(sohbetID).child("gunMesaj").removeEventListener(guncellemeDinleyici);
             guncellemeDinleyici = null;
         }
-        if(engellenenDinleyici != null){
-            mesajlar.child(sohbetID).child("engelliMi").child(alici.getID()).removeEventListener(engellenenDinleyici);
+        if (engellenenDinleyici != null && alici != null && alici.id != null) {
+            mesajlar.child(sohbetID).child("engelliMi").child(alici.id).removeEventListener(engellenenDinleyici);
             engellenenDinleyici = null;
         }
-        if(dinleyici == null) return;
-        mesajlar.child(sohbetID).child("anaMesaj").removeEventListener(dinleyici);
-        dinleyici = null;
+        if (dinleyici != null) {
+            mesajlar.child(sohbetID).child("anaMesaj").removeEventListener(dinleyici);
+            dinleyici = null;
+        }
     }
 
-    public void YaziyorMu(boolean yaziyor){
-        mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.getID()).setValue(yaziyor);
+    public void YaziyorMu(boolean yaziyor) {
+        if (sohbetID == null || gonderen == null || gonderen.id == null) return;
+        mesajlar.child(sohbetID).child("yaziyorMu").child(gonderen.id).setValue(yaziyor);
     }
 
     public String getSohbetID() {
@@ -609,11 +590,11 @@ public class MesajlasmaYonetici {
         engelledim = false;
     }
 
-
-    private void yolla(String mesajID, String yeniMesaj){
+    private void yolla(String mesajID, String yeniMesaj) {
+        if (sohbetID == null) return;
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference();
         Map<String, Object> updateMap = new HashMap<>();
-        updateMap.put("mesajlar/"+sohbetID+"/anaMesaj/"+mesajID+"/mesaj", yeniMesaj);
+        updateMap.put("mesajlar/" + sohbetID + "/anaMesaj/" + mesajID + "/mesaj", yeniMesaj);
         ref.updateChildren(updateMap);
     }
 
@@ -625,27 +606,25 @@ public class MesajlasmaYonetici {
         this.geriDon = geriDon;
     }
 
-
-
-    public void MesajlasmaEngelle(String engellenenId){
-        sohbetIDOlustur(UserSession.INSTANCE.getUserId(), engellenenId,engellenensohbetID->{
-            EngelAlanKontrolu(engellenensohbetID,UserSession.INSTANCE.getUserId());
-            EngelAlanKontrolu(engellenensohbetID,"anaMesaj");
-            EngelAlanKontrolu(engellenensohbetID,"gunMesaj");
-            EngelAlanKontrolu(engellenensohbetID,"silMesaj");
-            mesajlar.child(engellenensohbetID).child("yaziyorMu").child(gonderen.getID()).setValue(false);
+    public void MesajlasmaEngelle(String engellenenId) {
+        sohbetIDOlustur(UserSession.INSTANCE.getUserId(), engellenenId, engellenensohbetID -> {
+            EngelAlanKontrolu(engellenensohbetID, UserSession.INSTANCE.getUserId());
+            EngelAlanKontrolu(engellenensohbetID, "anaMesaj");
+            EngelAlanKontrolu(engellenensohbetID, "gunMesaj");
+            EngelAlanKontrolu(engellenensohbetID, "silMesaj");
+            mesajlar.child(engellenensohbetID).child("yaziyorMu").child(gonderen.id).setValue(false);
             mesajlar.child(engellenensohbetID).child("yaziyorMu").child(engellenenId).setValue(false);
-            mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.getID()).setValue(true);
-        });
-    }
-    public void MesajlasmaEngellemeKaldir(String engellenenId){
-        sohbetIDOlustur(UserSession.INSTANCE.getUserId(),engellenenId,engellenensohbetID->{
-            mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.getID()).setValue(false);
-
+            mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.id).setValue(true);
         });
     }
 
-    private void EngelAlanKontrolu(String sohbetID, String alan){
+    public void MesajlasmaEngellemeKaldir(String engellenenId) {
+        sohbetIDOlustur(UserSession.INSTANCE.getUserId(), engellenenId, engellenensohbetID -> {
+            mesajlar.child(engellenensohbetID).child("engelliMi").child(gonderen.id).setValue(false);
+        });
+    }
+
+    private void EngelAlanKontrolu(String sohbetID, String alan) {
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("mesajlar").child(sohbetID).child(alan);
 
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -655,44 +634,43 @@ public class MesajlasmaYonetici {
                     ref.setValue(new HashMap<>());
                 }
             }
+
             @Override
-            public void onCancelled(DatabaseError error) {
-            }
+            public void onCancelled(DatabaseError error) {}
         });
     }
 
-    public void AyarlariYap(){
+    public void AyarlariYap() {
+        if (sohbetID == null) return;
         mesajlar.child(sohbetID).child("engelliMi")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (!snapshot.exists()) {
-                            mesajlar.child(sohbetID).child("engelliMi").child(gonderen.getID()).setValue(false);
-                            mesajlar.child(sohbetID).child("engelliMi").child(alici.getID()).setValue(false);
-                            EngelAlanKontrolu(sohbetID,"anaMesaj");
-                            EngelAlanKontrolu(sohbetID,"gunMesaj");
-                            EngelAlanKontrolu(sohbetID,"silMesaj");
+                            mesajlar.child(sohbetID).child("engelliMi").child(gonderen.id).setValue(false);
+                            mesajlar.child(sohbetID).child("engelliMi").child(alici.id).setValue(false);
+                            EngelAlanKontrolu(sohbetID, "anaMesaj");
+                            EngelAlanKontrolu(sohbetID, "gunMesaj");
+                            EngelAlanKontrolu(sohbetID, "silMesaj");
                         }
                     }
+
                     @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                    }
+                    public void onCancelled(@NonNull DatabaseError error) {}
                 });
     }
 
-    public void EngelKaldir(Runnable kaldirildi){
+    public void EngelKaldir(Runnable kaldirildi) {
+        if (gonderen == null || gonderen.id == null || alici == null || alici.id == null) return;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        DocumentReference kullaniciRef = db.collection("users").document(gonderen.getID());
-        kullaniciRef.update("blockedUsers", FieldValue.arrayRemove(alici.getID()))
+        DocumentReference kullaniciRef = db.collection("users").document(gonderen.id);
+        kullaniciRef.update("blockedUsers", FieldValue.arrayRemove(alici.id))
                 .addOnSuccessListener(aVoid -> {
-                    // Güncel listeyi tekrar çek
                     kullaniciRef.get().addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
-                            ArrayList<String> engellilerListesi = (ArrayList<String>) documentSnapshot.get("blockedUsers");
-                            if (engellilerListesi == null) engellilerListesi = new ArrayList<>();
-                            kaldirildi.run();
-                            MesajlasmaEngellemeKaldir(alici.getID());
+                            if (kaldirildi != null) kaldirildi.run();
+                            MesajlasmaEngellemeKaldir(alici.id);
                         }
                     });
                 });
@@ -706,7 +684,7 @@ public class MesajlasmaYonetici {
         this.engelledim = engelledim;
     }
 
-    public void MesajlasmaYonetimiDurdur(){
+    public void MesajlasmaYonetimiDurdur() {
         DinleyiciKaldir();
         yonetici = null;
     }

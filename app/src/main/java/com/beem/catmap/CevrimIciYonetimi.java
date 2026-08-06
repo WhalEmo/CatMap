@@ -50,14 +50,14 @@ public class CevrimIciYonetimi {
     }
 
     private void CevrimIciOl(boolean durumu, Kullanici kullanici){
-        if(durumu == kullanici.isCevrimiciMi()) return;
-        if(kullanici.getID()==null) return;
+        if(durumu == kullanici.isCevrimiciMi) return;
+        if(kullanici.id ==null) return;
         DatabaseReference durum = FirebaseDatabase.getInstance().getReference("durumlar");
-        durum.child(kullanici.getID()).child("cevrimici").setValue(durumu);
-        kullanici.setCevrimiciMi(durumu);
+        durum.child(kullanici.id).child("cevrimici").setValue(durumu);
+        kullanici.isCevrimiciMi=(durumu);
         if(!durumu){
-            durum.child(kullanici.getID()).child("sonGorulme").setValue(System.currentTimeMillis());
-            kullanici.setSonGorulme(System.currentTimeMillis());
+            durum.child(kullanici.id).child("sonGorulme").setValue(System.currentTimeMillis());
+            kullanici.sonGorulme=(System.currentTimeMillis());
         }
     }
 

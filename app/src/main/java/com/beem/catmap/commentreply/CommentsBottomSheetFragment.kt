@@ -30,7 +30,6 @@ import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.models.ReplyModel
 import com.beem.catmap.models.CommentModel
-import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.bumptech.glide.Glide

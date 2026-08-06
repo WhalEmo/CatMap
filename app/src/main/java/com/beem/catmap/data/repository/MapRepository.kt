@@ -27,6 +27,19 @@ class MapRepository {
     private val catsCollection = db.collection("cats")
     private val storage = FirebaseStorage.getInstance()
 
+    companion object {
+        @Volatile
+        private var INSTANCE: MapRepository? = null
+
+        fun getInstance(): MapRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: MapRepository().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+
     suspend fun getCatsNearLocation(userLat: Double, userLng: Double): List<CatModel> {
         return withContext(Dispatchers.IO) { // İşlemi arka plana (IO) zorla
             try {

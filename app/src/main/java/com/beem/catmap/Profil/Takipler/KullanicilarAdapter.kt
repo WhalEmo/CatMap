@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
@@ -38,10 +37,10 @@ class KullanicilarAdapter(
                 .into(recyclerFotoImageView)
 
             when {
-                kullanici.TakipEdiyorMuyum == 2 -> {
+                kullanici.takipEdiyorMuyum == 2 -> {
                     takipEdiyosaButton.text = "Takip"
                 }
-                kullanici.TakipciMi == 2 -> {
+                kullanici.takipciMi == 2 -> {
                     takipEdiyosaButton.text = "Takipçi"
                 }
                 else -> {

@@ -289,8 +289,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             Kullanici user = currentUserManager.getCurrentUser();
             if (user != null) {
                 CevrimIciYonetimi.getInstance().CevrimIciCalistir(user);
-                user.setLatitude(latitude);
-                user.setLongitude(longitude);
+                user.latitude=latitude;
+                user.longitude=longitude;
             }
         }
         LocationEngine.INSTANCE.stopTracking();

@@ -10,6 +10,19 @@ import kotlinx.coroutines.tasks.await
 
 class ReplysRepo {
     private val db = FirebaseFirestore.getInstance()
+
+    companion object {
+        @Volatile
+        private var INSTANCE: ReplysRepo? = null
+
+        fun getInstance(): ReplysRepo {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ReplysRepo().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
     suspend fun loadReplies(
         catId: String,
         yorumId: String,

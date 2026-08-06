@@ -12,12 +12,24 @@ data class PaginatedResult<T>(
     val isLastPage: Boolean = false
 )
 
-class TakiplerRepository(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-) {
+class TakiplerRepository private constructor() {
 
-    // Son 3 kullanıcının verilerini saklamak için LRU Cache (3 kullanıcı x 2 liste = 6 giriş)
-    private val memoryCache = LruCache<String, PaginatedResult<Kullanici>>(6)
+    private val db = FirebaseFirestore.getInstance()
+
+    // 10 farklı kullanıcının takipçi/takip edilen ilk sayfa listesini bellekte tutar
+    private val takipcilerCache = LruCache<String, PaginatedResult<Kullanici>>(10)
+    private val takipEdilenlerCache = LruCache<String, PaginatedResult<Kullanici>>(10)
+
+    companion object {
+        @Volatile
+        private var INSTANCE: TakiplerRepository? = null
+
+        fun getInstance(): TakiplerRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TakiplerRepository().also { INSTANCE = it }
+            }
+        }
+    }
 
     suspend fun getTakipciler(
         userId: String,
@@ -26,13 +38,10 @@ class TakiplerRepository(
         forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
 
-        val cacheKey = "takipciler_$userId"
-
-        // İlk sayfa isteniyorsa ve yenileme zorlanmıyorsa, direkt RAM'den dön
+        // İlk sayfa isteği yapılıyorsa ve zorla yenileme (Pull-to-refresh) istenmiyorsa Cache'ten ver
         if (lastDocument == null && !forceRefresh) {
-            val cachedData = memoryCache.get(cacheKey)
-            if (cachedData != null) {
-                return Result.success(cachedData)
+            takipcilerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
             }
         }
 
@@ -48,53 +57,37 @@ class TakiplerRepository(
         val snapshot = query.get().await()
         val items = snapshot.documents.mapNotNull { doc ->
             Kullanici().apply {
-                kullaniciAdi = doc.getString("KullaniciAdi")
-                fotoUrl = doc.getString("profilFotoUrl")
-                id = doc.getString("ID")
-                TakipciMi = 2
+                id = doc.getString("ID") ?: doc.id
+                kullaniciAdi = doc.getString("KullaniciAdi") ?: ""
+                fotoUrl = doc.getString("profilFotoUrl") ?: ""
+                takipciMi = 2
             }
         }
 
-        val isLastPage = items.size < limit
-        val lastDoc = snapshot.documents.lastOrNull()
-
-        val newResult = PaginatedResult(
+        val result = PaginatedResult(
             items = items,
-            lastDocument = lastDoc,
-            isLastPage = isLastPage
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
         )
 
-        // Cache Güncelleme Mantığı (DÜZELTİLDİ):
+        // İlk sayfayı Cache'e kaydet
         if (lastDocument == null) {
-            // İlk sayfa çekildiğinde (ister ilk açılış ister refresh olsun) RAM cache'i taze veriyle güncelle
-            memoryCache.put(cacheKey, newResult)
-        } else {
-            // Sonraki sayfaları çekiyorsak eski listeye ekle
-            memoryCache.get(cacheKey)?.let { oldCache ->
-                val combinedList = oldCache.items + items
-                memoryCache.put(
-                    cacheKey,
-                    PaginatedResult(combinedList, lastDoc, isLastPage)
-                )
-            }
+            takipcilerCache.put(userId, result)
         }
 
-        newResult
+        result
     }
 
     suspend fun getTakipEdilenler(
         userId: String,
         limit: Long = 10,
         lastDocument: DocumentSnapshot? = null,
-        forceRefresh: Boolean = false // <-- EKLENDİ
+        forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
 
-        val cacheKey = "takipEdilenler_$userId"
-
-        if (lastDocument == null && !forceRefresh) { // <-- DÜZELTİLDİ
-            val cachedData = memoryCache.get(cacheKey)
-            if (cachedData != null) {
-                return Result.success(cachedData)
+        if (lastDocument == null && !forceRefresh) {
+            takipEdilenlerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
             }
         }
 
@@ -110,34 +103,29 @@ class TakiplerRepository(
         val snapshot = query.get().await()
         val items = snapshot.documents.mapNotNull { doc ->
             Kullanici().apply {
-                kullaniciAdi = doc.getString("KullaniciAdi")
-                fotoUrl = doc.getString("profilFotoUrl")
-                id = doc.getString("ID")
-                TakipEdiyorMuyum = 2
+                kullaniciAdi = doc.getString("KullaniciAdi") ?: ""
+                fotoUrl = doc.getString("profilFotoUrl") ?: ""
+                id = doc.getString("ID") ?: ""
+                takipEdiyorMuyum = 2
             }
         }
 
-        val isLastPage = items.size < limit
-        val lastDoc = snapshot.documents.lastOrNull()
-
-        val newResult = PaginatedResult(
+        val result = PaginatedResult(
             items = items,
-            lastDocument = lastDoc,
-            isLastPage = isLastPage
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
         )
 
-        if (lastDocument == null) { // <-- DÜZELTİLDİ
-            memoryCache.put(cacheKey, newResult)
-        } else {
-            memoryCache.get(cacheKey)?.let { oldCache ->
-                val combinedList = oldCache.items + items
-                memoryCache.put(
-                    cacheKey,
-                    PaginatedResult(combinedList, lastDoc, isLastPage)
-                )
-            }
+        if (lastDocument == null) {
+            takipEdilenlerCache.put(userId, result)
         }
 
-        newResult
+        result
+    }
+
+    // Kullanıcı birini takip ettiğinde veya takipten çıkardığında cache'i temizlemek için kullanabilirsiniz
+    fun clearUserCache(userId: String) {
+        takipcilerCache.remove(userId)
+        takipEdilenlerCache.remove(userId)
     }
 }

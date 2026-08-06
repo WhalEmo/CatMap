@@ -9,11 +9,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class TakiplerViewModel(
-    private val repository: TakiplerRepository = TakiplerRepository()
-) : ViewModel() {
+class TakiplerViewModel() : ViewModel() {
 
+    private val repository: TakiplerRepository = TakiplerRepository.getInstance()
     private val PAGE_LIMIT = 10L
+
+    // ==========================================
+    // TAKİPÇİLER (FOLLOWERS) STATE VE DEĞİŞKENLERİ
+    // ==========================================
     private val _takipcilerState = MutableStateFlow<TakiplerUiState>(TakiplerUiState.Idle)
     val takipcilerState: StateFlow<TakiplerUiState> = _takipcilerState.asStateFlow()
 
@@ -22,6 +25,9 @@ class TakiplerViewModel(
     private var isTakipcilerLastPage = false
     private var isLoadingTakipciler = false
 
+    // ==========================================
+    // TAKİP EDİLENLER (FOLLOWING) STATE VE DEĞİŞKENLERİ
+    // ==========================================
     private val _takipEdilenlerState = MutableStateFlow<TakiplerUiState>(TakiplerUiState.Idle)
     val takipEdilenlerState: StateFlow<TakiplerUiState> = _takipEdilenlerState.asStateFlow()
 
@@ -30,12 +36,27 @@ class TakiplerViewModel(
     private var isTakipEdilenlerLastPage = false
     private var isLoadingTakipEdilenler = false
 
+    // ==========================================
+    // TAKİPÇİLERİ GETİR (FETCH FOLLOWERS)
+    // ==========================================
     fun fetchTakipciler(
         userId: String?,
         isNextPage: Boolean = false,
-        isRefresh: Boolean = false // <-- EKLENDİ
+        isRefresh: Boolean = false
     ) {
         if (userId.isNullOrBlank() || isLoadingTakipciler) return
+
+        // 1. Sekme Değişimi Kontrolü: Liste zaten RAM'de varsa ve yenileme istenmiyorsa istek atma
+        if (!isNextPage && !isRefresh && currentTakipciler.isNotEmpty()) {
+            _takipcilerState.value = TakiplerUiState.Success(
+                kullanicilar = currentTakipciler.toList(),
+                isLastPage = isTakipcilerLastPage,
+                isLoadingMore = false
+            )
+            return
+        }
+
+        // 2. Sayfa Sonu Kontrolü
         if (isNextPage && isTakipcilerLastPage) return
 
         isLoadingTakipciler = true
@@ -43,15 +64,15 @@ class TakiplerViewModel(
         viewModelScope.launch {
             try {
                 if (!isNextPage) {
-                    currentTakipciler.clear()
                     lastTakipciDoc = null
                     isTakipcilerLastPage = false
 
-                    // Ekran ilk defa açılıyorsa Shimmer göster, Refresh yapılıyorsa liste kalsın
+                    // Swipe-to-refresh yapılmıyorsa ve ilk açılışsa Shimmer göster
                     if (!isRefresh) {
                         _takipcilerState.value = TakiplerUiState.Loading
                     }
                 } else {
+                    // Alt tarafa yeni eleman eklenirken sayfalama yükleniyor moduna geç
                     _takipcilerState.value = TakiplerUiState.Success(
                         kullanicilar = currentTakipciler.toList(),
                         isLastPage = false,
@@ -63,49 +84,61 @@ class TakiplerViewModel(
                     userId = userId,
                     limit = PAGE_LIMIT,
                     lastDocument = lastTakipciDoc,
-                    forceRefresh = isRefresh // <-- Repository'ye iletildi
-                )
-                    .onSuccess { result ->
-                        isTakipcilerLastPage = result.isLastPage
-                        lastTakipciDoc = result.lastDocument
+                    forceRefresh = isRefresh
+                ).onSuccess { result ->
+                    isTakipcilerLastPage = result.isLastPage
+                    lastTakipciDoc = result.lastDocument
 
-                        if (!isNextPage) {
-                            currentTakipciler.clear()
-                            currentTakipciler.addAll(result.items)
-                        } else {
-                            currentTakipciler.addAll(result.items)
-                        }
+                    if (!isNextPage) {
+                        currentTakipciler.clear()
+                    }
+                    currentTakipciler.addAll(result.items)
 
+                    _takipcilerState.value = TakiplerUiState.Success(
+                        kullanicilar = currentTakipciler.toList(),
+                        isLastPage = isTakipcilerLastPage,
+                        isLoadingMore = false
+                    )
+                }.onFailure { exception ->
+                    if (!isNextPage && !isRefresh && currentTakipciler.isEmpty()) {
+                        _takipcilerState.value = TakiplerUiState.Error(
+                            exception.localizedMessage ?: "Takipçiler yüklenirken hata oluştu."
+                        )
+                    } else {
                         _takipcilerState.value = TakiplerUiState.Success(
                             kullanicilar = currentTakipciler.toList(),
                             isLastPage = isTakipcilerLastPage,
                             isLoadingMore = false
                         )
                     }
-                    .onFailure { exception ->
-                        if (!isNextPage && !isRefresh) {
-                            _takipcilerState.value =
-                                TakiplerUiState.Error(exception.localizedMessage ?: "Hata oluştu")
-                        } else {
-                            _takipcilerState.value = TakiplerUiState.Success(
-                                kullanicilar = currentTakipciler.toList(),
-                                isLastPage = isTakipcilerLastPage,
-                                isLoadingMore = false
-                            )
-                        }
-                    }
+                }
             } finally {
                 isLoadingTakipciler = false
             }
         }
     }
 
+    // ==========================================
+    // TAKİP EDİLENLERİ GETİR (FETCH FOLLOWING)
+    // ==========================================
     fun fetchTakipEdilenler(
         userId: String?,
         isNextPage: Boolean = false,
-        isRefresh: Boolean = false // <-- EKLENDİ
+        isRefresh: Boolean = false
     ) {
         if (userId.isNullOrBlank() || isLoadingTakipEdilenler) return
+
+        // 1. Sekme Değişimi Kontrolü: Liste zaten RAM'de varsa istek atma
+        if (!isNextPage && !isRefresh && currentTakipEdilenler.isNotEmpty()) {
+            _takipEdilenlerState.value = TakiplerUiState.Success(
+                kullanicilar = currentTakipEdilenler.toList(),
+                isLastPage = isTakipEdilenlerLastPage,
+                isLoadingMore = false
+            )
+            return
+        }
+
+        // 2. Sayfa Sonu Kontrolü
         if (isNextPage && isTakipEdilenlerLastPage) return
 
         isLoadingTakipEdilenler = true
@@ -113,7 +146,6 @@ class TakiplerViewModel(
         viewModelScope.launch {
             try {
                 if (!isNextPage) {
-                    currentTakipEdilenler.clear()
                     lastTakipEdilenDoc = null
                     isTakipEdilenlerLastPage = false
 
@@ -133,36 +165,33 @@ class TakiplerViewModel(
                     limit = PAGE_LIMIT,
                     lastDocument = lastTakipEdilenDoc,
                     forceRefresh = isRefresh
-                )
-                    .onSuccess { result ->
-                        isTakipEdilenlerLastPage = result.isLastPage
-                        lastTakipEdilenDoc = result.lastDocument
+                ).onSuccess { result ->
+                    isTakipEdilenlerLastPage = result.isLastPage
+                    lastTakipEdilenDoc = result.lastDocument
 
-                        if (!isNextPage) {
-                            currentTakipEdilenler.clear()
-                            currentTakipEdilenler.addAll(result.items)
-                        } else {
-                            currentTakipEdilenler.addAll(result.items)
-                        }
+                    if (!isNextPage) {
+                        currentTakipEdilenler.clear()
+                    }
+                    currentTakipEdilenler.addAll(result.items)
 
+                    _takipEdilenlerState.value = TakiplerUiState.Success(
+                        kullanicilar = currentTakipEdilenler.toList(),
+                        isLastPage = isTakipEdilenlerLastPage,
+                        isLoadingMore = false
+                    )
+                }.onFailure { exception ->
+                    if (!isNextPage && !isRefresh && currentTakipEdilenler.isEmpty()) {
+                        _takipEdilenlerState.value = TakiplerUiState.Error(
+                            exception.localizedMessage ?: "Takip edilenler yüklenirken hata oluştu."
+                        )
+                    } else {
                         _takipEdilenlerState.value = TakiplerUiState.Success(
                             kullanicilar = currentTakipEdilenler.toList(),
                             isLastPage = isTakipEdilenlerLastPage,
                             isLoadingMore = false
                         )
                     }
-                    .onFailure { exception ->
-                        if (!isNextPage && !isRefresh) {
-                            _takipEdilenlerState.value =
-                                TakiplerUiState.Error(exception.localizedMessage ?: "Hata oluştu")
-                        } else {
-                            _takipEdilenlerState.value = TakiplerUiState.Success(
-                                kullanicilar = currentTakipEdilenler.toList(),
-                                isLastPage = isTakipEdilenlerLastPage,
-                                isLoadingMore = false
-                            )
-                        }
-                    }
+                }
             } finally {
                 isLoadingTakipEdilenler = false
             }

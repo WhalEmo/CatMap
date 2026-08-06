@@ -103,12 +103,15 @@ class TakipEdilenlerFragment : Fragment() {
                 viewModel.takipEdilenlerState.collect { state ->
                     when (state) {
                         is TakiplerUiState.Loading -> {
-                            shimmerContainer.isVisible = true
-                            shimmerContainer.startShimmer()
-                            recyclerView.isVisible = false
+                            // Sadece SwipeRefresh AKTİF DEĞİLSE Shimmer göster
+                            if (!swipeRefresh.isRefreshing) {
+                                shimmerContainer.isVisible = true
+                                shimmerContainer.startShimmer()
+                                recyclerView.isVisible = false
+                            }
                         }
                         is TakiplerUiState.Success -> {
-                            // Refresh durumunda dönen yükleme simgesini kapat
+                            // İşlem bittiğinde SwipeRefresh animasyonunu kapat
                             swipeRefresh.isRefreshing = false
 
                             shimmerContainer.stopShimmer()
@@ -124,6 +127,8 @@ class TakipEdilenlerFragment : Fragment() {
                             shimmerContainer.isVisible = false
                             recyclerView.isVisible = true
                             footerAdapter.setLoading(false)
+
+                            // İsteğe bağlı: Toast veya Snackbar ile hata mesajı gösterilebilir
                         }
                         else -> {}
                     }
@@ -131,7 +136,6 @@ class TakipEdilenlerFragment : Fragment() {
             }
         }
     }
-
     companion object {
         private const val ARG_PROFIL_ID = "profilID"
 

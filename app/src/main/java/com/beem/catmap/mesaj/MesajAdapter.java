@@ -85,7 +85,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         if(mesaj instanceof YanitMesaj){
             YanitMesaj yanitMesaj = (YanitMesaj) mesaj;
-            if(yanitMesaj.getGonderici().equals(currentUser.getID())){
+            if(yanitMesaj.getGonderici().equals(currentUser.id)){
                 holder.cevapKutusu.setVisibility(View.VISIBLE);
                 holder.cevapMetni.setText(yanitMesaj.getYanitlananMesaj().getMesaj());
                 holder.cevapKutusu.setOnClickListener(v->{
@@ -101,7 +101,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             }
         }
         if(!mesaj.getTur().equals("foto")) {
-            if (mesaj.getGonderici().equals(currentUser.getID())) {
+            if (mesaj.getGonderici().equals(currentUser.id)) {
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.sagMesajText.setVisibility(View.VISIBLE);
@@ -122,7 +122,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         }
         else {
             // burası fotograf mesajları için
-            if (mesaj.getGonderici().equals(currentUser.getID())) {
+            if (mesaj.getGonderici().equals(currentUser.id)) {
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagFotoLayout.setVisibility(View.VISIBLE);

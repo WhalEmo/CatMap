@@ -127,16 +127,16 @@ class AuthFragment : Fragment() {
 
                 val doc = query.documents[0]
                 user.kullaniciAdi = doc.getString("KullaniciAdi") ?: username // <-- EKLENDİ
-                user.ad = doc.getString("Ad")
-                user.soyad = doc.getString("Soyad")
-                user.email = doc.getString("Email")
-                user.fotoUrl = doc.getString("profilFotoUrl")
-                user.biyografi = doc.getString("Hakkinda")
+                user.ad = doc.getString("Ad")?:""
+                user.soyad = doc.getString("Soyad")?:""
+                user.email = doc.getString("Email")?:""
+                user.fotoUrl = doc.getString("profilFotoUrl")?:""
+                user.biyografi = doc.getString("Hakkinda")?:""
                 user.takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
                 user.takipciSayisi = doc.getLong("takipciSayisi")
                 user.gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
 
-                user.setID(doc.id)
+                user.id=(doc.id)
 
                 if (user.email.isNullOrEmpty()) {
                     Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore'dan 'Email' alanı boş veya null geldi!")
@@ -190,18 +190,16 @@ class AuthFragment : Fragment() {
         }
     }
 
-    private fun handleRegister(registerBinding: KaydolpencereBinding) {
-        val user = Kullanici()
-        user.ad = registerBinding.adEditText.text.toString().trim()
-        user.soyad = registerBinding.soyadEditText.text.toString().trim()
-        user.email = registerBinding.emailEditText.text.toString().trim()
-        user.kullaniciAdi = registerBinding.usernameEditText.text.toString().trim()
-        user.sifre = registerBinding.passwordEditText.text.toString().trim()
 
-        if (!user.KullaniciIs()) {
-            uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun", 1000)
-            return
-        }
+    private fun handleRegister(registerBinding: KaydolpencereBinding) {
+        val user = Kullanici(
+            ad = registerBinding.adEditText.text.toString().trim(),
+            soyad = registerBinding.soyadEditText.text.toString().trim(),
+            email = registerBinding.emailEditText.text.toString().trim(),
+            kullaniciAdi = registerBinding.usernameEditText.text.toString().trim(),
+            sifre = registerBinding.passwordEditText.text.toString().trim()
+        )
+
         if (!Patterns.EMAIL_ADDRESS.matcher(user.email).matches()) {
             uyariMesaji.BasarisizDurum("Lütfen geçerli bir email adresi giriniz!", 1000)
             return
@@ -234,18 +232,16 @@ class AuthFragment : Fragment() {
                                 val ynt = DogrulamaKodYonetici()
                                 ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
                                     if (basarili) {
-                                        // Firebase Auth'ta oluşturan kullanıcının UID'sini alıyoruz
                                         val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
 
                                         if (currentUserUid != null) {
-                                            // Doküman ID'sini rastgele üretmek (.add) yerine Auth UID yaparak (.document(uid).set) kaydediyoruz
                                             db.collection("users")
                                                 .document(currentUserUid)
                                                 .set(user.KullaniciData())
                                                 .addOnSuccessListener {
                                                     if (!isAdded) return@addOnSuccessListener
 
-                                                    user.setID(currentUserUid)
+                                                    user.id = currentUserUid // YENİ: setID yerine id alanına atama yapıldı
                                                     CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                                                     CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
                                                     saveUserLocallyAndNavigate(user)

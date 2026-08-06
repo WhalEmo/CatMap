@@ -1,27 +1,64 @@
 package com.beem.catmap.data.repository
 
+import android.annotation.SuppressLint
 import android.content.Context
-import androidx.collection.LruCache
+import android.util.LruCache
 import com.beem.catmap.data.local.UserSession
-import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.gonderi.TargetUserFollowData
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlin.math.max
-class FollowRepository(private val context: Context) {
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val userManager = CurrentUserManager.getInstance(context)
 
-    private val targetUserCache = LruCache<String, TargetUserFollowData>(10)
+data class FollowResult(
+    val currentFollowingCount: Long,
+    val targetFollowerCount: Long
+)
+
+data class RemoveFollowerResult(
+    val currentFollowerCount: Long,
+    val followerFollowingCount: Long
+)
+
+class FollowRepository private constructor(context: Context) {
+
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        @Volatile
+        private var INSTANCE: FollowRepository? = null
+
+        fun getInstance(context: Context): FollowRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: FollowRepository(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    // 1. RAM Önbellekleri (Cache)
+    // Benim takip ettiğim kullanıcıların sorgu sonuçlarını saklar (targetUserId -> Boolean)
+    private val isFollowingCache = LruCache<String, Boolean>(100)
+    // Beni takip eden kullanıcıların sorgu sonuçlarını saklar (targetUserId -> Boolean)
+    private val isFollowedByCache = LruCache<String, Boolean>(100)
 
     private val currentUserId: String?
         get() = UserSession.userId
 
-    suspend fun isFollowing(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun isFollowing(targetUserId: String, forceRefresh: Boolean = false): Result<Boolean> = withContext(Dispatchers.IO) {
         val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+
+        // Önbellekte varsa doğrudan döndür
+        if (!forceRefresh) {
+            val cachedState = isFollowingCache.get(targetUserId)
+            if (cachedState != null) {
+                return@withContext Result.success(cachedState)
+            }
+        }
+
         return@withContext try {
             val documentSnapshot = db.collection("users")
                 .document(userId)
@@ -30,14 +67,26 @@ class FollowRepository(private val context: Context) {
                 .get()
                 .await()
 
-            Result.success(documentSnapshot.exists())
+            val isFollowing = documentSnapshot.exists()
+            // RAM Cache'e kaydet
+            isFollowingCache.put(targetUserId, isFollowing)
+
+            Result.success(isFollowing)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun isFollowedBy(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun isFollowedBy(targetUserId: String, forceRefresh: Boolean = false): Result<Boolean> = withContext(Dispatchers.IO) {
         val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+
+        // Önbellekte varsa doğrudan döndür
+        if (!forceRefresh) {
+            val cachedState = isFollowedByCache.get(targetUserId)
+            if (cachedState != null) {
+                return@withContext Result.success(cachedState)
+            }
+        }
 
         return@withContext try {
             val documentSnapshot = db.collection("users")
@@ -47,79 +96,36 @@ class FollowRepository(private val context: Context) {
                 .get()
                 .await()
 
-            Result.success(documentSnapshot.exists())
+            val isFollowed = documentSnapshot.exists()
+            // RAM Cache'e kaydet
+            isFollowedByCache.put(targetUserId, isFollowed)
+
+            Result.success(isFollowed)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun fetchAndCacheFollowCounts(
-        userId: String,
-        isMyProfile: Boolean,
-        forceRefresh: Boolean = false
-    ): Result<FollowCounts> = withContext(Dispatchers.IO) {
-
-        if (isMyProfile && !forceRefresh) {
-            val followerCount = userManager.profileState.value.takipciSayisi
-            val followingCount = userManager.profileState.value.takipEdilenSayisi
-            return@withContext Result.success(FollowCounts(followingCount, followerCount))
-        }
-
-        if (!isMyProfile && !forceRefresh) {
-            val cachedData = targetUserCache.get(userId)
-            if (cachedData != null) {
-                return@withContext Result.success(FollowCounts(cachedData.followingCount, cachedData.followerCount))
-            }
-        }
-
-        try {
-            val snapshot = db.collection("users")
-                .document(userId)
-                .get()
-                .await()
-
-            if (snapshot.exists()) {
-                val followingCount = snapshot.getLong("TakipEdilenSayisi") ?: 0L
-                val followerCount = snapshot.getLong("takipciSayisi") ?: 0L
-
-                if (isMyProfile) {
-                    userManager.updateFollowCounts(followerCount, followingCount)
-                } else {
-                    targetUserCache.put(userId, TargetUserFollowData(followerCount, followingCount))
-                }
-
-                Result.success(FollowCounts(followingCount, followerCount))
-            } else {
-                Result.success(FollowCounts(0L, 0L))
-            }
-        } catch (e: Exception) {
-            if (!isMyProfile) {
-                val cached = targetUserCache.get(userId)
-                if (cached != null) {
-                    return@withContext Result.success(FollowCounts(cached.followingCount, cached.followerCount))
-                }
-            }
-            Result.failure(e)
-        }
-    }
-
-    suspend fun takipet(
+    suspend fun takipEt(
         currentUserId: String,
         targetUserId: String,
         myBlockedList: List<String>?,
         blockedMeList: List<String>?
-    ): Result<Unit> = withContext(Dispatchers.IO) {
+    ): Result<FollowResult> = withContext(Dispatchers.IO) {
         if ((myBlockedList?.contains(targetUserId) == true) ||
             (blockedMeList?.contains(currentUserId) == true)
         ) {
             return@withContext Result.failure(IllegalStateException("Engelleme durumundan dolayı takip edilemez."))
         }
 
+        // Optimistic Cache Güncellemesi (Yerel durumu hemen güncelliyoruz)
+        isFollowingCache.put(targetUserId, true)
+
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
 
         return@withContext try {
-            db.runTransaction { transaction ->
+            val result = db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val targetSnap = transaction.get(targetUserRef)
 
@@ -165,32 +171,32 @@ class FollowRepository(private val context: Context) {
                 transaction.update(currentUserRef, "TakipEdilenSayisi", followingCount)
                 transaction.update(targetUserRef, "takipciSayisi", followerCount)
 
-                null
+                FollowResult(
+                    currentFollowingCount = followingCount,
+                    targetFollowerCount = followerCount
+                )
             }.await()
 
-            // Target Cache güncelleme
-            val currentCache = targetUserCache.get(targetUserId)
-            val newFollowerCount = (currentCache?.followerCount ?: 0L) + 1
-            val newFollowingCount = currentCache?.followingCount ?: 0L
-            targetUserCache.put(targetUserId, TargetUserFollowData(newFollowerCount, newFollowingCount))
-
-            // Kendi profil sayılarını güncelleme
-            val myCurrentFollower = userManager.profileState.value.takipciSayisi
-            val myCurrentFollowing = userManager.profileState.value.takipEdilenSayisi
-            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing + 1)
-
-            Result.success(Unit)
+            Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al (Rollback)
+            isFollowingCache.put(targetUserId, false)
             Result.failure(e)
         }
     }
 
-    suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun unfollowUser(
+        currentUserId: String,
+        targetUserId: String
+    ): Result<FollowResult> = withContext(Dispatchers.IO) {
+        // Optimistic Cache Güncellemesi
+        isFollowingCache.put(targetUserId, false)
+
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
 
         return@withContext try {
-            db.runTransaction { transaction ->
+            val result = db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val targetSnap = transaction.get(targetUserRef)
 
@@ -221,33 +227,32 @@ class FollowRepository(private val context: Context) {
                 transaction.update(currentUserRef, "TakipEdilenSayisi", followingCount)
                 transaction.update(targetUserRef, "takipciSayisi", followerCount)
 
-                null
+                FollowResult(
+                    currentFollowingCount = followingCount,
+                    targetFollowerCount = followerCount
+                )
             }.await()
 
-            // Target Cache güncelleme
-            val currentCache = targetUserCache.get(targetUserId)
-            if (currentCache != null) {
-                val newFollowerCount = max(currentCache.followerCount - 1, 0L)
-                targetUserCache.put(targetUserId, TargetUserFollowData(newFollowerCount, currentCache.followingCount))
-            }
-
-            // Kendi profil sayılarını güncelleme
-            val myCurrentFollower = userManager.profileState.value.takipciSayisi
-            val myCurrentFollowing = max(userManager.profileState.value.takipEdilenSayisi - 1, 0L)
-            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing)
-
-            Result.success(Unit)
+            Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al (Rollback)
+            isFollowingCache.put(targetUserId, true)
             Result.failure(e)
         }
     }
 
-    suspend fun removeFollower(currentUserId: String, followerId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun removeFollower(
+        currentUserId: String,
+        followerId: String
+    ): Result<RemoveFollowerResult> = withContext(Dispatchers.IO) {
+        // Optimistic Cache Güncellemesi
+        isFollowedByCache.put(followerId, false)
+
         val currentUserRef = db.collection("users").document(currentUserId)
         val followerRef = db.collection("users").document(followerId)
 
         return@withContext try {
-            db.runTransaction { transaction ->
+            val result = db.runTransaction { transaction ->
                 val currentSnap = transaction.get(currentUserRef)
                 val followerSnap = transaction.get(followerRef)
 
@@ -278,20 +283,23 @@ class FollowRepository(private val context: Context) {
                 transaction.update(currentUserRef, "takipciSayisi", followerCount)
                 transaction.update(followerRef, "TakipEdilenSayisi", followingCount)
 
-                null
+                RemoveFollowerResult(
+                    currentFollowerCount = followerCount,
+                    followerFollowingCount = followingCount
+                )
             }.await()
 
-            val myCurrentFollower = max(userManager.profileState.value.takipciSayisi - 1, 0L)
-            val myCurrentFollowing = userManager.profileState.value.takipEdilenSayisi
-            userManager.updateFollowCounts(myCurrentFollower, myCurrentFollowing)
-
-            Result.success(Unit)
+            Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al
+            isFollowedByCache.put(followerId, true)
             Result.failure(e)
         }
     }
 
-    fun getCachedTargetUserData(userId: String): TargetUserFollowData? {
-        return targetUserCache.get(userId)
+    // Kullanıcı çıkış yaptığında temizleme fonksiyonu
+    fun clearCache() {
+        isFollowingCache.evictAll()
+        isFollowedByCache.evictAll()
     }
 }
