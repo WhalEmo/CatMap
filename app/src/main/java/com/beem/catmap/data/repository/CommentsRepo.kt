@@ -10,7 +10,18 @@ import kotlinx.coroutines.tasks.await
 
 class CommentsRepo {
     private val db = FirebaseFirestore.getInstance()
+    companion object {
+        @Volatile
+        private var INSTANCE: CommentsRepo? = null
 
+        fun getInstance(): CommentsRepo {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: CommentsRepo().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
     suspend fun getInitialComments(
         catId: String,
         limit: Long

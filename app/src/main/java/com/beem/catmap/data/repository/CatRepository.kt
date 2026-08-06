@@ -10,6 +10,19 @@ import kotlinx.coroutines.tasks.await
 class CatRepository {
     private val db = FirebaseFirestore.getInstance()
 
+    companion object {
+        @Volatile
+        private var INSTANCE: CatRepository? = null
+
+        fun getInstance(): CatRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: CatRepository().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+
     suspend fun addLike(userId: String, catId: String): Boolean {
         return try {
             val userRef = db.collection("users").document(userId)

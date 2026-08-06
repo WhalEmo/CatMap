@@ -24,7 +24,7 @@ import java.util.Date
 
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = MapRepository()
+    private val repository = MapRepository.getInstance()
     private val postRepository = PostRepository.getInstance(application)
 
     private val _uiState = MutableStateFlow(UploadUiState())

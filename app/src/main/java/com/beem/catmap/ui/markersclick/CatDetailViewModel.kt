@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = CatRepository()
+    private val repository = CatRepository.getInstance()
 
     private val postRepository = PostRepository.getInstance(application)
 
