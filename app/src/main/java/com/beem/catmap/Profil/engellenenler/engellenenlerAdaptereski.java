@@ -65,9 +65,9 @@ public class engellenenlerAdaptereski extends RecyclerView.Adapter<engellenenler
     public void onBindViewHolder(@NonNull engellenenlerAdaptereski.engellenenViewHolder holder, int position) {
         Kullanici kullanici = engellenenlerList.get(position);
 
-        holder.RecyclerkullaniciAdi.setText(kullanici.getKullaniciAdi());
+        holder.RecyclerkullaniciAdi.setText(kullanici.kullaniciAdi);
         Picasso.get()
-                .load(kullanici.getFotoUrl())
+                .load(kullanici.fotoUrl)
                 .fit()
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
@@ -79,7 +79,7 @@ public class engellenenlerAdaptereski extends RecyclerView.Adapter<engellenenler
         });
         holder.RecyclerkullaniciAdi.setOnClickListener(v->{
             if (klistener != null) {
-                klistener.onadClick(kullanici.getID());
+                klistener.onadClick(kullanici.id);
             }
         });
 

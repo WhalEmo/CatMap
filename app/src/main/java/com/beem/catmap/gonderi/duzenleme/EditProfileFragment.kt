@@ -85,7 +85,6 @@ class EditProfileFragment : Fragment() {
         observeViewModel()
 
         if (currentUserId.isNotBlank()) {
-            // Tek kaynak UseCase üzerinden tüm verileri yüklüyoruz
             profileViewModel.tumProfilVerileriniYukle(currentUserId, forceRefresh = false)
         }
     }
@@ -135,13 +134,11 @@ class EditProfileFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                // 1. Profil İlk Bilgilerini fullProfileState Üzerinden Dinle
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
                         if (state is UiState.Success) {
                             val data = state.data.profile
 
-                            // Fotoğraf henüz galeriden seçilmediyse Firestore'daki güncel fotoğrafı bas
                             if (selectedImageUri == null && !data.fotoUrl.isNullOrBlank()) {
                                 Glide.with(this@EditProfileFragment)
                                     .load(data.fotoUrl)
@@ -149,7 +146,6 @@ class EditProfileFragment : Fragment() {
                                     .into(profilFotoImageView)
                             }
 
-                            // Input alanları henüz doldurulmadıysa değerleri yerleştir
                             if (editKullaniciAdi.text.isNullOrBlank()) {
                                 editKullaniciAdi.setText(data.kullaniciAdi)
                             }
@@ -160,13 +156,12 @@ class EditProfileFragment : Fragment() {
                                 editSoyad.setText(data.soyad)
                             }
                             if (editBio.text.isNullOrBlank()) {
-                                editBio.setText(data.hakkinda)
+                                editBio.setText(data.biyografi)
                             }
                         }
                     }
                 }
 
-                // 2. Profil Güncelleme Durumunu Dinle
                 launch {
                     profileViewModel.profileUpdateState.collect { result ->
                         when (result) {
@@ -178,19 +173,17 @@ class EditProfileFragment : Fragment() {
                                 UiMessageManager.emitMessage(UiMessageState.Success("Profil başarıyla güncellendi."))
                                 profileViewModel.resetUpdateState()
 
-                                // Güncellenmiş profil verisini almak için mevcut state'i okuyoruz
-                                val currentData = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+                                // GEREKSİZ LOCAL NESNE OLUŞTURMA KALDIRILDI:
+                                // Sunucudan/Storage'dan başarıyla dönen 'result' verisiyle doğrudan nesne oluşturulur.
+                                val guncelKullanici = Kullanici().apply {
+                                    id = currentUserId
+                                    kullaniciAdi = result.newUsername
+                                    ad = result.newAd
+                                    soyad = result.newSoyad
+                                    biyografi = result.newHakkinda
+                                    fotoUrl = result.newPhotoUrl ?:""
+                                }
 
-                                val guncelKullanici = Kullanici(
-                                    currentUserId,
-                                    editKullaniciAdi.text?.toString()?.trim().orEmpty(),
-                                    editAd.text?.toString()?.trim().orEmpty(),
-                                    editSoyad.text?.toString()?.trim().orEmpty(),
-                                    editBio.text?.toString()?.trim().orEmpty(),
-                                    currentData?.fotoUrl // Yüklenmiş gerçek sunucu URL'si
-                                )
-
-                                // EventBus ile tüm dinleyicilere fırlatıyoruz
                                 lifecycleScope.launch {
                                     ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelKullanici))
                                 }

@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 class MapViewModel : ViewModel() {
 
-    private val repository = MapRepository()
+    private val repository = MapRepository.getInstance()
 
     private val _catsList = MutableLiveData<List<CatModel>>()
     val catsList: LiveData<List<CatModel>> get() = _catsList

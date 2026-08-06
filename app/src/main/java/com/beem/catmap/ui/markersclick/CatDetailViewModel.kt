@@ -24,9 +24,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = CatRepository()
+    private val repository = CatRepository.getInstance()
+    private val postRepository = PostRepository.getInstance(application)
 
-    private val postRepository = PostRepository(CatMapApp.instance)
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()

@@ -40,7 +40,7 @@ public class HesapSil {
 
     public void HesapSilmeBaslat(Runnable onFinish) {
         Task<Void> takipEdilenlerTask = db.collection("users")
-                .document(currentUser.getID())
+                .document(currentUser.id)
                 .collection("takipEdilenler")
                 .get()
                 .continueWithTask(task ->{
@@ -54,7 +54,7 @@ public class HesapSil {
                 });
 
         Task<Void> takipcilerTask = db.collection("users")
-                .document(currentUser.getID())
+                .document(currentUser.id)
                 .collection("takipciler")
                 .get()
                 .continueWithTask(task -> {
@@ -68,7 +68,7 @@ public class HesapSil {
                 });
 
         Task<Void> kedilerTask = db.collection("users")
-                .document(currentUser.getID())
+                .document(currentUser.id)
                 .get()
                 .continueWithTask(task -> {
                     if (task.isSuccessful() && task.getResult().exists()) {
@@ -99,7 +99,7 @@ public class HesapSil {
             silinecekler.add(db.collection("users")
                     .document(takipEdilen)
                     .collection("takipciler")
-                    .document(currentUser.getID())
+                    .document(currentUser.id)
                     .delete());
         }
         return Tasks.whenAll(silinecekler);
@@ -111,7 +111,7 @@ public class HesapSil {
             silinecekler.add(db.collection("users")
                     .document(takipci)
                     .collection("takipEdilenler")
-                    .document(currentUser.getID())
+                    .document(currentUser.id)
                     .delete());
         }
         return Tasks.whenAll(silinecekler);
@@ -136,7 +136,7 @@ public class HesapSil {
                         if (idler.length == 2) {
                             String id1 = idler[0];
                             String id2 = idler[1];
-                            if (id1.equals(currentUser.getID()) || id2.equals(currentUser.getID())) {
+                            if (id1.equals(currentUser.id) || id2.equals(currentUser.id)) {
                                 ref.child(child.getKey()).removeValue();
                             }
                         }
@@ -152,13 +152,13 @@ public class HesapSil {
     private void HesabiSil(Runnable onFinish){
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), currentUser.getSifre());
+        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.email, currentUser.sifre);
 
         user.reauthenticate(credential).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 user.delete().addOnCompleteListener(task1 -> {
                     if (task1.isSuccessful()) {
-                        db.collection("users").document(currentUser.getID()).delete().addOnCompleteListener(task2 -> {
+                        db.collection("users").document(currentUser.id).delete().addOnCompleteListener(task2 -> {
                             if (task2.isSuccessful()) {
                                 onFinish.run();
                             }
