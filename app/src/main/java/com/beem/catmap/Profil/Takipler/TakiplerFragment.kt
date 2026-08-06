@@ -10,12 +10,16 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.beem.catmap.R
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 
 class TakiplerFragment : Fragment() {
+
+    private var startPage = 0
+    private lateinit var viewPager2: ViewPager2
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -24,17 +28,17 @@ class TakiplerFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_takipler, container, false)
         val tabLayout: TabLayout = view.findViewById(R.id.tabLayout)
-        val viewPager2: ViewPager2 = view.findViewById(R.id.viewPager)
+        viewPager2 = view.findViewById(R.id.viewPager)
         val btnBack: ImageView = view.findViewById(R.id.btnBack)
         val tvHeaderTitle: TextView = view.findViewById(R.id.tvHeaderTitle)
 
         val currentUserManager = CurrentUserManager.getInstance(requireContext())
 
         val yukleyenID = arguments?.getString("yukleyenID") ?: currentUserManager.getCurrentUserId()
-        val startPage = arguments?.getInt("startPage", 0) ?: 0
+         startPage = arguments?.getInt("startPage", 0) ?: 0
         val kullaniciAdi = arguments?.getString("kullaniciAdi")
 
-        // Başlığı ayarla (Gelen kullanıcı adı boş değilse yazdır, boşsa varsayılan yap)
+        // Başlığı ayarla
         if (!kullaniciAdi.isNullOrEmpty()) {
             tvHeaderTitle.text = kullaniciAdi
         } else {
@@ -49,14 +53,22 @@ class TakiplerFragment : Fragment() {
             tab.text = if (position == 0) "Takipçiler" else "Takip Edilenler"
         }.attach()
 
-        viewPager2.setCurrentItem(startPage, false)
+        viewPager2.post {
+            viewPager2.setCurrentItem(startPage, false)
+        }
 
-        // Geri butonu dinleyicisi
         btnBack.setOnClickListener {
+            it.bounceAndHaptic()
             SmartNavigationEngine.navigateBack()
         }
 
         return view
+    }
+    override fun onResume() {
+        super.onResume()
+
+        startPage = arguments?.getInt("startPage", 0) ?: 0
+        viewPager2.setCurrentItem(startPage, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

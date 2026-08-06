@@ -2,6 +2,7 @@ package com.beem.catmap.gonderi
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
@@ -71,18 +72,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun lokalProfilVerisiniGuncelle(guncelKullanici: Kullanici) {
-        _fullProfileState.update { currentState ->
-            if (currentState is UiState.Success) {
-                UiState.Success(currentState.data.copy(profile = guncelKullanici))
-            } else {
-                currentState
-            }
-        }
-        if (guncelKullanici.id == UserSession.userId) {
-            updateLocalSession(guncelKullanici)
-        }
-    }
 
     fun tumProfilBilgileriniGuncelle(
         yeniKullaniciAdi: String,
@@ -95,9 +84,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         if (_profileUpdateState.value is ProfileUpdateResult.Loading) return
 
         val currentFullData = (_fullProfileState.value as? UiState.Success)?.data
-        val currentProfile = currentFullData?.profile
-
-        if (currentProfile == null) {
+        val currentProfile = currentFullData?.profile ?: run {
             _profileUpdateState.value = ProfileUpdateResult.Error("Profil verisi henüz yüklenmedi.")
             return
         }
@@ -107,13 +94,13 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         val currentSoyad = currentProfile.soyad.orEmpty()
         val currentBio = currentProfile.biyografi.orEmpty()
 
-        val isUsernameChanged = yeniKullaniciAdi != currentUsername
-        val isAdChanged = yeniAd != currentAd
-        val isSoyadChanged = yeniSoyad != currentSoyad
-        val isBioChanged = yeniHakkinda != currentBio
-        val isImageChanged = yeniResimUri != null
+        val isChanged = yeniKullaniciAdi != currentUsername ||
+                yeniAd != currentAd ||
+                yeniSoyad != currentSoyad ||
+                yeniHakkinda != currentBio ||
+                yeniResimUri != null
 
-        if (!isUsernameChanged && !isAdChanged && !isSoyadChanged && !isBioChanged && !isImageChanged) {
+        if (!isChanged) {
             _profileUpdateState.value = ProfileUpdateResult.Success(
                 newUsername = currentUsername,
                 newAd = currentAd,
@@ -140,25 +127,26 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             )
 
             if (result is ProfileUpdateResult.Success) {
-                val finalPhotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl
+                val finalPhotoUrl = result.newPhotoUrl.takeIf { !it.isNullOrBlank() } ?: currentProfile.fotoUrl
+
+                // 1. Yeni profil modelini oluştur
                 val guncellenmisProfileData = currentProfile.copy(
                     kullaniciAdi = result.newUsername,
                     ad = result.newAd,
                     soyad = result.newSoyad,
                     fotoUrl = finalPhotoUrl,
-                    biyografi = result.newHakkinda
+                    biyografi = result.newHakkinda // Hakkında alanı kesin olarak güncelleniyor
                 )
 
-                // Yerel önbelleği güncelle
+                // 2. Local Session'ı güncelle
                 updateLocalSession(guncellenmisProfileData)
 
-                _fullProfileState.update {
-                    UiState.Success(currentFullData.copy(profile = guncellenmisProfileData))
-                }
             }
+
             _profileUpdateState.value = result
         }
     }
+
 
     private fun updateLocalSession(user: Kullanici) {
         userManager.updateProfileDetails(

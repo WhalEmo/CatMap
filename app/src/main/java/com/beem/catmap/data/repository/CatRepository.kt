@@ -68,28 +68,6 @@ class CatRepository {
         }
     }
 
-    suspend fun removeCatFromUserPosts(userId: String, catId: String): Boolean {
-        return try {
-            val userRef = db.collection("users").document(userId)
-            val snapshot = userRef.get().await()
-
-            if (snapshot.exists()) {
-                val gonderilenKediler = snapshot.get("GonderilenKediler") as? List<Map<String, Any>>
-
-                val silinecekKedi = gonderilenKediler?.firstOrNull { item ->
-                    catId == item["kediID"]
-                }
-
-                if (silinecekKedi != null) {
-                    userRef.update("GonderilenKediler", FieldValue.arrayRemove(silinecekKedi)).await()
-                    return true
-                }
-            }
-            false
-        } catch (e: Exception) {
-            false
-        }
-    }
 
     suspend fun deleteCatFromMap(catId: String): Boolean {
         return try {

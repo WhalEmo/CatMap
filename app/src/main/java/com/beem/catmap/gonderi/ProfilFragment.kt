@@ -219,6 +219,7 @@ class ProfilFragment : Fragment() {
 
     private fun setupListeners() {
         btnBack.setOnClickListener {
+            it.bounceAndHaptic()
             SmartNavigationEngine.navigateBack()
         }
 
@@ -227,9 +228,9 @@ class ProfilFragment : Fragment() {
         }
 
         takipEtButonu.setOnClickListener {
+            it.bounceAndHaptic()
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
-                    it.bounceAndHaptic()
                     followViewModel.takipEt(
                         takipEttiginId = targetId,
                         currentUserId = myUserId
@@ -237,33 +238,44 @@ class ProfilFragment : Fragment() {
                 }
             }
         }
-
         takipciSayisiLayout.setOnClickListener {
+            it.bounceAndHaptic()
             targetUserId?.let { userId ->
                 val args = bundleOf(
                     "yukleyenID" to userId,
                     "startPage" to 0,
                     "kullaniciAdi" to KullaniciAdi.text.toString(),
                 )
-                SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, userId)
+
+                SmartNavigationEngine.navigateTo(
+                    Screen.FOLLOWERS,
+                    args,
+                    "${userId}_0"
+                )
             }
         }
 
         takipEdilenSayisiLayout.setOnClickListener {
+            it.bounceAndHaptic()
             targetUserId?.let { userId ->
                 val args = bundleOf(
                     "yukleyenID" to userId,
                     "startPage" to 1,
                     "kullaniciAdi" to KullaniciAdi.text.toString(),
                 )
-                SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, userId)
+
+                SmartNavigationEngine.navigateTo(
+                    Screen.FOLLOWERS,
+                    args,
+                    "${userId}_1"
+                )
             }
         }
 
         takipEdiliyorButonu.setOnClickListener {
+            it.bounceAndHaptic()
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
-                    it.bounceAndHaptic()
                     followViewModel.takiptenCikar(
                         takiptenCiktiginId = targetId,
                         currentUserId = myUserId
@@ -345,13 +357,11 @@ class ProfilFragment : Fragment() {
                 // 2. Profil Güncelleme EventBus Takibi
                 launch {
                     ProfileEventBus.profileEvent.collect { event ->
-                        if (isHidden) return@collect
                         when (event) {
                             is ProfileEvent.ProfileUpdated -> {
                                 val guncelKullanici = event.updatedUser
-                                if (targetUserId == myUserId && guncelKullanici != null) {
-                                    profileViewModel.lokalProfilVerisiniGuncelle(guncelKullanici)
-                                }
+
+                                guncelKullanici?.let { bindUserProfileData(it) }
                             }
                             else -> {}
                         }
@@ -361,7 +371,6 @@ class ProfilFragment : Fragment() {
 
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
-                        if (isHidden) return@collectLatest
                         renderProfileButtons(state)
                     }
                 }
@@ -389,7 +398,7 @@ class ProfilFragment : Fragment() {
                 launch {
                     if (targetUserId == myUserId) {
 
-                        followViewModel.profileState.collect { profileState ->
+                        profileViewModel.profileState.collect { profileState ->
                             if (isHidden) return@collect
 
                             takipciSayisiTextView.text = profileState.takipciSayisi.toString()
@@ -456,7 +465,7 @@ class ProfilFragment : Fragment() {
         val tamAd = kullanici.ad.trim()
         tvAd.text = tamAd
 
-        bioTextView.text = kullanici.biyografi.orEmpty()
+        bioTextView.text = kullanici.biyografi
 
         gonderiSayisiTextView.text = (kullanici.gonderiSayisi ?: 0L).toString()
 
