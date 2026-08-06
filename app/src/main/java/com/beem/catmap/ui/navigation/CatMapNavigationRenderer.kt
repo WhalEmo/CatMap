@@ -21,23 +21,42 @@ class CatMapNavigationRenderer(
     private val provider: FragmentProvider
 ) : DefaultLifecycleObserver {
 
+
+
     init {
         activity.lifecycle.addObserver(this)
     }
 
     override fun onCreate(owner: LifecycleOwner) {
         activity.lifecycleScope.launch {
-            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                SmartNavigationEngine.navigationEvents.collect { state ->
-                    render(
-                        targetScreen = state.screen,
-                        trigger = state.trigger,
-                        newArgs = state.args,
-                        targetScreenId = state.screenId
-                    )
-                }
+            SmartNavigationEngine.navigationEvents.collect { state ->
+                Log.d("NAV_RENDERER", "🔥 KESİNTİSİZ EVENT -> Ekran: ${state.screen}")
+                render(
+                    targetScreen = state.screen,
+                    trigger = state.trigger,
+                    newArgs = state.args,
+                    targetScreenId = state.screenId
+                )
             }
         }
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+
+        val currentScreen = SmartNavigationEngine.getCurrentStack()
+        // Buradaki key veya tag eşleştirmene göre id üret
+
+        Log.d("NAV_RENDERER", "♻️ ARKA PLANDAN DÖNÜLDÜ -> Ekranı Zorla Senkronize Et: $currentScreen")
+
+        // Herhangi bir animasyon tetiklemeden (INITIAL gibi davranarak)
+        // FragmentManager'daki hayalet katmanları temizletiyoruz.
+        render(
+            targetScreen = currentScreen.screen,
+            trigger = currentScreen.trigger,
+            newArgs = currentScreen.args,
+            targetScreenId = currentScreen.screenId
+        )
     }
 
 
@@ -53,41 +72,33 @@ class CatMapNavigationRenderer(
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
-
         }
 
-
         val validTags = Screen.entries.map { it.tag }
+
         for (f in fm.fragments) {
             if (f != null && f.tag != null) {
                 val baseTag = f.tag?.extractBaseTag()
 
                 if (validTags.contains(baseTag)) {
                     if (f.tag != targetScreenId) {
-                        val screen = Screen.fromTag(baseTag)
-                        if (screen.isNode) {
-                            transaction.hide(f)
-                        } else {
-                            f.view?.clearAnimation()
-                            transaction.hide(f)
-                        }
+                        transaction.hide(f)
+                        transaction.setMaxLifecycle(f, Lifecycle.State.STARTED)
                     }
                 }
             }
         }
-
         val targetFragment = fm.findFragmentByTag(targetScreenId)
 
-        when{
+        when {
             targetFragment == null -> {
                 provider.createFragment(targetScreen.tag)?.let { newFragment ->
                     if (!newArgs.isEmpty) {
                         newFragment.arguments = newArgs
                     }
-
                     transaction.add(containerId, newFragment, targetScreenId)
-
-                    newFragment.fragmentLog("CREATE FRAGMENT")
+                    transaction.setMaxLifecycle(newFragment, Lifecycle.State.RESUMED)
+                    newFragment.fragmentLog("CREATE FRAGMENT (NEW ADD)")
                 }
             }
             else -> {
@@ -95,15 +106,13 @@ class CatMapNavigationRenderer(
                     transaction.attach(targetFragment)
                 }
                 transaction.show(targetFragment)
-
-                targetFragment.fragmentLog("CACHE FRAGMENT")
+                transaction.setMaxLifecycle(targetFragment, Lifecycle.State.RESUMED)
+                targetFragment.fragmentLog("CACHE FRAGMENT (SHOW)")
             }
         }
 
         transaction.commitAllowingStateLoss()
-
     }
-
 
     private fun renderInitialAnimation(transaction: FragmentTransaction) {
     }

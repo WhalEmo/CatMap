@@ -3,12 +3,12 @@ package com.beem.catmap.ui.markersclick
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.CatMapApp
 import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
 import com.beem.catmap.data.repository.PostRepository
-import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 class CatDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatRepository()
 
-    private val postRepository = PostRepository
+    private val postRepository = PostRepository(CatMapApp.instance)
 
     private val _selectedCat = MutableStateFlow<Kediler?>(null)
     val selectedCat: StateFlow<Kediler?> = _selectedCat.asStateFlow()

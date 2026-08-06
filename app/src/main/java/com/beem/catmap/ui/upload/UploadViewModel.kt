@@ -4,6 +4,7 @@ import android.app.Application
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.CatMapApp
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.MapRepository
 import com.beem.catmap.data.repository.PostRepository
@@ -25,7 +26,7 @@ import java.util.Date
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MapRepository()
-    private val postRepository = PostRepository
+    private val postRepository = PostRepository(CatMapApp.instance)
 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()

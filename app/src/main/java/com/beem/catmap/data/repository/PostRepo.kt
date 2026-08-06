@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.max
 
 class PostRepository(private val context: Context) {
-    @SuppressLint("StaticFieldLeak")
+
     private val db = FirebaseFirestore.getInstance()
     private val usersCollection = db.collection("users")
     private val catsCollection = db.collection("cats")
