@@ -3,7 +3,7 @@ package com.beem.catmap.ui.message
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.data.repository.ChatRepository
+import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.ChatMessage
@@ -18,7 +18,7 @@ import java.util.Timer
 import java.util.TimerTask
 
 class MessageViewModel(
-    private val repository: ChatRepository = ChatRepository(),
+    private val repository: MessageRepository = MessageRepository(),
     private val userRepo: UserRepository = UserRepository(),
     private val currentUserManager: CurrentUserManager,
     private val receiverId: String
@@ -157,7 +157,7 @@ class MessageViewModel(
         val activeChatId = chatId ?: return
 
         viewModelScope.launch {
-            repository.deleteMessage(activeChatId, messageId)
+            val deleted = repository.deleteMessage(activeChatId, messageId)
         }
     }
 

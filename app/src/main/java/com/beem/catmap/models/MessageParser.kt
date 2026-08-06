@@ -1,6 +1,7 @@
 package com.beem.catmap.models
 
 import android.util.Log
+import com.beem.catmap.models.ChatMessage.*
 import com.google.firebase.database.DataSnapshot
 
 fun DataSnapshot.toChatMessage(): ChatMessage? {
@@ -8,8 +9,6 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
     val typeString = child("tur").getValue(String::class.java)
     val type = MessageType.fromString(typeString)
 
-    // JSON verinde hem "gonderen" hem de "gonderici" anahtarları kullanılmış.
-    // İki duruma da esnek yaklaşım:
     val senderId = child("gonderen").getValue(String::class.java)
         ?: child("gonderici").getValue(String::class.java)
         ?: return null
@@ -20,7 +19,7 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
     return when (type) {
         MessageType.TEXT -> {
             val text = child("mesaj").getValue(String::class.java) ?: ""
-            ChatMessage.Text(
+            Text(
                 id = id,
                 senderId = senderId,
                 timestamp = timestamp,
@@ -39,7 +38,7 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
             Log.d("ChatDebug", "🔹 Çekilen URL Listesi: $photoUrls")
             Log.d("ChatDebug", "----------------------------------------")
 
-            ChatMessage.Photo(
+            Photo(
                 id = id,
                 senderId = senderId,
                 timestamp = timestamp,
@@ -53,13 +52,24 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
             val parentSnapshot = child("yanitlananMesaj")
             val parentMessage = if (parentSnapshot.exists()) parentSnapshot.toChatMessage() else null
 
-            ChatMessage.Reply(
+            Reply(
                 id = id,
                 senderId = senderId,
                 timestamp = timestamp,
                 isRead = isRead,
                 message = replyText,
                 repliedMessage = parentMessage
+            )
+        }
+
+        MessageType.DELETE -> {
+            val deletedText = child("mesaj").getValue(String::class.java) ?: "🚫 Bu mesaj silindi"
+            Deleted(
+                id = id,
+                senderId = senderId,
+                timestamp = timestamp,
+                isRead = isRead,
+                message = deletedText
             )
         }
     }

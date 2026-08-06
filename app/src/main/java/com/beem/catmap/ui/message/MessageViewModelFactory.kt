@@ -2,7 +2,7 @@ package com.beem.catmap.ui.message
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.beem.catmap.data.repository.ChatRepository
+import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 
@@ -15,7 +15,7 @@ class MessageViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MessageViewModel::class.java)) {
             return MessageViewModel(
-                repository = ChatRepository(),
+                repository = MessageRepository(),
                 userRepo = UserRepository(),
                 currentUserManager = currentUserManager,
                 receiverId = receiverId

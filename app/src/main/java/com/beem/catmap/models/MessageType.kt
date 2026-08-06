@@ -10,7 +10,10 @@ enum class MessageType(val value: String) {
     PHOTO("foto"),
 
     @PropertyName("yanit")
-    REPLY("yanit");
+    REPLY("yanit"),
+
+    @PropertyName("delete")
+    DELETE("delete");
 
     companion object {
         fun fromString(type: String?): MessageType {

@@ -37,4 +37,14 @@ sealed class ChatMessage {
     ) : ChatMessage() {
         override val type = MessageType.REPLY
     }
+
+    data class Deleted(
+        override val id: String,
+        override val senderId: String,
+        override val timestamp: Long,
+        override val isRead: Boolean,
+        val message: String = "🚫 Bu mesaj silindi"
+    ) : ChatMessage() {
+        override val type = MessageType.DELETE
+    }
 }

@@ -119,9 +119,34 @@ class MessageAdapter(
                         onPhotoClick(message.photoUrls)
                     }
                 }
+
+                is ChatMessage.Deleted -> {
+                    binding.root.setOnLongClickListener(null)
+                    binding.root.setOnClickListener(null)
+
+                    if (isMyMessage) {
+                        binding.sagMesajLayout.isVisible = true
+                        binding.sagMesajText.isVisible = true
+                        binding.sagMesajText.text = message.message
+
+                        binding.sagMesajText.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.catmap_text_muted))
+                        binding.sagMesajText.setTypeface(null, android.graphics.Typeface.ITALIC)
+
+                        binding.sagZaman.text = formattedTime
+                        binding.gorulmeIkon.isVisible = false
+                    } else {
+                        binding.solMesajLayout.isVisible = true
+                        binding.solMesajText.isVisible = true
+                        binding.solMesajText.text = message.message
+
+                        binding.solMesajText.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.catmap_text_muted))
+                        binding.solMesajText.setTypeface(null, android.graphics.Typeface.ITALIC)
+
+                        binding.solZaman.text = formattedTime
+                    }
+                }
             }
 
-            // 4. Uzun Basma (Long Click) İşlemi
             binding.sagMesajLayout.setOnLongClickListener { v ->
                 if (!isBlocked) {
                     onMessageLongClick(message, v)

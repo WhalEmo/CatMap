@@ -341,6 +341,7 @@ class MessageFragment : Fragment() {
                 is ChatMessage.Text -> msg.message
                 is ChatMessage.Photo -> "📷 Fotoğraf"
                 is ChatMessage.Reply -> msg.message
+                is ChatMessage.Deleted -> msg.message
             }
         }
     }
@@ -363,6 +364,7 @@ class MessageFragment : Fragment() {
     }
 
     private fun showOptionMenu(message: ChatMessage, anchorView: View) {
+        if (message is ChatMessage.Deleted) return
         val menuView = LayoutInflater.from(requireContext()).inflate(R.layout.mesaj_secenek_menu, null)
 
         val popupWindow = PopupWindow(

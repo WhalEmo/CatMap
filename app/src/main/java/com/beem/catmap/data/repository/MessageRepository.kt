@@ -1,8 +1,6 @@
 package com.beem.catmap.data.repository
 
 import android.util.Log
-import com.beem.catmap.mesaj.Mesaj
-import com.beem.catmap.mesaj.YanitMesaj
 import com.beem.catmap.models.ChatMessage
 import com.beem.catmap.models.toChatMessage
 import com.google.firebase.database.DataSnapshot
@@ -19,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class ChatRepository(
+class MessageRepository(
     private val realDb: FirebaseDatabase = FirebaseDatabase.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
@@ -118,6 +116,7 @@ class ChatRepository(
                         is ChatMessage.Photo -> "📷 Fotoğraf"
                         is ChatMessage.Text -> replyTo.message
                         is ChatMessage.Reply -> replyTo.message
+                        is ChatMessage.Deleted -> replyTo.message
                     }
                 )
             }
@@ -234,7 +233,7 @@ class ChatRepository(
             emptyList()
         }
     }
-
+    /***
     suspend fun deleteMessage(chatId: String, messageId: String): Boolean {
         return try {
             messageRef.child(chatId).child("anaMesaj").child(messageId).removeValue().await()
@@ -249,6 +248,7 @@ class ChatRepository(
             false
         }
     }
+    */
 
     /**
      * Mesaj Gönderme
@@ -262,6 +262,7 @@ class ChatRepository(
                     is ChatMessage.Text -> replyTo.message
                     is ChatMessage.Photo -> "📷 Fotoğraf"
                     is ChatMessage.Reply -> replyTo.message
+                    is ChatMessage.Deleted -> replyTo.message
                 }
 
                 val yanitMap = mapOf(
@@ -281,6 +282,7 @@ class ChatRepository(
                             is ChatMessage.Photo -> "foto"
                             is ChatMessage.Reply -> "yanit"
                             is ChatMessage.Text -> "metin"
+                            is ChatMessage.Deleted -> "delete"
                         }
                     )
                 )
@@ -297,6 +299,27 @@ class ChatRepository(
             }
 
             messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(false).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+
+    suspend fun deleteMessage(chatId: String, messageId: String): Boolean {
+        return try {
+            val updates = mapOf<String, Any>(
+                "mesaj" to "🚫 Bu mesaj silindi",
+                "tur" to "delete"
+            )
+
+            messageRef.child(chatId)
+                .child("anaMesaj")
+                .child(messageId)
+                .updateChildren(updates)
+                .await()
+
             true
         } catch (e: Exception) {
             e.printStackTrace()
