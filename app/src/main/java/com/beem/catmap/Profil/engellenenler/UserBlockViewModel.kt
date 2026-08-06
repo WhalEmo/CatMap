@@ -138,7 +138,6 @@ class UserBlockViewModel(
                     current.filterNot { it.id == engellenenKullaniciId }
                 }
 
-                // Cache Güncelle
                 val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
                 if (currentIds.contains(engellenenKullaniciId)) {
                     currentIds.remove(engellenenKullaniciId)

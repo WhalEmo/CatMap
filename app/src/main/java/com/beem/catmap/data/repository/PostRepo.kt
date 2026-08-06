@@ -2,6 +2,7 @@ package com.beem.catmap.data.repository
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.LruCache
 import android.util.Log
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
@@ -35,12 +36,21 @@ class PostRepository private constructor(context: Context) {
             }
         }
         private const val PAGE_SIZE = 10L
+        private const val CACHE_SIZE = 15 // En son ziyaret edilen 15 kullanıcının post verisini bellekte tutar
     }
 
     private val db = FirebaseFirestore.getInstance()
     private val usersCollection = db.collection("users")
     private val catsCollection = db.collection("cats")
     private val userManager = CurrentUserManager.getInstance(context)
+
+    // LRU Cache: Key = userId, Value = CachedPostData
+    private data class CachedPostData(
+        val posts: List<Gonderi>,
+        val lastDocument: DocumentSnapshot?,
+        val isLastPage: Boolean
+    )
+    private val postCache = LruCache<String, CachedPostData>(CACHE_SIZE)
 
     data class PostPageResult(
         val posts: List<Gonderi>,
@@ -50,9 +60,23 @@ class PostRepository private constructor(context: Context) {
 
     suspend fun getKullaniciGonderileri(
         userId: String,
-        lastDocument: DocumentSnapshot? = null
+        lastDocument: DocumentSnapshot? = null,
+        forceRefresh: Boolean = false
     ): Result<PostPageResult> = withContext(Dispatchers.IO) {
         if (userId.isBlank()) return@withContext Result.failure(Exception("Geçersiz UserId"))
+
+        if (lastDocument == null && !forceRefresh) {
+            postCache.get(userId)?.let { cached ->
+                Log.d("PostRepository", "Gönderiler Cache'den getirildi: $userId")
+                return@withContext Result.success(
+                    PostPageResult(
+                        posts = cached.posts,
+                        lastDocument = cached.lastDocument,
+                        isLastPage = cached.isLastPage
+                    )
+                )
+            }
+        }
 
         try {
             var query = usersCollection
@@ -68,13 +92,16 @@ class PostRepository private constructor(context: Context) {
             val snapshot = query.get().await()
 
             if (snapshot.isEmpty) {
-                return@withContext Result.success(
-                    PostPageResult(
-                        posts = emptyList(),
-                        lastDocument = lastDocument,
-                        isLastPage = true
-                    )
+                val emptyResult = PostPageResult(
+                    posts = emptyList(),
+                    lastDocument = lastDocument,
+                    isLastPage = true
                 )
+                // İlk sayfaysa boş sonucu da cache'le (Sürekli boş istek atmasın)
+                if (lastDocument == null) {
+                    postCache.put(userId, CachedPostData(emptyList(), null, true))
+                }
+                return@withContext Result.success(emptyResult)
             }
 
             val newLastDoc = snapshot.documents.lastOrNull()
@@ -85,11 +112,21 @@ class PostRepository private constructor(context: Context) {
             }
 
             val isLast = snapshot.size() < PAGE_SIZE
-            val gonderiler = fetchGonderilerByIdsInternal(batchItems)
+            val newGonderiler = fetchGonderilerByIdsInternal(batchItems)
+
+            // İlk sayfa isteğiyse Cache'i tamamen güncelle, Sayfalama (loadMore) ise var olan cache listesine ekle
+            if (lastDocument == null) {
+                postCache.put(userId, CachedPostData(newGonderiler, newLastDoc, isLast))
+            } else {
+                postCache.get(userId)?.let { cached ->
+                    val combinedPosts = cached.posts + newGonderiler
+                    postCache.put(userId, CachedPostData(combinedPosts, newLastDoc, isLast))
+                }
+            }
 
             Result.success(
                 PostPageResult(
-                    posts = gonderiler,
+                    posts = newGonderiler,
                     lastDocument = newLastDoc,
                     isLastPage = isLast
                 )
@@ -124,6 +161,9 @@ class PostRepository private constructor(context: Context) {
                 }
                 null
             }.await()
+
+            // Cache'ten silinen gönderiyi temizle
+            invalidateUserCache(userId)
 
             if (userId == UserSession.userId) {
                 val currentCount = userManager.profileState.value.gonderiSayisi
@@ -163,6 +203,9 @@ class PostRepository private constructor(context: Context) {
                 null
             }.await()
 
+            // Yeni post eklendiğinde o kullanıcının cache'ini sıfırla ki güncel liste çekilsin
+            invalidateUserCache(userId)
+
             if (userId == UserSession.userId) {
                 val currentCount = userManager.profileState.value.gonderiSayisi
                 userManager.updateGonderiSayisi(currentCount + 1)
@@ -173,6 +216,22 @@ class PostRepository private constructor(context: Context) {
             Log.e("PostRepository", "Gönderi kaydedilirken hata: ${e.message}")
             Result.failure(e)
         }
+    }
+
+    /**
+     * Belirli bir kullanıcının önbelleğini temizler
+     */
+    fun invalidateUserCache(userId: String) {
+        if (userId.isNotBlank()) {
+            postCache.remove(userId)
+        }
+    }
+
+    /**
+     * Tüm önbelleği temizler (Örn: Çıkış yapıldığında)
+     */
+    fun clearAllCache() {
+        postCache.evictAll()
     }
 
     private suspend fun fetchGonderilerByIdsInternal(items: List<GonderilenKediItem>): List<Gonderi> {

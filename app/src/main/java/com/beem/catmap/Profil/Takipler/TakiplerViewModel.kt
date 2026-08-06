@@ -83,7 +83,8 @@ class TakiplerViewModel() : ViewModel() {
                 repository.getTakipciler(
                     userId = userId,
                     limit = PAGE_LIMIT,
-                    lastDocument = lastTakipciDoc
+                    lastDocument = lastTakipciDoc,
+                    forceRefresh = isRefresh
                 ).onSuccess { result ->
                     isTakipcilerLastPage = result.isLastPage
                     lastTakipciDoc = result.lastDocument
@@ -162,7 +163,8 @@ class TakiplerViewModel() : ViewModel() {
                 repository.getTakipEdilenler(
                     userId = userId,
                     limit = PAGE_LIMIT,
-                    lastDocument = lastTakipEdilenDoc
+                    lastDocument = lastTakipEdilenDoc,
+                    forceRefresh = isRefresh
                 ).onSuccess { result ->
                     isTakipEdilenlerLastPage = result.isLastPage
                     lastTakipEdilenDoc = result.lastDocument

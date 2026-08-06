@@ -2,6 +2,7 @@ package com.beem.catmap.data.repository
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.LruCache
 import com.beem.catmap.data.local.UserSession
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -38,11 +39,26 @@ class FollowRepository private constructor(context: Context) {
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
+    // 1. RAM Önbellekleri (Cache)
+    // Benim takip ettiğim kullanıcıların sorgu sonuçlarını saklar (targetUserId -> Boolean)
+    private val isFollowingCache = LruCache<String, Boolean>(100)
+    // Beni takip eden kullanıcıların sorgu sonuçlarını saklar (targetUserId -> Boolean)
+    private val isFollowedByCache = LruCache<String, Boolean>(100)
+
     private val currentUserId: String?
         get() = UserSession.userId
 
-    suspend fun isFollowing(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun isFollowing(targetUserId: String, forceRefresh: Boolean = false): Result<Boolean> = withContext(Dispatchers.IO) {
         val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+
+        // Önbellekte varsa doğrudan döndür
+        if (!forceRefresh) {
+            val cachedState = isFollowingCache.get(targetUserId)
+            if (cachedState != null) {
+                return@withContext Result.success(cachedState)
+            }
+        }
+
         return@withContext try {
             val documentSnapshot = db.collection("users")
                 .document(userId)
@@ -51,14 +67,26 @@ class FollowRepository private constructor(context: Context) {
                 .get()
                 .await()
 
-            Result.success(documentSnapshot.exists())
+            val isFollowing = documentSnapshot.exists()
+            // RAM Cache'e kaydet
+            isFollowingCache.put(targetUserId, isFollowing)
+
+            Result.success(isFollowing)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun isFollowedBy(targetUserId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun isFollowedBy(targetUserId: String, forceRefresh: Boolean = false): Result<Boolean> = withContext(Dispatchers.IO) {
         val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
+
+        // Önbellekte varsa doğrudan döndür
+        if (!forceRefresh) {
+            val cachedState = isFollowedByCache.get(targetUserId)
+            if (cachedState != null) {
+                return@withContext Result.success(cachedState)
+            }
+        }
 
         return@withContext try {
             val documentSnapshot = db.collection("users")
@@ -68,7 +96,11 @@ class FollowRepository private constructor(context: Context) {
                 .get()
                 .await()
 
-            Result.success(documentSnapshot.exists())
+            val isFollowed = documentSnapshot.exists()
+            // RAM Cache'e kaydet
+            isFollowedByCache.put(targetUserId, isFollowed)
+
+            Result.success(isFollowed)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -85,6 +117,9 @@ class FollowRepository private constructor(context: Context) {
         ) {
             return@withContext Result.failure(IllegalStateException("Engelleme durumundan dolayı takip edilemez."))
         }
+
+        // Optimistic Cache Güncellemesi (Yerel durumu hemen güncelliyoruz)
+        isFollowingCache.put(targetUserId, true)
 
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
@@ -144,6 +179,8 @@ class FollowRepository private constructor(context: Context) {
 
             Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al (Rollback)
+            isFollowingCache.put(targetUserId, false)
             Result.failure(e)
         }
     }
@@ -152,6 +189,9 @@ class FollowRepository private constructor(context: Context) {
         currentUserId: String,
         targetUserId: String
     ): Result<FollowResult> = withContext(Dispatchers.IO) {
+        // Optimistic Cache Güncellemesi
+        isFollowingCache.put(targetUserId, false)
+
         val currentUserRef = db.collection("users").document(currentUserId)
         val targetUserRef = db.collection("users").document(targetUserId)
 
@@ -195,6 +235,8 @@ class FollowRepository private constructor(context: Context) {
 
             Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al (Rollback)
+            isFollowingCache.put(targetUserId, true)
             Result.failure(e)
         }
     }
@@ -203,6 +245,9 @@ class FollowRepository private constructor(context: Context) {
         currentUserId: String,
         followerId: String
     ): Result<RemoveFollowerResult> = withContext(Dispatchers.IO) {
+        // Optimistic Cache Güncellemesi
+        isFollowedByCache.put(followerId, false)
+
         val currentUserRef = db.collection("users").document(currentUserId)
         val followerRef = db.collection("users").document(followerId)
 
@@ -246,7 +291,15 @@ class FollowRepository private constructor(context: Context) {
 
             Result.success(result)
         } catch (e: Exception) {
+            // İşlem başarısız olursa Cache'i geri al
+            isFollowedByCache.put(followerId, true)
             Result.failure(e)
         }
+    }
+
+    // Kullanıcı çıkış yaptığında temizleme fonksiyonu
+    fun clearCache() {
+        isFollowingCache.evictAll()
+        isFollowedByCache.evictAll()
     }
 }

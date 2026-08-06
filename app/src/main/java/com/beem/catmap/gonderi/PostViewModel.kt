@@ -37,13 +37,9 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _yukleyenID = MutableStateFlow("")
     val yukleyenID: StateFlow<String> = _yukleyenID.asStateFlow()
 
-    private var lastDocument: DocumentSnapshot? = null
-    var isLastPage: Boolean = false
-        private set
-    private var isLoadingMore: Boolean = false
-
-    // İstek çakışmalarını önlemek için Job takibi
+    // Coroutine Job takipleri
     private var fetchPostsJob: Job? = null
+    private var loadMoreJob: Job? = null
 
     init {
         observeProfileEvents()
@@ -52,88 +48,77 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private fun observeProfileEvents() {
         viewModelScope.launch {
             ProfileEventBus.profileEvent.collect { event ->
-                Log.d("POST_FLOW_DEBUG", "PostViewModel: Eventbus'tan Dinlendi -> $event")
                 when (event) {
-                    is ProfileEvent.PostAdded, is ProfileEvent.PostDeleted -> {
-                        val activeUserId = _yukleyenID.value
-                        if (activeUserId.isNotBlank() && activeUserId == UserSession.userId) {
-                            gonderileriGetir(activeUserId, forceRefresh = true)
+                    is ProfileEvent.PostAdded -> {
+                        val state = _uiState.value
+                        if (state.isLoading) return@collect
+                        if (state.posts.any { it.kediID == event.post.kediID }) return@collect
+                        _uiState.update {
+                            it.copy(
+                                posts = listOf(event.post) + it.posts,
+                                isEmpty = false
+                            )
                         }
                     }
+
+                    is ProfileEvent.PostDeleted -> {
+
+                        _uiState.update { state ->
+                            val updatedPosts = state.posts.filterNot { it.kediID == event.catId }
+                            state.copy(
+                                posts = updatedPosts,
+                                isEmpty = updatedPosts.isEmpty()
+                            )
+                        }
+                    }
+
                     else -> {}
                 }
             }
         }
     }
 
+
     fun setYukleyenID(id: String) {
         _yukleyenID.value = id
     }
 
-    fun gonderileriGetir(userId: String, isFollowing: Boolean = true, forceRefresh: Boolean = false) {
-        if (userId.isBlank()) return
-        setYukleyenID(userId)
 
-        fetchPostsJob?.cancel()
+    fun dahaFazlaGonderiGetir() {
+        val currentState = _uiState.value
+        val userId = _yukleyenID.value
 
-        lastDocument = null
-        isLastPage = false
-        isLoadingMore = false
+        if (userId.isBlank() ||
+            currentState.isMoreLoading ||
+            currentState.isLoading ||
+            currentState.isLastPage ||
+            currentState.lastDocument == null
+        ) {
+            return
+        }
 
-        fetchPostsJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, isAccessDenied = false) }
+        loadMoreJob?.cancel()
+        loadMoreJob = viewModelScope.launch {
+            _uiState.update { it.copy(isMoreLoading = true) }
 
-            repository.getKullaniciGonderileri(userId = userId, lastDocument = null)
+            repository.getKullaniciGonderileri(userId = userId, lastDocument = currentState.lastDocument)
                 .onSuccess { pageResult ->
-                    lastDocument = pageResult.lastDocument
-                    isLastPage = pageResult.isLastPage
-
-                    _uiState.update {
-                        it.copy(
-                            posts = pageResult.posts,
-                            isEmpty = pageResult.posts.isEmpty(),
-                            isLoading = false,
-                            isAccessDenied = false
+                    _uiState.update { state ->
+                        val updatedPosts = state.posts + pageResult.posts
+                        state.copy(
+                            posts = updatedPosts,
+                            isEmpty = updatedPosts.isEmpty(),
+                            isMoreLoading = false,
+                            isLastPage = pageResult.isLastPage,
+                            lastDocument = pageResult.lastDocument
                         )
                     }
                 }
                 .onFailure { exception ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    UiMessageManager.emitMessage(
-                        UiMessageState.Error(exception.localizedMessage ?: "Gönderiler yüklenemedi.")
-                    )
-                }
-        }
-    }
-
-    fun dahaFazlaGonderiGetir() {
-        val userId = _yukleyenID.value
-        if (userId.isBlank() || isLoadingMore || isLastPage || lastDocument == null) return
-
-        isLoadingMore = true
-        _uiState.update { it.copy(isMoreLoading = true) }
-
-        viewModelScope.launch {
-            repository.getKullaniciGonderileri(userId = userId, lastDocument = lastDocument)
-                .onSuccess { pageResult ->
-                    lastDocument = pageResult.lastDocument
-                    isLastPage = pageResult.isLastPage
-
-                    val currentPosts = _uiState.value.posts
-                    val updatedPosts = currentPosts + pageResult.posts
-
-                    _uiState.update {
-                        it.copy(
-                            posts = updatedPosts,
-                            isEmpty = updatedPosts.isEmpty(),
-                            isMoreLoading = false
-                        )
-                    }
-                    isLoadingMore = false
-                }
-                .onFailure {
                     _uiState.update { it.copy(isMoreLoading = false) }
-                    isLoadingMore = false
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error(exception.localizedMessage ?: "Daha fazla gönderi alınamadı.")
+                    )
                 }
         }
     }
@@ -171,7 +156,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Sıralı silme ile tutarlılığı garanti altına alıyoruz
             val gonderiRes = if (userId.isNotBlank()) repository.kullaniciGonderiSil(userId, kediId) else Result.success(Unit)
             val haritaRes = repository.haritadanKediSil(kediId)
 
@@ -196,6 +180,70 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+    fun gonderileriGetir(
+        userId: String,
+        isFollowing: Boolean = true,
+        forceRefresh: Boolean = false
+    ) {
+        if (userId.isBlank()) return
+        setYukleyenID(userId)
+
+        // Devam eden işlemleri iptal et
+        fetchPostsJob?.cancel()
+        loadMoreJob?.cancel()
+
+        val isSelfProfile = userId == UserSession.userId
+        val canAccess = isSelfProfile || isFollowing
+
+        if (!canAccess) {
+            _uiState.update {
+                it.copy(
+                    posts = emptyList(),
+                    isEmpty = false,
+                    isLoading = false,
+                    isAccessDenied = true,
+                    isLastPage = true,
+                    lastDocument = null
+                )
+            }
+            return
+        }
+
+        fetchPostsJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    isAccessDenied = false,
+                    lastDocument = null,
+                    isLastPage = false
+                )
+            }
+
+            repository.getKullaniciGonderileri(
+                userId = userId,
+                lastDocument = null,
+                forceRefresh = forceRefresh
+            )
+                .onSuccess { pageResult ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            posts = pageResult.posts,
+                            isEmpty = pageResult.posts.isEmpty(),
+                            isLoading = false,
+                            isAccessDenied = false,
+                            isLastPage = pageResult.isLastPage,
+                            lastDocument = pageResult.lastDocument
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error(exception.localizedMessage ?: "Gönderiler yüklenemedi.")
+                    )
+                }
+        }
+    }
 
     private fun gonderiSilError(gonderiRes: Result<Unit>, haritaRes: Result<Unit>): String {
         return gonderiRes.exceptionOrNull()?.localizedMessage
@@ -207,21 +255,30 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         userId: String,
         initialPosts: List<Gonderi>,
         lastDoc: DocumentSnapshot? = null,
-        isLast: Boolean = true
+        isLast: Boolean = true,
+        isAccessDenied: Boolean = false
     ) {
         setYukleyenID(userId)
-
-        this.lastDocument = lastDoc
-        this.isLastPage = isLast
-        this.isLoadingMore = false
 
         _uiState.update {
             it.copy(
                 posts = initialPosts,
-                isEmpty = initialPosts.isEmpty(),
+                isEmpty = initialPosts.isEmpty() && !isAccessDenied,
                 isLoading = false,
-                isAccessDenied = false
+                isAccessDenied = isAccessDenied,
+                isLastPage = isLast,
+                lastDocument = lastDoc
             )
         }
     }
+
+    fun setAccessDenied(isDenied: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isAccessDenied = isDenied,
+            )
+        }
+    }
+
 }
+

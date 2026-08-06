@@ -1,12 +1,9 @@
 package com.beem.catmap.gonderi
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.util.LruCache
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.data.local.UserSession
-import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
@@ -28,20 +25,20 @@ sealed class ProfileUpdateResult {
     object Loading : ProfileUpdateResult()
 }
 
-class ProfileRepository private constructor(context: Context) {
+class ProfileRepository private constructor() {
 
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
-    private val userManager = CurrentUserManager.getInstance(context)
+
+    private val profileCache = LruCache<String, Kullanici>(10)
 
     companion object {
-        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var INSTANCE: ProfileRepository? = null
 
-        fun getInstance(context: Context): ProfileRepository {
+        fun getInstance(): ProfileRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: ProfileRepository(context.applicationContext).also {
+                INSTANCE ?: ProfileRepository().also {
                     INSTANCE = it
                 }
             }
@@ -49,20 +46,17 @@ class ProfileRepository private constructor(context: Context) {
     }
 
     suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<Kullanici> = withContext(Dispatchers.IO) {
-        val isMyProfile = userId == UserSession.userId
-
-        if (isMyProfile && !forceRefresh) {
-            val cachedUser = userManager.getCurrentUser()
-            if (!cachedUser.kullaniciAdi.isNullOrBlank()) {
-                return@withContext UiState.Success(cachedUser)
+        // 1. Zorunlu yenileme (forceRefresh) yoksa öncelikle Cache'e bak
+        if (!forceRefresh) {
+            val cachedProfile = profileCache.get(userId)
+            if (cachedProfile != null) {
+                Log.d("ProfileRepository", "Profil Cache'ten getirildi: $userId")
+                return@withContext UiState.Success(cachedProfile)
             }
         }
 
-        fetchFromFirestore(userId, isMyProfile)
-    }
-
-    private suspend fun fetchFromFirestore(userId: String, isMyProfile: Boolean): UiState<Kullanici> {
-        return try {
+        // 2. Cache'te yoksa veya forceRefresh = true ise Firestore'dan çek
+        try {
             val snapshot = db.collection("users")
                 .document(userId)
                 .get()
@@ -81,9 +75,8 @@ class ProfileRepository private constructor(context: Context) {
                     gonderiSayisi = snapshot.getLong("gonderiSayisi") ?: 0L
                 }
 
-                if (isMyProfile) {
-                    updateLocalSession(profileData)
-                }
+                // RAM Cache'e kaydet
+                profileCache.put(userId, profileData)
 
                 UiState.Success(profileData)
             } else {
@@ -128,13 +121,8 @@ class ProfileRepository private constructor(context: Context) {
                 updates["KullaniciAdi"] = finalUsername
             }
 
-            if (finalAd != currentAd.trim()) {
-                updates["Ad"] = finalAd
-            }
-
-            if (finalSoyad != currentSoyad.trim()) {
-                updates["Soyad"] = finalSoyad
-            }
+            if (finalAd != currentAd.trim()) updates["Ad"] = finalAd
+            if (finalSoyad != currentSoyad.trim()) updates["Soyad"] = finalSoyad
 
             if (newImageUri != null) {
                 uploadedPhotoUrl = uploadProfilePhotoToStorage(newImageUri, currentUserId)
@@ -147,24 +135,13 @@ class ProfileRepository private constructor(context: Context) {
                     .document(currentUserId)
                     .update(updates)
                     .await()
+
+                // Profil güncellendiğinde Cache'i de temizle ki eski bilgi kalmasın
+                profileCache.remove(currentUserId)
             }
 
-            val currentUser = userManager.getCurrentUser()
-            val finalPhotoUrl = uploadedPhotoUrl ?: currentUser.fotoUrl
-
-            val updatedUser = currentUser.copy(
-                kullaniciAdi = finalUsername,
-                ad = finalAd,
-                soyad = finalSoyad,
-                biyografi = finalHakkinda,
-                fotoUrl = finalPhotoUrl
-            )
-
-            // Tek bir noktadan yerel session güncellenir
-            updateLocalSession(updatedUser)
-
             ProfileUpdateResult.Success(
-                newPhotoUrl = finalPhotoUrl,
+                newPhotoUrl = uploadedPhotoUrl,
                 newUsername = finalUsername,
                 newAd = finalAd,
                 newSoyad = finalSoyad,
@@ -176,18 +153,9 @@ class ProfileRepository private constructor(context: Context) {
         }
     }
 
-    private fun updateLocalSession(user: Kullanici) {
-        userManager.updateProfileDetails(
-            ad = user.ad.orEmpty(),
-            soyad = user.soyad.orEmpty(),
-            kullaniciAdi = user.kullaniciAdi.orEmpty(),
-            takipci = user.takipciSayisi ?: 0L,
-            takipEdilen = user.takipEdilenSayisi ?: 0L,
-            gonderiSayisi = user.gonderiSayisi ?: 0L,
-            biyografi = user.biyografi.orEmpty(),
-            fotoUrl = user.fotoUrl
-        )
-        userManager.setCurrentUser(user)
+    // Cache'i tamamen temizlemek isterseniz (Logout vb.)
+    fun clearCache() {
+        profileCache.evictAll()
     }
 
     private suspend fun uploadProfilePhotoToStorage(imageUri: Uri, userId: String): String {

@@ -21,7 +21,7 @@ import java.util.Date
 
 class CommentViewModel(application: Application) : AndroidViewModel(application) {
     private val commentRepository = CommentsRepo.getInstance()
-    private val replysRepo = ReplysRepo.getInstance()
+    private val replyRepository = ReplysRepo.getInstance()
     private val currentUserManager = CurrentUserManager.getInstance(application)
 
     private val _comments = MutableStateFlow<List<CommentModel>>(emptyList())

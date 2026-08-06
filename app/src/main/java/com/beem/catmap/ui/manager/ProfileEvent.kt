@@ -14,5 +14,4 @@ sealed class ProfileEvent {
         val updatedUser: Kullanici? = null
     ) : ProfileEvent()
 
-
 }

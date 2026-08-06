@@ -1,5 +1,6 @@
 package com.beem.catmap.Profil.Takipler
 
+import androidx.collection.LruCache
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -15,6 +16,10 @@ class TakiplerRepository private constructor() {
 
     private val db = FirebaseFirestore.getInstance()
 
+    // 10 farklı kullanıcının takipçi/takip edilen ilk sayfa listesini bellekte tutar
+    private val takipcilerCache = LruCache<String, PaginatedResult<Kullanici>>(10)
+    private val takipEdilenlerCache = LruCache<String, PaginatedResult<Kullanici>>(10)
+
     companion object {
         @Volatile
         private var INSTANCE: TakiplerRepository? = null
@@ -29,8 +34,17 @@ class TakiplerRepository private constructor() {
     suspend fun getTakipciler(
         userId: String,
         limit: Long = 10,
-        lastDocument: DocumentSnapshot? = null
+        lastDocument: DocumentSnapshot? = null,
+        forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
+
+        // İlk sayfa isteği yapılıyorsa ve zorla yenileme (Pull-to-refresh) istenmiyorsa Cache'ten ver
+        if (lastDocument == null && !forceRefresh) {
+            takipcilerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
+            }
+        }
+
         var query = db.collection("users")
             .document(userId)
             .collection("takipciler")
@@ -50,18 +64,33 @@ class TakiplerRepository private constructor() {
             }
         }
 
-        PaginatedResult(
+        val result = PaginatedResult(
             items = items,
             lastDocument = snapshot.documents.lastOrNull(),
             isLastPage = items.size < limit
         )
+
+        // İlk sayfayı Cache'e kaydet
+        if (lastDocument == null) {
+            takipcilerCache.put(userId, result)
+        }
+
+        result
     }
 
     suspend fun getTakipEdilenler(
         userId: String,
         limit: Long = 10,
-        lastDocument: DocumentSnapshot? = null
+        lastDocument: DocumentSnapshot? = null,
+        forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
+
+        if (lastDocument == null && !forceRefresh) {
+            takipEdilenlerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
+            }
+        }
+
         var query = db.collection("users")
             .document(userId)
             .collection("takipEdilenler")
@@ -81,10 +110,22 @@ class TakiplerRepository private constructor() {
             }
         }
 
-        PaginatedResult(
+        val result = PaginatedResult(
             items = items,
             lastDocument = snapshot.documents.lastOrNull(),
             isLastPage = items.size < limit
         )
+
+        if (lastDocument == null) {
+            takipEdilenlerCache.put(userId, result)
+        }
+
+        result
+    }
+
+    // Kullanıcı birini takip ettiğinde veya takipten çıkardığında cache'i temizlemek için kullanabilirsiniz
+    fun clearUserCache(userId: String) {
+        takipcilerCache.remove(userId)
+        takipEdilenlerCache.remove(userId)
     }
 }

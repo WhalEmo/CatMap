@@ -24,26 +24,21 @@ data class Kullanici(
     @JvmField var biyografi: String = "",
     @JvmField var isProfileLoaded: Boolean = false
 ) {
-    //BURASI YANLIS
     fun KullaniciData(): Map<String, Any?> {
         return mapOf(
-            "ID" to id,
             "Ad" to ad,
             "Soyad" to soyad,
             "Email" to email,
             "KullaniciAdi" to kullaniciAdi,
+            "Hakkinda" to biyografi,
+            "TakipEdilenSayisi" to (takipEdilenSayisi ?: 0L),
+            "takipciSayisi" to (takipciSayisi ?: 0L),
+            "gonderiSayisi" to (gonderiSayisi ?: 0L),
+            "profilFotoUrl" to (fotoUrl.ifEmpty { "" }),
             "latitude" to latitude,
             "longitude" to longitude,
-            "girisBasarili" to girisBasarili,
-            "profilFotoUrl" to fotoUrl,
-            "sonGorulme" to sonGorulme,
             "isCevrimiciMi" to isCevrimiciMi,
-            "TakipEdiyorMuyum" to takipEdiyorMuyum,
-            "TakipciMi" to takipciMi,
-            "takipciSayisi" to takipciSayisi,
-            "TakipEdilenSayisi" to takipEdilenSayisi,
-            "gonderiSayisi" to gonderiSayisi,
-            "Hakkinda" to biyografi
+            "sonGorulme" to sonGorulme
         )
     }
 }

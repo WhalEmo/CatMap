@@ -12,5 +12,6 @@ data class FullProfileData(
     val followerCount: Long = 0,
     val followingCount: Long = 0,
     val postCount: Long = 0,
-    val isSelfProfile: Boolean = false
+    val isSelfProfile: Boolean = false,
+    val isAccessDenied: Boolean = false
 )

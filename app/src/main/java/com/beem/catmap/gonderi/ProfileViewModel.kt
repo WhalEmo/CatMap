@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FullProfileData
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
@@ -17,16 +18,15 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: ProfileRepository = ProfileRepository(application)
-    private val postRepository = PostRepository.getInstance(application)
-
-    private val userManager = CurrentUserManager.getInstance(application)
+    private val repository: ProfileRepository = ProfileRepository.getInstance()
+    private val postRepository: PostRepository = PostRepository.getInstance(application)
+    private val userManager: CurrentUserManager = CurrentUserManager.getInstance(application)
 
     val profileState: StateFlow<ProfileState> = userManager.profileState
+
     private val getProfileFullDataUseCase = GetProfileFullDataUseCase(
         profileRepository = repository,
         postRepository = postRepository
-
     )
 
     private val _fullProfileState = MutableStateFlow<UiState<FullProfileData>>(UiState.Idle)
@@ -35,13 +35,32 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _profileUpdateState = MutableStateFlow<ProfileUpdateResult>(ProfileUpdateResult.Idle)
     val profileUpdateState: StateFlow<ProfileUpdateResult> = _profileUpdateState.asStateFlow()
 
-    fun tumProfilVerileriniYukle(targetUserId: String, forceRefresh: Boolean = false) {
+    fun tumProfilVerileriniYukle(targetUserId: String, isFollowing: Boolean = false, forceRefresh: Boolean = false) {
         if (targetUserId.isBlank()) return
 
         viewModelScope.launch {
+            val isMyProfile = targetUserId == UserSession.userId
+
+            if (isMyProfile && !forceRefresh) {
+                val cachedUser = userManager.getCurrentUser()
+                if (!cachedUser.kullaniciAdi.isNullOrBlank()) {
+                    val currentData = (_fullProfileState.value as? UiState.Success)?.data
+                    if (currentData != null) {
+                        _fullProfileState.value = UiState.Success(currentData.copy(profile = cachedUser))
+                    }
+                }
+            }
+
             _fullProfileState.value = UiState.Loading
-            getProfileFullDataUseCase(targetUserId, forceRefresh)
+            getProfileFullDataUseCase(
+                targetUserId = targetUserId,
+                isFollowing = isFollowing,
+                forceRefresh = forceRefresh
+            )
                 .onSuccess { fullData ->
+                    if (isMyProfile) {
+                        updateLocalSession(fullData.profile)
+                    }
                     _fullProfileState.value = UiState.Success(fullData)
                 }
                 .onFailure { exception ->
@@ -52,10 +71,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * Dışarıdan (örneğin EventBus dinleyicisinden) gelen güncel kullanıcı
-     * verisini UI State'e yansıtmak için kullanılır.
-     */
     fun lokalProfilVerisiniGuncelle(guncelKullanici: Kullanici) {
         _fullProfileState.update { currentState ->
             if (currentState is UiState.Success) {
@@ -63,6 +78,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             } else {
                 currentState
             }
+        }
+        if (guncelKullanici.id == UserSession.userId) {
+            updateLocalSession(guncelKullanici)
         }
     }
 
@@ -79,7 +97,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         val currentFullData = (_fullProfileState.value as? UiState.Success)?.data
         val currentProfile = currentFullData?.profile
 
-        // Güvenlik Koruması: Eğer state yoksa işlemi başlatma
         if (currentProfile == null) {
             _profileUpdateState.value = ProfileUpdateResult.Error("Profil verisi henüz yüklenmedi.")
             return
@@ -96,7 +113,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         val isBioChanged = yeniHakkinda != currentBio
         val isImageChanged = yeniResimUri != null
 
-        // Hiçbir değişiklik yapılmadıysa doğrudan mevcut değerlerle Success dön
         if (!isUsernameChanged && !isAdChanged && !isSoyadChanged && !isBioChanged && !isImageChanged) {
             _profileUpdateState.value = ProfileUpdateResult.Success(
                 newUsername = currentUsername,
@@ -124,21 +140,38 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             )
 
             if (result is ProfileUpdateResult.Success) {
+                val finalPhotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl
                 val guncellenmisProfileData = currentProfile.copy(
                     kullaniciAdi = result.newUsername,
                     ad = result.newAd,
                     soyad = result.newSoyad,
-                    fotoUrl = result.newPhotoUrl ?: currentProfile.fotoUrl,
+                    fotoUrl = finalPhotoUrl,
                     biyografi = result.newHakkinda
                 )
 
-                // StateThread-Safe şekilde güncelleniyor
+                // Yerel önbelleği güncelle
+                updateLocalSession(guncellenmisProfileData)
+
                 _fullProfileState.update {
                     UiState.Success(currentFullData.copy(profile = guncellenmisProfileData))
                 }
             }
             _profileUpdateState.value = result
         }
+    }
+
+    private fun updateLocalSession(user: Kullanici) {
+        userManager.updateProfileDetails(
+            ad = user.ad.orEmpty(),
+            soyad = user.soyad.orEmpty(),
+            kullaniciAdi = user.kullaniciAdi.orEmpty(),
+            takipci = user.takipciSayisi ?: 0L,
+            takipEdilen = user.takipEdilenSayisi ?: 0L,
+            gonderiSayisi = user.gonderiSayisi ?: 0L,
+            biyografi = user.biyografi.orEmpty(),
+            fotoUrl = user.fotoUrl
+        )
+        userManager.setCurrentUser(user)
     }
 
     fun resetUpdateState() {
