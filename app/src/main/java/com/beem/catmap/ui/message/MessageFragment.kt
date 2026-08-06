@@ -347,6 +347,10 @@ class MessageFragment : Fragment() {
     }
 
     private fun openPhotoPreview(photoUrls: List<String>) {
+        if (photoUrls.isEmpty()) return
+
+        val dialog = MessagePhotoPreviewDialog.newInstance(photoUrls)
+        dialog.show(childFragmentManager, "MessagePhotoPreviewDialog")
     }
 
     private fun setupKeyboardAdjustments() {
