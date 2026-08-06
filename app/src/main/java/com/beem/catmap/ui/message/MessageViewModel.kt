@@ -80,12 +80,26 @@ class MessageViewModel(
                     if (existingList.isEmpty()) {
                         currentState.copy(messages = incomingLatestMessages)
                     } else {
-                        incomingLatestMessages.forEach { incomingMsg ->
-                            val index = existingList.indexOfFirst { it.id == incomingMsg.id }
-                            if (index != -1) {
-                                existingList[index] = incomingMsg
+                        incomingLatestMessages.forEach { msg ->
+                            if (msg is ChatMessage.Photo && msg.clientTempId != null) {
+                                val pendingIndex = existingList.indexOfFirst { localMsg ->
+                                    localMsg is ChatMessage.Photo &&
+                                            localMsg.isUploading &&
+                                            localMsg.clientTempId == msg.clientTempId
+                                }
+                                if (pendingIndex != -1) {
+                                    existingList[pendingIndex] = msg
+                                } else if (existingList.none { it.id == msg.id }) {
+                                    existingList.add(msg)
+                                }
                             } else {
-                                existingList.add(incomingMsg)
+
+                                val index = existingList.indexOfFirst { it.id == msg.id }
+                                if (index != -1) {
+                                    existingList[index] = msg
+                                } else {
+                                    existingList.add(msg)
+                                }
                             }
                         }
 
@@ -126,20 +140,42 @@ class MessageViewModel(
         if (uris.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            val tempId = java.util.UUID.randomUUID().toString()
+
+            val tempPhotoUrls = uris.map { it.toString() }
+
+            val tempPhotoMessage = ChatMessage.Photo(
+                id = tempId,
+                senderId = senderId,
+                timestamp = System.currentTimeMillis(),
+                isRead = false,
+                photoUrls = tempPhotoUrls,
+                isUploading = true,
+                clientTempId = tempId
+            )
+
+            _uiState.update { currentState ->
+                currentState.copy(
+                    messages = currentState.messages + tempPhotoMessage,
+                    replyMessage = null
+                )
+            }
 
             val replyMessage = _uiState.value.replyMessage
             val success = repository.sendPhotoMessage(
                 chatId = activeChatId,
                 senderId = senderId,
                 imageUris = uris,
-                replyTo = replyMessage
+                replyTo = replyMessage,
+                clientTempId = tempId
             )
 
-            if (success) {
-                _uiState.update { it.copy(replyMessage = null, isLoading = false) }
-            } else {
-                _uiState.update { it.copy(isLoading = false) }
+            if (!success) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        messages = currentState.messages.filter { it.id != tempId }
+                    )
+                }
             }
         }
     }

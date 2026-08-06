@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.message
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -96,13 +97,20 @@ class MessageAdapter(
                     if (isMyMessage) {
                         binding.sagMesajLayout.isVisible = true
                         binding.sagFotoLayout.isVisible = true
+                        binding.sagFotoKonteyner.isVisible = true
                         binding.sagZaman.text = formattedTime
-                        binding.gorulmeIkon.setImageResource(
-                            if (message.isRead) R.drawable.patidolu else R.drawable.patibos
-                        )
-                        binding.sagplaceholder.isVisible = false
 
-                        // 🚨 Giden mesajın fotoğraflarını dinamik dolduruyoruz
+                        if (message.isUploading) {
+                            binding.sagFotoYuklemeOverlay.isVisible = true
+                            binding.gorulmeIkon.isVisible = false
+                        } else {
+                            binding.sagFotoYuklemeOverlay.isVisible = false
+                            binding.gorulmeIkon.isVisible = true
+                            binding.gorulmeIkon.setImageResource(
+                                if (message.isRead) R.drawable.patidolu else R.drawable.patibos
+                            )
+                        }
+
                         yukleFotograflar(context, binding.sagFotoLayout, message.photoUrls)
                     } else {
                         binding.solMesajLayout.isVisible = true
@@ -217,7 +225,22 @@ class MessageAdapter(
 
 class MessageDiffCallback : DiffUtil.ItemCallback<ChatMessage>() {
     override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
-        return oldItem.id == newItem.id
+        // 1. Standart ID eşleşmesi (Aynı Firebase ID'si ise)
+        if (oldItem.id == newItem.id) return true
+
+        // 2. Geçici Mesaj ile Gerçek Mesaj Eşleşmesi
+        if (oldItem is ChatMessage.Photo && newItem is ChatMessage.Photo) {
+            Log.d("ChatDebug", "🔍 [DIFFUTIL] Fotoğraf Kıyaslanıyor:")
+            Log.d("ChatDebug", "   ➜ Old (Eski) ID: ${oldItem.id} | clientTempId: ${oldItem.clientTempId} | isUploading: ${oldItem.isUploading}")
+            Log.d("ChatDebug", "   ➜ New (Yeni) ID: ${newItem.id} | clientTempId: ${newItem.clientTempId} | isUploading: ${newItem.isUploading}")
+            if (oldItem.clientTempId != null && newItem.clientTempId != null) {
+                val isSame = oldItem.clientTempId == newItem.clientTempId
+                Log.d("ChatDebug", "   🎯 clientTempId Eşleşme Sonucu: $isSame")
+                return isSame
+            }
+        }
+
+        return false
     }
 
     override fun areContentsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {

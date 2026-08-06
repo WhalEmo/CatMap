@@ -22,7 +22,9 @@ sealed class ChatMessage {
         override val senderId: String,
         override val timestamp: Long,
         override val isRead: Boolean,
-        val photoUrls: List<String>
+        val photoUrls: List<String>,
+        val isUploading: Boolean = false,
+        val clientTempId: String? = null
     ) : ChatMessage() {
         override val type = MessageType.PHOTO
     }

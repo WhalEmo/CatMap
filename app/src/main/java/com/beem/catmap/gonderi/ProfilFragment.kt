@@ -392,7 +392,7 @@ class ProfilFragment : Fragment() {
                 launch {
                     if (targetUserId == myUserId) {
 
-                        followViewModel.profileState.collect { profileState ->
+                        profileViewModel.profileState.collect { profileState ->
                             if (isHidden) return@collect
 
                             takipciSayisiTextView.text = profileState.takipciSayisi.toString()

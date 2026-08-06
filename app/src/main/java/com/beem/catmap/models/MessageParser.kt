@@ -32,18 +32,23 @@ fun DataSnapshot.toChatMessage(): ChatMessage? {
             val photoUrls = child("fotoUrlListesi").children.mapNotNull {
                 it.getValue(String::class.java)
             }
+            val clientTempId = child("clientTempId").getValue(String::class.java)
 
-            Log.d("ChatDebug", "----------------------------------------")
-            Log.d("ChatDebug", "📷 Fotoğraf Mesajı Bulundu! ID: $id")
-            Log.d("ChatDebug", "🔹 Çekilen URL Listesi: $photoUrls")
-            Log.d("ChatDebug", "----------------------------------------")
+            Log.d("ChatDebug", "========================================")
+            Log.d("ChatDebug", "📷 [MAPPER] Fotoğraf Mesajı Yakalandı!")
+            Log.d("ChatDebug", "🔹 Realtime DB ID (Firebase Key): $id")
+            Log.d("ChatDebug", "🔹 clientTempId: $clientTempId") // 👈 BURASI KRİTİK (null mı geliyor?)
+            Log.d("ChatDebug", "🔹 Çekilen URL Listesi ($photoUrls.size adet): $photoUrls")
+            Log.d("ChatDebug", "========================================")
 
             Photo(
                 id = id,
                 senderId = senderId,
                 timestamp = timestamp,
                 isRead = isRead,
-                photoUrls = photoUrls
+                photoUrls = photoUrls,
+                isUploading = false,
+                clientTempId = clientTempId
             )
         }
 

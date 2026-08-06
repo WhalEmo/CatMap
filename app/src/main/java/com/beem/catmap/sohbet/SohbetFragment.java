@@ -51,7 +51,6 @@ public class SohbetFragment extends Fragment {
         });
 
         adapter.setOnSohbetClickListener(sohbet ->{
-            NavigationHelper.navigateToChat(sohbet.getAlici().getID());
             /*
             if (getActivity() instanceof MapsActivity) {
                 SmartNavigationEngine.navigateTo(

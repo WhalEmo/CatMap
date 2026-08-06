@@ -79,7 +79,8 @@ class MessageRepository(
         chatId: String,
         senderId: String,
         imageUris: List<android.net.Uri>,
-        replyTo: ChatMessage? = null
+        replyTo: ChatMessage? = null,
+        clientTempId: String? = null
     ): Boolean {
         return try {
             val storageRef = FirebaseStorage.getInstance().reference.child("mesaj_fotograflari")
@@ -106,6 +107,10 @@ class MessageRepository(
                 "goruldu" to false,
                 "tur" to "foto"
             )
+
+            if (clientTempId != null) {
+                photoMap["clientTempId"] = clientTempId
+            }
 
             // Yanıtlanan mesaj varsa ekle
             if (replyTo != null) {

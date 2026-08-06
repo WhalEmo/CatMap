@@ -6,12 +6,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.widget.ImageButton
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import androidx.viewpager2.widget.ViewPager2
 import com.beem.catmap.R
+import androidx.core.graphics.drawable.toDrawable
 
 class MessagePhotoPreviewDialog : DialogFragment() {
 
@@ -41,7 +41,6 @@ class MessagePhotoPreviewDialog : DialogFragment() {
             dismiss()
         }
 
-        // Adapter'ı bağlama
         val adapter = MessagePhotoAdapter(photoUrls)
         fotoViewPager.adapter = adapter
 
@@ -52,7 +51,7 @@ class MessagePhotoPreviewDialog : DialogFragment() {
         super.onStart()
         dialog?.window?.let { window ->
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            window.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         }
     }
 
