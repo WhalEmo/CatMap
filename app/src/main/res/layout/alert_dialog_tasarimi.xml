@@ -1,56 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:gravity="center"
-    android:background="#FFF3E0"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
-
-    <ImageView
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:src="@drawable/cat"  />
-
-    <TextView
-        android:id="@+id/dialog_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Kediyi gönderilerinize eklemek ister misiniz?"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp"
-        android:textColor="#000" />
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardBackgroundColor="#FFF3E0"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="6dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="20dp">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <Button
-            android:id="@+id/btn_yes"
-            android:layout_width="120dp"
-            android:layout_height="42dp"
-            android:backgroundTint="#FFE0B2"
-            android:text="Evet"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            app:cornerRadius="8dp"
-            app:strokeColor="#FF9800"
-            app:strokeWidth="2dp" />
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/cat" />
 
-        <Button
-            android:id="@+id/btn_no"
-            android:layout_width="120dp"
-            android:layout_height="42dp"
-            android:backgroundTint="#FFE0B2"
-            android:text="Hayır"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            app:cornerRadius="8dp"
-            app:strokeColor="#FF9800"
-            app:strokeWidth="2dp" />
+        <TextView
+            android:id="@+id/dialog_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Kediyi gönderilerinize eklemek ister misiniz?"
+            android:textColor="#1A1A1A"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <!-- HAYIR -->
+            <Button
+                android:id="@+id/btn_no"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:backgroundTint="#FFE0B2"
+                android:text="Hayır"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                app:cornerRadius="14dp"
+                app:strokeColor="#FFB74D"
+                app:strokeWidth="1dp" />
+
+            <!-- EVET -->
+            <Button
+                android:id="@+id/btn_yes"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:backgroundTint="#FFE0B2"
+                android:text="Evet"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -1,6 +1,5 @@
 package com.beem.catmap.Maps;
 
-import static com.beem.catmap.ui.navigation.NavigationExtensionsKt.setupFragment;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -30,6 +29,7 @@ import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.EditProfileFragment;
 import com.beem.catmap.Profil.ProfilFragment;
+import com.beem.catmap.Profil.Takipler.TakiplerFragment;
 import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
@@ -105,23 +105,20 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             return switch (screen) {
                 case MAP -> new CatMapFragment();
                 case UPLOAD -> new YuklemeArayuzuFragment();
-                case OTHER_PROFILE -> setupFragment(new ProfilFragment());
+                case OTHER_PROFILE -> new ProfilFragment();
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new ChatFragment();
-                case PROFILE -> setupFragment(new ProfilFragment());
-                case MESSAGE -> setupFragment(new MessageFragment());
+                case PROFILE -> new ProfilFragment();
+                case MESSAGE -> new MessageFragment();
                 case EDIT_PROFILE -> new EditProfileFragment();
                 case BLOCKED_USERS -> {
                     yield null;
                     //new engellenenlerFragmnet();
                 }
-                case FOLLOWERS -> {
-                    yield null;
-                    //setupFragment(new TakiplerFragment());
-                }
-                case POST -> setupFragment(new GonderiDetayFragment());
-                case MESSAGE_PHOTO_PREVIEW -> setupFragment(new MesajFotoGosterFragment());
-                case AUTH -> setupFragment(new AuthFragment());
+                case FOLLOWERS -> new TakiplerFragment();
+                case POST -> new GonderiDetayFragment();
+                case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
+                case AUTH -> new AuthFragment();
             };
         }
     };

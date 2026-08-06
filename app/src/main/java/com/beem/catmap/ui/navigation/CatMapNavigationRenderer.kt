@@ -6,11 +6,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.R
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class CatMapNavigationRenderer(
     private val activity: AppCompatActivity,
@@ -18,28 +21,50 @@ class CatMapNavigationRenderer(
     private val provider: FragmentProvider
 ) : DefaultLifecycleObserver {
 
+
+
     init {
         activity.lifecycle.addObserver(this)
     }
 
-    override fun onStart(owner: LifecycleOwner) {
-        SmartNavigationEngine.navigationState
-            .onEach { state ->
-                if (state is NavigationState.Active) {
-                    render(
-                        targetScreen = state.screen,
-                        trigger = state.trigger,
-                        newArgs = state.args,
-                        targetScreenId = state.screenId
-                    )
-                }
+    override fun onCreate(owner: LifecycleOwner) {
+        activity.lifecycleScope.launch {
+            SmartNavigationEngine.navigationEvents.collect { state ->
+                Log.d("NAV_RENDERER", "🔥 KESİNTİSİZ EVENT -> Ekran: ${state.screen}")
+                render(
+                    targetScreen = state.screen,
+                    trigger = state.trigger,
+                    newArgs = state.args,
+                    targetScreenId = state.screenId
+                )
             }
-            .launchIn(activity.lifecycleScope)
+        }
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+
+        val currentScreen = SmartNavigationEngine.getCurrentStack()
+        // Buradaki key veya tag eşleştirmene göre id üret
+
+        Log.d("NAV_RENDERER", "♻️ ARKA PLANDAN DÖNÜLDÜ -> Ekranı Zorla Senkronize Et: $currentScreen")
+
+        // Herhangi bir animasyon tetiklemeden (INITIAL gibi davranarak)
+        // FragmentManager'daki hayalet katmanları temizletiyoruz.
+        render(
+            targetScreen = currentScreen.screen,
+            trigger = currentScreen.trigger,
+            newArgs = currentScreen.args,
+            targetScreenId = currentScreen.screenId
+        )
     }
 
 
     private fun render(targetScreen: Screen, trigger: NavigationTrigger, newArgs: Bundle, targetScreenId: String) {
         val fm = activity.supportFragmentManager
+
+        if (fm.isStateSaved) return
+
         val transaction = fm.beginTransaction()
 
         val oldScreen = SmartNavigationEngine.getOldScreen() ?: SmartNavigationEngine.getCurrentScreen()
@@ -47,42 +72,33 @@ class CatMapNavigationRenderer(
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
-
         }
 
-
         val validTags = Screen.entries.map { it.tag }
+
         for (f in fm.fragments) {
             if (f != null && f.tag != null) {
                 val baseTag = f.tag?.extractBaseTag()
 
                 if (validTags.contains(baseTag)) {
                     if (f.tag != targetScreenId) {
-                        val screen = Screen.fromTag(baseTag)
-                        if (screen.isNode) {
-                            transaction.hide(f)
-                        } else {
-                            f.view?.clearAnimation()
-                            transaction.hide(f)
-                        }
-                        transaction.setMaxLifecycle(f, androidx.lifecycle.Lifecycle.State.STARTED)
+                        transaction.hide(f)
+                        transaction.setMaxLifecycle(f, Lifecycle.State.STARTED)
                     }
                 }
             }
         }
-
         val targetFragment = fm.findFragmentByTag(targetScreenId)
 
-        when{
+        when {
             targetFragment == null -> {
                 provider.createFragment(targetScreen.tag)?.let { newFragment ->
                     if (!newArgs.isEmpty) {
                         newFragment.arguments = newArgs
                     }
-
                     transaction.add(containerId, newFragment, targetScreenId)
-                    transaction.setMaxLifecycle(newFragment, androidx.lifecycle.Lifecycle.State.RESUMED)
-                    newFragment.fragmentLog("CREATE FRAGMENT")
+                    transaction.setMaxLifecycle(newFragment, Lifecycle.State.RESUMED)
+                    newFragment.fragmentLog("CREATE FRAGMENT (NEW ADD)")
                 }
             }
             else -> {
@@ -90,16 +106,13 @@ class CatMapNavigationRenderer(
                     transaction.attach(targetFragment)
                 }
                 transaction.show(targetFragment)
-                transaction.setMaxLifecycle(targetFragment, androidx.lifecycle.Lifecycle.State.RESUMED)
-
-                targetFragment.fragmentLog("CACHE FRAGMENT")
+                transaction.setMaxLifecycle(targetFragment, Lifecycle.State.RESUMED)
+                targetFragment.fragmentLog("CACHE FRAGMENT (SHOW)")
             }
         }
 
         transaction.commitAllowingStateLoss()
-
     }
-
 
     private fun renderInitialAnimation(transaction: FragmentTransaction) {
     }

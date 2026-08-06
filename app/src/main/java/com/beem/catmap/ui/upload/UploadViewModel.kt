@@ -4,11 +4,10 @@ import android.app.Application
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.CatMapApp
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.MapRepository
-import com.beem.catmap.gonderi.SavePostToProfileUseCase
-import com.beem.catmap.models.CatModel
-import com.beem.catmap.models.Gonderi
+import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UploadProgressState
@@ -27,6 +26,7 @@ import java.util.Date
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MapRepository()
+    private val postRepository = PostRepository(CatMapApp.instance)
 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()
@@ -45,6 +45,24 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onProgressDialogDismissed() {
         _uiState.update { it.copy(isAllDone = true) }
+    }
+
+    fun addCatPostMyProfile(catId: String, onComplete: (Boolean) -> Unit) {
+        if (catId.isBlank()) {
+            onComplete(false)
+            return
+        }
+
+        viewModelScope.launch {
+
+            postRepository.kullaniciGonderiKaydet(UserSession.userId, catId)
+                .onSuccess {
+                    onComplete(true)
+                }
+                .onFailure { exception ->
+                    onComplete(false)
+                }
+        }
     }
 
 

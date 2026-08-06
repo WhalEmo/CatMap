@@ -29,8 +29,12 @@ import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
+import com.beem.catmap.ui.manager.CatEventBus
+import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -52,9 +56,7 @@ class YuklemeArayuzuFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: UploadViewModel by viewModels()
-    private val postViewModel: PostViewModel by activityViewModels()
     private lateinit var locationClient: FusedLocationProviderClient
-    private lateinit var messageManager: UyariMesaji
 
     private lateinit var photoAdapter: UploadPhotosAdapter
 
@@ -72,7 +74,6 @@ class YuklemeArayuzuFragment : Fragment() {
 
 
         locationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-        messageManager = UyariMesaji(requireContext(), false)
 
         setupRecyclerView()
         setupListeners()
@@ -120,6 +121,7 @@ class YuklemeArayuzuFragment : Fragment() {
         }
     }
 
+
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -144,6 +146,9 @@ class YuklemeArayuzuFragment : Fragment() {
                         }
 
                         if (state.isAllDone && state.createdDocument != null) {
+                            CatEventBus.emitEvent(
+                                event = CatMapEvent.Created(state.createdDocument)
+                            )
                             showPostSaveDialog(state.createdDocument)
                             viewModel.resetState()
                             clearFormFields()
@@ -151,26 +156,6 @@ class YuklemeArayuzuFragment : Fragment() {
                     }
                 }
 
-                launch {
-                    launch {
-                        postViewModel.islemSonucu.collectLatest { result ->
-                            when (result) {
-                                is UiState.Success -> {
-                                    messageManager.BasariliDurum("Eklendi", 1000)
-                                    NavigationHelper.navigateToProfile(UserSession.userId)
-                                }
-                                is UiState.Error -> {
-                                    messageManager.BasariliDurum("Ekleme başarısız", 1000)
-                                    Log.e("Yukle", "Gönderi kaydetme başarısız: ${result.message}")
-                                }
-                                is UiState.Loading -> {
-
-                                }
-                                UiState.Idle -> {}
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -213,28 +198,29 @@ class YuklemeArayuzuFragment : Fragment() {
             .create()
 
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
-            messageManager.YuklemeDurum("Profiline ekleniyor...")
 
+            viewModel.addCatPostMyProfile(cat.id) { isSuccess ->
+                if (isSuccess) {
 
-            val newPost = Gonderi(
-                kediID = cat.id,
-                kediAdi = cat.kediAdi,
-                aciklama = cat.kediHakkinda,
-                fotoUrlListesi = cat.photoUri,
-                tarih = Timestamp.now(),
-                begeniSayisi = 0L
-            )
+                    val newPost = Gonderi(
+                        kediID = cat.id,
+                        kediAdi = cat.kediAdi,
+                        aciklama = cat.kediHakkinda,
+                        fotoUrlListesi = cat.photoUri,
+                        tarih = Timestamp.now(),
+                        begeniSayisi = 0L
+                    )
 
-            viewLifecycleOwner.lifecycleScope.launch {
-                ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
+                    }
+
+                    NavigationHelper.navigateToProfile(UserSession.userId)
+                } else {
+                    UiMessageManager.emitMessage(UiMessageState.Error("Profile ekleme başarısız oldu."))
+                }
             }
-            /*
-            postViewModel.gonderiKaydet(
-                userId = UserSession.userId,
-                yeniGonderi = yeniGonderi
-            )
 
-             */
             dialog.dismiss()
         }
 

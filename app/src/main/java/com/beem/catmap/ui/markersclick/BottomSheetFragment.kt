@@ -27,11 +27,16 @@ import com.beem.catmap.Maps.mapkedi.Kediler
 import com.beem.catmap.commentreply.CommentViewModel
 import com.beem.catmap.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.R
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
+import com.beem.catmap.utils.toFirebaseTimestamp
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -238,18 +243,43 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
+
     private fun showOptionMenu(view: View) {
         val popupMenu = PopupMenu(requireContext(), view)
         popupMenu.menuInflater.inflate(R.menu.kediyi_gosterme_uc_nokta, popupMenu.menu)
 
+
+        val isCatAdded = viewModel.isAlreadyAdded.value
+        val currentCat = viewModel.selectedCat.value ?: return
+        val likeCount = viewModel.likeCount.value
+
+        val addMenuItem = popupMenu.menu.findItem(R.id.gonderi_ekle)
+
+        if (isCatAdded) {
+            addMenuItem.title = "✓ Gönderilerinizde Ekli"
+            addMenuItem.isEnabled = false
+        }
+
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.gonderi_ekle -> {
+                    if (isCatAdded) return@setOnMenuItemClickListener true
+
                     AlertDialog.Builder(requireContext())
                         .setTitle("Ekleme")
                         .setMessage("Bu kediyi gönderilerinize eklemek istiyor musunuz?")
                         .setPositiveButton("Evet") { _, _ ->
-                            UiMessageManager.emitMessage(UiMessageState.Info("İşlem gerçekleştiriliyor..."))
+                            val newPost = Gonderi(
+                                kediID = currentCat.id,
+                                kediAdi = currentCat.isim,
+                                aciklama = currentCat.hakkindasi,
+                                fotoUrlListesi = currentCat.urLler,
+                                tarih = currentCat.createdAt.toFirebaseTimestamp(),
+                                begeniSayisi = likeCount.toLong()
+                            )
+
+                            viewModel.addCatToUserPosts(newPost)
+                            dismiss()
                         }
                         .setNegativeButton("Hayır", null)
                         .show()

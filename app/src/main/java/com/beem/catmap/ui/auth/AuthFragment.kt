@@ -2,6 +2,7 @@ package com.beem.catmap.ui.auth
 
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +28,7 @@ import com.beem.catmap.databinding.SifremiUnuttumBinding
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class AuthFragment : Fragment() {
@@ -113,6 +115,7 @@ class AuthFragment : Fragment() {
 
         db.collection("users")
             .whereEqualTo("KullaniciAdi", username)
+            .limit(1)
             .get()
             .addOnSuccessListener { query ->
                 if (!isAdded) return@addOnSuccessListener
@@ -123,14 +126,32 @@ class AuthFragment : Fragment() {
                 }
 
                 val doc = query.documents[0]
+                user.kullaniciAdi = doc.getString("KullaniciAdi") ?: username // <-- EKLENDİ
                 user.ad = doc.getString("Ad")
                 user.soyad = doc.getString("Soyad")
                 user.email = doc.getString("Email")
+                user.fotoUrl = doc.getString("profilFotoUrl")
+                user.biyografi = doc.getString("Hakkinda")
+                user.takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
+                user.takipciSayisi = doc.getLong("takipciSayisi")
+                user.gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
+
                 user.setID(doc.id)
+
+                if (user.email.isNullOrEmpty()) {
+                    Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore'dan 'Email' alanı boş veya null geldi!")
+                    uyariMesaji.BasarisizDurum("Kullanıcı mail bilgisi eksik!", 1000)
+                    return@addOnSuccessListener
+                }
+
+                Log.d("AUTH_DEBUG", "Firebase Auth'a mail ve şifre gönderiliyor... (Email: ${user.email})")
 
                 val ynt = DogrulamaKodYonetici()
                 ynt.girisYap(user.email, user.sifre) { basarili ->
                     if (basarili) {
+                        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+                        Log.d("AUTH_DEBUG", ">>> GİRİŞ BAŞARILI! Firebase Auth Current User UID: $currentUid")
+
                         CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                         CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
                         saveUserLocallyAndNavigate(user)
@@ -139,6 +160,13 @@ class AuthFragment : Fragment() {
                         uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
                     }
                 }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore sorgusu tamamen FAILED oldu!", exception)
+                if (isAdded) {
+                    uyariMesaji.BasarisizDurum("Bağlantı hatası oluştu!", 1000)
+                }
+                Log.d("AUTH_DEBUG", "--------------------------------------------------")
             }
     }
 
@@ -206,20 +234,29 @@ class AuthFragment : Fragment() {
                                 val ynt = DogrulamaKodYonetici()
                                 ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
                                     if (basarili) {
-                                        db.collection("users")
-                                            .add(user.KullaniciData())
-                                            .addOnSuccessListener { docRef ->
-                                                if (!isAdded) return@addOnSuccessListener
+                                        // Firebase Auth'ta oluşturan kullanıcının UID'sini alıyoruz
+                                        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
 
-                                                user.setID(docRef.id)
-                                                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                                                CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
-                                                saveUserLocallyAndNavigate(user)
-                                                uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
-                                            }
-                                            .addOnFailureListener {
-                                                if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
-                                            }
+                                        if (currentUserUid != null) {
+                                            // Doküman ID'sini rastgele üretmek (.add) yerine Auth UID yaparak (.document(uid).set) kaydediyoruz
+                                            db.collection("users")
+                                                .document(currentUserUid)
+                                                .set(user.KullaniciData())
+                                                .addOnSuccessListener {
+                                                    if (!isAdded) return@addOnSuccessListener
+
+                                                    user.setID(currentUserUid)
+                                                    CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
+                                                    CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
+                                                    saveUserLocallyAndNavigate(user)
+                                                    uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
+                                                }
+                                                .addOnFailureListener {
+                                                    if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
+                                                }
+                                        } else {
+                                            if (isAdded) uyariMesaji.BasarisizDurum("Kullanıcı UID alınamadı!", 1000)
+                                        }
                                     } else {
                                         if (isAdded) Toast.makeText(requireContext(), "Email veya şifre kaydı başarısız", Toast.LENGTH_SHORT).show()
                                     }

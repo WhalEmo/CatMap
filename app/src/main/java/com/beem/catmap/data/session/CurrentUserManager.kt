@@ -1,33 +1,58 @@
 package com.beem.catmap.data.session
-
 import android.content.Context
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.gonderi.ProfileState
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class CurrentUserManager private constructor(context: Context) {
 
     private val sessionManager = UserSessionManager.getInstance(context)
-    private val profileSessionManager = ProfileSessionManager.getInstance(context)
+    private val blockSessionManager = BlockSessionManager.getInstance(context)
 
-    private var currentUserCache: Kullanici? = null
+    // Manager yaşam döngüsüne bağlı coroutine scope
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    // --- STATEFLOW TANIMLAMASI ---
-    // Başlangıç değerlerini SharedPreferences'tan okuyarak yüklüyoruz
-    private val _profileState = MutableStateFlow(
-        ProfileState(
-            takipciSayisi = profileSessionManager.getTakipciSayisi(),
-            takipEdilenSayisi = profileSessionManager.getTakipEdilenSayisi(),
-            gonderiSayisi = profileSessionManager.getGonderiSayisi(),
-            biyografi = profileSessionManager.getBiyografi()
-        )
+    // --- TEK VERİ KAYNAĞI (SINGLE SOURCE OF TRUTH) ---
+    private val _currentUserState = MutableStateFlow(
+        if (FirebaseAuth.getInstance().currentUser != null) {
+            sessionManager.getUserSession() ?: Kullanici()
+        } else {
+            Kullanici()
+        }
     )
-    // Dışarıya sadece okunabilir (Read-Only) StateFlow sunuyoruz
-    val profileState: StateFlow<ProfileState> = _profileState.asStateFlow()
+    val currentUserState: StateFlow<Kullanici> = _currentUserState.asStateFlow()
+
+    // profileState, currentUserState'teki değişikliklerde ad, soyad ve kullaniciAdi ile otomatik güncellenir
+    val profileState: StateFlow<ProfileState> = _currentUserState.map { user ->
+        ProfileState(
+            ad = user.ad,
+            soyad = user.soyad,
+            kullaniciAdi = user.kullaniciAdi,
+            takipciSayisi = user.takipciSayisi ?: 0L,
+            takipEdilenSayisi = user.takipEdilenSayisi ?: 0L,
+            gonderiSayisi = user.gonderiSayisi ?: 0L,
+            biyografi = user.biyografi,
+            fotoUrl = user.fotoUrl
+        )
+    }.stateIn(
+        scope = managerScope,
+        started = SharingStarted.Eagerly,
+        initialValue = ProfileState()
+    )
+
+    private val _benimEngellediklerimState = MutableStateFlow(blockSessionManager.getBenimEngellediklerim())
+    val benimEngellediklerimState: StateFlow<List<String>> = _benimEngellediklerimState.asStateFlow()
+
+    private var blockedUsersLoaded = false
 
     companion object {
         @Volatile
@@ -40,16 +65,14 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
+    // --- KULLANICI ERİŞİM VE GÜNCELLEME İŞLEMLERİ ---
+
     fun getCurrentUser(): Kullanici {
         if (FirebaseAuth.getInstance().currentUser == null) {
             clearLocalCache()
             return Kullanici()
         }
-
-        if (currentUserCache == null) {
-            currentUserCache = sessionManager.getUserSession()
-        }
-        return currentUserCache ?: Kullanici()
+        return _currentUserState.value
     }
 
     fun getCurrentUserId(): String {
@@ -57,94 +80,108 @@ class CurrentUserManager private constructor(context: Context) {
     }
 
     fun setCurrentUser(kullanici: Kullanici) {
-        this.currentUserCache = kullanici
         sessionManager.saveUserSession(kullanici)
+        _currentUserState.value = kullanici
     }
 
     fun isUserLoggedIn(): Boolean {
         return FirebaseAuth.getInstance().currentUser != null && sessionManager.isLoggedIn()
     }
 
-    // --- REAKTİF PROFİL GÜNCELLEME METOTLARI ---
-
     /**
-     * Tüm profil istatistiklerini günceller. Hem SharedPreferences'a yazar hem Flow'a yayınlar.
+     * Kullanıcı nesnesinin belirli alanlarını güvenli bir şekilde güncellemek için yardımcı metot.
      */
+    fun updateCurrentUser(updateBlock: (Kullanici) -> Unit) {
+        val currentUser = _currentUserState.value
+        updateBlock(currentUser)
+        setCurrentUser(currentUser)
+    }
+
+    // --- ALAN BAZLI GÜNCELLEMELER ---
+
     fun updateProfileDetails(
-        takipci: Long,
-        takipEdilen: Long,
-        gonderiSayisi: Long = 0L,
-        biyografi: String? = null
+        ad: String? = null,
+        soyad: String? = null,
+        kullaniciAdi: String? = null,
+        takipci: Long? = null,
+        takipEdilen: Long? = null,
+        gonderiSayisi: Long? = null,
+        biyografi: String? = null,
+        fotoUrl: String? = null
     ) {
-        // 1. SharedPreferences'ı güncelle
-        profileSessionManager.saveProfileDetails(
-            takipciSayisi = takipci,
-            takipEdilenSayisi = takipEdilen,
-            gonderiSayisi = gonderiSayisi,
-            biyografi = biyografi
-        )
-
-        // 2. StateFlow'u güncelle (Abone olan tüm UI'lar anında tetiklenir)
-        _profileState.update { currentState ->
-            currentState.copy(
-                takipciSayisi = takipci,
-                takipEdilenSayisi = takipEdilen,
-                gonderiSayisi = gonderiSayisi,
-                biyografi = biyografi ?: currentState.biyografi
-            )
+        updateCurrentUser { user ->
+            if (ad != null) user.ad = ad
+            if (soyad != null) user.soyad = soyad
+            if (kullaniciAdi != null) user.kullaniciAdi = kullaniciAdi
+            if (takipci != null) user.takipciSayisi = takipci
+            if (takipEdilen != null) user.takipEdilenSayisi = takipEdilen
+            if (gonderiSayisi != null) user.gonderiSayisi = gonderiSayisi
+            if (biyografi != null) user.biyografi = biyografi
+            if (fotoUrl != null) user.fotoUrl = fotoUrl
         }
     }
 
-    /**
-     * Sadece takip/takipçi sayılarını anlık günceller.
-     */
+    fun updateUserInfo(ad: String, soyad: String, kullaniciAdi: String) {
+        updateCurrentUser { user ->
+            user.ad = ad
+            user.soyad = soyad
+            user.kullaniciAdi = kullaniciAdi
+        }
+    }
+
     fun updateFollowCounts(takipciSayisi: Long, takipEdilenSayisi: Long) {
-        profileSessionManager.saveFollowCounts(takipciSayisi, takipEdilenSayisi)
-
-        _profileState.update { currentState ->
-            currentState.copy(
-                takipciSayisi = takipciSayisi,
-                takipEdilenSayisi = takipEdilenSayisi
-            )
+        updateCurrentUser { user ->
+            user.takipciSayisi = takipciSayisi
+            user.takipEdilenSayisi = takipEdilenSayisi
         }
     }
 
-    /**
-     * Sadece gönderi sayısını anlık günceller.
-     */
     fun updateGonderiSayisi(gonderiSayisi: Long) {
-        profileSessionManager.saveGonderiSayisi(gonderiSayisi)
-
-        _profileState.update { currentState ->
-            currentState.copy(gonderiSayisi = gonderiSayisi)
+        updateCurrentUser { user ->
+            user.gonderiSayisi = gonderiSayisi
         }
     }
 
-    /**
-     * Sadece biyografiyi anlık günceller.
-     */
     fun updateBiyografi(biyografi: String) {
-        profileSessionManager.saveBiyografi(biyografi)
-
-        _profileState.update { currentState ->
-            currentState.copy(biyografi = biyografi)
+        updateCurrentUser { user ->
+            user.biyografi = biyografi
         }
     }
 
-    // --- ÇIKIŞ YAP (LOGOUT) ---
+    fun updateFotoUrl(fotoUrl: String) {
+        updateCurrentUser { user ->
+            user.fotoUrl = fotoUrl
+        }
+    }
+
+    // --- ENGELLEME YÖNETİMİ ---
+
+    fun isBlockedUsersLoaded(): Boolean = blockedUsersLoaded
+
+    fun setBlockedUsersLoaded(loaded: Boolean) {
+        blockedUsersLoaded = loaded
+    }
+
+    fun updateBenimEngellediklerim(liste: List<String>) {
+        blockSessionManager.saveBenimEngellediklerim(liste)
+        _benimEngellediklerimState.value = liste
+        blockedUsersLoaded = true
+    }
+
+    // --- LOGOUT / SIFIRLAMA ---
 
     fun logout() {
         FirebaseAuth.getInstance().signOut()
-
         clearLocalCache()
     }
 
     fun clearLocalCache() {
-        currentUserCache = null
         sessionManager.clearSession()
-        profileSessionManager.clearProfileCache()
+        blockSessionManager.clearBlockCache()
 
-        // Flow'u sıfırla
-        _profileState.value = ProfileState()
+        _currentUserState.value = Kullanici()
+        _benimEngellediklerimState.value = emptyList()
+
+        blockedUsersLoaded = false
     }
 }

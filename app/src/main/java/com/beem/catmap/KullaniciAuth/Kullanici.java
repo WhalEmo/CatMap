@@ -1,9 +1,6 @@
+
 package com.beem.catmap.KullaniciAuth;
 
-import static android.content.Context.MODE_PRIVATE;
-
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Build;
 
@@ -36,11 +33,22 @@ public class Kullanici {
     private boolean cevrimiciMi = false;
 
     public int TakipEdiyorMuyum=0;
+    private String biyografi= "";
+    private boolean isProfileLoaded = false;
     public int TakipciMi=0;
 
-    private Long takipciSayisi= 0L;
-    private Long takipEdilenSayisi= 0L;
-    private String biyografi= "";
+    private Long takipciSayisi = 0L;
+    private Long takipEdilenSayisi = 0L;
+    private Long gonderiSayisi = 0L;
+
+    public Kullanici(String ID, String kullaniciAdi, String ad, String soyad, String biyografi, String fotoUrl) {
+        this.ID = ID;
+        this.KullaniciAdi = kullaniciAdi;
+        this.Ad = ad;
+        this.Soyad = soyad;
+        this.biyografi = biyografi;
+        this.FotoUrl = fotoUrl;
+    }
 
 
     public boolean isCevrimiciMi() {
@@ -175,6 +183,23 @@ public class Kullanici {
         Email = email.toLowerCase().trim();
     }
 
+
+    public String getBiyografi() {
+        return biyografi;
+    }
+
+    public void setBiyografi(String biyografi) {
+        this.biyografi = biyografi;
+    }
+
+    public boolean isProfileLoaded() {
+        return isProfileLoaded;
+    }
+
+    public void setProfileLoaded(boolean profileLoaded) {
+        isProfileLoaded = profileLoaded;
+    }
+
     public Long getTakipciSayisi() {
         return takipciSayisi;
     }
@@ -191,12 +216,28 @@ public class Kullanici {
         this.takipEdilenSayisi = takipEdilenSayisi;
     }
 
-    public String getBiyografi() {
-        return biyografi;
+    public Long getGonderiSayisi() {
+        return gonderiSayisi;
     }
 
-    public void setBiyografi(String biyografi) {
-        this.biyografi = biyografi;
+    public void setGonderiSayisi(Long gonderiSayisi) {
+        this.gonderiSayisi = gonderiSayisi;
+    }
+
+    public int getTakipEdiyorMuyum() {
+        return TakipEdiyorMuyum;
+    }
+
+    public void setTakipEdiyorMuyum(int takipEdiyorMuyum) {
+        TakipEdiyorMuyum = takipEdiyorMuyum;
+    }
+
+    public int getTakipciMi() {
+        return TakipciMi;
+    }
+
+    public void setTakipciMi(int takipciMi) {
+        TakipciMi = takipciMi;
     }
 
     public boolean KullaniciIs(){
@@ -223,14 +264,6 @@ public class Kullanici {
         return kullaniciData;
     }
 
-    public void GetYerelKullanici(Context baglanti){
-        SharedPreferences kayit = baglanti.getSharedPreferences("KullaniciKayit",MODE_PRIVATE);
-        this.ID = kayit.getString("ID","");
-        this.Ad = kayit.getString("Ad","");
-        this.Soyad = kayit.getString("Soyad","");
-        this.Email = kayit.getString("Email","");
-        this.KullaniciAdi = kayit.getString("KullaniciAdi","");
-        this.Sifre = kayit.getString("Sifre","");
-    }
+
 
 }

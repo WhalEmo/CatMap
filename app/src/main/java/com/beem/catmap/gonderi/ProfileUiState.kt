@@ -1,22 +1,25 @@
 package com.beem.catmap.gonderi
 
-data class ProfileUiState(
-    val isSelfProfile: Boolean = false,       // Kendi profilimiz mi?
-    val isFollowing: Boolean = false,         // Takip ediyor muyuz?
-    val isFollowed: Boolean = false,
-    val isLoadingFollowState: Boolean = false // Takip et butonu yükleniyor mu?
-)
 
 data class ProfileState(
+    val ad: String? = null,
+    val soyad: String? = null,
+    val kullaniciAdi: String? = null,
     val takipciSayisi: Long = 0L,
     val takipEdilenSayisi: Long = 0L,
     val gonderiSayisi: Long = 0L,
-    val biyografi: String = ""
+    val biyografi: String? = null,
+    val fotoUrl: String? = null
 )
 
 data class UserProfileData(
-    val userId: String,
+    val userId: String = "",
     val kullaniciAdi: String = "",
+    val ad: String = "",
+    val soyad: String? = null,
     val fotoUrl: String? = null,
-    val hakkinda: String = ""
+    val hakkinda: String = "",
+    val takipciSayisi: Long = 0L,
+    val takipEdilenSayisi: Long = 0L,
+    val gonderiSayisi: Long = 0L
 )
