@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 object SmartNavigationEngine {
 
     private val _navigationEvents = MutableSharedFlow<NavigationState.Active>(
-        replay = 1,
+        replay = 0,
         extraBufferCapacity = 64
     )
     val navigationEvents: SharedFlow<NavigationState.Active> = _navigationEvents.asSharedFlow()
@@ -26,12 +26,19 @@ object SmartNavigationEngine {
     var currentScreen: Screen = Screen.MAP
         private set
 
+    private lateinit var currentStack: NavBackStackEntry
+
     private var oldScreen: Screen? = null
 
     private var currentNode: Screen = Screen.MAP
 
     private var onSlidingPanelCheck: (() -> Boolean)? = null
     private var onSystemExit: (() -> Unit)? = null
+
+
+    init {
+        Log.d("NAV_ENGINE", "Kaptan: Uyandık.")
+    }
 
     @JvmStatic
     fun init(uiBridge: CatMapNavigationEngine, initialScreen: Screen) {
@@ -147,6 +154,7 @@ object SmartNavigationEngine {
 
     private fun emitCurrentState(entry: NavBackStackEntry) {
         uiBridge?.updateUISilently(entry.screen)
+        currentStack = entry
         _navigationEvents.tryEmit(
             NavigationState.Active(
                 screen = entry.screen,
@@ -167,6 +175,10 @@ object SmartNavigationEngine {
     @JvmStatic
     fun getCurrentScreen(): Screen {
         return currentScreen
+    }
+
+    fun getCurrentStack(): NavBackStackEntry {
+        return currentStack
     }
 
     fun getOldScreen(): Screen? {

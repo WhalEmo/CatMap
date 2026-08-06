@@ -102,9 +102,27 @@ class ProfilFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_profil_sayfasi, container, false)
     }
 
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (hidden) {
+            shimmerLayout.stopShimmer()
+        } else {
+            handleBackPressWithEngine()
+            // Eğer veriler yükleniyorsa shimmer'ı başlat, yoksa kapat
+            if (profileViewModel.fullProfileState.value is UiState.Loading) {
+                showShimmerLoading()
+            } else {
+                hideShimmerLoading()
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        handleBackPressWithEngine()
+
+        if (!isHidden) {
+            handleBackPressWithEngine()
+        }
 
         initViews(view)
         setupRecyclerView()
@@ -277,6 +295,7 @@ class ProfilFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
+                        if (isHidden) return@collect
                         when (state) {
                             is UiState.Loading -> {
                                 Log.d("SHIMMER","loadıngshow")
@@ -326,6 +345,7 @@ class ProfilFragment : Fragment() {
                 // 2. Profil Güncelleme EventBus Takibi
                 launch {
                     ProfileEventBus.profileEvent.collect { event ->
+                        if (isHidden) return@collect
                         when (event) {
                             is ProfileEvent.ProfileUpdated -> {
                                 val guncelKullanici = event.updatedUser
@@ -341,6 +361,7 @@ class ProfilFragment : Fragment() {
 
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
+                        if (isHidden) return@collectLatest
                         renderProfileButtons(state)
                     }
                 }
@@ -367,7 +388,10 @@ class ProfilFragment : Fragment() {
 
                 launch {
                     if (targetUserId == myUserId) {
-                        profileViewModel.profileState.collect { profileState ->
+
+                        followViewModel.profileState.collect { profileState ->
+                            if (isHidden) return@collect
+
                             takipciSayisiTextView.text = profileState.takipciSayisi.toString()
                             takipEdilenSayisiTextView.text = profileState.takipEdilenSayisi.toString()
                             gonderiSayisiTextView.text = profileState.gonderiSayisi.toString()
@@ -375,12 +399,14 @@ class ProfilFragment : Fragment() {
                     } else {
                         launch {
                             followViewModel.targetUserTakipciSayisi.collect { sayi ->
+                                if (isHidden) return@collect
                                 takipciSayisiTextView.text = sayi.toString()
                             }
                         }
 
                         launch {
                             followViewModel.targetUserTakipEdilenSayisi.collect { sayi ->
+                                if (isHidden) return@collect
                                 takipEdilenSayisiTextView.text = sayi.toString()
                             }
                         }
@@ -390,6 +416,7 @@ class ProfilFragment : Fragment() {
                 // 5. Post RecyclerView ve UI State Dinleyici
                 launch {
                     viewModel.uiState.collect { state ->
+                        if (isHidden) return@collect
 
                         if (state.isLoading && !swipeRefreshLayout.isRefreshing && gonderiAdapter.itemCount == 0 && shimmerLayout.visibility != View.VISIBLE) {
                             progressBar.visibility = View.VISIBLE
@@ -442,6 +469,11 @@ class ProfilFragment : Fragment() {
 
     private fun handleBlockedUiState() {
         blockedUserLayout.visibility = View.VISIBLE
+    }
+
+    override fun onPause() {
+        shimmerLayout.stopShimmer()
+        super.onPause()
     }
 
     private fun renderProfileButtons(state: FollowUiState) {

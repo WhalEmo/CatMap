@@ -23,6 +23,7 @@ import kotlin.math.max
 
 class PostRepository private constructor(context: Context) {
 
+
     companion object {
         @SuppressLint("StaticFieldLeak")
         @Volatile
