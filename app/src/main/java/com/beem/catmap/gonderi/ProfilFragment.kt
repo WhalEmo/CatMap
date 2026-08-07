@@ -175,7 +175,7 @@ class ProfilFragment : Fragment() {
 
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
-                return if (concatAdapter.getItemViewType(position) == loadingFooterAdapter.getItemViewType(0)) {
+                return if (position >= gonderiAdapter.itemCount) {
                     3
                 } else {
                     1
@@ -185,8 +185,9 @@ class ProfilFragment : Fragment() {
 
         recyclerView.apply {
             layoutManager = gridLayoutManager
-            adapter = gonderiAdapter
-            setHasFixedSize(true)
+            adapter = concatAdapter
+
+            setHasFixedSize(false)
 
             layoutAnimation = AnimationUtils.loadLayoutAnimation(
                 requireContext(),
@@ -296,6 +297,7 @@ class ProfilFragment : Fragment() {
         takipEdiliyorButonu.setOnClickListener {
             it.bounceAndHaptic()
             recyclerView.visibility= View.GONE
+            postSectionHeader.visibility = View.GONE
             takipEtButonu.setLoadingState(true)
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
