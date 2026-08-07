@@ -1,12 +1,14 @@
 package com.beem.catmap.ui.message
 
 import android.content.Context
+import android.graphics.Typeface
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -45,9 +47,8 @@ class MessageAdapter(
 
         fun bind(message: ChatMessage) {
             val context = itemView.context
-
             // 1. Görünümleri Sıfırla (Reset State)
-            resetViews()
+            resetViews(context)
 
             val isMyMessage = message.senderId == currentUserId
             val formattedTime = formatTimestamp(message.timestamp)
@@ -83,6 +84,8 @@ class MessageAdapter(
                         binding.sagMesajText.isVisible = true
                         binding.sagMesajText.text = messageContent.trim()
                         binding.sagZaman.text = formattedTime
+
+                        binding.gorulmeIkon.isVisible = true
                         binding.gorulmeIkon.setImageResource(
                             if (message.isRead) R.drawable.patidolu else R.drawable.patibos
                         )
@@ -91,6 +94,8 @@ class MessageAdapter(
                         binding.solMesajText.isVisible = true
                         binding.solMesajText.text = messageContent.trim()
                         binding.solZaman.text = formattedTime
+
+                        binding.gorulmeIkon.isVisible = false
                     }
 
                 }
@@ -205,20 +210,36 @@ class MessageAdapter(
             }
         }
 
-        private fun resetViews() {
+        private fun resetViews(context: Context) {
+            // Görünürlük Sıfırlamaları
             binding.solMesajLayout.isVisible = false
             binding.sagMesajLayout.isVisible = false
             binding.solFotoLayout.isVisible = false
             binding.sagFotoLayout.isVisible = false
+            binding.sagFotoKonteyner.isVisible = false
+            binding.solFotoKonteyner.isVisible = false
             binding.sagMesajText.isVisible = false
             binding.solMesajText.isVisible = false
             binding.SolcevapKutusu.isVisible = false
             binding.cevapKutusu.isVisible = false
+            binding.gorulmeIkon.isVisible = false
 
-            // Grid'leri reset anında da temizliyoruz
+            // 🟢 KRİTİK FİX: Metin Renk ve Stillerini Varsayılana Döndür (Muted kalıntısını siler)
+            binding.sagMesajText.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            binding.sagMesajText.setTypeface(null, Typeface.NORMAL)
+
+            binding.solMesajText.setTextColor(ContextCompat.getColor(context, R.color.catmap_text_dark))
+            binding.solMesajText.setTypeface(null, Typeface.NORMAL)
+
+            // Click listener temizliği
+            binding.sagMesajLayout.setOnLongClickListener(null)
+            binding.solMesajLayout.setOnLongClickListener(null)
+
+            // Grid Temizliği
             binding.solFotoLayout.removeAllViews()
             binding.sagFotoLayout.removeAllViews()
         }
+
 
         private fun formatTimestamp(timestamp: Long): String {
             if (timestamp == 0L) return ""
@@ -230,22 +251,7 @@ class MessageAdapter(
 
 class MessageDiffCallback : DiffUtil.ItemCallback<ChatMessage>() {
     override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
-        // 1. Standart ID eşleşmesi (Aynı Firebase ID'si ise)
-        if (oldItem.id == newItem.id) return true
-
-        // 2. Geçici Mesaj ile Gerçek Mesaj Eşleşmesi
-        if (oldItem is ChatMessage.Photo && newItem is ChatMessage.Photo) {
-            Log.d("ChatDebug", "🔍 [DIFFUTIL] Fotoğraf Kıyaslanıyor:")
-            Log.d("ChatDebug", "   ➜ Old (Eski) ID: ${oldItem.id} | clientTempId: ${oldItem.clientTempId} | isUploading: ${oldItem.isUploading}")
-            Log.d("ChatDebug", "   ➜ New (Yeni) ID: ${newItem.id} | clientTempId: ${newItem.clientTempId} | isUploading: ${newItem.isUploading}")
-            if (oldItem.clientTempId != null && newItem.clientTempId != null) {
-                val isSame = oldItem.clientTempId == newItem.clientTempId
-                Log.d("ChatDebug", "   🎯 clientTempId Eşleşme Sonucu: $isSame")
-                return isSame
-            }
-        }
-
-        return false
+      return oldItem.id == newItem.id
     }
 
     override fun areContentsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
