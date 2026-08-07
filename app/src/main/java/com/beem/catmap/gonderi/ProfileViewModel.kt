@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FullProfileData
+import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.domain.usecase.GetProfileFullDataUseCase
@@ -21,13 +22,16 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository: ProfileRepository = ProfileRepository.getInstance()
     private val postRepository: PostRepository = PostRepository.getInstance(application)
+    private val followRepository: FollowRepository = FollowRepository.getInstance(application)
     private val userManager: CurrentUserManager = CurrentUserManager.getInstance(application)
 
     val profileState: StateFlow<ProfileState> = userManager.profileState
 
     private val getProfileFullDataUseCase = GetProfileFullDataUseCase(
         profileRepository = repository,
-        postRepository = postRepository
+        postRepository = postRepository,
+        followRepository = followRepository,
+        userManager = userManager
     )
 
     private val _fullProfileState = MutableStateFlow<UiState<FullProfileData>>(UiState.Idle)
@@ -36,32 +40,23 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _profileUpdateState = MutableStateFlow<ProfileUpdateResult>(ProfileUpdateResult.Idle)
     val profileUpdateState: StateFlow<ProfileUpdateResult> = _profileUpdateState.asStateFlow()
 
-    fun tumProfilVerileriniYukle(targetUserId: String, isFollowing: Boolean = false, forceRefresh: Boolean = false) {
+    fun tumProfilVerileriniYukle(targetUserId: String, forceRefresh: Boolean = false) {
         if (targetUserId.isBlank()) return
-
+        Log.d("SHIMMER","tumppcalıstı")
         viewModelScope.launch {
             val isMyProfile = targetUserId == UserSession.userId
-
-            if (isMyProfile && !forceRefresh) {
-                val cachedUser = userManager.getCurrentUser()
-                if (!cachedUser.kullaniciAdi.isNullOrBlank()) {
-                    val currentData = (_fullProfileState.value as? UiState.Success)?.data
-                    if (currentData != null) {
-                        _fullProfileState.value = UiState.Success(currentData.copy(profile = cachedUser))
-                    }
-                }
-            }
-
             _fullProfileState.value = UiState.Loading
+
             getProfileFullDataUseCase(
                 targetUserId = targetUserId,
-                isFollowing = isFollowing,
                 forceRefresh = forceRefresh
             )
                 .onSuccess { fullData ->
-                    if (isMyProfile) {
+                    Log.d("SHIMMER","SUCCESS CALSITI")
+                    if (isMyProfile && forceRefresh) {
                         updateLocalSession(fullData.profile)
                     }
+
                     _fullProfileState.value = UiState.Success(fullData)
                 }
                 .onFailure { exception ->
@@ -71,7 +66,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 }
         }
     }
-
 
     fun tumProfilBilgileriniGuncelle(
         yeniKullaniciAdi: String,

@@ -22,6 +22,7 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -125,6 +126,7 @@ class EditProfileFragment : Fragment() {
         fotoDegistirText.setOnClickListener(fotoSecAction)
 
         kaydetButonu.setOnClickListener {
+            it.bounceAndHaptic()
             klavyeyiKapat()
             guncellemeyiBaslat()
         }

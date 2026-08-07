@@ -23,7 +23,7 @@ fun View.bounceAndHaptic() {
 }
 
 
-fun View.fadeInSmooth(duration: Long = 200) {
+fun View.fadeInSmooth(duration: Long = 100) {
     if (this.visibility == View.VISIBLE && this.alpha == 1f) return
 
     this.animate().cancel()
@@ -37,7 +37,7 @@ fun View.fadeInSmooth(duration: Long = 200) {
 /**
  * Görünümü yumuşakça saydamlaştırarak gizler (Fade Out).
  */
-fun View.fadeOutSmooth(duration: Long = 200) {
+fun View.fadeOutSmooth(duration: Long = 100) {
     if (this.visibility == View.GONE) return
 
     this.animate().cancel()
