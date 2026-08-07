@@ -124,24 +124,33 @@ class ProfileRepository private constructor() {
             if (finalAd != currentAd.trim()) updates["Ad"] = finalAd
             if (finalSoyad != currentSoyad.trim()) updates["Soyad"] = finalSoyad
 
+            updates["Hakkinda"] = finalHakkinda
+
+
             if (newImageUri != null) {
                 uploadedPhotoUrl = uploadProfilePhotoToStorage(newImageUri, currentUserId)
                 updates["profilFotoUrl"] = uploadedPhotoUrl
             }
 
-            updates["Hakkinda"] = finalHakkinda
             if (updates.isNotEmpty()) {
                 db.collection("users")
                     .document(currentUserId)
                     .update(updates)
                     .await()
 
-                // Profil güncellendiğinde Cache'i de temizle ki eski bilgi kalmasın
                 profileCache.remove(currentUserId)
             }
 
+            val finalPhotoUrl = if (uploadedPhotoUrl != null) {
+                uploadedPhotoUrl
+            } else {
+
+                val documentSnapshot = db.collection("users").document(currentUserId).get().await()
+                documentSnapshot.getString("profilFotoUrl")
+            }
+
             ProfileUpdateResult.Success(
-                newPhotoUrl = uploadedPhotoUrl,
+                newPhotoUrl = finalPhotoUrl,
                 newUsername = finalUsername,
                 newAd = finalAd,
                 newSoyad = finalSoyad,

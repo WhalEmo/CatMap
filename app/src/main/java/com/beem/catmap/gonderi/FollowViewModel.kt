@@ -1,6 +1,7 @@
 package com.beem.catmap.gonderi
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
@@ -39,7 +40,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     val targetUserTakipciSayisi: StateFlow<Long> = _targetUserTakipciSayisi.asStateFlow()
 
 
-
+/*
     fun profilDurumunuHazirla(targetUserId: String, forceRefresh: Boolean = false) {
         val currentUserId = UserSession.userId
         val isSelf = (targetUserId == currentUserId)
@@ -68,25 +69,29 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
+ */
     fun setupFromFullProfile(
         followerCount: Long,
         followingCount: Long,
-        isSelf: Boolean
+        isSelf: Boolean,
+        isFollowing: Boolean = false,
+        isFollowed: Boolean = false
     ) {
-        _followUiState.update { it.copy(isSelfProfile = isSelf) }
-
-        if (isSelf) {
-            userManager.updateFollowCounts(
-                takipciSayisi = followerCount,
-                takipEdilenSayisi = followingCount
+    Log.d("ISSELF","buraya gırdı"+isSelf)
+        _followUiState.update {
+            it.copy(
+                isSelfProfile = isSelf,
+                isFollowing = isFollowing,
+                isFollowed = isFollowed,
+                isLoadingFollowState = false
             )
-        } else {
+        }
             _targetUserTakipciSayisi.value = followerCount
             _targetUserTakipEdilenSayisi.value = followingCount
-        }
     }
 
-    fun takipEt(takipEttiginId: String, currentUserId: String) {
+    fun takipEt(takipEttiginId: String, currentUserId: String,onSuccess: () -> Unit = {}) {
         if (followJob?.isActive == true) return
         val previousFollowerCount = _targetUserTakipciSayisi.value
         _followUiState.update { it.copy(isFollowing = true) }
@@ -109,7 +114,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 )
 
                 _targetUserTakipciSayisi.value = followResult.targetFollowerCount
-
+                onSuccess()
             }.onFailure {
                 // Hata durumunda rollback (Geri Al)
                 _followUiState.update { it.copy(isFollowing = false) }
@@ -118,7 +123,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun takiptenCikar(takiptenCiktiginId: String, currentUserId: String) {
+    fun takiptenCikar(takiptenCiktiginId: String, currentUserId: String,onSuccess: () -> Unit = {}) {
         // Optimistic UI Güncellemesi
         val previousFollowerCount = _targetUserTakipciSayisi.value
         val newOptimisticCount = if (previousFollowerCount > 0) previousFollowerCount - 1 else 0L
@@ -139,7 +144,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                     takipEdilenSayisi = followResult.currentFollowingCount
                 )
                 _targetUserTakipciSayisi.value = followResult.targetFollowerCount
-
+                onSuccess()
             }.onFailure {
                 // Rollback
                 _followUiState.update { it.copy(isFollowing = true) }

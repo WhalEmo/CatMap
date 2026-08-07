@@ -2,28 +2,28 @@ package com.beem.catmap.ui.extensions
 
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.animation.OvershootInterpolator
 
 fun View.bounceAndHaptic() {
-    this.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
 
-    this.animate()
-        .scaleX(0.92f)
-        .scaleY(0.92f)
-        .setDuration(80)
+    animate()
+        .scaleX(0.90f)
+        .scaleY(0.90f)
+        .setDuration(70)
         .withEndAction {
-            this.animate()
-                .scaleX(1.0f)
-                .scaleY(1.0f)
-                .setDuration(100)
+            animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(120)
                 .start()
         }
         .start()
 }
 
-/**
- * Görünümü yumuşakça saydamlaştırarak belirginleştirir (Fade In).
- */
-fun View.fadeInSmooth(duration: Long = 200) {
+
+fun View.fadeInSmooth(duration: Long = 100) {
     if (this.visibility == View.VISIBLE && this.alpha == 1f) return
 
     this.animate().cancel()
@@ -37,7 +37,7 @@ fun View.fadeInSmooth(duration: Long = 200) {
 /**
  * Görünümü yumuşakça saydamlaştırarak gizler (Fade Out).
  */
-fun View.fadeOutSmooth(duration: Long = 200) {
+fun View.fadeOutSmooth(duration: Long = 100) {
     if (this.visibility == View.GONE) return
 
     this.animate().cancel()

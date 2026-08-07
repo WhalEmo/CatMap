@@ -188,7 +188,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         if (userId.isBlank()) return
         setYukleyenID(userId)
 
-        // Devam eden işlemleri iptal et
         fetchPostsJob?.cancel()
         loadMoreJob?.cancel()
 
@@ -258,6 +257,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         isLast: Boolean = true,
         isAccessDenied: Boolean = false
     ) {
+        Log.d("SHIMMER","buraya gırdı"+ isAccessDenied)
         setYukleyenID(userId)
 
         _uiState.update {

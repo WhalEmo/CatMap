@@ -22,6 +22,7 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.ProfileUpdateResult
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -125,6 +126,7 @@ class EditProfileFragment : Fragment() {
         fotoDegistirText.setOnClickListener(fotoSecAction)
 
         kaydetButonu.setOnClickListener {
+            it.bounceAndHaptic()
             klavyeyiKapat()
             guncellemeyiBaslat()
         }
@@ -162,6 +164,7 @@ class EditProfileFragment : Fragment() {
                     }
                 }
 
+
                 launch {
                     profileViewModel.profileUpdateState.collect { result ->
                         when (result) {
@@ -171,22 +174,28 @@ class EditProfileFragment : Fragment() {
                             is ProfileUpdateResult.Success -> {
                                 setLoadingState(false)
                                 UiMessageManager.emitMessage(UiMessageState.Success("Profil başarıyla güncellendi."))
-                                profileViewModel.resetUpdateState()
 
-                                // GEREKSİZ LOCAL NESNE OLUŞTURMA KALDIRILDI:
-                                // Sunucudan/Storage'dan başarıyla dönen 'result' verisiyle doğrudan nesne oluşturulur.
-                                val guncelKullanici = Kullanici().apply {
+                                val currentFullData = (profileViewModel.fullProfileState.value as? UiState.Success)?.data
+                                val currentProfile = currentFullData?.profile
+                                val guncelKullanici = currentProfile?.copy(
+                                    kullaniciAdi = result.newUsername,
+                                    ad = result.newAd,
+                                    soyad = result.newSoyad,
+                                    biyografi = result.newHakkinda,
+                                    fotoUrl = result.newPhotoUrl.takeIf { !it.isNullOrBlank() } ?: currentProfile.fotoUrl
+                                ) ?: Kullanici().apply {
                                     id = currentUserId
                                     kullaniciAdi = result.newUsername
                                     ad = result.newAd
                                     soyad = result.newSoyad
                                     biyografi = result.newHakkinda
-                                    fotoUrl = result.newPhotoUrl ?:""
+                                    fotoUrl = result.newPhotoUrl ?: ""
                                 }
 
-                                lifecycleScope.launch {
-                                    ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelKullanici))
-                                }
+                                // EventBus veya FragmentResult ile ilet
+                                ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelKullanici))
+
+                                profileViewModel.resetUpdateState()
                                 SmartNavigationEngine.navigateBack()
                             }
                             is ProfileUpdateResult.UsernameAlreadyTaken -> {
@@ -208,7 +217,6 @@ class EditProfileFragment : Fragment() {
             }
         }
     }
-
     private fun clearEditState() {
         selectedImageUri = null
         val currentState = profileViewModel.fullProfileState.value
@@ -253,7 +261,6 @@ class EditProfileFragment : Fragment() {
 
         if (hasError) return
 
-        setLoadingState(true)
         profileViewModel.tumProfilBilgileriniGuncelle(
             yeniKullaniciAdi = yeniKullaniciAdi,
             yeniAd = yeniAd,
