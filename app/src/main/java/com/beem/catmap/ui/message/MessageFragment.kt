@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -61,6 +62,8 @@ class MessageFragment : Fragment() {
 
     private lateinit var mesajAdapter: MessageAdapter
 
+    private val MAX_PHOTO_LIMIT = 4
+
     private val galeriLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -68,19 +71,26 @@ class MessageFragment : Fragment() {
             val data = result.data ?: return@registerForActivityResult
             val selectedUris = mutableListOf<android.net.Uri>()
 
-            // Çoklu seçim kontrolü
+            // 1. Çoklu seçim (ClipData)
             data.clipData?.let { clipData ->
                 for (i in 0 until clipData.itemCount) {
                     selectedUris.add(clipData.getItemAt(i).uri)
                 }
             } ?: data.data?.let { uri ->
-                // Tekli seçim kontrolü
+                // 2. Tekli seçim
                 selectedUris.add(uri)
             }
 
             if (selectedUris.isNotEmpty()) {
-                // 🚀 Singleton Yonetici yerine doğrudan ViewModel'a paslıyoruz!
-                viewModel.sendPhotos(selectedUris)
+                if (selectedUris.size > MAX_PHOTO_LIMIT) {
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error("En fazla $MAX_PHOTO_LIMIT adet fotoğraf seçebilirsiniz. İlk $MAX_PHOTO_LIMIT fotoğraf alındı.")
+                    )
+                    val limitedUris = selectedUris.take(MAX_PHOTO_LIMIT)
+                    viewModel.sendPhotos(limitedUris)
+                } else {
+                    viewModel.sendPhotos(selectedUris)
+                }
             }
         }
     }
@@ -290,11 +300,7 @@ class MessageFragment : Fragment() {
         }
 
         binding.fotoEkleButton.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK).apply {
-                type = "image/*"
-                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-            }
-            galeriLauncher.launch(intent)
+            openGallerySafely()
         }
 
         binding.engelKaldir.setOnClickListener {
@@ -320,6 +326,28 @@ class MessageFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         Log.d("LifecycleDebug", "▶️ Fragment onResume() - Ekran tam ön planda!")
+    }
+
+
+    private fun openGallerySafely() {
+        val intent = if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(requireContext())) {
+            Intent(MediaStore.ACTION_PICK_IMAGES).apply {
+                type = "image/*"
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MAX_PHOTO_LIMIT)
+            }
+        } else {
+            Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                addCategory(Intent.CATEGORY_OPENABLE)
+            }
+        }
+
+        try {
+            galeriLauncher.launch(intent)
+        } catch (e: Exception) {
+            UiMessageManager.emitMessage(UiMessageState.Error("Galeri açılamadı."))
+        }
     }
 
     private fun observeUiState() {
