@@ -24,22 +24,22 @@ class MessageAdapter(
     private val currentUserId: String,
     private val onMessageLongClick: (ChatMessage, View) -> Unit,
     private val onReplyClick: (ChatMessage) -> Unit,
-    private val onPhotoClick: (List<String>) -> Unit
-) : ListAdapter<ChatMessage, MessageAdapter.MesajViewHolder>(MessageDiffCallback()) {
+    private val onPhotoClick: (List<String>) -> Unit,
+) : ListAdapter<ChatMessage, MessageAdapter.MessageViewHolder>(MessageDiffCallback()) {
 
     var isBlocked: Boolean = false
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MesajViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
         val binding = MesajBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return MesajViewHolder(binding)
+        return MessageViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: MesajViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
         val message = getItem(position)
         holder.bind(message)
     }
 
-    inner class MesajViewHolder(
+    inner class MessageViewHolder(
         private val binding: MesajBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
@@ -58,6 +58,7 @@ class MessageAdapter(
                     is ChatMessage.Text -> parent.message
                     is ChatMessage.Photo -> "📷 Fotoğraf"
                     is ChatMessage.Reply -> parent.message
+                    is ChatMessage.Deleted -> parent.message
                     else -> "empty"
                 }
 
@@ -91,6 +92,7 @@ class MessageAdapter(
                         binding.solMesajText.text = messageContent.trim()
                         binding.solZaman.text = formattedTime
                     }
+
                 }
 
                 is ChatMessage.Photo -> {

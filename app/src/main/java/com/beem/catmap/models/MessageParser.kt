@@ -5,7 +5,11 @@ import com.beem.catmap.models.ChatMessage.*
 import com.google.firebase.database.DataSnapshot
 
 fun DataSnapshot.toChatMessage(): ChatMessage? {
-    val id = key ?: return null
+    val id = child("mesajID").getValue(String::class.java)
+        ?: child("id").getValue(String::class.java)
+        ?: key
+        ?: return null
+
     val typeString = child("tur").getValue(String::class.java)
     val type = MessageType.fromString(typeString)
 

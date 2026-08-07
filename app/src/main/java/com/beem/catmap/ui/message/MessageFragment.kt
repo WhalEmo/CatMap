@@ -25,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.Maps.MapsActivity
 import com.beem.catmap.R
@@ -35,6 +36,8 @@ import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.models.ChatMessage
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.message.dialogs.EditMessageDialogFragment
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
@@ -95,7 +98,7 @@ class MessageFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (requireActivity() is MapsActivity) {
-            requireActivity().findViewById<View>(R.id.bottom_navigation)?.isVisible = false
+            requireActivity().findViewById<View>(R.id.bottom_navigation)?.fadeOut()
         }
 
         setupRecyclerView()
@@ -372,7 +375,11 @@ class MessageFragment : Fragment() {
         }
 
         // 🎯 YANITLAMA KUTUSU (REPLY LAYOUT) GÖRÜNÜRLÜK VE METİN DÜZENLEMESİ
-        binding.cevapAlani.isVisible = state.replyMessage != null && !isBlocked
+        if (state.replyMessage != null && !isBlocked) {
+            binding.cevapAlani.fadeIn()
+        } else {
+            binding.cevapAlani.fadeOut()
+        }
         state.replyMessage?.let { msg ->
             binding.cevapMetni.text = when (msg) {
                 is ChatMessage.Text -> msg.message
@@ -475,9 +482,34 @@ class MessageFragment : Fragment() {
 
     private fun scrollToMessage(targetMessageId: String) {
         val currentList = mesajAdapter.currentList
-        val index = currentList.indexOfFirst { it.id == targetMessageId }
-        if (index != -1) {
-            binding.mesajRecyclerView.scrollToPosition(index)
+        val targetPosition = currentList.indexOfFirst { it.id == targetMessageId }
+
+        if (targetPosition != -1) {
+            val layoutManager = binding.mesajRecyclerView.layoutManager as? LinearLayoutManager ?: return
+
+            val smoothScroller = object : LinearSmoothScroller(binding.mesajRecyclerView.context) {
+                override fun getVerticalSnapPreference(): Int {
+                    return SNAP_TO_START
+                }
+
+                override fun calculateSpeedPerPixel(displayMetrics: android.util.DisplayMetrics): Float {
+                    return 60f / displayMetrics.densityDpi
+                }
+
+                override fun calculateDxToMakeVisible(view: android.view.View?, snapPreference: Int): Int {
+                    return super.calculateDxToMakeVisible(view, snapPreference)
+                }
+
+                override fun calculateDyToMakeVisible(view: android.view.View?, snapPreference: Int): Int {
+                    return super.calculateDyToMakeVisible(view, snapPreference) + 100
+                }
+            }
+
+            smoothScroller.targetPosition = targetPosition
+            layoutManager.startSmoothScroll(smoothScroller)
+
+        } else {
+            UiMessageManager.emitMessage(UiMessageState.Info("Mesaj geçmişte kalmış."))
         }
     }
 
