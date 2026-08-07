@@ -32,6 +32,7 @@ import com.beem.catmap.gonderi.FollowViewModel
 import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.fadeInSmooth
@@ -44,6 +45,7 @@ import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
+import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -482,6 +484,19 @@ class ProfilFragment : Fragment() {
             }
         }
     }
+
+    /**
+     * şuan bu metodu öylesine oluşturdum sevgilim
+     * çıkış işleminde bunlarda olması gerekiyor
+     * aklımızda bulunsun diye şimdilik bu metodu yazdım
+     * OnlinePresenceManager objesi çevrimiçi durumunu yönetiyor. <3<3<3
+     */
+    private fun logout() {
+        OnlinePresenceManager.setUserOffline()
+
+        FirebaseAuth.getInstance().signOut()
+    }
+
 
     private fun onGonderiTiklandi(gonderi: Gonderi) {
         val fotoList = if (gonderi.fotoUrlListesi != null) {

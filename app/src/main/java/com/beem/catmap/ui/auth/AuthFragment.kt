@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
-import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
 
@@ -25,6 +24,7 @@ import com.beem.catmap.databinding.ActivityMainBinding
 import com.beem.catmap.databinding.GirispencereBinding
 import com.beem.catmap.databinding.KaydolpencereBinding
 import com.beem.catmap.databinding.SifremiUnuttumBinding
+import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -152,8 +152,6 @@ class AuthFragment : Fragment() {
                         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
                         Log.d("AUTH_DEBUG", ">>> GİRİŞ BAŞARILI! Firebase Auth Current User UID: $currentUid")
 
-                        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                        CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
                         saveUserLocallyAndNavigate(user)
                         uyariMesaji.BasariliDurum("Giriş Başarılı...", 1000)
                     } else {
@@ -233,7 +231,6 @@ class AuthFragment : Fragment() {
                                 ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
                                     if (basarili) {
                                         val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
-
                                         if (currentUserUid != null) {
                                             db.collection("users")
                                                 .document(currentUserUid)
@@ -242,8 +239,7 @@ class AuthFragment : Fragment() {
                                                     if (!isAdded) return@addOnSuccessListener
 
                                                     user.id = currentUserUid // YENİ: setID yerine id alanına atama yapıldı
-                                                    CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                                                    CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
+                                                    OnlinePresenceManager.setUserOnline()
                                                     saveUserLocallyAndNavigate(user)
                                                     uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
                                                 }

@@ -1,6 +1,7 @@
 package com.beem.catmap
 
 import android.app.Application
+import com.beem.catmap.managers.OnlinePresenceManager
 
 class CatMapApp : Application() {
 
@@ -12,5 +13,7 @@ class CatMapApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        OnlinePresenceManager.initialize()
     }
 }

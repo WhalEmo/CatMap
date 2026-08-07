@@ -25,7 +25,6 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 
 import com.beem.catmap.BottomSheetController;
-import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.EditProfileFragment;
 import com.beem.catmap.Profil.ProfilFragment;
@@ -68,6 +67,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import kotlin.Unit;
 
 public class MapsActivity extends AppCompatActivity implements BottomSheetController {
 
@@ -125,6 +126,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("ActivityLifecycle", "📌 onCreate: Activity oluşturuldu.");
+
         currentUserManager = CurrentUserManager.Companion.getInstance(getApplicationContext());
 
         setTheme(R.style.Theme_CatMap);
@@ -167,11 +170,13 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     }
                     return false;
                 },
-                () -> null
+                () -> {
+                    showSystemExitDialog();
+                    return Unit.INSTANCE;
+                }
         );
 
         if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
             BegenileriCek();
             SmartNavigationEngine.init(navigationEngine, Screen.MAP);
         } else {
@@ -282,13 +287,12 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d("ActivityLifecycle", "💀 onDestroy: Activity yok ediliyor.");
         bittimi = false;
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
 
         if (currentUserManager != null && currentUserManager.isUserLoggedIn()) {
             Kullanici user = currentUserManager.getCurrentUser();
             if (user != null) {
-                CevrimIciYonetimi.getInstance().CevrimIciCalistir(user);
                 user.latitude=latitude;
                 user.longitude=longitude;
             }
@@ -299,28 +303,21 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     @Override
     protected void onResume() {
         super.onResume();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
+        Log.d("ActivityLifecycle", "⚡ onResume: Activity etkileşime açık, ön planda!");
         if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
         }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
-        }
+        Log.d("ActivityLifecycle", "🙈 onStop: Activity arka plana geçti, görünmez.");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
-        }
+        Log.d("ActivityLifecycle", "⏸️ onPause: Activity odak kaybetti.");
     }
 
     @Override
@@ -367,4 +364,45 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             }
         });
     }
+
+    private void showSystemExitDialog() {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_exit_app);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        com.google.android.material.button.MaterialButton btnCancel = dialog.findViewById(R.id.btnCancelExit);
+        com.google.android.material.button.MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirmExit);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            finishAffinity();
+        });
+
+        dialog.show();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d("ActivityLifecycle", "👁️ onStart: Activity görünür oldu.");
+    }
+
+
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d("ActivityLifecycle", "🔄 onRestart: Activity arka plandan geri döndü.");
+    }
+
 }

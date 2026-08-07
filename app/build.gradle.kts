@@ -78,6 +78,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.androidx.constraintlayout)
 
+    implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

@@ -3,27 +3,21 @@ package com.beem.catmap.ui.upload
 import android.Manifest
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.beem.catmap.CevrimIciYonetimi
 import com.beem.catmap.Maps.LocationEngine
 import com.beem.catmap.R
-import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
-import com.beem.catmap.gonderi.PostViewModel
-import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.CatModel
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.camera.GalleryBottomSheet
@@ -243,7 +237,6 @@ class YuklemeArayuzuFragment : Fragment() {
     private fun setupBackPressed() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
                 isEnabled = false
                 SmartNavigationEngine.navigateBack()
             }
@@ -272,18 +265,10 @@ class YuklemeArayuzuFragment : Fragment() {
     // --- YAŞAM DÖNGÜSÜ KONTROLLERİ (ÇEVRİMİÇİ TAKİBİ) ---
     override fun onResume() {
         super.onResume()
-        CevrimIciYonetimi.getInstance().apply {
-            setYuklemeEkraniGorunuyor(true)
-            CevrimIciCalistir(UserSession.user)
-        }
     }
 
     override fun onPause() {
         super.onPause()
-        CevrimIciYonetimi.getInstance().apply {
-            setYuklemeEkraniGorunuyor(false)
-            CevrimIciCalistir(UserSession.user)
-        }
     }
 
     override fun onDestroyView() {
