@@ -87,7 +87,7 @@ class GonderiDetayFragment : Fragment() {
         activity?.window?.let { window ->
             window.statusBarColor = ContextCompat.getColor(requireContext(), R.color.catmap_background)
             val controller = WindowInsetsControllerCompat(window, window.decorView)
-            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightStatusBars = true
         }
     }
 

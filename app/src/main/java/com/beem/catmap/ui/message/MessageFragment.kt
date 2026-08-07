@@ -118,7 +118,7 @@ class MessageFragment : Fragment() {
         observeUiState()
         setupKeyboardAdjustments()
 
-        viewModel.testBlockState(BlockState.None)
+        //viewModel.testBlockState(BlockState.None)
     }
 
     private fun setupRecyclerView() {
