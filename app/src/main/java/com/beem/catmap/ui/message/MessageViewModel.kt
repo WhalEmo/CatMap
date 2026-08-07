@@ -7,6 +7,9 @@ import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.ui.manager.UiMessageManager
+import com.beem.catmap.ui.manager.UiMessageState
+import com.beem.catmap.ui.message.models.BlockState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -137,6 +140,48 @@ class MessageViewModel(
                 Log.d("LifecycleDebug", "🔥 VERİTABANINDA OKUNDU YAPILIYOR! ID'ler: $unreadIdsFromOther")
                 repository.markMessagesAsReadByIds(activeChatId, unreadIdsFromOther)
             }
+        }
+    }
+
+    fun unblockUserMock() {
+        viewModelScope.launch {
+            val newBlockState = when(_uiState.value.blockState) {
+                BlockState.BlockedByMe -> BlockState.None
+                BlockState.BlockedByUser -> BlockState.BlockedByUser
+                BlockState.MutualBlock -> BlockState.BlockedByUser
+                BlockState.None -> BlockState.None
+            }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    blockState = newBlockState
+                )
+            }
+            UiMessageManager.emitMessage(UiMessageState.Success("Kullanıcının engeli kaldırıldı."))
+        }
+    }
+
+    fun blockUserMock() {
+        viewModelScope.launch {
+            val newBlockState = when(_uiState.value.blockState) {
+                BlockState.BlockedByMe -> BlockState.BlockedByMe
+                BlockState.BlockedByUser -> BlockState.MutualBlock
+                BlockState.MutualBlock -> BlockState.MutualBlock
+                BlockState.None -> BlockState.BlockedByMe
+            }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    blockState = newBlockState
+                )
+            }
+            UiMessageManager.emitMessage(UiMessageState.Info("Kullanıcı engellendi."))
+        }
+    }
+
+    fun testBlockState(state: BlockState) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                blockState = state
+            )
         }
     }
 

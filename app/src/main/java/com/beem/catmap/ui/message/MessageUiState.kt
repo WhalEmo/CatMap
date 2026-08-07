@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.message
 
 import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.ui.message.models.BlockState
 
 data class MessageUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -13,5 +14,7 @@ data class MessageUiState(
 
     val receiverName: String = "",
     val receiverPhotoUrl: String = "",
-    val receiverStatus: String = "Çevrimdışı"
+    val receiverStatus: String = "Çevrimdışı",
+
+    val blockState: BlockState = BlockState.None
 )

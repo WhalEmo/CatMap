@@ -40,6 +40,7 @@ import com.beem.catmap.ui.extensions.fadeOut
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.message.dialogs.EditMessageDialogFragment
+import com.beem.catmap.ui.message.models.BlockState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -116,6 +117,8 @@ class MessageFragment : Fragment() {
         setupScrollToBottomButton()
         observeUiState()
         setupKeyboardAdjustments()
+
+        viewModel.testBlockState(BlockState.None)
     }
 
     private fun setupRecyclerView() {
@@ -311,6 +314,12 @@ class MessageFragment : Fragment() {
         binding.cevapKapatButton.setOnClickListener {
             viewModel.setReplyMessage(null)
         }
+
+        binding.engelKaldir.setOnClickListener {
+            if (binding.engelKaldir.isClickable) {
+                showUnblockConfirmationDialog()
+            }
+        }
     }
 
     override fun onPause() {
@@ -386,6 +395,7 @@ class MessageFragment : Fragment() {
         binding.yukleniyorProgress.isVisible = state.isLoading
         binding.mesajRecyclerView.isVisible = !state.isLoading
 
+        /*
         val isBlocked = state.isBlockedByMe || state.isBlockedByOther
         mesajAdapter.isBlocked = isBlocked
 
@@ -402,6 +412,48 @@ class MessageFragment : Fragment() {
             binding.engelKaldir.isClickable = false
         }
 
+         */
+
+        val isBlocked = state.blockState !is BlockState.None
+        mesajAdapter.isBlocked = isBlocked
+
+        when (state.blockState) {
+            is BlockState.BlockedByMe, is BlockState.MutualBlock -> {
+                // 🔴 Ben Engelledim VEYA Karşılıklı Engelleme VAR
+                // Öncelik bizim "ENGELİ KALDIR" butonumuzdadır!
+                binding.gonderButton.isVisible = false
+                binding.mesajEditText.isVisible = false
+                binding.fotoEkleButton.isVisible = false
+                binding.cevapAlani.isVisible = false
+
+                binding.engelKaldir.isVisible = true
+                binding.engelKaldir.text = "ENGELİ KALDIR"
+                binding.engelKaldir.isClickable = true
+            }
+
+            is BlockState.BlockedByUser -> {
+                // 🟡 Sadece Karşı Taraf Beni Engellediyse
+                binding.gonderButton.isVisible = false
+                binding.mesajEditText.isVisible = false
+                binding.fotoEkleButton.isVisible = false
+                binding.cevapAlani.isVisible = false
+
+                binding.engelKaldir.isVisible = true
+                binding.engelKaldir.text = "Bu kullanıcıya mesaj gönderemezsiniz"
+                binding.engelKaldir.isClickable = false
+            }
+
+            is BlockState.None -> {
+                // 🟢 Engelleme Yok -> Normal Mesajlaşma
+                binding.gonderButton.isVisible = true
+                binding.mesajEditText.isVisible = true
+                binding.fotoEkleButton.isVisible = true
+
+                binding.engelKaldir.isVisible = false
+            }
+        }
+
+
         // 🎯 YANITLAMA KUTUSU (REPLY LAYOUT) GÖRÜNÜRLÜK VE METİN DÜZENLEMESİ
         if (state.replyMessage != null && !isBlocked) {
             binding.cevapAlani.fadeIn()
@@ -416,6 +468,9 @@ class MessageFragment : Fragment() {
                 is ChatMessage.Deleted -> msg.message
             }
         }
+
+
+
     }
 
     private fun openPhotoPreview(photoUrls: List<String>) {
@@ -561,4 +616,45 @@ class MessageFragment : Fragment() {
             }
         }
     }
+
+    /**
+     * bu kısım şimdilik test verileriyle çalışmaktadır canlı veriler ile ekran çizilmez
+     */
+    // 🔓 Engeli Kaldır Onay Dialog'u
+    private fun showUnblockConfirmationDialog() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Engeli Kaldır")
+            .setMessage("Bu kullanıcının engelini kaldırmak istediğinize emin misiniz?")
+            .setPositiveButton("Engeli Kaldır") { dialog, _ ->
+                // 🧪 MOCK TEST: Sanal durumu normale çeviriyoruz
+                viewModel.unblockUserMock()
+
+                UiMessageManager.emitMessage(UiMessageState.Success("Kullanıcının engeli kaldırıldı."))
+                dialog.dismiss()
+            }
+            .setNegativeButton("Vazgeç") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    // 🔒 Kullanıcıyı Engelle Onay Dialog'u
+    private fun showBlockConfirmationDialog() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Kullanıcıyı Engelle")
+            .setMessage("Bu kullanıcıyı engellemek istediğinize emin misiniz? Artık size mesaj gönderemeyecek.")
+            .setPositiveButton("Engelle") { dialog, _ ->
+                // 🧪 MOCK TEST: Sanal durumu engelliye çeviriyoruz
+                viewModel.blockUserMock()
+
+                UiMessageManager.emitMessage(UiMessageState.Info("Kullanıcı engellendi."))
+                dialog.dismiss()
+            }
+            .setNegativeButton("Vazgeç") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+
 }
