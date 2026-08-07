@@ -1,6 +1,6 @@
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mesajlasma_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -79,6 +79,28 @@
         app:layout_constraintBottom_toTopOf="@id/mesaj_gonder_layout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btnScrollToBottom"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="En alt mesaja in"
+
+        android:src="@drawable/ic_arrow_down"
+        android:background="@drawable/bg_oval_chat_button"
+
+
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        app:tint="@color/catmap_accent"
+
+        app:layout_constraintBottom_toTopOf="@id/mesaj_gonder_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible" />
 
     <LinearLayout
         android:id="@+id/mesaj_gonder_layout"

@@ -33,6 +33,8 @@ import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
 import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.ui.extensions.fadeIn
+import com.beem.catmap.ui.extensions.fadeOut
 import com.beem.catmap.ui.message.dialogs.EditMessageDialogFragment
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
@@ -98,6 +100,7 @@ class MessageFragment : Fragment() {
 
         setupRecyclerView()
         setupListeners()
+        setupScrollToBottomButton()
         observeUiState()
         setupKeyboardAdjustments()
     }
@@ -232,6 +235,40 @@ class MessageFragment : Fragment() {
         }
 
         ItemTouchHelper(swipeHandler).attachToRecyclerView(binding.mesajRecyclerView)
+    }
+
+    private fun setupScrollToBottomButton() {
+        // 1. Tıklama Olayı: En son mesaja yumuşakça kaydır
+        binding.btnScrollToBottom.setOnClickListener {
+            val lastPosition = mesajAdapter.itemCount - 1
+            if (lastPosition >= 0) {
+                binding.mesajRecyclerView.smoothScrollToPosition(lastPosition)
+            }
+        }
+
+        // 2. Scroll Dinleyicisi: Kullanıcı yukarı kaydırdı mı kontrol et
+        binding.mesajRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                val lastCompletelyVisibleItem = layoutManager.findLastCompletelyVisibleItemPosition()
+                val totalItemCount = mesajAdapter.itemCount
+
+                // Kullanıcı en alt mesajı göremiyorsa BUTONU GÖSTER, en alt mesaja ulaştıysa GİZLE
+                val isAtBottom = lastCompletelyVisibleItem >= totalItemCount - 2 // Son 1-2 mesaj mesafesi
+
+                if (!isAtBottom && totalItemCount > 5) {
+                    if (!binding.btnScrollToBottom.isShown) {
+                        binding.btnScrollToBottom.fadeIn()
+                    }
+                } else {
+                    if (binding.btnScrollToBottom.isShown) {
+                        binding.btnScrollToBottom.fadeOut()
+                    }
+                }
+            }
+        })
     }
 
     private fun setupListeners() {
