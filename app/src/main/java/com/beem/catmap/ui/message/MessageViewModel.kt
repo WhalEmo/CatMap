@@ -81,19 +81,25 @@ class MessageViewModel(
                         currentState.copy(messages = incomingLatestMessages)
                     } else {
                         incomingLatestMessages.forEach { msg ->
-                            if (msg is ChatMessage.Photo && msg.clientTempId != null) {
-                                val pendingIndex = existingList.indexOfFirst { localMsg ->
-                                    localMsg is ChatMessage.Photo &&
-                                            localMsg.isUploading &&
-                                            localMsg.clientTempId == msg.clientTempId
-                                }
-                                if (pendingIndex != -1) {
-                                    existingList[pendingIndex] = msg
+                            if (msg is ChatMessage.Photo) {
+                                val indexById = existingList.indexOfFirst { it.id == msg.id }
+                                if (indexById != -1) {
+                                    existingList[indexById] = msg
+                                } else if (msg.clientTempId != null) {
+                                    val pendingIndex = existingList.indexOfFirst { localMsg ->
+                                        localMsg is ChatMessage.Photo &&
+                                                localMsg.isUploading &&
+                                                localMsg.clientTempId == msg.clientTempId
+                                    }
+                                    if (pendingIndex != -1) {
+                                        existingList[pendingIndex] = msg
+                                    } else if (existingList.none { it.id == msg.id }) {
+                                        existingList.add(msg)
+                                    }
                                 } else if (existingList.none { it.id == msg.id }) {
                                     existingList.add(msg)
                                 }
                             } else {
-
                                 val index = existingList.indexOfFirst { it.id == msg.id }
                                 if (index != -1) {
                                     existingList[index] = msg

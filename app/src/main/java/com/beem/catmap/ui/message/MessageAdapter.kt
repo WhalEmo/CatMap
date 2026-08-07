@@ -115,9 +115,12 @@ class MessageAdapter(
                     } else {
                         binding.solMesajLayout.isVisible = true
                         binding.solFotoLayout.isVisible = true
+                        binding.solFotoKonteyner.isVisible = true
                         binding.solZaman.text = formattedTime
 
-                        // 🚨 Gelen mesajın fotoğraflarını dinamik dolduruyoruz
+                        binding.solFotoYuklemeOverlay.isVisible = message.isUploading
+
+
                         yukleFotograflar(context, binding.solFotoLayout, message.photoUrls)
                     }
 
