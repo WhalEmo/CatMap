@@ -14,4 +14,17 @@ sealed class ProfileEvent {
         val updatedUser: Kullanici? = null
     ) : ProfileEvent()
 
+    data class FollowUser(
+        val userId: String,
+        val kullaniciAdi: String,
+        val fotoUrl: String
+    ) : ProfileEvent()
+
+    data class UnFollowUser(
+        val userId: String,
+        val kullaniciAdi: String,
+        val fotoUrl: String
+    ) : ProfileEvent()
+
+
 }

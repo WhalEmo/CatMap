@@ -1,12 +1,11 @@
 package com.beem.catmap.Profil
 
 import android.os.Bundle
-import android.transition.AutoTransition
-import android.transition.TransitionManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -17,14 +16,17 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
+import com.beem.catmap.Profil.Gonderiler.LoadingFooterAdapter
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.FollowUiState
@@ -34,8 +36,7 @@ import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.extensions.bounceAndHaptic
-import com.beem.catmap.ui.extensions.fadeInSmooth
-import com.beem.catmap.ui.extensions.fadeOutSmooth
+import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.Screen
@@ -45,8 +46,6 @@ import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ProfilFragment : Fragment() {
@@ -82,6 +81,10 @@ class ProfilFragment : Fragment() {
     private lateinit var tvAd: TextView
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var gonderiAdapter: GonderiAdapter
+    private val loadingFooterAdapter = LoadingFooterAdapter()
+    private lateinit var concatAdapter: ConcatAdapter
+
+    private var profileLoaded = false
 
     val myUserId = UserSession.userId
     private var targetUserId: String? = null
@@ -166,12 +169,29 @@ class ProfilFragment : Fragment() {
             onGonderiTiklandi(gonderi)
         }
 
+        concatAdapter = ConcatAdapter(gonderiAdapter, loadingFooterAdapter)
+
         val gridLayoutManager = GridLayoutManager(requireContext(), 3)
+
+        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                return if (concatAdapter.getItemViewType(position) == loadingFooterAdapter.getItemViewType(0)) {
+                    3
+                } else {
+                    1
+                }
+            }
+        }
 
         recyclerView.apply {
             layoutManager = gridLayoutManager
             adapter = gonderiAdapter
             setHasFixedSize(true)
+
+            layoutAnimation = AnimationUtils.loadLayoutAnimation(
+                requireContext(),
+                R.anim.layout_animation_fall_down
+            )
 
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -206,14 +226,34 @@ class ProfilFragment : Fragment() {
 
         takipEtButonu.setOnClickListener {
             it.bounceAndHaptic()
+            takipEdiliyorButonu.setLoadingState(true)
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
+                    viewModel.setPostLoadingState()
                     Log.d("SHIMMER","TAKIPETE BASILDI")
                     followViewModel.takipEt(
                         takipEttiginId = targetId,
                         currentUserId = myUserId,
                         onSuccess = {
+                            takipEdiliyorButonu.setLoadingState(false)
                             viewModel.gonderileriGetir(targetId)
+                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+
+                            val userId = profile?.id.orEmpty().ifBlank { targetId }
+                            val kullaniciAdi = profile?.kullaniciAdi.orEmpty()
+                            val fotoUrl = profile?.fotoUrl.orEmpty()
+
+                            ProfileEventBus.emitEvent(
+                                ProfileEvent.FollowUser(
+                                    userId = userId,
+                                    kullaniciAdi = kullaniciAdi,
+                                    fotoUrl = fotoUrl
+                                )
+                            )
+                        },
+                        onFailure = {
+                            takipEdiliyorButonu.setLoadingState(false)
+                            progressFollow.visibility = View.GONE
                         }
                     )
                 }
@@ -255,13 +295,32 @@ class ProfilFragment : Fragment() {
 
         takipEdiliyorButonu.setOnClickListener {
             it.bounceAndHaptic()
+            recyclerView.visibility= View.GONE
+            takipEtButonu.setLoadingState(true)
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
                     followViewModel.takiptenCikar(
                         takiptenCiktiginId = targetId,
                         currentUserId = myUserId,
                         onSuccess = {
+                            takipEtButonu.setLoadingState(false)
                             viewModel.setAccessDenied(true)
+                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+                            val userId = profile?.id.orEmpty().ifBlank { targetId }
+                            val kullaniciAdi = profile?.kullaniciAdi.orEmpty()
+                            val fotoUrl = profile?.fotoUrl.orEmpty()
+
+                            ProfileEventBus.emitEvent(
+                                ProfileEvent.UnFollowUser(
+                                    userId = userId,
+                                    kullaniciAdi = kullaniciAdi,
+                                    fotoUrl = fotoUrl
+                                )
+                            )
+                        },
+                        onFailure = {
+                            takipEtButonu.setLoadingState(false)
+                            progressFollow.visibility = View.GONE
                         }
                     )
                 }
@@ -276,7 +335,11 @@ class ProfilFragment : Fragment() {
         }
     }
 
+
     private fun yukleVerileri(forceRefresh: Boolean = false) {
+        if (forceRefresh) {
+            profileLoaded = false
+        }
         targetUserId?.let { userId ->
             profileViewModel.tumProfilVerileriniYukle(targetUserId = userId, forceRefresh = forceRefresh)
         } ?: run {
@@ -296,19 +359,23 @@ class ProfilFragment : Fragment() {
                                 Log.d("SHIMMER", "Loading - Shimmer Başlatıldı")
                                 showShimmerLoading()
                             }
+
                             is UiState.Success -> {
                                 Log.d("SHIMMER", "Success - Veriler Bağlanıyor")
                                 val fullData = state.data
                                 val targetId = targetUserId ?: UserSession.userId.orEmpty()
 
-                                // A) Önce verileri ViewModel ve UI bileşenlerine bağla
-                                viewModel.setupFromFullProfile(
-                                    userId = targetId,
-                                    initialPosts = fullData.posts,
-                                    lastDoc = fullData.lastDocument,
-                                    isLast = fullData.isLastPage,
-                                    isAccessDenied = fullData.isAccessDenied
-                                )
+                                if (!profileLoaded) {
+                                    Log.d("IFF","if")
+                                    profileLoaded = true
+                                    viewModel.setupFromFullProfile(
+                                        userId = targetId,
+                                        initialPosts = fullData.posts,
+                                        lastDoc = fullData.lastDocument,
+                                        isLast = fullData.isLastPage,
+                                        isAccessDenied = fullData.isAccessDenied
+                                    )
+                                }
 
                                 followViewModel.setupFromFullProfile(
                                     followerCount = fullData.followerCount,
@@ -386,30 +453,37 @@ class ProfilFragment : Fragment() {
                 }
 
                 // 5. Post RecyclerView ve UI State Dinleyici (Shimmer'ı etkilemeyecek şekilde düzenlendi)
+                // 5. Post RecyclerView ve UI State Dinleyici
                 launch {
                     viewModel.uiState.collect { state ->
-                        // Sayfalandırma (Paging) esnasındaki alt küçük ProgressBar kontrolü
-                        if (state.isLoading && !swipeRefreshLayout.isRefreshing && shimmerLayout.visibility != View.VISIBLE) {
-                            progressBar.visibility = View.VISIBLE
-                        } else {
-                            progressBar.visibility = View.GONE
-                        }
-
-                        if (state.isAccessDenied) {
-                            recyclerView.visibility = View.GONE
-                            postSectionHeader.visibility = View.GONE
-                            tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
-                            tvEmpty.visibility = View.VISIBLE
-                        } else {
-                            postSectionHeader.visibility = View.VISIBLE
-                            if (state.isEmpty) {
-                                tvEmpty.text = "Henüz gönderi yok"
-                                tvEmpty.visibility = View.VISIBLE
+                            loadingFooterAdapter.setLoading(state.isMoreLoading)
+                            if (state.isLoading) {
                                 recyclerView.visibility = View.GONE
+                                if (!swipeRefreshLayout.isRefreshing && shimmerLayout.visibility != View.VISIBLE) {
+                                    progressBar.visibility = View.VISIBLE
+                                }
+                                return@collect
+                            }
+
+                            progressBar.visibility = View.GONE
+                            if (state.isAccessDenied) {
+                                recyclerView.visibility = View.GONE
+                                postSectionHeader.visibility = View.GONE
+                                tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
+                                tvEmpty.visibility = View.VISIBLE
                             } else {
-                                tvEmpty.visibility = View.GONE
-                                recyclerView.visibility = View.VISIBLE
-                                gonderiAdapter.submitList(state.posts)
+                                postSectionHeader.visibility = View.VISIBLE
+
+                                if (state.isEmpty) {
+                                    tvEmpty.text = "Henüz gönderi yok"
+                                    tvEmpty.visibility = View.VISIBLE
+                                    recyclerView.visibility = View.GONE
+                                }else {
+                                    tvEmpty.visibility = View.GONE
+                                    recyclerView.visibility = View.VISIBLE
+                                    gonderiAdapter.submitList(state.posts) {
+                                        recyclerView.scheduleLayoutAnimation()
+                                }
                             }
                         }
                     }

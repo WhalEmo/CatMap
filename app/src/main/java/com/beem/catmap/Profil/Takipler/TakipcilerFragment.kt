@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.R
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.NavigationHelper
 
 import com.facebook.shimmer.ShimmerFrameLayout
@@ -97,36 +99,42 @@ class TakipcilerFragment : Fragment() {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.takipcilerState.collect { state ->
-                    when (state) {
-                        is TakiplerUiState.Loading -> {
-                            shimmerContainer.isVisible = true
-                            shimmerContainer.startShimmer()
-                            recyclerView.isVisible = false
-                        }
-                        is TakiplerUiState.Success -> {
-                            // DÜZELTME 2: Refresh çemberi kapatılıyor
-                            swipeRefresh.isRefreshing = false
+                launch {
+                    viewModel.takipcilerState.collect { state ->
+                        when (state) {
+                            is TakiplerUiState.Loading -> {
+                                shimmerContainer.isVisible = true
+                                shimmerContainer.startShimmer()
+                                recyclerView.isVisible = false
+                            }
 
-                            shimmerContainer.stopShimmer()
-                            shimmerContainer.isVisible = false
-                            recyclerView.isVisible = true
+                            is TakiplerUiState.Success -> {
+                                // DÜZELTME 2: Refresh çemberi kapatılıyor
+                                swipeRefresh.isRefreshing = false
 
-                            userAdapter.submitList(state.kullanicilar)
-                            footerAdapter.setLoading(state.isLoadingMore)
-                        }
-                        is TakiplerUiState.Error -> {
-                            // DÜZELTME 2: Hata durumunda da Refresh çemberi kapatılıyor
-                            swipeRefresh.isRefreshing = false
+                                shimmerContainer.stopShimmer()
+                                shimmerContainer.isVisible = false
+                                recyclerView.isVisible = true
 
-                            shimmerContainer.stopShimmer()
-                            shimmerContainer.isVisible = false
-                            recyclerView.isVisible = true
-                            footerAdapter.setLoading(false)
+                                userAdapter.submitList(state.kullanicilar)
+                                footerAdapter.setLoading(state.isLoadingMore)
+                            }
+
+                            is TakiplerUiState.Error -> {
+                                // DÜZELTME 2: Hata durumunda da Refresh çemberi kapatılıyor
+                                swipeRefresh.isRefreshing = false
+
+                                shimmerContainer.stopShimmer()
+                                shimmerContainer.isVisible = false
+                                recyclerView.isVisible = true
+                                footerAdapter.setLoading(false)
+                            }
+
+                            else -> {}
                         }
-                        else -> {}
                     }
                 }
+
             }
         }
     }

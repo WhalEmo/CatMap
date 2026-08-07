@@ -4,16 +4,11 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.ui.manager.ProfileEvent
-import com.beem.catmap.ui.manager.ProfileEventBus
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -91,7 +86,12 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             _targetUserTakipEdilenSayisi.value = followingCount
     }
 
-    fun takipEt(takipEttiginId: String, currentUserId: String,onSuccess: () -> Unit = {}) {
+    fun takipEt(
+        takipEttiginId: String,
+        currentUserId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: () -> Unit
+    ) {
         if (followJob?.isActive == true) return
         val previousFollowerCount = _targetUserTakipciSayisi.value
         _followUiState.update { it.copy(isFollowing = true) }
@@ -116,14 +116,19 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 _targetUserTakipciSayisi.value = followResult.targetFollowerCount
                 onSuccess()
             }.onFailure {
-                // Hata durumunda rollback (Geri Al)
+                onFailure()
                 _followUiState.update { it.copy(isFollowing = false) }
                 _targetUserTakipciSayisi.value = previousFollowerCount
             }
         }
     }
 
-    fun takiptenCikar(takiptenCiktiginId: String, currentUserId: String,onSuccess: () -> Unit = {}) {
+    fun takiptenCikar(
+        takiptenCiktiginId: String,
+        currentUserId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: () -> Unit
+    ) {
         // Optimistic UI Güncellemesi
         val previousFollowerCount = _targetUserTakipciSayisi.value
         val newOptimisticCount = if (previousFollowerCount > 0) previousFollowerCount - 1 else 0L
@@ -146,7 +151,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 _targetUserTakipciSayisi.value = followResult.targetFollowerCount
                 onSuccess()
             }.onFailure {
-                // Rollback
+                onFailure()
                 _followUiState.update { it.copy(isFollowing = true) }
                 _targetUserTakipciSayisi.value = previousFollowerCount
             }
