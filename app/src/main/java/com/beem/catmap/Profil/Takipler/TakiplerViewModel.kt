@@ -3,6 +3,7 @@ package com.beem.catmap.Profil.Takipler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.google.firebase.firestore.DocumentSnapshot
@@ -12,9 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class TakiplerViewModel() : ViewModel() {
-
     private val repository: TakiplerRepository = TakiplerRepository.getInstance()
     private val PAGE_LIMIT = 10L
+    private var targetUserId: String? = null
+    val isMyOwnList: Boolean
+        get() = targetUserId == UserSession.userId
 
     private val _takipcilerState = MutableStateFlow<TakiplerUiState>(TakiplerUiState.Idle)
     val takipcilerState: StateFlow<TakiplerUiState> = _takipcilerState.asStateFlow()
@@ -24,9 +27,6 @@ class TakiplerViewModel() : ViewModel() {
     private var isTakipcilerLastPage = false
     private var isLoadingTakipciler = false
 
-    // ==========================================
-    // TAKİP EDİLENLER (FOLLOWING) STATE VE DEĞİŞKENLERİ
-    // ==========================================
     private val _takipEdilenlerState = MutableStateFlow<TakiplerUiState>(TakiplerUiState.Idle)
     val takipEdilenlerState: StateFlow<TakiplerUiState> = _takipEdilenlerState.asStateFlow()
 
@@ -35,36 +35,37 @@ class TakiplerViewModel() : ViewModel() {
     private var isTakipEdilenlerLastPage = false
     private var isLoadingTakipEdilenler = false
 
-    // ==========================================
-    // TAKİPÇİLERİ GETİR (FETCH FOLLOWERS)
-    // ==========================================
-
-
     init {
         observeEvents()
-    }
-
-    private fun observeEvents() {
+    }private fun observeEvents() {
         viewModelScope.launch {
             ProfileEventBus.profileEvent.collect { event ->
+                val currentUserId = UserSession.userId
                 when (event) {
                     is ProfileEvent.FollowUser -> {
-                        yeniTakipEdilenEkle(
-                            userId = event.userId,
-                            kullaniciAdi = event.kullaniciAdi,
-                            fotoUrl = event.fotoUrl
-                        )
+                        if (event.operatorUserId == currentUserId && isMyOwnList) {
+                            yeniTakipEdilenEkle(
+                                userId = event.userId,
+                                kullaniciAdi = event.kullaniciAdi,
+                                fotoUrl = event.fotoUrl
+                            )
+                        }
                     }
                     is ProfileEvent.UnFollowUser -> {
-                        takipEdilenCikar(event.userId)
+                        if (event.operatorUserId == currentUserId && isMyOwnList) {
+                            takipEdilenCikar(event.userId)
+                        }
+                    }
+                    is ProfileEvent.UnFollowerUser -> {
+                        if (event.operatorUserId == currentUserId && isMyOwnList) {
+                            takipciCikar(event.userId)
+                        }
                     }
                     else -> {}
                 }
             }
         }
     }
-
-    // RAM'deki takip edilenler listesine ekler (Firestore Read = 0)
     fun yeniTakipEdilenEkle(userId: String, kullaniciAdi: String, fotoUrl: String) {
         if (currentTakipEdilenler.none { it.id == userId }) {
             val yeniKullanici = Kullanici().apply {
@@ -73,11 +74,7 @@ class TakiplerViewModel() : ViewModel() {
                 this.fotoUrl = fotoUrl
                 takipEdiyorMuyum = 2
             }
-
-            // 1. ViewModel RAM listesine ekle
             currentTakipEdilenler.add(0, yeniKullanici)
-
-            // 2. UI State'i güncelle
             _takipEdilenlerState.value = TakiplerUiState.Success(
                 kullanicilar = currentTakipEdilenler.toList(),
                 isLastPage = isTakipEdilenlerLastPage,
@@ -85,8 +82,6 @@ class TakiplerViewModel() : ViewModel() {
             )
         }
     }
-
-    // Takipten çıkarıldığında RAM'den siler
     fun takipEdilenCikar(userId: String) {
         val removed = currentTakipEdilenler.removeAll { it.id == userId }
         if (removed) {
@@ -97,14 +92,25 @@ class TakiplerViewModel() : ViewModel() {
             )
         }
     }
+
+    fun takipciCikar(userId: String) {
+        val removed = currentTakipciler.removeAll { it.id == userId }
+        if (removed) {
+            _takipcilerState.value = TakiplerUiState.Success(
+                kullanicilar = currentTakipciler.toList(),
+                isLastPage = isTakipcilerLastPage,
+                isLoadingMore = false
+            )
+        }
+    }
     fun fetchTakipciler(
         userId: String?,
         isNextPage: Boolean = false,
         isRefresh: Boolean = false
     ) {
         if (userId.isNullOrBlank() || isLoadingTakipciler) return
+        this.targetUserId = userId
 
-        // 1. Sekme Değişimi Kontrolü: Liste zaten RAM'de varsa ve yenileme istenmiyorsa istek atma
         if (!isNextPage && !isRefresh && currentTakipciler.isNotEmpty()) {
             _takipcilerState.value = TakiplerUiState.Success(
                 kullanicilar = currentTakipciler.toList(),
@@ -113,10 +119,7 @@ class TakiplerViewModel() : ViewModel() {
             )
             return
         }
-
-        // 2. Sayfa Sonu Kontrolü
         if (isNextPage && isTakipcilerLastPage) return
-
         isLoadingTakipciler = true
 
         viewModelScope.launch {
@@ -125,12 +128,10 @@ class TakiplerViewModel() : ViewModel() {
                     lastTakipciDoc = null
                     isTakipcilerLastPage = false
 
-                    // Swipe-to-refresh yapılmıyorsa ve ilk açılışsa Shimmer göster
                     if (!isRefresh) {
                         _takipcilerState.value = TakiplerUiState.Loading
                     }
                 } else {
-                    // Alt tarafa yeni eleman eklenirken sayfalama yükleniyor moduna geç
                     _takipcilerState.value = TakiplerUiState.Success(
                         kullanicilar = currentTakipciler.toList(),
                         isLastPage = false,
@@ -175,18 +176,14 @@ class TakiplerViewModel() : ViewModel() {
             }
         }
     }
-
-    // ==========================================
-    // TAKİP EDİLENLERİ GETİR (FETCH FOLLOWING)
-    // ==========================================
     fun fetchTakipEdilenler(
         userId: String?,
         isNextPage: Boolean = false,
         isRefresh: Boolean = false
     ) {
         if (userId.isNullOrBlank() || isLoadingTakipEdilenler) return
+        this.targetUserId = userId
 
-        // 1. Sekme Değişimi Kontrolü: Liste zaten RAM'de varsa istek atma
         if (!isNextPage && !isRefresh && currentTakipEdilenler.isNotEmpty()) {
             _takipEdilenlerState.value = TakiplerUiState.Success(
                 kullanicilar = currentTakipEdilenler.toList(),
@@ -195,10 +192,7 @@ class TakiplerViewModel() : ViewModel() {
             )
             return
         }
-
-        // 2. Sayfa Sonu Kontrolü
         if (isNextPage && isTakipEdilenlerLastPage) return
-
         isLoadingTakipEdilenler = true
 
         viewModelScope.launch {
@@ -255,6 +249,4 @@ class TakiplerViewModel() : ViewModel() {
             }
         }
     }
-
-
 }
