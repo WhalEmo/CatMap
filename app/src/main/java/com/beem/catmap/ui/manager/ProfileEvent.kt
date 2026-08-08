@@ -17,14 +17,18 @@ sealed class ProfileEvent {
     data class FollowUser(
         val userId: String,
         val kullaniciAdi: String,
-        val fotoUrl: String
+        val fotoUrl: String,
+        val operatorUserId: String
     ) : ProfileEvent()
 
     data class UnFollowUser(
         val userId: String,
-        val kullaniciAdi: String,
-        val fotoUrl: String
+        val operatorUserId: String
     ) : ProfileEvent()
 
+    data class UnFollowerUser(
+        val userId: String,
+        val operatorUserId: String
+    ): ProfileEvent()
 
 }

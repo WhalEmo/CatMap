@@ -35,37 +35,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     val targetUserTakipciSayisi: StateFlow<Long> = _targetUserTakipciSayisi.asStateFlow()
 
 
-/*
-    fun profilDurumunuHazirla(targetUserId: String, forceRefresh: Boolean = false) {
-        val currentUserId = UserSession.userId
-        val isSelf = (targetUserId == currentUserId)
-
-        _followUiState.update { it.copy(isSelfProfile = isSelf) }
-
-        if (!isSelf) {
-            kullaniciTakipDurumunuKontrolEt(targetUserId, forceRefresh)
-        }
-    }
-
-    private fun kullaniciTakipDurumunuKontrolEt(targetUserId: String, forceRefresh: Boolean = false) {
-        viewModelScope.launch {
-            _followUiState.update { it.copy(isLoadingFollowState = true) }
-
-            // Repository'ye forceRefresh bilgisini iletiyoruz
-            val isFollowing = repository.isFollowing(targetUserId, forceRefresh).getOrDefault(false)
-            val isFollowed = repository.isFollowedBy(targetUserId, forceRefresh).getOrDefault(false)
-
-            _followUiState.update {
-                it.copy(
-                    isFollowing = isFollowing,
-                    isFollowed = isFollowed,
-                    isLoadingFollowState = false
-                )
-            }
-        }
-    }
-
- */
     fun setupFromFullProfile(
         followerCount: Long,
         followingCount: Long,
@@ -158,7 +127,13 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun takipcidenCikar(takipciId: String, currentUserId: String) {
+    fun takipcidenCikar(takipciId: String, currentUserId: String,  onSuccess: () -> Unit = {}, onFailure: () -> Unit) {
+        val previousFollowedCount = _targetUserTakipEdilenSayisi.value
+        val newOptimisticCount = if (previousFollowedCount > 0) previousFollowedCount - 1 else 0L
+
+        _followUiState.update { it.copy(isFollowed = false) }
+        _targetUserTakipEdilenSayisi.value = newOptimisticCount
+
         viewModelScope.launch {
             val result = repository.removeFollower(
                 currentUserId = currentUserId,
@@ -167,12 +142,16 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
 
             result.onSuccess { removeResult ->
                 val currentProfile = userManager.profileState.value
-
-                // Kendi hesabımızın güncellenmiş takipçi sayısını yansıt
                 userManager.updateFollowCounts(
                     takipciSayisi = removeResult.currentFollowerCount,
                     takipEdilenSayisi = currentProfile.takipEdilenSayisi
                 )
+                _targetUserTakipEdilenSayisi.value = removeResult.followerFollowingCount
+                onSuccess()
+            }.onFailure {
+                onFailure()
+                _followUiState.update { it.copy(isFollowed = true) }
+                _targetUserTakipEdilenSayisi.value = previousFollowedCount
             }
         }
     }

@@ -230,13 +230,13 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="@id/btnBack"
-                app:layout_constraintEnd_toStartOf="@id/PPmenuButton"
+                app:layout_constraintEnd_toStartOf="@id/ppMenuButton"
                 app:layout_constraintStart_toEndOf="@id/btnBack"
                 app:layout_constraintTop_toTopOf="@id/btnBack" />
 
             <!-- Üst Sağ Menü Butonu -->
             <ImageView
-                android:id="@+id/PPmenuButton"
+                android:id="@+id/ppMenuButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?selectableItemBackgroundBorderless"
