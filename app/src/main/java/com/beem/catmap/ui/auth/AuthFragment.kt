@@ -64,12 +64,23 @@ class AuthFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ⚖️ Yasal metni tıklanabilir (link) yapıyoruz
         setupTermsSpannableText()
 
-        // Buton Dinleyicileri
-        binding.btnUsernameGiris.setOnClickListener {
-            // Username giriş ekranına yönlendir
+        binding.btnAuthKaydol.setOnClickListener { view ->
+            view.post {
+                AuthBottomSheetFragment.newInstance(AuthMode.REGISTER).show(
+                    childFragmentManager,
+                    AuthBottomSheetFragment.TAG
+                )
+            }
+        }
+        binding.btnUsernameGiris.setOnClickListener { view ->
+            view.post {
+                AuthBottomSheetFragment.newInstance(AuthMode.LOGIN).show(
+                    childFragmentManager,
+                    AuthBottomSheetFragment.TAG
+                )
+            }
         }
 
         binding.btnGoogleGiris.setOnClickListener {
@@ -78,8 +89,11 @@ class AuthFragment : Fragment() {
     }
 
     private fun setupTermsSpannableText() {
-        val fullText = "Devam ederek Kullanici Sözlesmesi ve Gizlilik Politikasi'ni kabul etmis sayilirsiniz."
+        val fullText = getString(R.string.user_agreement_and_privacy_policy)
         val spannableString = SpannableString(fullText)
+
+        val termsTarget = "Kullanıcı Sözleşmesi"
+        val privacyTarget = "Gizlilik Politikası"
 
         // 1. "Kullanici Sözlesmesi" Linki
         val termsClick = object : ClickableSpan() {
@@ -119,16 +133,16 @@ class AuthFragment : Fragment() {
 
         // Metin içindeki kelime aralıkları (İndeksler)
         // "Kullanici Sözlesmesi" -> 15 ile 35 arası
-        val termsStart = fullText.indexOf("Kullanici Sözlesmesi")
+        val termsStart = fullText.indexOf(termsTarget)
         if (termsStart != -1) {
-            val termsEnd = termsStart + "Kullanici Sözlesmesi".length
+            val termsEnd = termsStart + termsTarget.length
             spannableString.setSpan(termsClick, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
 
         // "Gizlilik Politikasi" -> 39 ile 58 arası
-        val privacyStart = fullText.indexOf("Gizlilik Politikasi")
+        val privacyStart = fullText.indexOf(privacyTarget)
         if (privacyStart != -1) {
-            val privacyEnd = privacyStart + "Gizlilik Politikasi".length
+            val privacyEnd = privacyStart + privacyTarget.length
             spannableString.setSpan(privacyClick, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
 

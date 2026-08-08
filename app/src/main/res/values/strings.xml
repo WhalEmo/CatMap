@@ -2,6 +2,8 @@
     <string name="app_name">CatMap</string>
     <string name="title_activity_maps">MapsActivity</string>
 
+
+    <string name="user_agreement_and_privacy_policy">Devam ederek Kullanıcı Sözleşmesi ve Gizlilik Politikası\'nı kabul etmiş sayılırsınız.</string>
     <string name="user_agreement_title">Kullanıcı Sözleşmesi</string>
     <string name="user_agreement_content">
         1. Taraflar ve Amaç\n
