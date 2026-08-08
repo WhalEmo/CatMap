@@ -180,6 +180,20 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun setPostLoadingState() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                isAccessDenied = false,
+                isEmpty = false,
+                isLastPage = false,     // EKLENDİ: Sayfalamayı sıfırla
+                lastDocument = null     // EKLENDİ: Son döküman referansını temizle
+            )
+        }
+    }
+
+
     fun gonderileriGetir(
         userId: String,
         isFollowing: Boolean = true,
@@ -187,6 +201,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         if (userId.isBlank()) return
         setYukleyenID(userId)
+
+
 
         fetchPostsJob?.cancel()
         loadMoreJob?.cancel()
@@ -213,6 +229,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     isLoading = true,
                     isAccessDenied = false,
+                    isEmpty = false,
+                    posts = emptyList(),
                     lastDocument = null,
                     isLastPage = false
                 )
@@ -224,6 +242,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 forceRefresh = forceRefresh
             )
                 .onSuccess { pageResult ->
+
                     _uiState.update { currentState ->
                         currentState.copy(
                             posts = pageResult.posts,
@@ -236,7 +255,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 .onFailure { exception ->
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, isAccessDenied = true) }
                     UiMessageManager.emitMessage(
                         UiMessageState.Error(exception.localizedMessage ?: "Gönderiler yüklenemedi.")
                     )
@@ -257,7 +276,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         isLast: Boolean = true,
         isAccessDenied: Boolean = false
     ) {
-        Log.d("SHIMMER","buraya gırdı"+ isAccessDenied)
         setYukleyenID(userId)
 
         _uiState.update {
@@ -276,6 +294,11 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { currentState ->
             currentState.copy(
                 isAccessDenied = isDenied,
+                posts = emptyList(),
+                isLoading = false,      // EKLENDİ: Yüklemeyi sonlandır
+                isEmpty = false,        // EKLENDİ: "Gönderi yok" uyarısıyla çakışmayı önle
+                isLastPage = true,      // EKLENDİ: Sayfalamayı durdur
+                lastDocument = null     // EKLENDİ: Referansı temizle
             )
         }
     }

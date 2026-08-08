@@ -3,6 +3,8 @@ package com.beem.catmap.Profil.Takipler
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,9 +16,6 @@ class TakiplerViewModel() : ViewModel() {
     private val repository: TakiplerRepository = TakiplerRepository.getInstance()
     private val PAGE_LIMIT = 10L
 
-    // ==========================================
-    // TAKİPÇİLER (FOLLOWERS) STATE VE DEĞİŞKENLERİ
-    // ==========================================
     private val _takipcilerState = MutableStateFlow<TakiplerUiState>(TakiplerUiState.Idle)
     val takipcilerState: StateFlow<TakiplerUiState> = _takipcilerState.asStateFlow()
 
@@ -39,6 +38,65 @@ class TakiplerViewModel() : ViewModel() {
     // ==========================================
     // TAKİPÇİLERİ GETİR (FETCH FOLLOWERS)
     // ==========================================
+
+
+    init {
+        observeEvents()
+    }
+
+    private fun observeEvents() {
+        viewModelScope.launch {
+            ProfileEventBus.profileEvent.collect { event ->
+                when (event) {
+                    is ProfileEvent.FollowUser -> {
+                        yeniTakipEdilenEkle(
+                            userId = event.userId,
+                            kullaniciAdi = event.kullaniciAdi,
+                            fotoUrl = event.fotoUrl
+                        )
+                    }
+                    is ProfileEvent.UnFollowUser -> {
+                        takipEdilenCikar(event.userId)
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // RAM'deki takip edilenler listesine ekler (Firestore Read = 0)
+    fun yeniTakipEdilenEkle(userId: String, kullaniciAdi: String, fotoUrl: String) {
+        if (currentTakipEdilenler.none { it.id == userId }) {
+            val yeniKullanici = Kullanici().apply {
+                id = userId
+                this.kullaniciAdi = kullaniciAdi
+                this.fotoUrl = fotoUrl
+                takipEdiyorMuyum = 2
+            }
+
+            // 1. ViewModel RAM listesine ekle
+            currentTakipEdilenler.add(0, yeniKullanici)
+
+            // 2. UI State'i güncelle
+            _takipEdilenlerState.value = TakiplerUiState.Success(
+                kullanicilar = currentTakipEdilenler.toList(),
+                isLastPage = isTakipEdilenlerLastPage,
+                isLoadingMore = false
+            )
+        }
+    }
+
+    // Takipten çıkarıldığında RAM'den siler
+    fun takipEdilenCikar(userId: String) {
+        val removed = currentTakipEdilenler.removeAll { it.id == userId }
+        if (removed) {
+            _takipEdilenlerState.value = TakiplerUiState.Success(
+                kullanicilar = currentTakipEdilenler.toList(),
+                isLastPage = isTakipEdilenlerLastPage,
+                isLoadingMore = false
+            )
+        }
+    }
     fun fetchTakipciler(
         userId: String?,
         isNextPage: Boolean = false,
@@ -197,4 +255,6 @@ class TakiplerViewModel() : ViewModel() {
             }
         }
     }
+
+
 }

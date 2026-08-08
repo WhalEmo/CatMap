@@ -14,9 +14,12 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.R
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -100,39 +103,45 @@ class TakipEdilenlerFragment : Fragment() {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.takipEdilenlerState.collect { state ->
-                    when (state) {
-                        is TakiplerUiState.Loading -> {
-                            // Sadece SwipeRefresh AKTİF DEĞİLSE Shimmer göster
-                            if (!swipeRefresh.isRefreshing) {
-                                shimmerContainer.isVisible = true
-                                shimmerContainer.startShimmer()
-                                recyclerView.isVisible = false
+                launch {
+                    viewModel.takipEdilenlerState.collect { state ->
+                        when (state) {
+                            is TakiplerUiState.Loading -> {
+                                // Sadece SwipeRefresh AKTİF DEĞİLSE Shimmer göster
+                                if (!swipeRefresh.isRefreshing) {
+                                    shimmerContainer.isVisible = true
+                                    shimmerContainer.startShimmer()
+                                    recyclerView.isVisible = false
+                                }
                             }
-                        }
-                        is TakiplerUiState.Success -> {
-                            // İşlem bittiğinde SwipeRefresh animasyonunu kapat
-                            swipeRefresh.isRefreshing = false
 
-                            shimmerContainer.stopShimmer()
-                            shimmerContainer.isVisible = false
-                            recyclerView.isVisible = true
+                            is TakiplerUiState.Success -> {
+                                // İşlem bittiğinde SwipeRefresh animasyonunu kapat
+                                swipeRefresh.isRefreshing = false
 
-                            userAdapter.submitList(state.kullanicilar)
-                            footerAdapter.setLoading(state.isLoadingMore)
-                        }
-                        is TakiplerUiState.Error -> {
-                            swipeRefresh.isRefreshing = false
-                            shimmerContainer.stopShimmer()
-                            shimmerContainer.isVisible = false
-                            recyclerView.isVisible = true
-                            footerAdapter.setLoading(false)
+                                shimmerContainer.stopShimmer()
+                                shimmerContainer.isVisible = false
+                                recyclerView.isVisible = true
 
-                            // İsteğe bağlı: Toast veya Snackbar ile hata mesajı gösterilebilir
+                                userAdapter.submitList(state.kullanicilar)
+                                footerAdapter.setLoading(state.isLoadingMore)
+                            }
+
+                            is TakiplerUiState.Error -> {
+                                swipeRefresh.isRefreshing = false
+                                shimmerContainer.stopShimmer()
+                                shimmerContainer.isVisible = false
+                                recyclerView.isVisible = true
+                                footerAdapter.setLoading(false)
+
+                                // İsteğe bağlı: Toast veya Snackbar ile hata mesajı gösterilebilir
+                            }
+
+                            else -> {}
                         }
-                        else -> {}
                     }
                 }
+
             }
         }
     }
