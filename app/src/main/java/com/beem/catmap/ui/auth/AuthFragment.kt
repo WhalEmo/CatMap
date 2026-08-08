@@ -2,6 +2,11 @@ package com.beem.catmap.ui.auth
 
 import android.os.Bundle
 import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.util.Log
 import android.util.Patterns
 import android.view.LayoutInflater
@@ -11,6 +16,7 @@ import android.view.animation.AccelerateInterpolator
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -21,25 +27,136 @@ import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.ActivityMainBinding
+import com.beem.catmap.databinding.FragmentAuthBinding
 import com.beem.catmap.databinding.GirispencereBinding
 import com.beem.catmap.databinding.KaydolpencereBinding
 import com.beem.catmap.databinding.SifremiUnuttumBinding
 import com.beem.catmap.managers.OnlinePresenceManager
+import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class AuthFragment : Fragment() {
 
-    private var _binding: ActivityMainBinding? = null
+    private var _binding: FragmentAuthBinding? = null
     private val binding get() = _binding!!
 
     private var dialog: BottomSheetDialog? = null
     private var isPasswordVisible = false
     private lateinit var uyariMesaji: UyariMesaji
     private val db = FirebaseFirestore.getInstance()
+
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentAuthBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // ⚖️ Yasal metni tıklanabilir (link) yapıyoruz
+        setupTermsSpannableText()
+
+        // Buton Dinleyicileri
+        binding.btnUsernameGiris.setOnClickListener {
+            // Username giriş ekranına yönlendir
+        }
+
+        binding.btnGoogleGiris.setOnClickListener {
+            // Google auth akışını başlat
+        }
+    }
+
+    private fun setupTermsSpannableText() {
+        val fullText = "Devam ederek Kullanici Sözlesmesi ve Gizlilik Politikasi'ni kabul etmis sayilirsiniz."
+        val spannableString = SpannableString(fullText)
+
+        // 1. "Kullanici Sözlesmesi" Linki
+        val termsClick = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showLegalDialog(
+                    titleResId = R.string.user_agreement_title,
+                    contentResId = R.string.user_agreement_content
+                )
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Altını çiz
+                context?.let { ctx ->
+                    ds.color = ContextCompat.getColor(ctx, R.color.catmap_primary) // Vurgulu renk ver
+                }
+            }
+        }
+
+        // 2. "Gizlilik Politikasi" Linki
+        val privacyClick = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showLegalDialog(
+                    titleResId = R.string.privacy_policy_title,
+                    contentResId = R.string.privacy_policy_content
+                )
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Altını çiz
+                context?.let { ctx ->
+                    ds.color = ContextCompat.getColor(ctx, R.color.catmap_primary) // Vurgulu renk ver
+                }
+            }
+        }
+
+        // Metin içindeki kelime aralıkları (İndeksler)
+        // "Kullanici Sözlesmesi" -> 15 ile 35 arası
+        val termsStart = fullText.indexOf("Kullanici Sözlesmesi")
+        if (termsStart != -1) {
+            val termsEnd = termsStart + "Kullanici Sözlesmesi".length
+            spannableString.setSpan(termsClick, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        // "Gizlilik Politikasi" -> 39 ile 58 arası
+        val privacyStart = fullText.indexOf("Gizlilik Politikasi")
+        if (privacyStart != -1) {
+            val privacyEnd = privacyStart + "Gizlilik Politikasi".length
+            spannableString.setSpan(privacyClick, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        // TextView'a Spannable'ı çakıyoruz ve tıklama özelliğini aktif ediyoruz
+        binding.txtAuthTerms.text = spannableString
+        binding.txtAuthTerms.movementMethod = LinkMovementMethod.getInstance()
+        context?.let { ctx ->
+            binding.txtAuthTerms.highlightColor = ContextCompat.getColor(
+                ctx,
+                R.color.catmap_accent_alpha_15
+            )
+        }
+    }
+
+    private fun showLegalDialog(titleResId: Int, contentResId: Int) {
+        CatMapDialog.build()
+            .setTitle(getString(titleResId))
+            .setMessage(getString(contentResId))
+            .setPositiveButton("Anladım")
+            .show(childFragmentManager, "CatMapLegalDialog")
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    /*
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -351,4 +468,6 @@ class AuthFragment : Fragment() {
         dialog = null
         _binding = null
     }
+    */
+
 }

@@ -16,10 +16,21 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <style name="CatMapDialogTheme" parent="Theme.AppCompat.Light.Dialog">
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:windowNoTitle">true</item>
+    <style name="CatMapDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/CatMapDialogCorners</item>
+
+        <item name="colorPrimary">@color/catmap_primary</item>
+
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="colorSurface">@color/catmap_surface_white</item>
+        <item name="android:windowBackground">@color/transparent</item>
+
+        <item name="colorOnSurface">@color/catmap_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/catmap_text_secondary</item>
+    </style>
+
+    <style name="CatMapDialogCorners" parent="">
+        <item name="cornerSize">20dp</item>
     </style>
 
     <style name="Theme.CatMap" parent="Theme.Material3.DayNight.NoActionBar">

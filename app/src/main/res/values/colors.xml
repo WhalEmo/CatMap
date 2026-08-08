@@ -24,6 +24,7 @@
     <color name="catmap_divider">#E2E8F0</color>
 
     <color name="catmap_text_primary">#0F172A</color>
+    <color name="catmap_text_secondary">#475569</color>
     <color name="catmap_text_dark">#0F172A</color>
     <color name="catmap_text_muted">#64748B</color>
     <color name="catmap_text_light">#FFFFFF</color>

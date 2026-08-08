@@ -57,4 +57,10 @@
         <item name="cornerSizeBottomLeft">50%</item>
         <item name="cornerSizeBottomRight">50%</item>
     </style>
+
+    <style name="CatMapDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
 </resources>
