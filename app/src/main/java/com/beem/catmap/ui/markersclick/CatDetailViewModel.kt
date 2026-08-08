@@ -16,6 +16,7 @@ import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,19 +127,25 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
             val currentUserId = UserSession.userId
             _isMyCat.value = (ownerId == currentUserId)
 
-            val userData = repository.getUserInfo(ownerId)
+            val currentCatId = _selectedCat.value?.id
+
+            val userDataDeferred = async { repository.getUserInfo(ownerId) }
+            val isAlreadyAddedDeferred = async {
+                if (currentCatId != null) {
+                    repository.isCatSent(ownerId, currentCatId)
+                } else {
+                    false
+                }
+            }
+            val userData = userDataDeferred.await()
+            val isAlreadyAdded = isAlreadyAddedDeferred.await()
+
             userData?.let { data ->
                 val username = data["KullaniciAdi"] as? String ?: "Bilinmeyen"
                 val photoUrl = data["profilFotoUrl"] as? String
                 _ownerInfo.value = Pair(username, photoUrl)
-
-                val currentCatId = _selectedCat.value?.id
-                if (currentCatId != null) {
-                    val posts = data["GonderilenKediler"] as? List<Map<String, Any>>
-                    val exists = posts?.any { it["kediID"] == currentCatId } ?: false
-                    _isAlreadyAdded.value = exists
-                }
             }
+            _isAlreadyAdded.value = isAlreadyAdded
         }
     }
 

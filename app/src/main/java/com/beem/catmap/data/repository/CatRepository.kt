@@ -67,6 +67,20 @@ class CatRepository {
             null
         }
     }
+    suspend fun isCatSent(ownerId: String, catId: String): Boolean {
+        return try {
+            val querySnapshot = db.collection("users")
+                .document(ownerId)
+                .collection("GonderilenKediler")
+                .whereEqualTo("kediID", catId)
+                .get()
+                .await()
+
+            !querySnapshot.isEmpty
+        } catch (e: Exception) {
+            false
+        }
+    }
 
 
     suspend fun deleteCatFromMap(catId: String): Boolean {
