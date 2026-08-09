@@ -6,7 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -20,7 +22,9 @@ import com.beem.catmap.databinding.BottomSheetAuthBinding
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class AuthBottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -173,19 +177,23 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                         when (state) {
                             is AuthUiState.Idle -> {
                                 setButtonsEnabled(true)
+                                hideStatusBanner()
                             }
                             is AuthUiState.Loading -> {
                                 setButtonsEnabled(false)
-                                uyariMesaji.YuklemeDurum(state.message)
+                                showLoadingBanner(state.message)
                             }
                             is AuthUiState.Success -> {
                                 setButtonsEnabled(true)
-                                uyariMesaji.BasariliDurum(state.message, 1000)
-                                dismiss()
+                                showSuccessBanner(state.message)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    delay(800.milliseconds)
+                                    dismiss()
+                                }
                             }
                             is AuthUiState.Error -> {
                                 setButtonsEnabled(true)
-                                uyariMesaji.BasarisizDurum(state.errorMessage, 1500)
+                                showErrorBanner(state.errorMessage)
                             }
                         }
                     }
@@ -208,6 +216,92 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
 
             }
         }
+    }
+
+
+    private fun showLoadingBanner(message: String) {
+        binding.tvBannerMessage.text = message
+        binding.bannerProgress.isVisible = true
+        binding.imgBannerIcon.isVisible = false
+
+        binding.cardStatusBanner.setStrokeColor(
+            ContextCompat.getColor(requireContext(), R.color.catmap_divider)
+        )
+        binding.tvBannerMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), R.color.catmap_text_primary)
+        )
+
+        animateBannerShow()
+    }
+
+    /**
+     * 🟢 Başarılı Banner'ı
+     */
+    private fun showSuccessBanner(message: String) {
+        binding.tvBannerMessage.text = message
+        binding.bannerProgress.isVisible = false
+        binding.imgBannerIcon.isVisible = true
+
+        binding.imgBannerIcon.setImageResource(R.drawable.ic_check_circle)
+        binding.imgBannerIcon.setColorFilter(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+        )
+        binding.cardStatusBanner.setStrokeColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+        )
+        binding.tvBannerMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+        )
+
+        animateBannerShow()
+    }
+
+    /**
+     * 🔴 Hata Banner'ı
+     */
+    private fun showErrorBanner(message: String) {
+        binding.tvBannerMessage.text = message
+        binding.bannerProgress.isVisible = false
+        binding.imgBannerIcon.isVisible = true
+
+        binding.imgBannerIcon.setImageResource(R.drawable.ic_error_outline)
+        binding.imgBannerIcon.setColorFilter(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+        )
+        binding.cardStatusBanner.setStrokeColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+        )
+        binding.tvBannerMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+        )
+
+        animateBannerShow()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(2500.milliseconds)
+            hideStatusBanner()
+            viewModel.resetState()
+        }
+    }
+
+    private fun animateBannerShow() {
+        binding.cardStatusBanner.apply {
+            if (!isVisible) {
+                alpha = 0f
+                isVisible = true
+                animate().alpha(1f).setDuration(200).start()
+            }
+        }
+    }
+
+    private fun hideStatusBanner() {
+        _binding?.cardStatusBanner?.animate()
+            ?.alpha(0f)
+            ?.setDuration(200)
+            ?.withEndAction {
+                _binding?.cardStatusBanner?.isVisible = false
+            }
+            ?.start()
     }
 
 

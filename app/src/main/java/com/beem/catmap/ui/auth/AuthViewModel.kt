@@ -101,8 +101,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             repository.resetPassword(email)
                 .onSuccess {
-                    _uiState.value = AuthUiState.Idle
-                    _event.emit(AuthEvent.ShowToast("Sıfırlama bağlantısı e-postanıza gönderildi."))
+                    _uiState.value = AuthUiState.Success(Kullanici(), "Sıfırlama bağlantısı e-postanıza gönderildi.")
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "E-posta gönderilemedi!")
