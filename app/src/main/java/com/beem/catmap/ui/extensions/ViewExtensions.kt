@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.extensions
 
+import android.view.View
 import android.view.animation.Animation
 import android.view.animation.ScaleAnimation
 import android.widget.ImageView
@@ -17,4 +18,8 @@ fun ImageView.kalpAnimasyonuYap() {
     }
 
     this.startAnimation(buyutKucult)
+}
+fun View.setLoadingState(isLoading: Boolean) {
+    this.isEnabled = !isLoading
+    this.alpha = if (isLoading) 0.5f else 1.0f
 }

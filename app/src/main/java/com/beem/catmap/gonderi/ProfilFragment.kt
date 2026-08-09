@@ -1,15 +1,17 @@
 package com.beem.catmap.Profil
 
+import android.app.AlertDialog
 import android.os.Bundle
-import android.transition.AutoTransition
-import android.transition.TransitionManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -17,14 +19,17 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
+import com.beem.catmap.Profil.Gonderiler.LoadingFooterAdapter
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.FollowUiState
@@ -35,25 +40,22 @@ import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.extensions.bounceAndHaptic
-import com.beem.catmap.ui.extensions.fadeInSmooth
-import com.beem.catmap.ui.extensions.fadeOutSmooth
+import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.utils.toFirebaseTimestamp
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ProfilFragment : Fragment() {
-
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
@@ -70,7 +72,7 @@ class ProfilFragment : Fragment() {
     private lateinit var btnBack: ImageButton
     private lateinit var profiliDuzenleTiklandi: Button
     private lateinit var takipEtButonu: Button
-    private var firstLoad = false
+    private lateinit var ppMenuButton: ImageView
     private lateinit var takipEdiliyorVeMesajLayout: LinearLayout
     private lateinit var takipEdiliyorButonu: Button
     private lateinit var sohbetButon: Button
@@ -85,10 +87,11 @@ class ProfilFragment : Fragment() {
     private lateinit var tvAd: TextView
     private lateinit var profilFotoImageView: CircleImageView
     private lateinit var gonderiAdapter: GonderiAdapter
-
+    private val loadingFooterAdapter = LoadingFooterAdapter()
+    private lateinit var concatAdapter: ConcatAdapter
+    private var profileLoaded = false
     val myUserId = UserSession.userId
     private var targetUserId: String? = null
-    private var hasUnlockedPosts = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,6 +150,7 @@ class ProfilFragment : Fragment() {
         blockedUserLayout = view.findViewById(R.id.blockedUserLayout)
         btnBackEngel = view.findViewById(R.id.btnBackEngel)
         KullaniciAdiEngel = view.findViewById(R.id.KullaniciAdiEngel)
+        ppMenuButton = view.findViewById(R.id.ppMenuButton)
     }
 
     private fun showShimmerLoading() {
@@ -169,12 +173,30 @@ class ProfilFragment : Fragment() {
             onGonderiTiklandi(gonderi)
         }
 
+        concatAdapter = ConcatAdapter(gonderiAdapter, loadingFooterAdapter)
+
         val gridLayoutManager = GridLayoutManager(requireContext(), 3)
+
+        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                return if (position >= gonderiAdapter.itemCount) {
+                    3
+                } else {
+                    1
+                }
+            }
+        }
 
         recyclerView.apply {
             layoutManager = gridLayoutManager
-            adapter = gonderiAdapter
-            setHasFixedSize(true)
+            adapter = concatAdapter
+
+            setHasFixedSize(false)
+
+            layoutAnimation = AnimationUtils.loadLayoutAnimation(
+                requireContext(),
+                R.anim.layout_animation_fall_down
+            )
 
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -209,14 +231,35 @@ class ProfilFragment : Fragment() {
 
         takipEtButonu.setOnClickListener {
             it.bounceAndHaptic()
+            takipEdiliyorButonu.setLoadingState(true)
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
+                    viewModel.setPostLoadingState()
                     Log.d("SHIMMER","TAKIPETE BASILDI")
                     followViewModel.takipEt(
                         takipEttiginId = targetId,
                         currentUserId = myUserId,
                         onSuccess = {
+                            takipEdiliyorButonu.setLoadingState(false)
                             viewModel.gonderileriGetir(targetId)
+                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+
+                            val userId = profile?.id.orEmpty().ifBlank { targetId }
+                            val kullaniciAdi = profile?.kullaniciAdi.orEmpty()
+                            val fotoUrl = profile?.fotoUrl.orEmpty()
+
+                            ProfileEventBus.emitEvent(
+                                ProfileEvent.FollowUser(
+                                    userId = userId,
+                                    kullaniciAdi = kullaniciAdi,
+                                    fotoUrl = fotoUrl,
+                                    operatorUserId = myUserId
+                                )
+                            )
+                        },
+                        onFailure = {
+                            takipEdiliyorButonu.setLoadingState(false)
+                            progressFollow.visibility = View.GONE
                         }
                     )
                 }
@@ -258,13 +301,30 @@ class ProfilFragment : Fragment() {
 
         takipEdiliyorButonu.setOnClickListener {
             it.bounceAndHaptic()
+            recyclerView.visibility= View.GONE
+            postSectionHeader.visibility = View.GONE
+            takipEtButonu.setLoadingState(true)
             targetUserId?.let { targetId ->
                 if (targetId != myUserId) {
                     followViewModel.takiptenCikar(
                         takiptenCiktiginId = targetId,
                         currentUserId = myUserId,
                         onSuccess = {
+                            takipEtButonu.setLoadingState(false)
                             viewModel.setAccessDenied(true)
+                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+                            val userId = profile?.id.orEmpty().ifBlank { targetId }
+
+                            ProfileEventBus.emitEvent(
+                                ProfileEvent.UnFollowUser(
+                                    userId = userId,
+                                    operatorUserId = myUserId
+                                )
+                            )
+                        },
+                        onFailure = {
+                            takipEtButonu.setLoadingState(false)
+                            progressFollow.visibility = View.GONE
                         }
                     )
                 }
@@ -279,9 +339,66 @@ class ProfilFragment : Fragment() {
             it.bounceAndHaptic()
             SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE)
         }
+        ppMenuButton.setOnClickListener { anchorView ->
+            showOptionMenu(anchorView)
+        }
+    }
+    private fun showOptionMenu(view: View) {
+        val popupMenu = PopupMenu(requireContext(), view)
+        popupMenu.menuInflater.inflate(R.menu.profil_uc_nokta_menu, popupMenu.menu)
+
+        val isMyFollower = followViewModel.followUiState.value.isFollowed
+
+        val removeFollowerItem = popupMenu.menu.findItem(R.id.profiltakipciCikar)
+        removeFollowerItem?.isVisible = isMyFollower
+
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.profiltakipciCikar -> {
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Takipçiden Çıkar")
+                        .setMessage("Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?")
+                        .setPositiveButton("Evet") { dialog, _ ->
+                            targetUserId?.let { id ->
+                                followViewModel.takipcidenCikar(
+                                    takipciId = id,
+                                    currentUserId = myUserId,
+                                    onSuccess = {
+                                        val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+                                        val userId = profile?.id.orEmpty().ifBlank { targetUserId }
+
+                                        userId?.let {
+                                            ProfileEventBus.emitEvent(
+                                                ProfileEvent.UnFollowerUser(
+                                                    userId = it,
+                                                    operatorUserId = myUserId
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onFailure = {
+                                        progressFollow.visibility = View.GONE
+                                    }
+                                )
+                            }
+                            dialog.dismiss()
+
+                        }
+                        .setNegativeButton("İptal", null)
+                        .show()
+                    true
+                }
+                else -> false
+            }
+        }
+        popupMenu.show()
     }
 
+
     private fun yukleVerileri(forceRefresh: Boolean = false) {
+        if (forceRefresh) {
+            profileLoaded = false
+        }
         targetUserId?.let { userId ->
             profileViewModel.tumProfilVerileriniYukle(targetUserId = userId, forceRefresh = forceRefresh)
         } ?: run {
@@ -301,19 +418,23 @@ class ProfilFragment : Fragment() {
                                 Log.d("SHIMMER", "Loading - Shimmer Başlatıldı")
                                 showShimmerLoading()
                             }
+
                             is UiState.Success -> {
                                 Log.d("SHIMMER", "Success - Veriler Bağlanıyor")
                                 val fullData = state.data
                                 val targetId = targetUserId ?: UserSession.userId.orEmpty()
 
-                                // A) Önce verileri ViewModel ve UI bileşenlerine bağla
-                                viewModel.setupFromFullProfile(
-                                    userId = targetId,
-                                    initialPosts = fullData.posts,
-                                    lastDoc = fullData.lastDocument,
-                                    isLast = fullData.isLastPage,
-                                    isAccessDenied = fullData.isAccessDenied
-                                )
+                                if (!profileLoaded) {
+                                    Log.d("IFF","if")
+                                    profileLoaded = true
+                                    viewModel.setupFromFullProfile(
+                                        userId = targetId,
+                                        initialPosts = fullData.posts,
+                                        lastDoc = fullData.lastDocument,
+                                        isLast = fullData.isLastPage,
+                                        isAccessDenied = fullData.isAccessDenied
+                                    )
+                                }
 
                                 followViewModel.setupFromFullProfile(
                                     followerCount = fullData.followerCount,
@@ -324,8 +445,6 @@ class ProfilFragment : Fragment() {
                                 )
 
                                 bindUserProfileData(fullData.profile)
-
-                                // B) Tüm veriler ekrana çizildikten SONRA Shimmer'ı kapat ve ana ekranı aç
                                 swipeRefreshLayout.isRefreshing = false
                                 hideShimmerLoading()
                             }
@@ -360,15 +479,11 @@ class ProfilFragment : Fragment() {
                         }
                     }
                 }
-
-                // 3. Takip Buton Durumları
                 launch {
                     followViewModel.followUiState.collectLatest { state ->
                         renderProfileButtons(state)
                     }
                 }
-
-                // 4. Sayaçlar (Takipçi/Takip Edilen/Gönderi)
                 launch {
                     if (targetUserId == myUserId) {
                         profileViewModel.profileState.collect { profileState ->
@@ -389,32 +504,36 @@ class ProfilFragment : Fragment() {
                         }
                     }
                 }
-
-                // 5. Post RecyclerView ve UI State Dinleyici (Shimmer'ı etkilemeyecek şekilde düzenlendi)
                 launch {
                     viewModel.uiState.collect { state ->
-                        // Sayfalandırma (Paging) esnasındaki alt küçük ProgressBar kontrolü
-                        if (state.isLoading && !swipeRefreshLayout.isRefreshing && shimmerLayout.visibility != View.VISIBLE) {
-                            progressBar.visibility = View.VISIBLE
-                        } else {
-                            progressBar.visibility = View.GONE
-                        }
-
-                        if (state.isAccessDenied) {
-                            recyclerView.visibility = View.GONE
-                            postSectionHeader.visibility = View.GONE
-                            tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
-                            tvEmpty.visibility = View.VISIBLE
-                        } else {
-                            postSectionHeader.visibility = View.VISIBLE
-                            if (state.isEmpty) {
-                                tvEmpty.text = "Henüz gönderi yok"
-                                tvEmpty.visibility = View.VISIBLE
+                            loadingFooterAdapter.setLoading(state.isMoreLoading)
+                            if (state.isLoading) {
                                 recyclerView.visibility = View.GONE
+                                if (!swipeRefreshLayout.isRefreshing && shimmerLayout.visibility != View.VISIBLE) {
+                                    progressBar.visibility = View.VISIBLE
+                                }
+                                return@collect
+                            }
+
+                            progressBar.visibility = View.GONE
+                            if (state.isAccessDenied) {
+                                recyclerView.visibility = View.GONE
+                                postSectionHeader.visibility = View.GONE
+                                tvEmpty.text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et."
+                                tvEmpty.visibility = View.VISIBLE
                             } else {
-                                tvEmpty.visibility = View.GONE
-                                recyclerView.visibility = View.VISIBLE
-                                gonderiAdapter.submitList(state.posts)
+                                postSectionHeader.visibility = View.VISIBLE
+
+                                if (state.isEmpty) {
+                                    tvEmpty.text = "Henüz gönderi yok"
+                                    tvEmpty.visibility = View.VISIBLE
+                                    recyclerView.visibility = View.GONE
+                                }else {
+                                    tvEmpty.visibility = View.GONE
+                                    recyclerView.visibility = View.VISIBLE
+                                    gonderiAdapter.submitList(state.posts) {
+                                        recyclerView.scheduleLayoutAnimation()
+                                }
                             }
                         }
                     }
@@ -423,7 +542,6 @@ class ProfilFragment : Fragment() {
         }
     }
 
-    // DÜZELTME: Model türü UserProfileData yerine Kullanici yapıldı
     private fun bindUserProfileData(kullanici: Kullanici) {
         KullaniciAdi.text = kullanici.kullaniciAdi.orEmpty()
 
@@ -499,23 +617,13 @@ class ProfilFragment : Fragment() {
 
 
     private fun onGonderiTiklandi(gonderi: Gonderi) {
-        val fotoList = if (gonderi.fotoUrlListesi != null) {
-            ArrayList(gonderi.fotoUrlListesi)
-        } else {
-            ArrayList()
-        }
-
-        val args = GonderiDetayFragment.newBundle(
-            fotoList,
-            gonderi.kediAdi ?: "",
-            gonderi.aciklama ?: "",
-            gonderi.begeniSayisi ?: 0L,
-            gonderi.kediID ?: "",
-            targetUserId ?: ""
+        val args = bundleOf(
+            "kediid" to gonderi.kediID,
+            "yukleyenId" to targetUserId
         )
-
         SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
     }
+
 
     companion object {
         private const val ARG_USER_ID = "USER_ID"

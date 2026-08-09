@@ -34,6 +34,9 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _haritaSilindiEvent = MutableSharedFlow<Boolean>(replay = 0)
     val haritaSilindiEvent: SharedFlow<Boolean> = _haritaSilindiEvent.asSharedFlow()
 
+    private val _gonderiDetayState = MutableStateFlow<Gonderi?>(null)
+    val gonderiDetayState: StateFlow<Gonderi?> = _gonderiDetayState.asStateFlow()
+
     private val _yukleyenID = MutableStateFlow("")
     val yukleyenID: StateFlow<String> = _yukleyenID.asStateFlow()
 
@@ -62,7 +65,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     is ProfileEvent.PostDeleted -> {
-
                         _uiState.update { state ->
                             val updatedPosts = state.posts.filterNot { it.kediID == event.catId }
                             state.copy(
@@ -78,11 +80,30 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun setYukleyenID(id: String) {
         _yukleyenID.value = id
     }
 
+    /**
+     * DÜZELTİLDİ: Profil grid UI State'i tetiklemeden sadece detayı getirir.
+     */
+    fun gonderiDetayiGetir(kediId: String, forceRefresh: Boolean = false, onComplete: (Gonderi?) -> Unit) {
+        viewModelScope.launch {
+            repository.getGonderiDetay(kediId, forceRefresh)
+                .onSuccess { gonderi ->
+                    _gonderiDetayState.value = gonderi
+                    onComplete(gonderi)
+                }
+                .onFailure { exception ->
+                    UiMessageManager.emitMessage(
+                        UiMessageState.Error(
+                            exception.localizedMessage ?: "Gönderi detayları alınamadı."
+                        )
+                    )
+                    onComplete(null)
+                }
+        }
+    }
 
     fun dahaFazlaGonderiGetir() {
         val currentState = _uiState.value
@@ -180,6 +201,19 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun setPostLoadingState() {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                isAccessDenied = false,
+                isEmpty = false,
+                isLastPage = false,
+                lastDocument = null
+            )
+        }
+    }
+
     fun gonderileriGetir(
         userId: String,
         isFollowing: Boolean = true,
@@ -209,10 +243,14 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         fetchPostsJob = viewModelScope.launch {
+            // DÜZELTİLDİ: Sadece ilk yüklemede veya zorunlu yenilemede posts listesini sıfırla,
+            // aksi halde cache'ten hızlıca gelecek veride anlık ekran boşalması (flicker) olmasın.
             _uiState.update {
                 it.copy(
                     isLoading = true,
                     isAccessDenied = false,
+                    isEmpty = false,
+                    posts = if (forceRefresh) emptyList() else it.posts,
                     lastDocument = null,
                     isLastPage = false
                 )
@@ -236,7 +274,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 .onFailure { exception ->
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, isAccessDenied = true) }
                     UiMessageManager.emitMessage(
                         UiMessageState.Error(exception.localizedMessage ?: "Gönderiler yüklenemedi.")
                     )
@@ -257,7 +295,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         isLast: Boolean = true,
         isAccessDenied: Boolean = false
     ) {
-        Log.d("SHIMMER","buraya gırdı"+ isAccessDenied)
         setYukleyenID(userId)
 
         _uiState.update {
@@ -276,9 +313,12 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { currentState ->
             currentState.copy(
                 isAccessDenied = isDenied,
+                posts = emptyList(),
+                isLoading = false,
+                isEmpty = false,
+                isLastPage = true,
+                lastDocument = null
             )
         }
     }
-
 }
-
