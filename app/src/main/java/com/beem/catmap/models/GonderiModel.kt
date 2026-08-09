@@ -14,7 +14,3 @@ data class GonderilenKediItem(
     val kediID: String = "",
     val tarih: Timestamp? = null
 )
-data class ProfilGonderiOzet(
-    val kediID: String = "",
-    val kapakFotoUrl: String = ""
-)

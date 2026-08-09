@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.R
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
@@ -68,7 +69,9 @@ class TakipcilerFragment : Fragment() {
     private fun setupRecyclerView() {
         userAdapter = KullanicilarAdapter { kullaniciId ->
             kullaniciId?.let {
-                NavigationHelper.navigateToProfile(kullaniciId)
+                val myUserId = UserSession.userId
+                val isMyFollower = (targetId == myUserId)
+                NavigationHelper.navigateToProfile(kullaniciId,isFollowed = isMyFollower)
             }
         }
 
@@ -121,7 +124,6 @@ class TakipcilerFragment : Fragment() {
                             }
 
                             is TakiplerUiState.Error -> {
-                                // DÜZELTME 2: Hata durumunda da Refresh çemberi kapatılıyor
                                 swipeRefresh.isRefreshing = false
 
                                 shimmerContainer.stopShimmer()

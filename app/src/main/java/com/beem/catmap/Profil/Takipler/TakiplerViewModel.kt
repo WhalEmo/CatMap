@@ -43,22 +43,31 @@ class TakiplerViewModel() : ViewModel() {
                 val currentUserId = UserSession.userId
                 when (event) {
                     is ProfileEvent.FollowUser -> {
-                        if (event.operatorUserId == currentUserId && isMyOwnList) {
-                            yeniTakipEdilenEkle(
-                                userId = event.userId,
-                                kullaniciAdi = event.kullaniciAdi,
-                                fotoUrl = event.fotoUrl
-                            )
+                        if (event.operatorUserId == currentUserId) {
+                            repository.clearUserCache(currentUserId)
+                            if (isMyOwnList) {
+                                yeniTakipEdilenEkle(
+                                    userId = event.userId,
+                                    kullaniciAdi = event.kullaniciAdi,
+                                    fotoUrl = event.fotoUrl
+                                )
+                            }
                         }
                     }
                     is ProfileEvent.UnFollowUser -> {
-                        if (event.operatorUserId == currentUserId && isMyOwnList) {
-                            takipEdilenCikar(event.userId)
+                        if (event.operatorUserId == currentUserId) {
+                            repository.clearUserCache(currentUserId)
+                            if (isMyOwnList) {
+                                takipEdilenCikar(event.userId)
+                            }
                         }
                     }
                     is ProfileEvent.UnFollowerUser -> {
-                        if (event.operatorUserId == currentUserId && isMyOwnList) {
-                            takipciCikar(event.userId)
+                        if (event.operatorUserId == currentUserId) {
+                            repository.clearUserCache(currentUserId)
+                            if (isMyOwnList) {
+                                takipciCikar(event.userId)
+                            }
                         }
                     }
                     else -> {}

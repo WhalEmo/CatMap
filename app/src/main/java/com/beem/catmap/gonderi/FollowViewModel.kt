@@ -48,7 +48,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 isSelfProfile = isSelf,
                 isFollowing = isFollowing,
                 isFollowed = isFollowed,
-                isLoadingFollowState = false
+                isLoadingFollowState = false,
             )
         }
             _targetUserTakipciSayisi.value = followerCount
@@ -126,6 +126,15 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    fun setInitialFollowedState(isFollowed: Boolean) {
+        _followUiState.update { currentState ->
+            currentState.copy(
+                isFollowed = isFollowed,
+                isSelfProfile = false
+            )
+        }
+    }
+
 
     fun takipcidenCikar(takipciId: String, currentUserId: String,  onSuccess: () -> Unit = {}, onFailure: () -> Unit) {
         val previousFollowedCount = _targetUserTakipEdilenSayisi.value

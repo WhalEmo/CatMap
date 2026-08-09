@@ -6,5 +6,5 @@ data class FollowUiState(
     val isSelfProfile: Boolean? = null,
     val isFollowing: Boolean = false,
     val isFollowed: Boolean = false,
-    val isLoadingFollowState: Boolean = false
+    val isLoadingFollowState: Boolean = false,
 )

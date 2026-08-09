@@ -1,6 +1,5 @@
 package com.beem.catmap.Profil
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,9 +16,9 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ConcatAdapter
@@ -28,13 +27,14 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
-import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
 import com.beem.catmap.Profil.Gonderiler.LoadingFooterAdapter
 import com.beem.catmap.R
+import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.FollowUiState
 import com.beem.catmap.gonderi.FollowViewModel
 import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.gonderi.ProfileDialogHelper
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.models.Gonderi
@@ -45,7 +45,8 @@ import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
-import com.beem.catmap.utils.toFirebaseTimestamp
+import com.beem.catmap.ui.viewmodel.BlockActionState
+import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import de.hdodenhof.circleimageview.CircleImageView
@@ -55,6 +56,7 @@ import kotlinx.coroutines.launch
 class ProfilFragment : Fragment() {
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
+    private val userBlockViewModel: UserBlockViewModel by activityViewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
     private lateinit var blockedUserLayout: View
     private lateinit var btnBackEngel: ImageButton
@@ -72,6 +74,7 @@ class ProfilFragment : Fragment() {
     private lateinit var ppMenuButton: ImageView
     private lateinit var takipEdiliyorVeMesajLayout: LinearLayout
     private lateinit var takipEdiliyorButonu: Button
+    private lateinit var engelKaldirButton: Button
     private lateinit var sohbetButon: Button
     private lateinit var takipciSayisiTextView: TextView
     private lateinit var takipciSayisiLayout: LinearLayout
@@ -89,12 +92,14 @@ class ProfilFragment : Fragment() {
     private var profileLoaded = false
     val myUserId = UserSession.userId
     private var targetUserId: String? = null
+    private var initialIsFollowed: Boolean = false
+    private lateinit var uyariMesaji: UyariMesaji
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             targetUserId = it.getString(ARG_USER_ID)
-
+            initialIsFollowed = it.getBoolean("IS_FOLLOWED", false)
             Log.d("TARGET",targetUserId.toString())
         }
     }
@@ -112,13 +117,23 @@ class ProfilFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         handleBackPressWithEngine()
-
+        uyariMesaji = UyariMesaji(requireContext(), true)
         initViews(view)
         setupRecyclerView()
         setupListeners()
         observeViewModel()
 
+        if (initialIsFollowed) {
+            followViewModel.setInitialFollowedState(isFollowed = true)
+        }
+
         yukleVerileri(forceRefresh = false)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        profileLoaded = false
+        profileViewModel.resetProfileState()
     }
     private fun initViews(view: View) {
         myConstraintLayout = view.findViewById(R.id.myConstraintLayout)
@@ -131,6 +146,7 @@ class ProfilFragment : Fragment() {
         btnBack = view.findViewById(R.id.btnBack)
         profiliDuzenleTiklandi = view.findViewById(R.id.profiliDuzenleTiklandi)
         takipEtButonu = view.findViewById(R.id.takipEtButonu)
+        engelKaldirButton = view.findViewById(R.id.EngelKaldirButton)
         takipEdiliyorVeMesajLayout = view.findViewById(R.id.takipEdiliyorVeMesajLayout)
         takipEdiliyorButonu = view.findViewById(R.id.takipEdiliyorButonu)
         sohbetButon = view.findViewById(R.id.sohbetButon)
@@ -148,6 +164,11 @@ class ProfilFragment : Fragment() {
         btnBackEngel = view.findViewById(R.id.btnBackEngel)
         KullaniciAdiEngel = view.findViewById(R.id.KullaniciAdiEngel)
         ppMenuButton = view.findViewById(R.id.ppMenuButton)
+    }
+
+    override fun onDestroyView() {
+        uyariMesaji.kapat()
+        super.onDestroyView()
     }
 
     private fun showShimmerLoading() {
@@ -328,6 +349,12 @@ class ProfilFragment : Fragment() {
             }
         }
 
+        engelKaldirButton.setOnClickListener {
+            it.bounceAndHaptic()
+            engelKaldirButton.visibility= View.GONE
+            takipEtButonu.visibility = View.VISIBLE
+            showEngelKaldirDialog()
+        }
         sohbetButon.setOnClickListener { }
 
         profiliDuzenleTiklandi.setOnClickListener {
@@ -343,44 +370,29 @@ class ProfilFragment : Fragment() {
         popupMenu.menuInflater.inflate(R.menu.profil_uc_nokta_menu, popupMenu.menu)
 
         val isMyFollower = followViewModel.followUiState.value.isFollowed
+        val isBlocked = userBlockViewModel.benimEngellediklerim.value.any { it.id == targetUserId }
 
         val removeFollowerItem = popupMenu.menu.findItem(R.id.profiltakipciCikar)
         removeFollowerItem?.isVisible = isMyFollower
 
+        val blockItem = popupMenu.menu.findItem(R.id.profilmenu_engelle)
+        val unblockItem = popupMenu.menu.findItem(R.id.profilmenu_engeliKaldir)
+
+        blockItem?.isVisible = !isBlocked
+        unblockItem?.isVisible = isBlocked
+
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.profiltakipciCikar -> {
-                    AlertDialog.Builder(requireContext())
-                        .setTitle("Takipçiden Çıkar")
-                        .setMessage("Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?")
-                        .setPositiveButton("Evet") { dialog, _ ->
-                            targetUserId?.let { id ->
-                                followViewModel.takipcidenCikar(
-                                    takipciId = id,
-                                    currentUserId = myUserId,
-                                    onSuccess = {
-                                        val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
-                                        val userId = profile?.id.orEmpty().ifBlank { targetUserId }
-
-                                        userId?.let {
-                                            ProfileEventBus.emitEvent(
-                                                ProfileEvent.UnFollowerUser(
-                                                    userId = it,
-                                                    operatorUserId = myUserId
-                                                )
-                                            )
-                                        }
-                                    },
-                                    onFailure = {
-                                        progressFollow.visibility = View.GONE
-                                    }
-                                )
-                            }
-                            dialog.dismiss()
-
-                        }
-                        .setNegativeButton("İptal", null)
-                        .show()
+                    showTakipcidenCikarDialog()
+                    true
+                }
+                R.id.profilmenu_engelle -> {
+                    showEngelleDialog()
+                    true
+                }
+                R.id.profilmenu_engeliKaldir -> {
+                    showEngelKaldirDialog()
                     true
                 }
                 else -> false
@@ -388,7 +400,128 @@ class ProfilFragment : Fragment() {
         }
         popupMenu.show()
     }
+    private fun showTakipcidenCikarDialog() {
+        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
 
+        ProfileDialogHelper.showTakipcidenCikarDialog(
+            context = requireContext(),
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
+                targetUserId?.let { id ->
+                    followViewModel.takipcidenCikar(
+                        takipciId = id,
+                        currentUserId = myUserId,
+                        onSuccess = {
+                            val userId = currentProfile?.id.orEmpty().ifBlank { targetUserId }
+                            userId?.let {
+                                ProfileEventBus.emitEvent(
+                                    ProfileEvent.UnFollowerUser(
+                                        userId = it,
+                                        operatorUserId = myUserId
+                                    )
+                                )
+                            }
+                        },
+                        onFailure = {
+                            progressFollow.visibility = View.GONE
+                        }
+                    )
+                }
+            }
+        )
+    }
+
+    private fun showEngelleDialog() {
+        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+
+        ProfileDialogHelper.showEngelleDialog(
+            context = requireContext(),
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
+                currentProfile?.let { engellenecekKullanici ->
+                    userBlockViewModel.engelle(
+                        engellenecekKullanici = engellenecekKullanici,
+                        kisiId = myUserId,
+                        onResult = { isSuccess ->
+                            if (isSuccess) {
+                                snapUiBlocked()
+                            }
+                        }
+                    )
+                }
+            }
+        )
+    }
+    private fun showEngelKaldirDialog() {
+        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+
+        ProfileDialogHelper.showEngelKaldirDialog(
+            context = requireContext(),
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
+                engelKaldirButton.visibility= View.GONE
+                takipEtButonu.visibility = View.VISIBLE
+                targetUserId?.let { engellenenId ->
+                    userBlockViewModel.engelKaldir(
+                        engellenenKullaniciId = engellenenId,
+                        kisiId = myUserId,
+                        onResult = { isSuccess ->
+                            if (isSuccess) {
+
+                            }
+                        }
+                    )
+                }
+            }
+        )
+    }
+    private fun snapUiBlocked(){
+        recyclerView.visibility = View.GONE
+        postSectionHeader.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        progressFollow.visibility = View.GONE
+
+        tvEmpty.text = "🚫 Bu kullanıcıyı engellediniz."
+        tvEmpty.visibility = View.VISIBLE
+
+        profiliDuzenleTiklandi.visibility = View.GONE
+        takipEtButonu.visibility = View.GONE
+        takipEdiliyorVeMesajLayout.visibility = View.GONE
+        engelKaldirButton.visibility = View.VISIBLE
+    }
+    private fun setupBlockedByMeUi(kullanici: Kullanici?) {
+        shimmerLayout.stopShimmer()
+        shimmerLayout.visibility = View.GONE
+        swipeRefreshLayout.isRefreshing = false
+
+        myConstraintLayout.visibility = View.VISIBLE
+        blockedUserLayout.visibility = View.GONE
+
+        kullanici?.let {
+            KullaniciAdi.text = it.kullaniciAdi.orEmpty()
+            tvAd.text = it.ad.orEmpty().trim()
+            bioTextView.text = it.biyografi.orEmpty()
+
+            Glide.with(requireContext())
+                .load(it.fotoUrl)
+                .placeholder(R.drawable.kullanici)
+                .error(R.drawable.kullanici)
+                .into(profilFotoImageView)
+        }
+
+        recyclerView.visibility = View.GONE
+        postSectionHeader.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        progressFollow.visibility = View.GONE
+
+        profiliDuzenleTiklandi.visibility = View.GONE
+        takipEtButonu.visibility = View.GONE
+        takipEdiliyorVeMesajLayout.visibility = View.GONE
+        engelKaldirButton.visibility = View.VISIBLE
+
+        tvEmpty.text = "🚫 Bu kullanıcıyı engellediniz."
+        tvEmpty.visibility = View.VISIBLE
+    }
 
     private fun yukleVerileri(forceRefresh: Boolean = false) {
         if (forceRefresh) {
@@ -404,8 +537,25 @@ class ProfilFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    userBlockViewModel.blockActionState.collect { state ->
+                        when (state) {
+                            is BlockActionState.Loading -> {
+                                uyariMesaji.YuklemeDurum(state.message)
+                            }
+                            is BlockActionState.Success -> {
+                                uyariMesaji.BasariliDurum(state.message, 1500)
 
-                // 1. Ana Profil Verisi Akışı
+                            }
+                            is BlockActionState.Error -> {
+                                uyariMesaji.BasarisizDurum(state.message, 1500)
+                            }
+                            is BlockActionState.Idle -> {
+                                // Herhangi bir işlem yok
+                            }
+                        }
+                    }
+                }
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
                         when (state) {
@@ -436,14 +586,14 @@ class ProfilFragment : Fragment() {
                                     followingCount = fullData.followingCount,
                                     isSelf = fullData.isSelfProfile,
                                     isFollowing = fullData.isFollowing,
-                                    isFollowed = fullData.isFollowed
+                                    isFollowed = fullData.isFollowed,
                                 )
 
                                 bindUserProfileData(fullData.profile)
                                 swipeRefreshLayout.isRefreshing = false
                                 hideShimmerLoading()
                             }
-                            is UiState.Blocked -> {
+                            is UiState.BlockedBy -> {
                                 shimmerLayout.stopShimmer()
                                 shimmerLayout.visibility = View.GONE
 
@@ -451,6 +601,9 @@ class ProfilFragment : Fragment() {
                                 blockedUserLayout.visibility = View.VISIBLE
                                 swipeRefreshLayout.isRefreshing = false
 
+                            }
+                            is UiState.Blocked -> {
+                                setupBlockedByMeUi(state.profile)
                             }
                             is UiState.Error -> {
                                 hideShimmerLoading()
@@ -561,6 +714,14 @@ class ProfilFragment : Fragment() {
 
     private fun renderProfileButtons(state: FollowUiState) {
 
+        if (state.isBlocked) {
+            profiliDuzenleTiklandi.visibility = View.GONE
+            takipEtButonu.visibility = View.GONE
+            takipEdiliyorVeMesajLayout.visibility = View.GONE
+            engelKaldirButton.visibility = View.VISIBLE
+            progressFollow.visibility = View.GONE
+            return
+        }
         if (state.isSelfProfile == null) {
             profiliDuzenleTiklandi.visibility = View.GONE
             takipEtButonu.visibility = View.GONE

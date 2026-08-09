@@ -3,22 +3,29 @@ package com.beem.catmap.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.CatMapApp
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.repository.UserBlockRepository
-import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class UserBlockViewModel(
-) : ViewModel() {
+sealed class BlockActionState {
+    object Idle : BlockActionState()
+    data class Loading(val message: String = "İşlem yapılıyor...") : BlockActionState()
+    data class Success(val message: String) : BlockActionState()
+    data class Error(val message: String) : BlockActionState()
+}
+
+class UserBlockViewModel : ViewModel() {
 
     private val repository: UserBlockRepository = UserBlockRepository.getInstance()
-    private val currentUserManager: CurrentUserManager = CurrentUserManager.getInstance(CatMapApp.instance)
+
     private val _benimEngellediklerim = MutableStateFlow<List<Kullanici>>(emptyList())
     val benimEngellediklerim: StateFlow<List<Kullanici>> = _benimEngellediklerim.asStateFlow()
 
@@ -28,35 +35,35 @@ class UserBlockViewModel(
     private val _isLastPage = MutableStateFlow(false)
     val isLastPage: StateFlow<Boolean> = _isLastPage.asStateFlow()
 
-    // Sayfalama için imleç (cursor) ViewModel seviyesinde saklanıyor
+    private val _blockActionState = MutableSharedFlow<BlockActionState>()
+    val blockActionState: SharedFlow<BlockActionState> = _blockActionState.asSharedFlow()
+
     private var lastDocument: DocumentSnapshot? = null
 
     fun benimEngellediklerimiGetir(currentUserId: String) {
         viewModelScope.launch {
             try {
                 _isLastPage.value = false
-                lastDocument = null // İlk sayfa çekilirken sıfırla
+                lastDocument = null
 
-                val (liste, newLastDoc) = repository.getBlockedUsersPage(
+                val (liste, newLastDoc) = repository.getInitialBlockedUsers(
                     kisiId = currentUserId,
-                    limit = 20,
-                    lastDocumentSnapshot = null
+                    limit = 20
                 )
 
                 lastDocument = newLastDoc
                 _benimEngellediklerim.value = liste
 
-                if (liste.isEmpty()) {
+                // Veri boşsa veya ilk veri Firestore yerine Cache'ten (lastDoc = null) geldiyse
+                // başka ağ sayfası çekilemeyeceği için isLastPage = true yapılır.
+                if (liste.isEmpty() || newLastDoc == null) {
                     _isLastPage.value = true
                 }
 
-                // Cache / Session güncellemesi ViewModel'da yapılıyor
-                val idListesi = liste.mapNotNull { it.id }
-                currentUserManager.updateBenimEngellediklerim(idListesi)
-
             } catch (e: Exception) {
-                Log.e("EngelVerisi", e.message ?: "")
+                Log.e("UserBlockViewModel", "Engellenenler getirilemedi: ${e.message}")
                 _benimEngellediklerim.value = emptyList()
+                _isLastPage.value = true
             }
         }
     }
@@ -68,7 +75,7 @@ class UserBlockViewModel(
             _isLoadingMore.value = true
 
             try {
-                val (yeniListe, newLastDoc) = repository.getBlockedUsersPage(
+                val (yeniListe, newLastDoc) = repository.getBlockedUsersPageFromNetwork(
                     kisiId = currentUserId,
                     limit = 20,
                     lastDocumentSnapshot = lastDocument
@@ -78,17 +85,14 @@ class UserBlockViewModel(
                     _isLastPage.value = true
                 } else {
                     lastDocument = newLastDoc
-                    _benimEngellediklerim.update { current -> current + yeniListe }
-
-                    // Cache / Session güncellemesi
-                    val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
-                    val newIds = yeniListe.mapNotNull { it.id }
-                    currentIds.addAll(newIds)
-                    currentUserManager.updateBenimEngellediklerim(currentIds.distinct())
+                    // Mükerrer nesne eklenmesini önlemek için distinctBy ile birleştirilir
+                    _benimEngellediklerim.update { current ->
+                        (current + yeniListe).distinctBy { it.id }
+                    }
                 }
 
             } catch (e: Exception) {
-                Log.e("EngelVerisi", e.message ?: "")
+                Log.e("UserBlockViewModel", "Daha fazla yükleme hatası: ${e.message}")
             } finally {
                 _isLoadingMore.value = false
             }
@@ -98,29 +102,25 @@ class UserBlockViewModel(
     fun engelle(
         engellenecekKullanici: Kullanici,
         kisiId: String,
-        onResult: (Boolean, String) -> Unit
+        onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
+            _blockActionState.emit(BlockActionState.Loading("İşlem yapılıyor..."))
             try {
-                val id = engellenecekKullanici.id ?: return@launch
-                val ad = engellenecekKullanici.kullaniciAdi ?: ""
-                val foto = engellenecekKullanici.fotoUrl ?: ""
+                repository.blockUser(kisiId, engellenecekKullanici)
 
-                repository.blockUser(kisiId, id, ad, foto)
-
-                _benimEngellediklerim.update { listOf(engellenecekKullanici) + it }
-
-                // Cache Güncelle
-                val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
-                if (!currentIds.contains(id)) {
-                    currentIds.add(0, id)
-                    currentUserManager.updateBenimEngellediklerim(currentIds)
+                // Listede zaten varsa tekrar eklemiyoruz, en başa koyuyoruz
+                _benimEngellediklerim.update { current ->
+                    val filtered = current.filterNot { it.id == engellenecekKullanici.id }
+                    listOf(engellenecekKullanici) + filtered
                 }
 
-                onResult(true, "Engellendi")
+                _blockActionState.emit(BlockActionState.Success("Engellendi"))
+                onResult(true)
             } catch (e: Exception) {
-                Log.e("Engelle", e.message ?: "")
-                onResult(false, "Engellenemedi")
+                Log.e("UserBlockViewModel", "Engelleme hatası: ${e.message}")
+                _blockActionState.emit(BlockActionState.Error("Engellenemedi"))
+                onResult(false)
             }
         }
     }
@@ -128,9 +128,10 @@ class UserBlockViewModel(
     fun engelKaldir(
         engellenenKullaniciId: String,
         kisiId: String,
-        onResult: (Boolean, String) -> Unit
+        onResult: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
+            _blockActionState.emit(BlockActionState.Loading("İşlem yapılıyor..."))
             try {
                 repository.unblockUser(kisiId, engellenenKullaniciId)
 
@@ -138,17 +139,23 @@ class UserBlockViewModel(
                     current.filterNot { it.id == engellenenKullaniciId }
                 }
 
-                val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
-                if (currentIds.contains(engellenenKullaniciId)) {
-                    currentIds.remove(engellenenKullaniciId)
-                    currentUserManager.updateBenimEngellediklerim(currentIds)
-                }
-
-                onResult(true, "Engel kaldırıldı")
+                _blockActionState.emit(BlockActionState.Success("Engel kaldırıldı"))
+                onResult(true)
             } catch (e: Exception) {
-                Log.e("Engelle", e.message ?: "")
-                onResult(false, "Engel kaldırılamadı")
+                Log.e("UserBlockViewModel", "Engel kaldırma hatası: ${e.message}")
+                _blockActionState.emit(BlockActionState.Error("Engel kaldırılamadı"))
+                onResult(false)
             }
         }
     }
+
+    suspend fun isUserBlocked(currentUserId: String, targetUserId: String): Boolean {
+        // 1. Önce ViewModel'in UI state'ine bak
+        val isBlockedInState = _benimEngellediklerim.value.any { it.id == targetUserId }
+        if (isBlockedInState) return true
+
+        // 2. Yoksa Repository üzerinden LRU Cache / CurrentUserManager / Firestore kademesine git
+        return repository.isUserBlocked(kisiId = currentUserId, targetUserId = targetUserId)
+    }
+
 }

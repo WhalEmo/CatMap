@@ -304,7 +304,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = false,
                 isAccessDenied = isAccessDenied,
                 isLastPage = isLast,
-                lastDocument = lastDoc
+                lastDocument = lastDoc,
             )
         }
     }
@@ -321,4 +321,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
+
+
 }

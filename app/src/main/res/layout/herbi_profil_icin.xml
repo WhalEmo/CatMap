@@ -17,8 +17,8 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:src="@drawable/kullanici"
-            app:civ_border_width="1dp"
-            app:civ_border_color="#DDDDDD" />
+            app:civ_border_color="#DDDDDD"
+            app:civ_border_width="1dp" />
 
         <TextView
             android:id="@+id/RecyclerkullaniciAdi"
@@ -35,17 +35,20 @@
             android:textSize="15sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.button.MaterialButton
+        <!-- Buton yerine bilgi etiketi (Badge / Label) -->
+        <TextView
             android:id="@+id/takipediyosa"
-            android:layout_width="110dp"
-            android:layout_height="40dp"
-            android:clickable="false"
-            android:focusable="false"
-            android:text="Takip"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            android:backgroundTint="@color/catmap_accent"
-            app:cornerRadius="20dp"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="Takip Ediyor"
+            android:textColor="#666666"
+            android:textSize="13sp"
+            android:fontFamily="sans-serif"
+            android:gravity="center" />
+
+
     </LinearLayout>
 
 </LinearLayout>
