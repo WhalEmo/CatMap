@@ -50,9 +50,8 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             repository.login(username, password)
                 .onSuccess { user ->
-                    OnlinePresenceManager.setUserOnline()
                     _uiState.value = AuthUiState.Success(user, "Giriş Başarılı!")
-                    _event.emit(AuthEvent.NavigateToMap)
+                    saveUserLocallyAndNavigate(user)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Giriş başarısız!")
@@ -81,9 +80,8 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             repository.register(user)
                 .onSuccess { registeredUser ->
-                    OnlinePresenceManager.setUserOnline()
                     _uiState.value = AuthUiState.Success(registeredUser, "Kayıt Başarılı!")
-                    _event.emit(AuthEvent.NavigateToMap)
+                    saveUserLocallyAndNavigate(registeredUser)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Kayıt başarısız!")
@@ -120,9 +118,8 @@ class AuthViewModel : ViewModel() {
                 .onSuccess { result ->
                     when (result) {
                         is GoogleAuthResult.ExistingUser -> {
-                            OnlinePresenceManager.setUserOnline()
                             _uiState.value = AuthUiState.Success(result.user, "Tekrar Hoş Geldin!")
-                            _event.emit(AuthEvent.NavigateToMap)
+                            saveUserLocallyAndNavigate(result.user)
                         }
                         is GoogleAuthResult.NewUser -> {
                             _uiState.value = AuthUiState.Idle
@@ -138,7 +135,11 @@ class AuthViewModel : ViewModel() {
     }
 
     private fun saveUserLocallyAndNavigate(user: Kullanici) {
-        UserSession.update(user)
+        viewModelScope.launch {
+            UserSession.update(user)
+            OnlinePresenceManager.setUserOnline()
+            _event.emit(AuthEvent.NavigateToMap)
+        }
     }
 
     fun resetState() {

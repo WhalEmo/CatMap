@@ -185,7 +185,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         if (currentUserManager.isUserLoggedIn()) {
             BegenileriCek();
-            SmartNavigationEngine.init(navigationEngine, Screen.AUTH);
+            SmartNavigationEngine.init(navigationEngine, Screen.MAP);
         } else {
             SmartNavigationEngine.init(navigationEngine, Screen.AUTH);
         }

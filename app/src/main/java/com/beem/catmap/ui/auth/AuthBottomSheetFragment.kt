@@ -151,7 +151,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
     // 🚀 StateFlow & SharedFlow Dinleyicisi
     private fun observeStateFlow() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
 
                 // 1. UI State Dinleyicisi
                 launch {
@@ -181,7 +181,6 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                             is AuthUiState.Success -> {
                                 setButtonsEnabled(true)
                                 uyariMesaji.BasariliDurum(state.message, 1000)
-                                CurrentUserManager.getInstance(requireContext()).setCurrentUser(state.user)
                                 dismiss()
                             }
                             is AuthUiState.Error -> {
