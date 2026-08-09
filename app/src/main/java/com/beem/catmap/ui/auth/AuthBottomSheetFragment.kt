@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -48,6 +49,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
             viewModel.setMode(initialMode)
         }
 
+        setupErrorClearingOnTextChange()
         setupListeners()
         observeStateFlow()
     }
@@ -66,25 +68,83 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
         binding.btnGoToLoginFromForgot.setOnClickListener { viewModel.setMode(AuthMode.LOGIN) }
 
         binding.btnLogin.setOnClickListener {
-            viewModel.login(
-                binding.edtLoginUser.text.toString(),
-                binding.edtLoginPass.text.toString()
-            )
+            clearAllErrors() // Önceki hataları temizle
+            val username = binding.edtLoginUser.text.toString().trim()
+            val password = binding.edtLoginPass.text.toString().trim()
+
+            var hasError = false
+
+            if (username.isEmpty()) {
+                binding.tilLoginUser.error = "Kullanıcı adı boş bırakılamaz"
+                hasError = true
+            }
+
+            if (password.isEmpty()) {
+                binding.tilLoginPass.error = "Şifre boş bırakılamaz"
+                hasError = true
+            }
+
+            if (!hasError) {
+                viewModel.login(username, password)
+            }
         }
 
+        // 📝 Kaydol Butonu
         binding.btnRegister.setOnClickListener {
-            val user = Kullanici(
-                ad = binding.edtRegName.text.toString(),
-                soyad = binding.edtRegSurname.text.toString(),
-                email = binding.edtRegEmail.text.toString(),
-                kullaniciAdi = binding.edtRegUser.text.toString(),
-                sifre = binding.edtRegPass.text.toString()
-            )
-            viewModel.register(user)
+            clearAllErrors()
+            val name = binding.edtRegName.text.toString().trim()
+            val surname = binding.edtRegSurname.text.toString().trim()
+            val email = binding.edtRegEmail.text.toString().trim()
+            val username = binding.edtRegUser.text.toString().trim()
+            val password = binding.edtRegPass.text.toString().trim()
+
+            var hasError = false
+
+            if (name.isEmpty()) {
+                binding.tilRegName.error = "Ad zorunludur"
+                hasError = true
+            }
+            if (surname.isEmpty()) {
+                binding.tilRegSurname.error = "Soyad zorunludur"
+                hasError = true
+            }
+            if (email.isEmpty()) {
+                binding.tilRegEmail.error = "E-posta zorunludur"
+                hasError = true
+            }
+            if (username.isEmpty()) {
+                binding.tilRegUser.error = "Kullanıcı adı zorunludur"
+                hasError = true
+            }
+            if (password.isEmpty()) {
+                binding.tilRegPass.error = "Şifre zorunludur"
+                hasError = true
+            } else if (password.length < 5) {
+                binding.tilRegPass.error = "Şifre en az 5 karakter olmalıdır"
+                hasError = true
+            }
+
+            if (!hasError) {
+                val user = Kullanici(
+                    ad = name,
+                    soyad = surname,
+                    email = email,
+                    kullaniciAdi = username,
+                    sifre = password
+                )
+                viewModel.register(user)
+            }
         }
 
         binding.btnResetPassword.setOnClickListener {
-            viewModel.resetPassword(binding.edtForgotEmail.text.toString())
+            clearAllErrors()
+            val email = binding.edtForgotEmail.text.toString().trim()
+
+            if (email.isEmpty()) {
+                binding.tilForgotEmail.error = "E-posta adresi boş bırakılamaz"
+            } else {
+                viewModel.resetPassword(email)
+            }
         }
     }
 
@@ -96,6 +156,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                 // 1. UI State Dinleyicisi
                 launch {
                     viewModel.currentMode.collect { mode ->
+                        clearAllErrors()
                         val targetChild = when(mode) {
                             AuthMode.LOGIN -> 0
                             AuthMode.REGISTER -> 1
@@ -145,6 +206,41 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                     }
                 }
 
+            }
+        }
+    }
+
+
+    private fun clearAllErrors() {
+        val layouts = listOf(
+            binding.tilLoginUser, binding.tilLoginPass,
+            binding.tilRegName, binding.tilRegSurname,
+            binding.tilRegEmail, binding.tilRegUser, binding.tilRegPass,
+            binding.tilForgotEmail
+        )
+
+        layouts.forEach { layout ->
+            layout.error = null
+            layout.isErrorEnabled = false
+        }
+    }
+
+    private fun setupErrorClearingOnTextChange() {
+        val inputMap = mapOf(
+            binding.edtLoginUser to binding.tilLoginUser,
+            binding.edtLoginPass to binding.tilLoginPass,
+            binding.edtRegName to binding.tilRegName,
+            binding.edtRegSurname to binding.tilRegSurname,
+            binding.edtRegEmail to binding.tilRegEmail,
+            binding.edtRegUser to binding.tilRegUser,
+            binding.edtRegPass to binding.tilRegPass,
+            binding.edtForgotEmail to binding.tilForgotEmail
+        )
+
+        inputMap.forEach { (editText, textInputLayout) ->
+            editText.doOnTextChanged { _, _, _, _ ->
+                textInputLayout.error = null
+                textInputLayout.isErrorEnabled = false
             }
         }
     }

@@ -19,7 +19,15 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
 
@@ -35,15 +43,21 @@ import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlin.getValue
 
 class AuthFragment : Fragment() {
 
     private var _binding: FragmentAuthBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: AuthViewModel by viewModels()
 
     private var dialog: BottomSheetDialog? = null
     private var isPasswordVisible = false
@@ -84,7 +98,7 @@ class AuthFragment : Fragment() {
         }
 
         binding.btnGoogleGiris.setOnClickListener {
-            // Google auth akışını başlat
+            launchGoogleSignIn()
         }
     }
 
@@ -163,6 +177,98 @@ class AuthFragment : Fragment() {
             .setMessage(getString(contentResId))
             .setPositiveButton("Anladım")
             .show(childFragmentManager, "CatMapLegalDialog")
+    }
+
+
+    private fun launchGoogleSignIn() {
+        val credentialManager = CredentialManager.create(requireContext())
+
+        // 1. Google ID Seçeneklerini Hazırla
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(getString(R.string.default_web_client_id))
+            .setAutoSelectEnabled(false)
+            .setFilterByAuthorizedAccounts(false)
+            .build()
+
+        // 2. İstek Oluştur
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        // 3. Credential Manager'ı Çalıştır
+        lifecycleScope.launch {
+            try {
+                val result = credentialManager.getCredential(
+                    request = request,
+                    context = requireContext()
+                )
+
+                val credential = result.credential
+                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    val idToken = googleIdTokenCredential.idToken
+
+                    Log.d("GOOGLE_AUTH", ">>> ID TOKEN Başarıyla Alındı: ${idToken.take(15)}...")
+
+                    // 🚀 Firebase'e Token'ı Gönder
+                    viewModel.firebaseAuthWithGoogle(idToken)
+                } else {
+                    Log.e("GOOGLE_AUTH", "Beklenmeyen Credential Tipi: ${credential.type}")
+                }
+            } catch (e: GetCredentialException) {
+                Log.e("GOOGLE_AUTH", "GetCredentialException Hata Tipi: ${e.type}")
+                Log.e("GOOGLE_AUTH", "GetCredentialException Detay: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e("GOOGLE_AUTH", "Bilinmeyen Google Giriş Hatası: ${e.localizedMessage}", e)
+            }
+        }
+    }
+
+    private fun observeStateFlow() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                // 1. UI State (Loading, Success, Error)
+                launch {
+                    viewModel.uiState.collect { state ->
+                        when (state) {
+                            is AuthUiState.Idle -> {
+                                binding.btnGoogleGiris.isEnabled = true
+                            }
+                            is AuthUiState.Loading -> {
+                                binding.btnGoogleGiris.isEnabled = false
+                                uyariMesaji.YuklemeDurum(state.message)
+                            }
+                            is AuthUiState.Success -> {
+                                binding.btnGoogleGiris.isEnabled = true
+                                uyariMesaji.BasariliDurum(state.message, 1000)
+                                CurrentUserManager.getInstance(requireContext()).setCurrentUser(state.user)
+                            }
+                            is AuthUiState.Error -> {
+                                binding.btnGoogleGiris.isEnabled = true
+                                uyariMesaji.BasarisizDurum(state.errorMessage, 1500)
+                                viewModel.resetState()
+                            }
+                        }
+                    }
+                }
+
+                // 2. Event Dinleyicisi (Navigasyon)
+                launch {
+                    viewModel.event.collect { event ->
+                        when (event) {
+                            is AuthEvent.ShowToast -> {
+                                Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+                            }
+                            is AuthEvent.NavigateToMap -> {
+                                SmartNavigationEngine.navigateTo(Screen.MAP)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
