@@ -39,6 +39,7 @@ import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -388,6 +389,17 @@ class ProfilFragment : Fragment() {
                         .show()
                     true
                 }
+                R.id.signOut -> {
+                    CatMapDialog.build()
+                        .setTitle("Maceraya Mola mı?")
+                        .setMessage("Dostlarımız haritada seni bekliyor olacak! Yine bekleriz, çıkış yapmak istediğine emin misin?")
+                        .setPositiveButton("Evet, Çıkış Yap") {
+                            logout()
+                        }
+                        .setNegativeButton("Kalıyorum")
+                        .show(childFragmentManager, "SignOutDialog")
+                    true
+                }
                 else -> false
             }
         }
@@ -610,9 +622,28 @@ class ProfilFragment : Fragment() {
      * OnlinePresenceManager objesi çevrimiçi durumunu yönetiyor. <3<3<3
      */
     private fun logout() {
-        OnlinePresenceManager.setUserOffline()
+        // 💡 1. Coroutine Scope ile güvenli çıkış işlemi
+        lifecycleScope.launch {
+            // Varsa bir Loading Banner/Pill açabilirsin: "Oturum kapatılıyor..."
 
-        FirebaseAuth.getInstance().signOut()
+            try {
+                OnlinePresenceManager.setUserOffline()
+                UserSession.logout()
+
+            } catch (e: Exception) {
+                Log.e("LOGOUT_ERROR", "Çıkış esnasında temizlik hatası: ${e.localizedMessage}")
+            } finally {
+                navigateToAuthAndClearHistory()
+            }
+        }
+    }
+
+    private fun navigateToAuthAndClearHistory() {
+        if (!isAdded || isStateSaved) return
+
+        SmartNavigationEngine.navigateTo(
+            targetScreen = Screen.AUTH,
+        )
     }
 
 

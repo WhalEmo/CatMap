@@ -13,6 +13,7 @@ import androidx.fragment.app.DialogFragment
 import com.beem.catmap.R
 import com.beem.catmap.databinding.DialogCatmapBinding
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.isVisible
 
 class CatMapDialog : DialogFragment() {
 
@@ -23,6 +24,9 @@ class CatMapDialog : DialogFragment() {
     private var messageText: String? = null
     private var positiveBtnText: String? = "Anladım"
     private var positiveAction: (() -> Unit)? = null
+
+    private var negativeBtnText: String? = null
+    private var negativeAction: (() -> Unit)? = null
 
     // 🔴 1. Başlığı Kapatmak İçin Kurşungeçirmez Yöntem
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -51,6 +55,17 @@ class CatMapDialog : DialogFragment() {
         binding.btnDialogPositive.setOnClickListener {
             positiveAction?.invoke()
             dismiss()
+        }
+
+        if (!negativeBtnText.isNullOrEmpty()) {
+            binding.btnDialogNegative.text = negativeBtnText
+            binding.btnDialogNegative.isVisible = true
+            binding.btnDialogNegative.setOnClickListener {
+                negativeAction?.invoke()
+                dismiss()
+            }
+        } else {
+            binding.btnDialogNegative.isVisible = false
         }
     }
 
@@ -86,6 +101,12 @@ class CatMapDialog : DialogFragment() {
     fun setPositiveButton(text: String, action: (() -> Unit)? = null): CatMapDialog {
         this.positiveBtnText = text
         this.positiveAction = action
+        return this
+    }
+
+    fun setNegativeButton(text: String, action: (() -> Unit)? = null): CatMapDialog {
+        this.negativeBtnText = text
+        this.negativeAction = action
         return this
     }
 

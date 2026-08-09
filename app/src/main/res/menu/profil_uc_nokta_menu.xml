@@ -9,4 +9,7 @@
     <item
         android:id="@+id/mesajGonder"
         android:title="Mesaj gönder"/>
+    <item
+        android:id="@+id/signOut"
+        android:title="Çıkış Yap"/>
 </menu>

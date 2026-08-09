@@ -243,6 +243,10 @@ class AuthFragment : Fragment() {
                             is AuthUiState.Success -> {
                                 setButtonsEnabled(true)
                                 showSuccessPill(state.message)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    delay(1000.milliseconds)
+                                    viewModel.resetState()
+                                }
                             }
                             is AuthUiState.Error -> {
                                 setButtonsEnabled(true)
@@ -308,6 +312,12 @@ class AuthFragment : Fragment() {
         )
 
         animatePillShow()
+
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(1000.milliseconds)
+            hideStatusPill()
+        }
     }
 
     /**
@@ -328,7 +338,6 @@ class AuthFragment : Fragment() {
 
         animatePillShow()
 
-        // Hata mesajını 2 saniye gösterip otomatik gizle ve state'i sıfırla
         viewLifecycleOwner.lifecycleScope.launch {
             delay(2000.milliseconds)
             hideStatusPill()
