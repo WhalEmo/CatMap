@@ -41,6 +41,7 @@ import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.message.dialogs.EditMessageDialogFragment
 import com.beem.catmap.ui.message.models.BlockState
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -114,6 +115,7 @@ class MessageFragment : Fragment() {
 
         setupRecyclerView()
         setupListeners()
+        setupOnClick()
         setupScrollToBottomButton()
         observeUiState()
         setupKeyboardAdjustments()
@@ -318,6 +320,18 @@ class MessageFragment : Fragment() {
         binding.engelKaldir.setOnClickListener {
             if (binding.engelKaldir.isClickable) {
                 showUnblockConfirmationDialog()
+            }
+        }
+    }
+
+    private fun setupOnClick() {
+        val views = listOf(
+            binding.kisiProfilFoto,
+            binding.kisiAdiText
+        )
+        for (view in views) {
+            view.setOnClickListener {
+                NavigationHelper.navigateToProfile(receiverId)
             }
         }
     }

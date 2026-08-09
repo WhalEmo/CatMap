@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.R
 import com.beem.catmap.models.RecentChat
 import com.beem.catmap.databinding.SohbetKutusuBinding
+import com.beem.catmap.utils.toFormattedLastSeen
+import com.beem.catmap.utils.toFormattedMessageTime
 import com.bumptech.glide.Glide
 
 class RecentChatsAdapter(
@@ -32,6 +34,7 @@ class RecentChatsAdapter(
         fun bind(chat: RecentChat) {
             binding.kisiAdi.text = chat.otherUserName
             binding.sonMesaj.text = chat.lastMessage
+            binding.mesajSaat.text = chat.lastMessageTimestamp.toFormattedMessageTime()
 
             // Okunmamış mesaj sayısı rozeti
             if (chat.unreadCount > 0) {
