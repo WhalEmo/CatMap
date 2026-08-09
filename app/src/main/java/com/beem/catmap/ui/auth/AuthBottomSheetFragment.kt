@@ -202,6 +202,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                             is AuthEvent.NavigateToMap -> {
                                 SmartNavigationEngine.navigateTo(Screen.MAP)
                             }
+                            else -> {}
                         }
                     }
                 }

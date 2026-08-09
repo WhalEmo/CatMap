@@ -61,7 +61,6 @@ class AuthFragment : Fragment() {
 
     private var dialog: BottomSheetDialog? = null
     private var isPasswordVisible = false
-    private lateinit var uyariMesaji: UyariMesaji
     private val db = FirebaseFirestore.getInstance()
 
 
@@ -79,6 +78,8 @@ class AuthFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupTermsSpannableText()
+
+        observeStateFlow()
 
         binding.btnAuthKaydol.setOnClickListener { view ->
             view.post {
@@ -209,18 +210,11 @@ class AuthFragment : Fragment() {
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     val idToken = googleIdTokenCredential.idToken
 
-                    Log.d("GOOGLE_AUTH", ">>> ID TOKEN Başarıyla Alındı: ${idToken.take(15)}...")
-
                     // 🚀 Firebase'e Token'ı Gönder
                     viewModel.firebaseAuthWithGoogle(idToken)
-                } else {
-                    Log.e("GOOGLE_AUTH", "Beklenmeyen Credential Tipi: ${credential.type}")
                 }
             } catch (e: GetCredentialException) {
-                Log.e("GOOGLE_AUTH", "GetCredentialException Hata Tipi: ${e.type}")
-                Log.e("GOOGLE_AUTH", "GetCredentialException Detay: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e("GOOGLE_AUTH", "Bilinmeyen Google Giriş Hatası: ${e.localizedMessage}", e)
             }
         }
     }
@@ -238,16 +232,13 @@ class AuthFragment : Fragment() {
                             }
                             is AuthUiState.Loading -> {
                                 binding.btnGoogleGiris.isEnabled = false
-                                uyariMesaji.YuklemeDurum(state.message)
                             }
                             is AuthUiState.Success -> {
                                 binding.btnGoogleGiris.isEnabled = true
-                                uyariMesaji.BasariliDurum(state.message, 1000)
                                 CurrentUserManager.getInstance(requireContext()).setCurrentUser(state.user)
                             }
                             is AuthUiState.Error -> {
                                 binding.btnGoogleGiris.isEnabled = true
-                                uyariMesaji.BasarisizDurum(state.errorMessage, 1500)
                                 viewModel.resetState()
                             }
                         }
@@ -263,6 +254,13 @@ class AuthFragment : Fragment() {
                             }
                             is AuthEvent.NavigateToMap -> {
                                 SmartNavigationEngine.navigateTo(Screen.MAP)
+                            }
+                            is AuthEvent.NavigateToProfileSetup -> {
+                                SmartNavigationEngine.navigateTo(
+                                    targetScreen = Screen.PROFILE_SETUP,
+                                    args = ProfileSetupFragment.newBundle(event.user),
+                                    key = event.user.id
+                                )
                             }
                         }
                     }

@@ -2,6 +2,7 @@ package com.beem.catmap.data.repository
 
 import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.ui.auth.GoogleAuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,6 +28,8 @@ class AuthRepository {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val mAuth: FirebaseAuth = FirebaseAuth.getInstance()
     private val authYonetici: DogrulamaKodYonetici = DogrulamaKodYonetici()
+
+    private val userNameTag = "KullaniciAdi"
 
 
     suspend fun login(username: String, password: String): Result<Kullanici> {
@@ -130,7 +133,7 @@ class AuthRepository {
     }
 
     // 🌐 Google ile Giriş & Kayıt
-    suspend fun signInWithGoogle(idToken: String): Result<Kullanici> {
+    suspend fun signInWithGoogle(idToken: String): Result<GoogleAuthResult> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val authResult = mAuth.signInWithCredential(credential).await()
@@ -140,7 +143,7 @@ class AuthRepository {
             val userRef = db.collection("users").document(uid)
             val doc = userRef.get().await()
 
-            if (doc.exists()) {
+            if (doc.exists() && !doc.getString(userNameTag).isNullOrBlank()) {
                 val user = Kullanici(
                     kullaniciAdi = doc.getString("KullaniciAdi") ?: (firebaseUser.email?.substringBefore("@") ?: ""),
                     sifre = ""
@@ -155,7 +158,7 @@ class AuthRepository {
                     takipciSayisi = doc.getLong("takipciSayisi")
                     gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
                 }
-                Result.success(user)
+                Result.success(GoogleAuthResult.ExistingUser(user))
             } else {
                 val newUser = Kullanici(
                     ad = firebaseUser.displayName ?: "",
@@ -166,9 +169,7 @@ class AuthRepository {
                     id = uid
                     fotoUrl = firebaseUser.photoUrl?.toString() ?: ""
                 }
-
-                userRef.set(newUser.KullaniciData()).await()
-                Result.success(newUser)
+                Result.success(GoogleAuthResult.NewUser(newUser))
             }
         } catch (e: Exception) {
             Result.failure(e)

@@ -117,10 +117,19 @@ class AuthViewModel : ViewModel() {
 
         viewModelScope.launch {
             repository.signInWithGoogle(idToken)
-                .onSuccess { user ->
-                    OnlinePresenceManager.setUserOnline()
-                    _uiState.value = AuthUiState.Success(user, "Google ile giriş başarılı!")
-                    _event.emit(AuthEvent.NavigateToMap)
+                .onSuccess { result ->
+                    when (result) {
+                        is GoogleAuthResult.ExistingUser -> {
+                            OnlinePresenceManager.setUserOnline()
+                            _uiState.value = AuthUiState.Success(result.user, "Tekrar Hoş Geldin!")
+                            _event.emit(AuthEvent.NavigateToMap)
+                        }
+                        is GoogleAuthResult.NewUser -> {
+                            _uiState.value = AuthUiState.Idle
+                            _uiState.value = AuthUiState.Success(result.user, "Google ile giriş başarılı!")
+                            _event.emit(AuthEvent.NavigateToProfileSetup(result.user))
+                        }
+                    }
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Google ile giriş başarısız.")

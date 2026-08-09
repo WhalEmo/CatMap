@@ -2,13 +2,17 @@ package com.beem.catmap.Maps;
 
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -40,6 +44,7 @@ import com.beem.catmap.databinding.ActivityMapsBinding;
 import com.beem.catmap.mesaj.MesajFotoGosterFragment;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.auth.AuthFragment;
+import com.beem.catmap.ui.auth.ProfileSetupFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
 import com.beem.catmap.ui.chatlist.ChatFragment;
 import com.beem.catmap.ui.message.MessageFragment;
@@ -57,6 +62,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.squareup.picasso.Target;
@@ -120,6 +126,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case POST -> new GonderiDetayFragment();
                 case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
                 case AUTH -> new AuthFragment();
+                case PROFILE_SETUP -> new ProfileSetupFragment();
             };
         }
     };
@@ -366,20 +373,20 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     }
 
     private void showSystemExitDialog() {
-        android.app.Dialog dialog = new android.app.Dialog(this);
-        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_exit_app);
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             dialog.getWindow().setLayout(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
             );
         }
 
-        com.google.android.material.button.MaterialButton btnCancel = dialog.findViewById(R.id.btnCancelExit);
-        com.google.android.material.button.MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirmExit);
+        MaterialButton btnCancel = dialog.findViewById(R.id.btnCancelExit);
+        MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirmExit);
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 

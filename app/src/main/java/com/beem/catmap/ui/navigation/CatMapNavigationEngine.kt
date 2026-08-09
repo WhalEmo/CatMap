@@ -22,24 +22,6 @@ class CatMapNavigationEngine(
         setupCaptureHub()
     }
 
-    /*
-
-    private fun setupNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            if (isUpdatingSilently) return@setOnItemSelectedListener true
-
-            val targetScreen = Screen.fromMenuId(item.itemId)
-            SmartNavigationEngine.navigateTo(
-                targetScreen = targetScreen,
-                args = if (targetScreen == Screen.PROFILE)
-                    ProfilFragment.newArgs(UserSession.userId) else null,
-                key = if (targetScreen == Screen.PROFILE)
-                    UserSession.userId else null
-            )
-            true
-        }
-    }
-    */
 
     private fun setupNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
@@ -74,9 +56,8 @@ class CatMapNavigationEngine(
     fun updateUISilently(screen: Screen) {
         Log.d("NAV_BRIDGE", "🤫 updateUISilently ÇAĞRILDI -> Ekran: $screen")
 
-        if (screen.isNode && screen != Screen.AUTH) menuShow() else menuHide()
+        if (screen.isNode && screen != Screen.AUTH && screen != Screen.PROFILE_SETUP) menuShow() else menuHide()
 
-        if (screen == Screen.MAP) mapItemViewFadeIn() else mapItemViewFadeOut()
 
         screen.menuId?.let { selectedMenuId ->
             val currentSelectedId = binding.bottomNavigation.selectedItemId
@@ -95,25 +76,6 @@ class CatMapNavigationEngine(
         }
     }
 
-    /*
-    fun updateUISilently(screen: Screen) {
-
-        if(screen.isNode && screen != Screen.AUTH) menuShow() else menuHide()
-
-        if (screen == Screen.MAP) mapItemViewFadeIn() else mapItemViewFadeOut()
-
-        screen.menuId?.let { selectedMenuId ->
-            val currentSelectedId = binding.bottomNavigation.selectedItemId
-            if (currentSelectedId != selectedMenuId) {
-                binding.bottomNavigation.setOnItemSelectedListener(null)
-                binding.bottomNavigation.selectedItemId = selectedMenuId
-                setupNavigation()
-            }
-        }
-    }
-
-     */
-
     private fun menuShow(){
         binding.bottomNavigation.fadeIn()
         binding.btnCaptureLayout.fadeIn()
@@ -124,15 +86,7 @@ class CatMapNavigationEngine(
         binding.btnCaptureLayout.fadeOut()
     }
 
-    private fun mapItemViewFadeIn(){
-    }
 
-    private fun mapItemViewFadeOut(){
-    }
-
-    fun selectMapTabSilently() {
-        updateUISilently(Screen.MAP)
-    }
 
     private fun triggerHaptic(feedbackConstant: Int) {
         activityRef.get()?.window?.decorView?.performHapticFeedback(feedbackConstant)
