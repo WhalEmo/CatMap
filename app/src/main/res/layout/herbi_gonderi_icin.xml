@@ -219,13 +219,27 @@
                             app:layout_constraintTop_toBottomOf="@id/kediAciklamaBaslik"
                             tools:text="Kedi hakkında çok uzun bir açıklama olabilir..." />
 
+                        <TextView
+                            android:id="@+id/gonderiTarihiText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:gravity="center_vertical"
+                            android:textColor="@color/catmap_text_muted"
+                            android:textSize="12sp"
+                            android:drawablePadding="6dp"
+                            android:text="12 Mayıs 2024, 14:30"
+                            app:drawableTint="@color/catmap_text_muted"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/kediAciklama"
+                             />
                         <View
                             android:id="@+id/divider"
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:layout_marginTop="16dp"
                             android:background="@color/catmap_divider"
-                            app:layout_constraintTop_toBottomOf="@id/kediAciklama" />
+                            app:layout_constraintTop_toBottomOf="@id/gonderiTarihiText" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/haritadaGorButon"

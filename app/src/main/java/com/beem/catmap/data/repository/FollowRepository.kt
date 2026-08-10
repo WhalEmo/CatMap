@@ -103,15 +103,7 @@ class FollowRepository private constructor(context: Context) {
     suspend fun takipEt(
         currentUserId: String,
         targetUserId: String,
-        myBlockedList: List<String>?,
-        blockedMeList: List<String>?
     ): Result<FollowResult> = withContext(Dispatchers.IO) {
-        if ((myBlockedList?.contains(targetUserId) == true) ||
-            (blockedMeList?.contains(currentUserId) == true)
-        ) {
-            return@withContext Result.failure(IllegalStateException("Engelleme durumundan dolayı takip edilemez."))
-        }
-
         isFollowingCache.put(targetUserId, true)
 
         val currentUserRef = db.collection("users").document(currentUserId)

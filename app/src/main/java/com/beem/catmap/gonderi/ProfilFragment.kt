@@ -1,6 +1,5 @@
 package com.beem.catmap.Profil
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,9 +17,9 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ConcatAdapter
@@ -29,13 +28,14 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.Profil.Gonderiler.GonderiAdapter
-import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment
 import com.beem.catmap.Profil.Gonderiler.LoadingFooterAdapter
 import com.beem.catmap.R
+import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.gonderi.FollowUiState
 import com.beem.catmap.gonderi.FollowViewModel
 import com.beem.catmap.gonderi.PostViewModel
+import com.beem.catmap.gonderi.ProfileDialogHelper
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.managers.OnlinePresenceManager
@@ -46,21 +46,20 @@ import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
-import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
-import com.beem.catmap.utils.toFirebaseTimestamp
+import com.beem.catmap.ui.viewmodel.BlockActionState
+import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
-import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
 class ProfilFragment : Fragment() {
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
+    private val userBlockViewModel: UserBlockViewModel by activityViewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
     private lateinit var blockedUserLayout: View
     private lateinit var btnBackEngel: ImageButton
@@ -78,6 +77,7 @@ class ProfilFragment : Fragment() {
     private lateinit var ppMenuButton: ImageView
     private lateinit var takipEdiliyorVeMesajLayout: LinearLayout
     private lateinit var takipEdiliyorButonu: Button
+    private lateinit var engelKaldirButton: Button
     private lateinit var sohbetButon: Button
     private lateinit var takipciSayisiTextView: TextView
     private lateinit var takipciSayisiLayout: LinearLayout
@@ -95,12 +95,15 @@ class ProfilFragment : Fragment() {
     private var profileLoaded = false
     val myUserId = UserSession.userId
     private var targetUserId: String? = null
+    private var initialIsFollowed: Boolean = false
+    private lateinit var uyariMesaji: UyariMesaji
+    private var loadedKullanici: Kullanici? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             targetUserId = it.getString(ARG_USER_ID)
-
+            initialIsFollowed = it.getBoolean("IS_FOLLOWED", false)
             Log.d("TARGET",targetUserId.toString())
         }
     }
@@ -118,14 +121,20 @@ class ProfilFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         handleBackPressWithEngine()
-
+        uyariMesaji = UyariMesaji(requireContext(), true)
         initViews(view)
         setupRecyclerView()
         setupListeners()
         observeViewModel()
 
+        if (initialIsFollowed) {
+            followViewModel.setInitialFollowedState(isFollowed = true)
+        }
+
         yukleVerileri(forceRefresh = false)
     }
+
+
     private fun initViews(view: View) {
         myConstraintLayout = view.findViewById(R.id.myConstraintLayout)
         shimmerLayout = view.findViewById(R.id.shimmerLayout)
@@ -137,6 +146,7 @@ class ProfilFragment : Fragment() {
         btnBack = view.findViewById(R.id.btnBack)
         profiliDuzenleTiklandi = view.findViewById(R.id.profiliDuzenleTiklandi)
         takipEtButonu = view.findViewById(R.id.takipEtButonu)
+        engelKaldirButton = view.findViewById(R.id.EngelKaldirButton)
         takipEdiliyorVeMesajLayout = view.findViewById(R.id.takipEdiliyorVeMesajLayout)
         takipEdiliyorButonu = view.findViewById(R.id.takipEdiliyorButonu)
         sohbetButon = view.findViewById(R.id.sohbetButon)
@@ -154,6 +164,11 @@ class ProfilFragment : Fragment() {
         btnBackEngel = view.findViewById(R.id.btnBackEngel)
         KullaniciAdiEngel = view.findViewById(R.id.KullaniciAdiEngel)
         ppMenuButton = view.findViewById(R.id.ppMenuButton)
+    }
+
+    override fun onDestroyView() {
+        uyariMesaji.kapat()
+        super.onDestroyView()
     }
 
     private fun showShimmerLoading() {
@@ -259,6 +274,7 @@ class ProfilFragment : Fragment() {
                                     operatorUserId = myUserId
                                 )
                             )
+                            profileViewModel.resetProfileState()
                         },
                         onFailure = {
                             takipEdiliyorButonu.setLoadingState(false)
@@ -270,35 +286,68 @@ class ProfilFragment : Fragment() {
         }
         takipciSayisiLayout.setOnClickListener {
             it.bounceAndHaptic()
-            targetUserId?.let { userId ->
-                val args = bundleOf(
-                    "yukleyenID" to userId,
-                    "startPage" to 0,
-                    "kullaniciAdi" to KullaniciAdi.text.toString(),
-                )
 
-                SmartNavigationEngine.navigateTo(
-                    Screen.FOLLOWERS,
-                    args,
-                    "${userId}_0"
-                )
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+
+            if (canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 0,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_0"
+                    )
+                }
             }
         }
 
         takipEdilenSayisiLayout.setOnClickListener {
             it.bounceAndHaptic()
-            targetUserId?.let { userId ->
-                val args = bundleOf(
-                    "yukleyenID" to userId,
-                    "startPage" to 1,
-                    "kullaniciAdi" to KullaniciAdi.text.toString(),
-                )
 
-                SmartNavigationEngine.navigateTo(
-                    Screen.FOLLOWERS,
-                    args,
-                    "${userId}_1"
-                )
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+
+            if (canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 1,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_1"
+                    )
+                }
+            }
+        }
+
+        takipEdilenSayisiLayout.setOnClickListener {
+            it.bounceAndHaptic()
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+            if(canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 1,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_1"
+                    )
+                }
             }
         }
 
@@ -324,6 +373,7 @@ class ProfilFragment : Fragment() {
                                     operatorUserId = myUserId
                                 )
                             )
+                            profileViewModel.resetProfileState()
                         },
                         onFailure = {
                             takipEtButonu.setLoadingState(false)
@@ -334,47 +384,60 @@ class ProfilFragment : Fragment() {
             }
         }
 
-        sohbetButon.setOnClickListener {
-            targetUserId?.let { receiverId -> NavigationHelper.navigateToChat(receiverId) }
+        engelKaldirButton.setOnClickListener {
+            it.bounceAndHaptic()
+            showEngelKaldirDialog()
         }
+        sohbetButon.setOnClickListener { }
 
         profiliDuzenleTiklandi.setOnClickListener {
             it.bounceAndHaptic()
             SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE)
         }
         ppMenuButton.setOnClickListener { anchorView ->
-            showOptionMenuTest(anchorView)
+            showOptionMenu(anchorView)
         }
     }
 
-
-    private fun showOptionMenuTest(view: View) {
+    private fun showOptionMenu(view: View) {
         val isMyFollower = followViewModel.followUiState.value.isFollowed
+        val isBlocked = userBlockViewModel.benimEngellediklerim.value.any { it.id == targetUserId }
 
         val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
-        val textMutedColor = ContextCompat.getColor(requireContext(), R.color.catmap_text_dark)
+        val textPrimaryColor = ContextCompat.getColor(requireContext(), R.color.catmap_text_primary)
 
         CatMapPopupMenu.Builder(requireContext())
-            // 🔴 1. Takipçiden Çıkar (Koşullu Görünürlük & Özel Diyalog)
             .addItem(
                 id = R.id.profiltakipciCikar,
                 title = "Takipçiden Çıkar",
                 iconRes = R.drawable.ic_unfollow_user,
-                textColor = redColor,
-                iconTint = redColor,
-                isVisible = isMyFollower
+                textColor = textPrimaryColor,
+                iconTint = textPrimaryColor,
+                isVisible = isMyFollower && targetUserId != UserSession.userId
             ) {
-                showRemoveFollowerConfirmationDialog()
+                showTakipcidenCikarDialog()
             }
-
-            // 🚪 2. Çıkış Yap (CatMapDialog Tetiklemesi)
+            .addItem(
+                id = if (isBlocked) R.id.profilmenu_engeliKaldir else R.id.profilmenu_engelle,
+                title = if (isBlocked) "Engeli Kaldır" else "Kullanıcıyı Engelle",
+                iconRes = if (isBlocked) R.drawable.ic_lock_open else R.drawable.ic_lock,
+                textColor = if (isBlocked) textPrimaryColor else redColor,
+                iconTint = if (isBlocked) textPrimaryColor else redColor,
+                isVisible = targetUserId != UserSession.userId
+            ) {
+                if (isBlocked) {
+                    showEngelKaldirDialog()
+                } else {
+                    showEngelleDialog()
+                }
+            }
             .addItem(
                 id = R.id.signOut,
                 title = "Çıkış Yap",
                 iconRes = R.drawable.logout,
-                textColor = textMutedColor,
-                iconTint = textMutedColor,
-                isVisible = true
+                textColor = textPrimaryColor,
+                iconTint = textPrimaryColor,
+                isVisible = targetUserId == UserSession.userId
             ) {
                 CatMapDialog.build()
                     .setTitle("Maceraya Mola mı?")
@@ -389,22 +452,19 @@ class ProfilFragment : Fragment() {
             .show(anchorView = view)
     }
 
-    /**
-     * 🟢 Takipçiden çıkarma diyalog akışını ayrı ve temiz bir metoda aldık
-     */
-    private fun showRemoveFollowerConfirmationDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Takipçiden Çıkar")
-            .setMessage("Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?")
-            .setPositiveButton("Evet") { dialog, _ ->
+    private fun showTakipcidenCikarDialog() {
+        val currentProfile = loadedKullanici
+
+        ProfileDialogHelper.showTakipcidenCikarDialog(
+            fragmentManager = childFragmentManager,
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
                 targetUserId?.let { id ->
                     followViewModel.takipcidenCikar(
                         takipciId = id,
                         currentUserId = myUserId,
                         onSuccess = {
-                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
-                            val userId = profile?.id.orEmpty().ifBlank { targetUserId }
-
+                            val userId = currentProfile?.id.orEmpty().ifBlank { targetUserId }
                             userId?.let {
                                 ProfileEventBus.emitEvent(
                                     ProfileEvent.UnFollowerUser(
@@ -419,74 +479,112 @@ class ProfilFragment : Fragment() {
                         }
                     )
                 }
-                dialog.dismiss()
             }
-            .setNegativeButton("İptal", null)
-            .show()
+        )
     }
 
-    private fun showOptionMenu(view: View) {
-        val popupMenu = PopupMenu(requireContext(), view)
-        popupMenu.menuInflater.inflate(R.menu.profil_uc_nokta_menu, popupMenu.menu)
+    private fun showEngelleDialog() {
+        val currentProfile = loadedKullanici
 
-        val isMyFollower = followViewModel.followUiState.value.isFollowed
+        ProfileDialogHelper.showEngelleDialog(
+            fragmentManager = childFragmentManager,
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
+                currentProfile?.let { engellenecekKullanici ->
 
-        val removeFollowerItem = popupMenu.menu.findItem(R.id.profiltakipciCikar)
-        removeFollowerItem?.isVisible = isMyFollower
+                    val wasIWasFollowing = followViewModel.followUiState.value.isFollowing
+                    val wasHeWasFollowing = followViewModel.followUiState.value.isFollowed
 
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.profiltakipciCikar -> {
-                    AlertDialog.Builder(requireContext())
-                        .setTitle("Takipçiden Çıkar")
-                        .setMessage("Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?")
-                        .setPositiveButton("Evet") { dialog, _ ->
-                            targetUserId?.let { id ->
-                                followViewModel.takipcidenCikar(
-                                    takipciId = id,
-                                    currentUserId = myUserId,
-                                    onSuccess = {
-                                        val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
-                                        val userId = profile?.id.orEmpty().ifBlank { targetUserId }
+                    userBlockViewModel.engelle(
+                        engellenecekKullanici = engellenecekKullanici,
+                        kisiId = myUserId,
+                        onResult = { isSuccess ->
+                            if (isSuccess) {
 
-                                        userId?.let {
-                                            ProfileEventBus.emitEvent(
-                                                ProfileEvent.UnFollowerUser(
-                                                    userId = it,
-                                                    operatorUserId = myUserId
-                                                )
-                                            )
-                                        }
-                                    },
-                                    onFailure = {
-                                        progressFollow.visibility = View.GONE
-                                    }
+                                followViewModel.applyBlockToTargetCounts(
+                                    wasIWasFollowing = wasIWasFollowing,
+                                    wasHeWasFollowing = wasHeWasFollowing
                                 )
+
+                               profileViewModel.setBlockedState()
                             }
-                            dialog.dismiss()
-
                         }
-                        .setNegativeButton("İptal", null)
-                        .show()
-                    true
+                    )
                 }
-                R.id.signOut -> {
-                    CatMapDialog.build()
-                        .setTitle("Maceraya Mola mı?")
-                        .setMessage("Dostlarımız haritada seni bekliyor olacak! Yine bekleriz, çıkış yapmak istediğine emin misin?")
-                        .setPositiveButton("Evet, Çıkış Yap") {
-                            logout()
-                        }
-                        .setNegativeButton("Kalıyorum")
-                        .show(childFragmentManager, "SignOutDialog")
-                    true
-                }
-                else -> false
             }
-        }
-        popupMenu.show()
+        )
     }
+    private fun showEngelKaldirDialog() {
+        val currentProfile = loadedKullanici
 
+        ProfileDialogHelper.showEngelKaldirDialog(
+            fragmentManager = childFragmentManager,
+            kullaniciAdi = currentProfile?.kullaniciAdi,
+            onConfirm = {
+                targetUserId?.let { engellenenId ->
+                    userBlockViewModel.engelKaldir(
+                        engellenenKullaniciId = engellenenId,
+                        kisiId = myUserId,
+                        onResult = { isSuccess ->
+                            if (isSuccess) {
+                                profileViewModel.resetProfileState()
+                                followViewModel.setBlockedState(false)
+                                viewModel.resetAndSetBlocked()
+                            }
+                        }
+                    )
+                }
+            }
+        )
+    }
+    private fun snapUiBlocked() {
+
+        recyclerView.visibility = View.GONE
+        postSectionHeader.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        progressFollow.visibility = View.GONE
+
+        tvEmpty.text = "🚫 Bu kullanıcıyı engellediniz."
+        tvEmpty.visibility = View.VISIBLE
+
+        profiliDuzenleTiklandi.visibility = View.GONE
+        takipEtButonu.visibility = View.GONE
+        takipEdiliyorVeMesajLayout.visibility = View.GONE
+        engelKaldirButton.visibility = View.VISIBLE
+    }
+    private fun setupBlockedByMeUi(kullanici: Kullanici?) {
+        shimmerLayout.stopShimmer()
+        shimmerLayout.visibility = View.GONE
+        swipeRefreshLayout.isRefreshing = false
+
+        myConstraintLayout.visibility = View.VISIBLE
+        blockedUserLayout.visibility = View.GONE
+
+        kullanici?.let {
+            KullaniciAdi.text = it.kullaniciAdi.orEmpty()
+            tvAd.text = it.ad.orEmpty().trim()
+            bioTextView.text = it.biyografi.orEmpty()
+
+            Glide.with(requireContext())
+                .load(it.fotoUrl)
+                .placeholder(R.drawable.kullanici)
+                .error(R.drawable.kullanici)
+                .into(profilFotoImageView)
+        }
+
+        recyclerView.visibility = View.GONE
+        postSectionHeader.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        progressFollow.visibility = View.GONE
+
+        profiliDuzenleTiklandi.visibility = View.GONE
+        takipEtButonu.visibility = View.GONE
+        takipEdiliyorVeMesajLayout.visibility = View.GONE
+        engelKaldirButton.visibility = View.VISIBLE
+
+        tvEmpty.text = "🚫 Bu kullanıcıyı engellediniz."
+        tvEmpty.visibility = View.VISIBLE
+    }
 
     private fun yukleVerileri(forceRefresh: Boolean = false) {
         if (forceRefresh) {
@@ -502,8 +600,25 @@ class ProfilFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    userBlockViewModel.blockActionState.collect { state ->
+                        when (state) {
+                            is BlockActionState.Loading -> {
+                                uyariMesaji.YuklemeDurum(state.message)
+                            }
+                            is BlockActionState.Success -> {
+                                uyariMesaji.BasariliDurum(state.message, 1500)
 
-                // 1. Ana Profil Verisi Akışı
+                            }
+                            is BlockActionState.Error -> {
+                                uyariMesaji.BasarisizDurum(state.message, 1500)
+                            }
+                            is BlockActionState.Idle -> {
+
+                            }
+                        }
+                    }
+                }
                 launch {
                     profileViewModel.fullProfileState.collect { state ->
                         when (state) {
@@ -534,14 +649,14 @@ class ProfilFragment : Fragment() {
                                     followingCount = fullData.followingCount,
                                     isSelf = fullData.isSelfProfile,
                                     isFollowing = fullData.isFollowing,
-                                    isFollowed = fullData.isFollowed
+                                    isFollowed = fullData.isFollowed,
                                 )
 
                                 bindUserProfileData(fullData.profile)
                                 swipeRefreshLayout.isRefreshing = false
                                 hideShimmerLoading()
                             }
-                            is UiState.Blocked -> {
+                            is UiState.BlockedBy -> {
                                 shimmerLayout.stopShimmer()
                                 shimmerLayout.visibility = View.GONE
 
@@ -549,6 +664,10 @@ class ProfilFragment : Fragment() {
                                 blockedUserLayout.visibility = View.VISIBLE
                                 swipeRefreshLayout.isRefreshing = false
 
+                            }
+                            is UiState.Blocked -> {
+                                followViewModel.setBlockedState(true)
+                                setupBlockedByMeUi(state.profile)
                             }
                             is UiState.Error -> {
                                 hideShimmerLoading()
@@ -609,6 +728,11 @@ class ProfilFragment : Fragment() {
                             }
 
                             progressBar.visibility = View.GONE
+                        val currentProfileState = profileViewModel.fullProfileState.value
+                        if (currentProfileState is UiState.Blocked || currentProfileState is UiState.BlockedBy) {
+                            snapUiBlocked()
+                            return@collect
+                        }
                             if (state.isAccessDenied) {
                                 recyclerView.visibility = View.GONE
                                 postSectionHeader.visibility = View.GONE
@@ -636,7 +760,8 @@ class ProfilFragment : Fragment() {
     }
 
     private fun bindUserProfileData(kullanici: Kullanici) {
-        KullaniciAdi.text = kullanici.kullaniciAdi.orEmpty()
+        this.loadedKullanici = kullanici
+        KullaniciAdi.text = kullanici.kullaniciAdi
 
         val tamAd = kullanici.ad.trim()
         tvAd.text = tamAd
@@ -657,44 +782,6 @@ class ProfilFragment : Fragment() {
         super.onPause()
     }
 
-    private fun renderProfileButtons(state: FollowUiState) {
-
-        if (state.isSelfProfile == null) {
-            profiliDuzenleTiklandi.visibility = View.GONE
-            takipEtButonu.visibility = View.GONE
-            takipEdiliyorVeMesajLayout.visibility = View.GONE
-            progressFollow.visibility = View.VISIBLE
-            return
-        }
-
-        progressFollow.visibility = View.GONE
-
-        if (state.isSelfProfile == true) {
-
-            profiliDuzenleTiklandi.visibility = View.VISIBLE
-            takipEtButonu.visibility = View.GONE
-            takipEdiliyorVeMesajLayout.visibility = View.GONE
-
-        } else {
-
-            profiliDuzenleTiklandi.visibility = View.GONE
-
-            if (state.isFollowing) {
-                takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
-                takipEtButonu.visibility = View.GONE
-
-            } else if (state.isFollowed) {
-                takipEtButonu.text = "Sen de takip et"
-                takipEtButonu.visibility = View.VISIBLE
-                takipEdiliyorVeMesajLayout.visibility = View.GONE
-
-            } else {
-                takipEtButonu.text = "Takip et"
-                takipEtButonu.visibility = View.VISIBLE
-                takipEdiliyorVeMesajLayout.visibility = View.GONE
-            }
-        }
-    }
 
     /**
      * şuan bu metodu öylesine oluşturdum sevgilim
@@ -718,7 +805,6 @@ class ProfilFragment : Fragment() {
             }
         }
     }
-
     private fun navigateToAuthAndClearHistory() {
         if (!isAdded || isStateSaved) return
 
@@ -728,6 +814,53 @@ class ProfilFragment : Fragment() {
     }
 
 
+
+    private fun renderProfileButtons(state: FollowUiState) {
+
+        if (state.isBlocked) {
+            profiliDuzenleTiklandi.visibility = View.GONE
+            takipEtButonu.visibility = View.GONE
+            takipEdiliyorVeMesajLayout.visibility = View.GONE
+            engelKaldirButton.visibility = View.VISIBLE
+            progressFollow.visibility = View.GONE
+            return
+        } else {
+            engelKaldirButton.visibility = View.GONE
+        }
+
+        if (state.isSelfProfile == null) {
+            profiliDuzenleTiklandi.visibility = View.GONE
+            takipEtButonu.visibility = View.GONE
+            takipEdiliyorVeMesajLayout.visibility = View.GONE
+            progressFollow.visibility = View.VISIBLE
+            return
+        }
+
+        progressFollow.visibility = View.GONE
+
+        if (state.isSelfProfile == true) {
+            profiliDuzenleTiklandi.visibility = View.VISIBLE
+            takipEtButonu.visibility = View.GONE
+            takipEdiliyorVeMesajLayout.visibility = View.GONE
+        } else {
+            profiliDuzenleTiklandi.visibility = View.GONE
+
+            if (state.isFollowing) {
+                takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
+                takipEtButonu.visibility = View.GONE
+
+            } else if (state.isFollowed) {
+                takipEtButonu.text = "Sen de takip et"
+                takipEtButonu.visibility = View.VISIBLE
+                takipEdiliyorVeMesajLayout.visibility = View.GONE
+
+            } else {
+                takipEtButonu.text = "Takip et"
+                takipEtButonu.visibility = View.VISIBLE
+                takipEdiliyorVeMesajLayout.visibility = View.GONE
+            }
+        }
+    }
     private fun onGonderiTiklandi(gonderi: Gonderi) {
         val args = bundleOf(
             "kediid" to gonderi.kediID,
@@ -735,8 +868,6 @@ class ProfilFragment : Fragment() {
         )
         SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
     }
-
-
     companion object {
         private const val ARG_USER_ID = "USER_ID"
 

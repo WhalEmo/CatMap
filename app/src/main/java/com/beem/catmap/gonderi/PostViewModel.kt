@@ -304,7 +304,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = false,
                 isAccessDenied = isAccessDenied,
                 isLastPage = isLast,
-                lastDocument = lastDoc
+                lastDocument = lastDoc,
             )
         }
     }
@@ -321,4 +321,16 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
+
+    fun resetAndSetBlocked() {
+        _uiState.update {
+            it.copy(
+                isEmpty = true,
+                posts = emptyList(),
+                isAccessDenied = true,
+                isLoading = false
+            )
+        }
+    }
+
 }

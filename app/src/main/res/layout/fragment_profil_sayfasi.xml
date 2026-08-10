@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="16dp"
-            android:visibility="visible"
+            android:visibility="gone"
             app:shimmer_auto_start="true">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -408,6 +408,21 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/bioTextView" />
 
+            <Button
+                android:id="@+id/EngelKaldirButton"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FF9800"
+                android:text="Engeli kaldır"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:visibility="gone"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/bioTextView" />
+
             <LinearLayout
                 android:id="@+id/takipEdiliyorVeMesajLayout"
                 android:layout_width="0dp"
@@ -464,7 +479,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:barrierDirection="bottom"
-                app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout,progressFollow" />
+                app:constraint_referenced_ids="profiliDuzenleTiklandi,takipEtButonu,takipEdiliyorVeMesajLayout,progressFollow,EngelKaldirButton" />
 
             <LinearLayout
                 android:id="@+id/postSectionHeader"
@@ -531,18 +546,18 @@
 
             <TextView
                 android:id="@+id/emptyTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:gravity="center"
                 android:padding="16dp"
                 android:text="Henüz gönderi yok"
                 android:textColor="#888888"
                 android:textSize="15sp"
                 android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="@id/gonderiRecyclerView"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@id/gonderiRecyclerView" />
+                app:layout_constraintTop_toBottomOf="@id/postSectionHeader" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

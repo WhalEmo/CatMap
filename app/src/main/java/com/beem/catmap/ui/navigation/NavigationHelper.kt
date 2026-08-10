@@ -7,10 +7,14 @@ import com.beem.catmap.ui.message.MessageFragment
 
 object NavigationHelper {
     @JvmStatic
-    fun navigateToProfile(targetProfileId: String) {
-        Log.d("NAV_BACK_DEDEKTOR", "id: $targetProfileId")
+    fun navigateToProfile(targetProfileId: String, isFollowed: Boolean = false) {
+        Log.d("NAV_BACK_DEDEKTOR", "id: $targetProfileId, isFollowed: $isFollowed")
         val screen = if (targetProfileId == UserSession.userId) Screen.PROFILE else Screen.OTHER_PROFILE
-        val args = ProfilFragment.newArgs(targetProfileId)
+
+        val args = ProfilFragment.newArgs(targetProfileId).apply {
+            putBoolean("IS_FOLLOWED", isFollowed)
+        }
+
         SmartNavigationEngine.navigateTo(
             targetScreen = screen,
             args = args,

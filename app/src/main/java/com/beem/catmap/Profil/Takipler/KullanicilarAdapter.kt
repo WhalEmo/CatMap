@@ -23,7 +23,7 @@ class KullanicilarAdapter(
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val recyclerFotoImageView: ImageView = itemView.findViewById(R.id.recyclerFotoImageView)
         private val recyclerKullaniciAdi: TextView = itemView.findViewById(R.id.RecyclerkullaniciAdi)
-        private val takipEdiyosaButton: MaterialButton = itemView.findViewById(R.id.takipediyosa)
+        private val takipEdiyosaButton: TextView = itemView.findViewById(R.id.takipediyosa)
 
         fun bind(kullanici: Kullanici, onUserClick: (String?) -> Unit) {
             recyclerKullaniciAdi.text = kullanici.kullaniciAdi

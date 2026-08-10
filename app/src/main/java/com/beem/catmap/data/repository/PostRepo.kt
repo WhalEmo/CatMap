@@ -164,7 +164,7 @@ class PostRepository private constructor(context: Context) {
                 fotoUrlListesi = fotoList,
                 aciklama = doc.getString("kediHakkinda"),
                 kediAdi = doc.getString("kediAdi"),
-                tarih = doc.getTimestamp("tarih"),
+                tarih = doc.getTimestamp("createdAt"),
                 begeniSayisi = doc.getLong("begeniSayisi") ?: 0L
             )
 

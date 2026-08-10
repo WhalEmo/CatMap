@@ -55,11 +55,16 @@ class EngellenenlerFragment : Fragment() {
         adapter = EngellenenlerAdapter(
             onEngelClick = { kullanici ->
                 kullanici.id?.let { engellenenId ->
-                    viewModel.engelKaldir(engellenenId, currentUserId) { success, message ->
-                        if (success) {
-
+                    viewModel.engelKaldir(
+                        engellenenKullaniciId = engellenenId,
+                        kisiId = currentUserId,
+                        onResult = { isSuccess ->
+                            if (isSuccess) {
+                                // Liste zaten ViewModel içindeki `_benimEngellediklerim` state'inden
+                                // güncellendiği için adapter listen otomatik yenilenecektir.
+                            }
                         }
-                    }
+                    )
                 }
             },
             onKullaniciClick = { kullaniciId ->

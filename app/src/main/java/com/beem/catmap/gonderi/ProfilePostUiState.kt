@@ -10,5 +10,5 @@ data class ProfilePostUiState(
     val isEmpty: Boolean = false,
     val isAccessDenied: Boolean = false,
     val isLastPage: Boolean = false,
-    val lastDocument: DocumentSnapshot? = null
+    val lastDocument: DocumentSnapshot? = null,
 )

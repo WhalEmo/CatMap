@@ -30,6 +30,9 @@ class UserSessionManager private constructor(context: Context) {
         private const val KEY_BIYOGRAFI = "Biyografi"
         private const val KEY_POST_COUNT = "PostCount"
 
+        // TTL Zaman Damgası Key'i
+        private const val KEY_LAST_STATS_FETCH_TIME = "LastStatsFetchTime"
+
         @Volatile
         private var INSTANCE: UserSessionManager? = null
 
@@ -54,13 +57,12 @@ class UserSessionManager private constructor(context: Context) {
             putString(KEY_FOTO_URL, kullanici.fotoUrl)
             putBoolean(KEY_IS_LOGGED_IN, true)
             kullanici.gonderiSayisi?.let { putLong(KEY_POST_COUNT, it) }
-            kullanici.takipciSayisi?.let { putLong(KEY_TAKIPCI_SAYISI,it) }
-            kullanici.takipEdilenSayisi?.let { putLong(KEY_TAKIP_EDILEN_SAYISI,it) }
-            putString(KEY_BIYOGRAFI,kullanici.biyografi)
+            kullanici.takipciSayisi?.let { putLong(KEY_TAKIPCI_SAYISI, it) }
+            kullanici.takipEdilenSayisi?.let { putLong(KEY_TAKIP_EDILEN_SAYISI, it) }
+            putString(KEY_BIYOGRAFI, kullanici.biyografi)
             apply() // Disk yazımını arka planda asenkron yapar
         }
     }
-
 
     /**
      * Diskten kayıtlı kullanıcıyı çekip nesneye dönüştürür
@@ -76,11 +78,25 @@ class UserSessionManager private constructor(context: Context) {
             kullaniciAdi = prefs.getString(KEY_USERNAME, "") ?: ""
             sifre = prefs.getString(KEY_PASSWORD, "") ?: ""
             fotoUrl = prefs.getString(KEY_FOTO_URL, "") ?: ""
-            biyografi = prefs.getString(KEY_BIYOGRAFI,"") ?: ""
-            takipciSayisi = prefs.getLong(KEY_TAKIPCI_SAYISI,0)
-            takipEdilenSayisi = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI,0)
-            gonderiSayisi = prefs.getLong(KEY_POST_COUNT,0)
+            biyografi = prefs.getString(KEY_BIYOGRAFI, "") ?: ""
+            takipciSayisi = prefs.getLong(KEY_TAKIPCI_SAYISI, 0)
+            takipEdilenSayisi = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI, 0)
+            gonderiSayisi = prefs.getLong(KEY_POST_COUNT, 0)
         }
+    }
+
+    /**
+     * Sayaçların son çekilme zamanını kaydeder
+     */
+    fun saveLastStatsFetchTime(time: Long) {
+        prefs.edit { putLong(KEY_LAST_STATS_FETCH_TIME, time) }
+    }
+
+    /**
+     * Sayaçların son çekilme zamanını okur (varsayılan: 0)
+     */
+    fun getLastStatsFetchTime(): Long {
+        return prefs.getLong(KEY_LAST_STATS_FETCH_TIME, 0L)
     }
 
     /**
@@ -91,7 +107,7 @@ class UserSessionManager private constructor(context: Context) {
     }
 
     /**
-     * Çıkış Yap (Logout) - Yerel veriyi sıfırlar
+     * Çıkış Yap (Logout) - Yerel veriyi ve zaman damgasını sıfırlar
      */
     fun clearSession() {
         prefs.edit { clear() }

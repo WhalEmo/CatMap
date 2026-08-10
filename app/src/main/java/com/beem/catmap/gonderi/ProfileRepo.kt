@@ -24,6 +24,10 @@ sealed class ProfileUpdateResult {
     data class Error(val message: String) : ProfileUpdateResult()
     object Loading : ProfileUpdateResult()
 }
+data class UserStats(
+    val followerCount: Long = 0L,
+    val followingCount: Long = 0L,
+)
 
 class ProfileRepository private constructor() {
 
@@ -45,8 +49,35 @@ class ProfileRepository private constructor() {
         }
     }
 
+    suspend fun getUserStats(userId: String): Result<UserStats> = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                val stats = UserStats(
+                    followerCount = snapshot.getLong("takipciSayisi") ?: 0L,
+                    followingCount = snapshot.getLong("TakipEdilenSayisi") ?: 0L,
+                )
+
+                profileCache.get(userId)?.let { cached ->
+                    cached.takipciSayisi = stats.followerCount
+                    cached.takipEdilenSayisi = stats.followingCount
+                    profileCache.put(userId, cached)
+                }
+
+                Result.success(stats)
+            } else {
+                Result.failure(Exception("Kullanıcı dokümanı bulunamadı."))
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "getUserStats hatası", e)
+            Result.failure(e)
+        }
+    }
     suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<Kullanici> = withContext(Dispatchers.IO) {
-        // 1. Zorunlu yenileme (forceRefresh) yoksa öncelikle Cache'e bak
         if (!forceRefresh) {
             val cachedProfile = profileCache.get(userId)
             if (cachedProfile != null) {
@@ -55,7 +86,6 @@ class ProfileRepository private constructor() {
             }
         }
 
-        // 2. Cache'te yoksa veya forceRefresh = true ise Firestore'dan çek
         try {
             val snapshot = db.collection("users")
                 .document(userId)
@@ -84,7 +114,7 @@ class ProfileRepository private constructor() {
             }
         } catch (e: FirebaseFirestoreException) {
             if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                UiState.Blocked
+                UiState.BlockedBy
             } else {
                 UiState.Error(e.localizedMessage ?: "Veritabanı hatası oluştu.")
             }
@@ -162,11 +192,6 @@ class ProfileRepository private constructor() {
         }
     }
 
-    // Cache'i tamamen temizlemek isterseniz (Logout vb.)
-    fun clearCache() {
-        profileCache.evictAll()
-    }
-
     private suspend fun uploadProfilePhotoToStorage(imageUri: Uri, userId: String): String {
         val ref = storage.reference.child("profile_images/$userId.jpg")
         ref.putFile(imageUri).await()
@@ -181,4 +206,5 @@ class ProfileRepository private constructor() {
 
         return snapshot.isEmpty || snapshot.documents.all { it.id == currentUserId }
     }
+
 }

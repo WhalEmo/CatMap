@@ -191,6 +191,7 @@ class YuklemeArayuzuFragment : Fragment() {
             .setCancelable(false)
             .create()
 
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialogView.findViewById<View>(R.id.btn_yes).setOnClickListener {
 
             viewModel.addCatPostMyProfile(cat.id) { isSuccess ->

@@ -1,15 +1,22 @@
 package com.beem.catmap.data.repository
 
+import android.util.Log
+import android.util.LruCache
+import com.beem.catmap.CatMapApp
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import kotlin.math.max
 
-class UserBlockRepository private constructor() {
-
+class UserBlockRepository private constructor(
+    private val currentUserManager: CurrentUserManager
+) {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val userCache = LruCache<String, Kullanici>(20)
 
     companion object {
         @Volatile
@@ -17,12 +24,39 @@ class UserBlockRepository private constructor() {
 
         fun getInstance(): UserBlockRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: UserBlockRepository().also { INSTANCE = it }
+                val appInstance = CatMapApp.instance
+                val userManager = CurrentUserManager.getInstance(appInstance)
+                INSTANCE ?: UserBlockRepository(userManager).also { INSTANCE = it }
             }
         }
     }
 
-    suspend fun getBlockedUsersPage(
+    suspend fun getInitialBlockedUsers(
+        kisiId: String,
+        limit: Long = 20
+    ): Pair<List<Kullanici>, DocumentSnapshot?> {
+        val cachedIds = currentUserManager.benimEngellediklerimState.value
+
+        if (cachedIds.isNotEmpty()) {
+            val cachedUsers = cachedIds.mapNotNull { id -> userCache.get(id) }
+
+            if (cachedUsers.size == cachedIds.size) {
+                return Pair(cachedUsers, null)
+            }
+        }
+
+        val (networkUsers, lastDoc) = getBlockedUsersPageFromNetwork(kisiId, limit, null)
+
+        networkUsers.forEach { user ->
+            user.id?.let { userCache.put(it, user) }
+        }
+        val newIds = networkUsers.mapNotNull { it.id }
+        currentUserManager.updateBenimEngellediklerim(newIds)
+
+        return Pair(networkUsers, lastDoc)
+    }
+
+    suspend fun getBlockedUsersPageFromNetwork(
         kisiId: String,
         limit: Long = 20,
         lastDocumentSnapshot: DocumentSnapshot? = null
@@ -50,6 +84,8 @@ class UserBlockRepository private constructor() {
                 this.id = id
                 this.kullaniciAdi = kullaniciAdi
                 this.fotoUrl = fotoUrl
+            }.also { user ->
+                userCache.put(id, user)
             }
         }
 
@@ -58,14 +94,35 @@ class UserBlockRepository private constructor() {
 
     suspend fun blockUser(
         kisiId: String,
-        engellenecekKullaniciId: String,
-        kullaniciAdi: String,
-        fotoUrl: String
+        engellenecekKullanici: Kullanici
     ) {
+        val targetId = engellenecekKullanici.id ?: return
+        val kullaniciAdi = engellenecekKullanici.kullaniciAdi ?: ""
+        val fotoUrl = engellenecekKullanici.fotoUrl ?: ""
+
+        // A. Engellemeden ÖNCE takip bağlarını kontrol et
+        val myFollowingDoc = db.collection("users")
+            .document(kisiId)
+            .collection("takipEdilenler")
+            .document(targetId)
+            .get()
+            .await()
+
+        val myFollowerDoc = db.collection("users")
+            .document(kisiId)
+            .collection("takipciler")
+            .document(targetId)
+            .get()
+            .await()
+
+        val isIWasFollowing = myFollowingDoc.exists()
+        val isHeWasFollowing = myFollowerDoc.exists()
+
+        // 1. Firestore İşlemi (Engellenenler koleksiyonuna yaz)
         db.collection("users")
             .document(kisiId)
             .collection("blockedUsers")
-            .document(engellenecekKullaniciId)
+            .document(targetId)
             .set(
                 mapOf(
                     "blockedAt" to FieldValue.serverTimestamp(),
@@ -74,17 +131,90 @@ class UserBlockRepository private constructor() {
                 )
             )
             .await()
+
+        // 2. LRU Cache Güncellemesi
+        userCache.put(targetId, engellenecekKullanici)
+
+        // 3. Engellenenler ID Listesini Güncelle
+        val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
+        if (!currentIds.contains(targetId)) {
+            currentIds.add(0, targetId)
+            currentUserManager.updateBenimEngellediklerim(currentIds)
+        }
+
+        // 4. LOKAL SAYAÇLARI GÜNCELLE (Eğer takipleşiyorsak sayıları düş)
+        val currentUser = currentUserManager.getCurrentUser()
+        var currentFollowingCount = currentUser.takipEdilenSayisi ?: 0L
+        var currentFollowerCount = currentUser.takipciSayisi ?: 0L
+
+        if (isIWasFollowing) {
+            currentFollowingCount = max(0L, currentFollowingCount - 1)
+        }
+        if (isHeWasFollowing) {
+            currentFollowerCount = max(0L, currentFollowerCount - 1)
+        }
+
+        if (isIWasFollowing || isHeWasFollowing) {
+            currentUserManager.updateFollowCounts(
+                takipciSayisi = currentFollowerCount,
+                takipEdilenSayisi = currentFollowingCount
+            )
+        }
     }
 
     suspend fun unblockUser(
         kisiId: String,
-        engeliKaldirilacakId: String
+        engelliKullaniciId: String
     ) {
+        // 1. Firestore Silme
         db.collection("users")
             .document(kisiId)
             .collection("blockedUsers")
-            .document(engeliKaldirilacakId)
+            .document(engelliKullaniciId)
             .delete()
             .await()
+
+        // 2. LRU Cache'ten Kaldırma
+        userCache.remove(engelliKullaniciId)
+
+        // 3. Lokal ID Listesi Güncellemesi
+        val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
+        if (currentIds.contains(engelliKullaniciId)) {
+            currentIds.remove(engelliKullaniciId)
+            currentUserManager.updateBenimEngellediklerim(currentIds)
+        }
+    }
+
+    suspend fun isUserBlocked(kisiId: String, targetUserId: String): Boolean {
+        if (targetUserId.isBlank() || kisiId.isBlank()) return false
+
+        if (userCache.get(targetUserId) != null) {
+            Log.d("LRU", "CHCDEN GELDI")
+            return true
+        }
+
+        Log.d("LRU", "CHCDEN GELMEDI")
+        val cachedIds = currentUserManager.benimEngellediklerimState.value
+        if (cachedIds.contains(targetUserId)) {
+            Log.d("LRU", "CHCDEN GELMEDI2")
+            return true
+        }
+
+        return try {
+            val doc = db.collection("users")
+                .document(kisiId)
+                .collection("blockedUsers")
+                .document(targetUserId)
+                .get()
+                .await()
+
+            doc.exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun clearCache() {
+        userCache.evictAll()
     }
 }

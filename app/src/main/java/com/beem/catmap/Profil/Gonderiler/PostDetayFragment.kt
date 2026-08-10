@@ -1,5 +1,6 @@
 package com.beem.catmap.Profil.Gonderiler
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -30,6 +31,8 @@ import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
+import com.beem.catmap.ui.extensions.getFormattedDate
+import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.navigation.Screen
@@ -64,6 +67,7 @@ class GonderiDetayFragment : Fragment() {
     private lateinit var aciklamaText: TextView
     private lateinit var begeniBilgiTextView: TextView
     private lateinit var gonderiMenu: ImageView
+    private lateinit var gonderiTarihiText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,6 +96,7 @@ class GonderiDetayFragment : Fragment() {
         }
     }
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -107,6 +112,7 @@ class GonderiDetayFragment : Fragment() {
         photoPager = view.findViewById(R.id.fotoPager)
         photoDotsContainer = view.findViewById(R.id.fotoDotsContainer)
         photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule)
+        gonderiTarihiText = view.findViewById(R.id.gonderiTarihiText)
 
         // Varsa layout dosyanızdaki ProgressBar ID'si
         progressBar = view.findViewById(R.id.progressBar)
@@ -184,7 +190,7 @@ class GonderiDetayFragment : Fragment() {
         } else {
             aciklamaText.text = gonderi.aciklama
         }
-
+        gonderiTarihiText.text = getFormattedTimestamp(gonderi.tarih) ?: ""
         val begeni = gonderi.begeniSayisi ?: 0L
         if (begeni != 0L) {
             begeniBilgiTextView.text = String.format("Bu kediyi %d kişi beğendi. Sen de beğenmek istersen haritada göre bas!", begeni)

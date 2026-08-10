@@ -1,4 +1,5 @@
 package com.beem.catmap.data.session
+
 import android.content.Context
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.gonderi.ProfileState
@@ -18,10 +19,8 @@ class CurrentUserManager private constructor(context: Context) {
     private val sessionManager = UserSessionManager.getInstance(context)
     private val blockSessionManager = BlockSessionManager.getInstance(context)
 
-    // Manager yaşam döngüsüne bağlı coroutine scope
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    // --- TEK VERİ KAYNAĞI (SINGLE SOURCE OF TRUTH) ---
     private val _currentUserState = MutableStateFlow(
         if (FirebaseAuth.getInstance().currentUser != null) {
             sessionManager.getUserSession() ?: Kullanici()
@@ -65,6 +64,25 @@ class CurrentUserManager private constructor(context: Context) {
         }
     }
 
+    // --- SAYAÇ ÖNBELLEK GEÇERLİLİK KONTROLÜ (STATS CACHE VALIDATION) ---
+
+    fun isStatsCacheValid(timeoutMillis: Long = 2 * 60 * 1000L): Boolean {
+        if (FirebaseAuth.getInstance().currentUser == null) return false
+        val currentUser = _currentUserState.value
+        if (currentUser.kullaniciAdi.isNullOrBlank()) return false
+
+        // Zaman damgasını RAM yerine sessionManager üzerinden kalıcı bellekten alıyoruz
+        val lastFetchTime = sessionManager.getLastStatsFetchTime()
+        if (lastFetchTime == 0L) return false
+
+        val currentTime = System.currentTimeMillis()
+        return (currentTime - lastFetchTime) < timeoutMillis
+    }
+
+    private fun markStatsFetched() {
+        sessionManager.saveLastStatsFetchTime(System.currentTimeMillis())
+    }
+
     // --- KULLANICI ERİŞİM VE GÜNCELLEME İŞLEMLERİ ---
 
     fun getCurrentUser(): Kullanici {
@@ -82,6 +100,7 @@ class CurrentUserManager private constructor(context: Context) {
     fun setCurrentUser(kullanici: Kullanici) {
         sessionManager.saveUserSession(kullanici)
         _currentUserState.value = kullanici
+        markStatsFetched()
     }
 
     fun isUserLoggedIn(): Boolean {
@@ -130,6 +149,8 @@ class CurrentUserManager private constructor(context: Context) {
                 takipEdilenSayisi = takipEdilenSayisi
             )
         }
+        // Sayaçlar güncellendiği için zaman damgasını kaydet
+        markStatsFetched()
     }
 
     fun updateGonderiSayisi(gonderiSayisi: Long) {

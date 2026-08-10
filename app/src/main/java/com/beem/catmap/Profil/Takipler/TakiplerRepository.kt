@@ -38,7 +38,7 @@ class TakiplerRepository private constructor() {
         forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
 
-        // İlk sayfa isteği yapılıyorsa ve zorla yenileme (Pull-to-refresh) istenmiyorsa Cache'ten ver
+        clearUserCache(userId)
         if (lastDocument == null && !forceRefresh) {
             takipcilerCache.get(userId)?.let { cachedResult ->
                 return@runCatching cachedResult
@@ -85,6 +85,7 @@ class TakiplerRepository private constructor() {
         forceRefresh: Boolean = false
     ): Result<PaginatedResult<Kullanici>> = runCatching {
 
+        clearUserCache(userId)
         if (lastDocument == null && !forceRefresh) {
             takipEdilenlerCache.get(userId)?.let { cachedResult ->
                 return@runCatching cachedResult
