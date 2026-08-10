@@ -3,26 +3,27 @@
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:background="@null"
+    android:padding="16dp">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/fotoCardView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_gravity="center"
-        card_view:cardCornerRadius="18dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="64dp"
+        card_view:cardBackgroundColor="#1A1A1A"
+        card_view:cardCornerRadius="20dp"
         card_view:cardElevation="8dp"
-        android:layout_margin="24dp"
-        card_view:cardUseCompatPadding="true">
+        card_view:cardUseCompatPadding="false">
 
         <ImageView
             android:id="@+id/imageFullScreen"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
+            android:layout_height="match_parent"
             android:scaleType="fitCenter"
             android:src="@drawable/placeholder"
-            android:background="#252121"
             android:contentDescription="Tam ekran fotoğraf" />
     </androidx.cardview.widget.CardView>
 
@@ -31,17 +32,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/foto_overlay_label"
         android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp"
+        android:textSize="15sp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
         android:text="1 / 5"
         android:visibility="visible"
         android:elevation="10dp"
         android:fontFamily="sans-serif-medium"
-        android:backgroundTint="#55000000"
-        android:backgroundTintMode="src_atop"
         android:letterSpacing="0.05" />
 </FrameLayout>

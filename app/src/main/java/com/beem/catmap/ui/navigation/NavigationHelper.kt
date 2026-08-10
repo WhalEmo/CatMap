@@ -3,6 +3,7 @@ package com.beem.catmap.ui.navigation
 import android.util.Log
 import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.ui.message.MessageFragment
 
 object NavigationHelper {
     @JvmStatic
@@ -18,6 +19,17 @@ object NavigationHelper {
             targetScreen = screen,
             args = args,
             key = targetProfileId
+        )
+    }
+
+    @JvmStatic
+    fun navigateToChat(receiverId: String) {
+        val args = MessageFragment.newArgs(receiverId)
+
+        SmartNavigationEngine.navigateTo(
+            targetScreen = Screen.MESSAGE,
+            args,
+            key = receiverId
         )
     }
 }

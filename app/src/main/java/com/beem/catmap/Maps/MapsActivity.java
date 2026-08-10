@@ -2,13 +2,17 @@ package com.beem.catmap.Maps;
 
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -25,7 +29,6 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 
 import com.beem.catmap.BottomSheetController;
-import com.beem.catmap.CevrimIciYonetimi;
 import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.EditProfileFragment;
 import com.beem.catmap.Profil.ProfilFragment;
@@ -39,10 +42,12 @@ import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
 import com.beem.catmap.mesaj.MesajFotoGosterFragment;
-import com.beem.catmap.mesaj.MesajFragment;
 import com.beem.catmap.sohbet.SohbetFragment;
 import com.beem.catmap.ui.auth.AuthFragment;
+import com.beem.catmap.ui.auth.ProfileSetupFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
+import com.beem.catmap.ui.chatlist.ChatFragment;
+import com.beem.catmap.ui.message.MessageFragment;
 import com.beem.catmap.ui.manager.CatMapToastEngine;
 import com.beem.catmap.ui.manager.UiMessageManager;
 import com.beem.catmap.ui.manager.UiMessageState;
@@ -57,6 +62,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.squareup.picasso.Target;
@@ -67,6 +73,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import kotlin.Unit;
 
 public class MapsActivity extends AppCompatActivity implements BottomSheetController {
 
@@ -106,9 +114,9 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case UPLOAD -> new YuklemeArayuzuFragment();
                 case OTHER_PROFILE -> new ProfilFragment();
                 case CAMERA -> new CameraFragment();
-                case CHAT -> new SohbetFragment();
+                case CHAT -> new ChatFragment();
                 case PROFILE -> new ProfilFragment();
-                case MESSAGE -> new MesajFragment();
+                case MESSAGE -> new MessageFragment();
                 case EDIT_PROFILE -> new EditProfileFragment();
                 case BLOCKED_USERS -> {
                     yield null;
@@ -118,12 +126,15 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case POST -> new GonderiDetayFragment();
                 case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
                 case AUTH -> new AuthFragment();
+                case PROFILE_SETUP -> new ProfileSetupFragment();
             };
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("ActivityLifecycle", "📌 onCreate: Activity oluşturuldu.");
+
         currentUserManager = CurrentUserManager.Companion.getInstance(getApplicationContext());
 
         setTheme(R.style.Theme_CatMap);
@@ -166,11 +177,13 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     }
                     return false;
                 },
-                () -> null
+                () -> {
+                    showSystemExitDialog();
+                    return Unit.INSTANCE;
+                }
         );
 
         if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
             BegenileriCek();
             SmartNavigationEngine.init(navigationEngine, Screen.MAP);
         } else {
@@ -281,13 +294,12 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d("ActivityLifecycle", "💀 onDestroy: Activity yok ediliyor.");
         bittimi = false;
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
 
         if (currentUserManager != null && currentUserManager.isUserLoggedIn()) {
             Kullanici user = currentUserManager.getCurrentUser();
             if (user != null) {
-                CevrimIciYonetimi.getInstance().CevrimIciCalistir(user);
                 user.latitude=latitude;
                 user.longitude=longitude;
             }
@@ -298,28 +310,21 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     @Override
     protected void onResume() {
         super.onResume();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(true);
+        Log.d("ActivityLifecycle", "⚡ onResume: Activity etkileşime açık, ön planda!");
         if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
         }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
-        }
+        Log.d("ActivityLifecycle", "🙈 onStop: Activity arka plana geçti, görünmez.");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        CevrimIciYonetimi.getInstance().setHaritaEkraniGorunuyor(false);
-        if (currentUserManager.isUserLoggedIn()) {
-            CevrimIciYonetimi.getInstance().CevrimIciCalistir(currentUserManager.getCurrentUser());
-        }
+        Log.d("ActivityLifecycle", "⏸️ onPause: Activity odak kaybetti.");
     }
 
     @Override
@@ -366,4 +371,45 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             }
         });
     }
+
+    private void showSystemExitDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_exit_app);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        MaterialButton btnCancel = dialog.findViewById(R.id.btnCancelExit);
+        MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirmExit);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            finishAffinity();
+        });
+
+        dialog.show();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d("ActivityLifecycle", "👁️ onStart: Activity görünür oldu.");
+    }
+
+
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d("ActivityLifecycle", "🔄 onRestart: Activity arka plandan geri döndü.");
+    }
+
 }

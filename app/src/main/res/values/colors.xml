@@ -10,7 +10,12 @@
     <color name="catmap_accent">#F97316</color>
     <color name="catmap_accent_alpha_15">#26F97316</color>
     <color name="catmap_background">#F8FAFC</color>
+
     <color name="catmap_surface_white">#FFFFFF</color>
+    <color name="catmap_surface_white_trans80">#CCFFFFFF</color>
+    <color name="catmap_surface_white_trans70">#B3FFFFFF</color>
+    <color name="catmap_surface_white_trans60">#99FFFFFF</color>
+
     <color name="catmap_surface_translucent">#E6F8FAFC</color>
     <color name="catmap_surface_blur">#E6FFFFFF</color>
 
@@ -19,6 +24,7 @@
     <color name="catmap_divider">#E2E8F0</color>
 
     <color name="catmap_text_primary">#0F172A</color>
+    <color name="catmap_text_secondary">#475569</color>
     <color name="catmap_text_dark">#0F172A</color>
     <color name="catmap_text_muted">#64748B</color>
     <color name="catmap_text_light">#FFFFFF</color>

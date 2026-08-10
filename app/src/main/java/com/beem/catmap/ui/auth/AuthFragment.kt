@@ -1,358 +1,511 @@
 package com.beem.catmap.ui.auth
 
 import android.os.Bundle
-import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.util.Log
-import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateInterpolator
-import android.widget.EditText
-import android.widget.ImageView
 import android.widget.Toast
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.credentials.CredentialManager
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialUnsupportedException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.fragment.app.Fragment
-import com.beem.catmap.CevrimIciYonetimi
-import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
-import com.beem.catmap.KullaniciAuth.Kullanici
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 
 import com.beem.catmap.R
-import com.beem.catmap.UyariMesaji
-import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.databinding.ActivityMainBinding
-import com.beem.catmap.databinding.GirispencereBinding
-import com.beem.catmap.databinding.KaydolpencereBinding
-import com.beem.catmap.databinding.SifremiUnuttumBinding
+import com.beem.catmap.databinding.FragmentAuthBinding
+import com.beem.catmap.ui.auth.exceptions.GoogleAuthException
+import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.getValue
+import kotlin.time.Duration.Companion.milliseconds
 
 class AuthFragment : Fragment() {
 
-    private var _binding: ActivityMainBinding? = null
+    private var _binding: FragmentAuthBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: AuthViewModel by viewModels()
 
     private var dialog: BottomSheetDialog? = null
     private var isPasswordVisible = false
-    private lateinit var uyariMesaji: UyariMesaji
     private val db = FirebaseFirestore.getInstance()
+
+    private val googleAuthClient by lazy { GoogleAuthClient(requireContext()) }
+
+    private val TAG_GOOGLE_AUTH = "GoogleAuth"
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = ActivityMainBinding.inflate(inflater, container, false)
+        _binding = FragmentAuthBinding.inflate(inflater, container, false)
         return binding.root
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        uyariMesaji = UyariMesaji(requireContext(), false)
+        setupTermsSpannableText()
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        observeStateFlow()
+
+        binding.btnAuthKaydol.setOnClickListener { view ->
+            view.post {
+                AuthBottomSheetFragment.newInstance(AuthMode.REGISTER).show(
+                    childFragmentManager,
+                    AuthBottomSheetFragment.TAG
+                )
+            }
+        }
+        binding.btnUsernameGiris.setOnClickListener { view ->
+            view.post {
+                AuthBottomSheetFragment.newInstance(AuthMode.LOGIN).show(
+                    childFragmentManager,
+                    AuthBottomSheetFragment.TAG
+                )
+            }
         }
 
-        binding.girisid.setOnClickListener { openLogin() }
-        binding.kaydolid.setOnClickListener { openRegister() }
-    }
-
-
-    override fun onResume() {
-        super.onResume()
-        resetButtonsState()
-    }
-
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (!hidden) {
-            resetButtonsState()
-        }
-    }
-
-    private fun openLogin() {
-        dialog?.dismiss()
-        val loginBinding = GirispencereBinding.inflate(layoutInflater)
-
-        isPasswordVisible = false
-
-        loginBinding.eyeIcon.setOnClickListener {
-            togglePasswordVisibility(loginBinding.passwordEditText, loginBinding.eyeIcon)
-        }
-
-        loginBinding.loginButton.setOnClickListener {
-            handleLogin(loginBinding)
-        }
-        loginBinding.forgotPassword.setOnClickListener {
-            openForgotPassword()
-        }
-
-        dialog = BottomSheetDialog(requireContext()).apply {
-            setContentView(loginBinding.root)
-            show()
+        binding.btnGoogleGiris.setOnClickListener {
+            launchGoogleSignIn_v2()
         }
     }
 
-    private fun handleLogin(loginBinding: GirispencereBinding) {
-        val username = loginBinding.usernameEditText.text.toString().trim()
-        val password = loginBinding.passwordEditText.text.toString().trim()
+    private fun setupTermsSpannableText() {
+        val fullText = getString(R.string.user_agreement_and_privacy_policy)
+        val spannableString = SpannableString(fullText)
 
-        if (username.isEmpty() || password.isEmpty()) {
-            uyariMesaji.BasarisizDurum("Lütfen tüm alanları doldurun", 1000)
+        val termsTarget = "Kullanıcı Sözleşmesi"
+        val privacyTarget = "Gizlilik Politikası"
+
+        // 1. "Kullanici Sözlesmesi" Linki
+        val termsClick = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showLegalDialog(
+                    titleResId = R.string.user_agreement_title,
+                    contentResId = R.string.user_agreement_content
+                )
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Altını çiz
+                context?.let { ctx ->
+                    ds.color = ContextCompat.getColor(ctx, R.color.catmap_primary) // Vurgulu renk ver
+                }
+            }
+        }
+
+        // 2. "Gizlilik Politikasi" Linki
+        val privacyClick = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                showLegalDialog(
+                    titleResId = R.string.privacy_policy_title,
+                    contentResId = R.string.privacy_policy_content
+                )
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Altını çiz
+                context?.let { ctx ->
+                    ds.color = ContextCompat.getColor(ctx, R.color.catmap_primary) // Vurgulu renk ver
+                }
+            }
+        }
+
+        // Metin içindeki kelime aralıkları (İndeksler)
+        // "Kullanici Sözlesmesi" -> 15 ile 35 arası
+        val termsStart = fullText.indexOf(termsTarget)
+        if (termsStart != -1) {
+            val termsEnd = termsStart + termsTarget.length
+            spannableString.setSpan(termsClick, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        // "Gizlilik Politikasi" -> 39 ile 58 arası
+        val privacyStart = fullText.indexOf(privacyTarget)
+        if (privacyStart != -1) {
+            val privacyEnd = privacyStart + privacyTarget.length
+            spannableString.setSpan(privacyClick, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        // TextView'a Spannable'ı çakıyoruz ve tıklama özelliğini aktif ediyoruz
+        binding.txtAuthTerms.text = spannableString
+        binding.txtAuthTerms.movementMethod = LinkMovementMethod.getInstance()
+        context?.let { ctx ->
+            binding.txtAuthTerms.highlightColor = ContextCompat.getColor(
+                ctx,
+                R.color.catmap_accent_alpha_15
+            )
+        }
+    }
+
+    private fun showLegalDialog(titleResId: Int, contentResId: Int) {
+        CatMapDialog.build()
+            .setTitle(getString(titleResId))
+            .setMessage(getString(contentResId))
+            .setPositiveButton("Anladım")
+            .show(childFragmentManager, "CatMapLegalDialog")
+    }
+
+
+    private fun launchGoogleSignIn() {
+        binding.btnGoogleGiris.isEnabled = false
+        showLoadingPill("Google hesapları yükleniyor...")
+
+        val request = googleAuthClient.buildGetCredentialRequest()
+
+        // 🎯 Hileli 'post' yerine direkt coroutine scope'u güvenli şekilde çağırıyoruz
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = CredentialManager.create(requireContext()).getCredential(
+                    request = request,
+                    context = requireActivity() // Pencere hiyerarşisi için Activity context'i şart
+                )
+
+                // 🚀 Token'ı temizce ayıkla ve ViewModel'e uçur!
+                googleAuthClient.extractIdToken(result.credential)?.let { idToken ->
+                    viewModel.firebaseAuthWithGoogle(idToken)
+                } ?: throw Exception("Token ayıklanamadı.")
+
+            } catch (e: androidx.credentials.exceptions.GetCredentialException) {
+                Log.e("GOOGLE_AUTH", "Hata: ${e.javaClass.simpleName} | ${e.localizedMessage}")
+
+                if (e.javaClass.simpleName.contains("Cancellation", ignoreCase = true)) {
+                    showErrorPill("Giriş iptal edildi.")
+                } else {
+                    showErrorPill("Google hesabı şu an meşgul, tekrar deneyin.")
+                }
+            } catch (e: Exception) {
+                Log.e("GOOGLE_AUTH", "Genel Hata: ${e.localizedMessage}")
+                showErrorPill("Giriş sırasında bir hata oluştu.")
+            } finally {
+                binding.btnGoogleGiris.isEnabled = true
+            }
+        }
+    }
+
+    private fun launchGoogleSignIn_v2() {
+        if (!binding.btnGoogleGiris.isEnabled) {
             return
         }
 
-        uyariMesaji.YuklemeDurum("Giriş Yapılıyor...")
-        val user = Kullanici(username, password)
+        binding.btnGoogleGiris.isEnabled = false
+        showLoadingPill("Google hesapları yükleniyor...")
 
-        db.collection("users")
-            .whereEqualTo("KullaniciAdi", username)
-            .limit(1)
-            .get()
-            .addOnSuccessListener { query ->
-                if (!isAdded) return@addOnSuccessListener
+        viewLifecycleOwner.lifecycleScope.launch {
 
-                if (query.isEmpty) {
-                    uyariMesaji.BasarisizDurum("Kullanıcı adı bulunamadı!", 1000)
-                    return@addOnSuccessListener
+            try {
+                val request = googleAuthClient.buildGetCredentialRequest()
+
+                val result = googleAuthClient
+                    .getCredentialManager()
+                    .getCredential(
+                        request = request,
+                        context = requireActivity()
+                    )
+
+                val idToken = googleAuthClient.extractIdToken(
+                    result.credential
+                )
+
+                Log.d(
+                    TAG_GOOGLE_AUTH,
+                    "Google credential başarıyla alındı."
+                )
+
+                viewModel.firebaseAuthWithGoogle(idToken)
+
+            } catch (e: GetCredentialCancellationException) {
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "Google Sign-In kullanıcı tarafından iptal edildi.",
+                    e
+                )
+
+                showErrorPill("Google ile giriş iptal edildi.")
+
+            } catch (e: NoCredentialException) {
+
+                Log.w(
+                    TAG_GOOGLE_AUTH,
+                    "Cihazda kullanılabilir Google credential bulunamadı.",
+                    e
+                )
+
+                showErrorPill(
+                    "Kullanılabilir Google hesabı bulunamadı."
+                )
+
+            } catch (e: GetCredentialUnsupportedException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Credential Manager bu cihazda desteklenmiyor.",
+                    e
+                )
+
+                showErrorPill(
+                    "Bu cihaz Google ile girişi desteklemiyor."
+                )
+
+            } catch (e: GoogleAuthException.UnsupportedCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Beklenmeyen credential: ${e.credentialType}",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı."
+                )
+
+            } catch (e: GoogleAuthException.InvalidGoogleCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google credential parse edilemedi.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
+                )
+
+            } catch (e: GoogleAuthException.EmptyIdToken) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google ID token boş döndü.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google doğrulaması tamamlanamadı."
+                )
+
+            } catch (e: CancellationException) {
+
+                // Coroutine lifecycle nedeniyle iptal edildiyse
+                // ASLA normal hata gibi tüketme.
+                throw e
+
+            } catch (e: GetCredentialException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    """
+                Credential Manager beklenmeyen hata:
+                type=${e.javaClass.simpleName}
+                message=${e.message}
+                """.trimIndent(),
+                    e
+                )
+
+                showErrorPill(
+                    "Google ile giriş şu anda tamamlanamadı."
+                )
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google Sign-In beklenmeyen hata.",
+                    e
+                )
+
+                showErrorPill(
+                    "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."
+                )
+
+            } finally {
+
+                if (
+                    isAdded &&
+                    view != null
+                ) {
+                    binding.btnGoogleGiris.isEnabled = true
+                }
+            }
+        }
+    }
+
+
+    private fun observeStateFlow() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                // 1. UI State (Loading, Success, Error)
+                launch {
+                    viewModel.uiState.collect { state ->
+                        when (state) {
+                            is AuthUiState.Idle -> {
+                                setButtonsEnabled(true)
+                                hideStatusPill()
+                            }
+                            is AuthUiState.Loading -> {
+                                setButtonsEnabled(false)
+                                showLoadingPill(state.message)
+                            }
+                            is AuthUiState.Success -> {
+                                setButtonsEnabled(true)
+                                showSuccessPill(state.message)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    delay(1000.milliseconds)
+                                    viewModel.resetState()
+                                }
+                            }
+                            is AuthUiState.Error -> {
+                                setButtonsEnabled(true)
+                                showErrorPill(state.errorMessage)
+                            }
+                        }
+                    }
                 }
 
-                val doc = query.documents[0]
-                user.kullaniciAdi = doc.getString("KullaniciAdi") ?: username // <-- EKLENDİ
-                user.ad = doc.getString("Ad")?:""
-                user.soyad = doc.getString("Soyad")?:""
-                user.email = doc.getString("Email")?:""
-                user.fotoUrl = doc.getString("profilFotoUrl")?:""
-                user.biyografi = doc.getString("Hakkinda")?:""
-                user.takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
-                user.takipciSayisi = doc.getLong("takipciSayisi")
-                user.gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
-
-                user.id=(doc.id)
-
-                if (user.email.isNullOrEmpty()) {
-                    Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore'dan 'Email' alanı boş veya null geldi!")
-                    uyariMesaji.BasarisizDurum("Kullanıcı mail bilgisi eksik!", 1000)
-                    return@addOnSuccessListener
-                }
-
-                Log.d("AUTH_DEBUG", "Firebase Auth'a mail ve şifre gönderiliyor... (Email: ${user.email})")
-
-                val ynt = DogrulamaKodYonetici()
-                ynt.girisYap(user.email, user.sifre) { basarili ->
-                    if (basarili) {
-                        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
-                        Log.d("AUTH_DEBUG", ">>> GİRİŞ BAŞARILI! Firebase Auth Current User UID: $currentUid")
-
-                        CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                        CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
-                        saveUserLocallyAndNavigate(user)
-                        uyariMesaji.BasariliDurum("Giriş Başarılı...", 1000)
-                    } else {
-                        uyariMesaji.BasarisizDurum("Giriş Başarısız...", 1000)
+                // 2. Event Dinleyicisi (Navigasyon)
+                launch {
+                    viewModel.event.collect { event ->
+                        when (event) {
+                            is AuthEvent.ShowToast -> {
+                                Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
+                            }
+                            is AuthEvent.NavigateToMap -> {
+                                SmartNavigationEngine.navigateTo(Screen.MAP)
+                            }
+                            is AuthEvent.NavigateToProfileSetup -> {
+                                SmartNavigationEngine.navigateTo(
+                                    targetScreen = Screen.PROFILE_SETUP,
+                                    args = ProfileSetupFragment.newBundle(event.user),
+                                    key = event.user.id
+                                )
+                            }
+                        }
                     }
                 }
             }
-            .addOnFailureListener { exception ->
-                Log.e("AUTH_DEBUG", "CRITICAL HATA: Firestore sorgusu tamamen FAILED oldu!", exception)
-                if (isAdded) {
-                    uyariMesaji.BasarisizDurum("Bağlantı hatası oluştu!", 1000)
-                }
-                Log.d("AUTH_DEBUG", "--------------------------------------------------")
-            }
-    }
-
-    private fun openRegister() {
-        dialog?.dismiss()
-        val registerBinding = KaydolpencereBinding.inflate(layoutInflater)
-
-        isPasswordVisible = false
-
-        registerBinding.eyeIcon.setOnClickListener {
-            togglePasswordVisibility(registerBinding.passwordEditText, registerBinding.eyeIcon)
-        }
-
-        registerBinding.registerButton.setOnClickListener {
-            handleRegister(registerBinding)
-        }
-
-        dialog = BottomSheetDialog(requireContext()).apply {
-            setContentView(registerBinding.root)
-            show()
         }
     }
 
+    /**
+     * 🔄 Yükleniyor Durumu (Primary Renk & Dönüş İndikatörü)
+     */
+    private fun showLoadingPill(message: String) {
+        binding.tvStatusMessage.text = message
+        binding.statusProgress.isVisible = true
+        binding.imgStatusIcon.isVisible = false
 
-    private fun handleRegister(registerBinding: KaydolpencereBinding) {
-        val user = Kullanici(
-            ad = registerBinding.adEditText.text.toString().trim(),
-            soyad = registerBinding.soyadEditText.text.toString().trim(),
-            email = registerBinding.emailEditText.text.toString().trim(),
-            kullaniciAdi = registerBinding.usernameEditText.text.toString().trim(),
-            sifre = registerBinding.passwordEditText.text.toString().trim()
+        binding.tvStatusMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), R.color.catmap_text_primary)
         )
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(user.email).matches()) {
-            uyariMesaji.BasarisizDurum("Lütfen geçerli bir email adresi giriniz!", 1000)
-            return
-        }
-        if (user.sifre.length < 5) {
-            uyariMesaji.BasarisizDurum("Lütfen şifreyi en az 5 haneli giriniz!", 1000)
-            return
-        }
-
-        uyariMesaji.YuklemeDurum("Kayıt Yapılıyor...")
-
-        db.collection("users")
-            .whereEqualTo("Email", user.email)
-            .get()
-            .addOnSuccessListener { sonuc ->
-                if (!isAdded) return@addOnSuccessListener
-
-                if (!sonuc.isEmpty) {
-                    uyariMesaji.BasarisizDurum("Email ile daha önce kayıt yapılmış.", 1000)
-                } else {
-                    db.collection("users")
-                        .whereEqualTo("KullaniciAdi", user.kullaniciAdi)
-                        .get()
-                        .addOnSuccessListener { cevap ->
-                            if (!isAdded) return@addOnSuccessListener
-
-                            if (!cevap.isEmpty) {
-                                uyariMesaji.BasarisizDurum("Bu kullanıcı adı ile daha önce kayıt yapılmış.", 1000)
-                            } else {
-                                val ynt = DogrulamaKodYonetici()
-                                ynt.kaydetSifreEmail(user.email, user.sifre) { basarili ->
-                                    if (basarili) {
-                                        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
-
-                                        if (currentUserUid != null) {
-                                            db.collection("users")
-                                                .document(currentUserUid)
-                                                .set(user.KullaniciData())
-                                                .addOnSuccessListener {
-                                                    if (!isAdded) return@addOnSuccessListener
-
-                                                    user.id = currentUserUid // YENİ: setID yerine id alanına atama yapıldı
-                                                    CevrimIciYonetimi.getInstance().AnasayfaArayuzAktivitiyeGecildi()
-                                                    CevrimIciYonetimi.getInstance().CevrimIciCalistir(user)
-                                                    saveUserLocallyAndNavigate(user)
-                                                    uyariMesaji.BasariliDurum("Kayıt Başarılı...", 1000)
-                                                }
-                                                .addOnFailureListener {
-                                                    if (isAdded) uyariMesaji.BasarisizDurum("Kayıt Başarısız!", 1000)
-                                                }
-                                        } else {
-                                            if (isAdded) uyariMesaji.BasarisizDurum("Kullanıcı UID alınamadı!", 1000)
-                                        }
-                                    } else {
-                                        if (isAdded) Toast.makeText(requireContext(), "Email veya şifre kaydı başarısız", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-                        }
-                }
-            }
+        animatePillShow()
     }
 
-    private fun openForgotPassword() {
-        dialog?.dismiss()
-        val forgotBinding = SifremiUnuttumBinding.inflate(layoutInflater)
+    /**
+     * 🟢 Başarılı Durumu (Yeşil Renk & Tik İkonu)
+     */
+    private fun showSuccessPill(message: String) {
+        binding.tvStatusMessage.text = message
+        binding.statusProgress.isVisible = false
+        binding.imgStatusIcon.isVisible = true
 
-        forgotBinding.resetPasswordButton.setOnClickListener { viewBtn ->
-            viewBtn.isClickable = false
-            uyariMesaji.YuklemeDurum("Mail Gönderiliyor...")
-            val ynt = DogrulamaKodYonetici()
-            val email = forgotBinding.emailEditText.text.toString().trim()
+        binding.imgStatusIcon.setImageResource(R.drawable.ic_check_circle)
+        binding.imgStatusIcon.setColorFilter(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+        )
+        binding.tvStatusMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+        )
 
-            ynt.sifreSifirla(email) { basarili ->
-                if (basarili) {
-                    uyariMesaji.BasariliDurum("Mail Gönderildi.", 1000)
-                } else {
-                    uyariMesaji.BasarisizDurum("Mail Gönderilemedi.", 1000)
-                    viewBtn.isClickable = true
-                }
+        animatePillShow()
+
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(1000.milliseconds)
+            hideStatusPill()
+        }
+    }
+
+    /**
+     * 🔴 Hata Durumu (Kırmızı Renk, Hata İkonu & Otomatik Kaybolma)
+     */
+    private fun showErrorPill(message: String) {
+        binding.tvStatusMessage.text = message
+        binding.statusProgress.isVisible = false
+        binding.imgStatusIcon.isVisible = true
+
+        binding.imgStatusIcon.setImageResource(R.drawable.ic_error_outline)
+        binding.imgStatusIcon.setColorFilter(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+        )
+        binding.tvStatusMessage.setTextColor(
+            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+        )
+
+        animatePillShow()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            delay(2000.milliseconds)
+            hideStatusPill()
+            viewModel.resetState()
+        }
+    }
+
+    private fun animatePillShow() {
+        binding.statusPill.apply {
+            if (!isVisible) {
+                alpha = 0f
+                isVisible = true
+                animate().alpha(1f).setDuration(200).start()
             }
         }
-
-        dialog = BottomSheetDialog(requireContext()).apply {
-            setContentView(forgotBinding.root)
-            show()
-        }
     }
 
-    private fun togglePasswordVisibility(passwordEdit: EditText, eyeIcon: ImageView) {
-        val cursorPosition = passwordEdit.selectionStart
-        if (!isPasswordVisible) {
-            passwordEdit.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            eyeIcon.setImageResource(R.drawable.acik_goz)
-        } else {
-            passwordEdit.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            eyeIcon.setImageResource(R.drawable.kapali_goz)
-        }
-        passwordEdit.setSelection(cursorPosition)
-        isPasswordVisible = !isPasswordVisible
+    private fun hideStatusPill() {
+        _binding?.statusPill?.animate()
+            ?.alpha(0f)
+            ?.setDuration(200)
+            ?.withEndAction {
+                _binding?.statusPill?.isVisible = false
+            }
+            ?.start()
     }
 
-    private fun saveUserLocallyAndNavigate(user: Kullanici) {
-        CurrentUserManager.getInstance(requireContext()).setCurrentUser(user)
-        dialog?.dismiss()
-        animateButtonsOut()
-
-        SmartNavigationEngine.navigateTo(Screen.MAP)
-    }
-
-    private fun animateButtonsOut() {
-        binding.girisid.apply {
-            isEnabled = true
-            isClickable = true
-            animate()
-                .translationX(width + 2000f)
-                .setDuration(1000)
-                .setInterpolator(AccelerateInterpolator())
-                .start()
-        }
-        binding.kaydolid.apply {
-            isEnabled = true
-            isClickable = true
-            animate()
-                .translationX(width - 2000f)
-                .setDuration(1000)
-                .setInterpolator(AccelerateInterpolator())
-                .start()
-        }
-    }
-
-
-    private fun resetButtonsState() {
-        binding.girisid.apply {
-            animate().cancel()
-            translationX = 0f
-            alpha = 1.0f
-            isEnabled = true
-            isClickable = true
-        }
-        binding.kaydolid.apply {
-            animate().cancel()
-            translationX = 0f
-            alpha = 1.0f
-            isEnabled = true
-            isClickable = true
-        }
+    private fun setButtonsEnabled(enabled: Boolean) {
+        binding.btnGoogleGiris.isEnabled = enabled
+        binding.btnUsernameGiris.isEnabled = enabled
+        binding.btnAuthKaydol.isEnabled = enabled
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        dialog?.dismiss()
-        dialog = null
         _binding = null
     }
+
+
 }

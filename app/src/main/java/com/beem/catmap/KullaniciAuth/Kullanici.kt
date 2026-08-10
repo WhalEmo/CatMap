@@ -1,6 +1,7 @@
 package com.beem.catmap.KullaniciAuth
 
 import android.graphics.Bitmap
+import java.io.Serializable
 
 data class Kullanici(
     @JvmField var id: String = "",
@@ -13,7 +14,7 @@ data class Kullanici(
     @JvmField var longitude: Double = 0.0,
     @JvmField var girisBasarili: Boolean = false,
     @JvmField var fotoUrl: String = "",
-    @JvmField var fotoBitmap: Bitmap? = null,
+    @Transient @JvmField var fotoBitmap: Bitmap? = null,
     @JvmField var sonGorulme: Long = 0L,
     @JvmField var isCevrimiciMi: Boolean = false,
     @JvmField var takipEdiyorMuyum: Int = 0,
@@ -23,7 +24,7 @@ data class Kullanici(
     @JvmField var gonderiSayisi: Long? = 0L,
     @JvmField var biyografi: String = "",
     @JvmField var isProfileLoaded: Boolean = false
-) {
+): Serializable {
     fun KullaniciData(): Map<String, Any?> {
         return mapOf(
             "Ad" to ad,
@@ -35,10 +36,6 @@ data class Kullanici(
             "takipciSayisi" to (takipciSayisi ?: 0L),
             "gonderiSayisi" to (gonderiSayisi ?: 0L),
             "profilFotoUrl" to (fotoUrl.ifEmpty { "" }),
-            "latitude" to latitude,
-            "longitude" to longitude,
-            "isCevrimiciMi" to isCevrimiciMi,
-            "sonGorulme" to sonGorulme
         )
     }
 }
