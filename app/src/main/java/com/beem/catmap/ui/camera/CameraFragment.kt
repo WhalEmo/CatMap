@@ -29,6 +29,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -114,6 +116,7 @@ class CameraFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
+        setSystemBarsTheme(isCameraMode = true)
 
         dialog?.window?.let { window ->
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
@@ -358,11 +361,28 @@ class CameraFragment : DialogFragment() {
             actionDialog.dismiss()
         }
 
+        dialogBinding.btnDialogRemoveFromStrip.setOnClickListener {
+            viewModel.removeImageFromStrip(activeUri)
+            actionDialog.dismiss()
+        }
+
         dialogBinding.btnDialogContinue.setOnClickListener {
             actionDialog.dismiss()
         }
 
         actionDialog.show()
+
+        actionDialog.window?.apply {
+            setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+
+            // 📏 280dp'yi piksel cinsine dönüştürüyoruz (İstersen 260dp de yapabilirsin)
+            val density = requireContext().resources.displayMetrics.density
+            val widthInPx = (270 * density).toInt()
+
+            // Window genişliğini tam olarak bu değere çiviliyoruz!
+            setLayout(widthInPx, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            setGravity(android.view.Gravity.CENTER)
+        }
     }
 
 
@@ -452,6 +472,52 @@ class CameraFragment : DialogFragment() {
         if (isAdded && isResumed) {
             val gallerySheet = GalleryBottomSheet()
             gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setSystemBarsTheme(isCameraMode = true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        setSystemBarsTheme(isCameraMode = false)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        setSystemBarsTheme(isCameraMode = false)
+    }
+
+    /**
+     * 🎨 Üst ve Alt Barları Dinamik Olarak Yöneten Sihirli Metod
+     */
+    private fun setSystemBarsTheme(isCameraMode: Boolean) {
+        val window = requireActivity().window ?: return
+
+        if (isCameraMode) {
+            // 1. Üst ve alt bar renklerini simsiyah yapıyoruz
+            window.statusBarColor = Color.BLACK
+            window.navigationBarColor = Color.BLACK
+
+            // 2. İkonları, saati ve pil göstergesini BEYAZ yapmak için "Light Mode" bayraklarını temizliyoruz
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = false // false = Yazılar ve ikonlar BEYAZ olur
+                isAppearanceLightNavigationBars = false
+            }
+        } else {
+            // 3. Kameradan çıkarken uygulamanın kendi renklerine geri dönüyoruz
+            // Kendi surface_white veya primary renklerini projedeki R.color'dan çekebilirsin dayıcım
+            val originalBarColor = ContextCompat.getColor(requireContext(), com.beem.catmap.R.color.catmap_surface_white)
+            window.statusBarColor = originalBarColor
+            window.navigationBarColor = originalBarColor
+
+            // 4. Standart ekranlarda yazıların okunması için ikonları tekrar KOYU/SİYAH moda alıyoruz
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = true // true = Yazılar ve ikonlar KOYU olur
+                isAppearanceLightNavigationBars = true
+            }
         }
     }
 
