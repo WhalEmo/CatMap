@@ -1,57 +1,40 @@
 package com.beem.catmap.ui.auth
 
 import android.os.Bundle
-import android.text.InputType
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.util.Log
-import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateInterpolator
-import android.widget.EditText
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialUnsupportedException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
-import com.beem.catmap.KullaniciAuth.Kullanici
 
 import com.beem.catmap.R
-import com.beem.catmap.UyariMesaji
-import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.databinding.ActivityMainBinding
 import com.beem.catmap.databinding.FragmentAuthBinding
-import com.beem.catmap.databinding.GirispencereBinding
-import com.beem.catmap.databinding.KaydolpencereBinding
-import com.beem.catmap.databinding.SifremiUnuttumBinding
-import com.beem.catmap.managers.OnlinePresenceManager
+import com.beem.catmap.ui.auth.exceptions.GoogleAuthException
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.getValue
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -65,6 +48,10 @@ class AuthFragment : Fragment() {
     private var dialog: BottomSheetDialog? = null
     private var isPasswordVisible = false
     private val db = FirebaseFirestore.getInstance()
+
+    private val googleAuthClient by lazy { GoogleAuthClient(requireContext()) }
+
+    private val TAG_GOOGLE_AUTH = "GoogleAuth"
 
 
     override fun onCreateView(
@@ -102,7 +89,7 @@ class AuthFragment : Fragment() {
         }
 
         binding.btnGoogleGiris.setOnClickListener {
-            launchGoogleSignIn()
+            launchGoogleSignIn_v2()
         }
     }
 
@@ -185,44 +172,188 @@ class AuthFragment : Fragment() {
 
 
     private fun launchGoogleSignIn() {
-        val credentialManager = CredentialManager.create(requireContext())
+        binding.btnGoogleGiris.isEnabled = false
+        showLoadingPill("Google hesapları yükleniyor...")
 
-        // 1. Google ID Seçeneklerini Hazırla
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(getString(R.string.default_web_client_id))
-            .setAutoSelectEnabled(false)
-            .setFilterByAuthorizedAccounts(false)
-            .build()
+        val request = googleAuthClient.buildGetCredentialRequest()
 
-        // 2. İstek Oluştur
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
-            .build()
-
-        // 3. Credential Manager'ı Çalıştır
-        lifecycleScope.launch {
+        // 🎯 Hileli 'post' yerine direkt coroutine scope'u güvenli şekilde çağırıyoruz
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val result = credentialManager.getCredential(
+                val result = CredentialManager.create(requireContext()).getCredential(
                     request = request,
-                    context = requireContext()
+                    context = requireActivity() // Pencere hiyerarşisi için Activity context'i şart
                 )
 
-                val credential = result.credential
-                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                    val idToken = googleIdTokenCredential.idToken
-
-                    // 🚀 Firebase'e Token'ı Gönder
+                // 🚀 Token'ı temizce ayıkla ve ViewModel'e uçur!
+                googleAuthClient.extractIdToken(result.credential)?.let { idToken ->
                     viewModel.firebaseAuthWithGoogle(idToken)
+                } ?: throw Exception("Token ayıklanamadı.")
+
+            } catch (e: androidx.credentials.exceptions.GetCredentialException) {
+                Log.e("GOOGLE_AUTH", "Hata: ${e.javaClass.simpleName} | ${e.localizedMessage}")
+
+                if (e.javaClass.simpleName.contains("Cancellation", ignoreCase = true)) {
+                    showErrorPill("Giriş iptal edildi.")
+                } else {
+                    showErrorPill("Google hesabı şu an meşgul, tekrar deneyin.")
                 }
-            } catch (e: GetCredentialException) {
-                showErrorPill("Google ile giriş işlemi kapatıldı!")
             } catch (e: Exception) {
-                showErrorPill("Giriş işlemi başarısız oldu!")
+                Log.e("GOOGLE_AUTH", "Genel Hata: ${e.localizedMessage}")
+                showErrorPill("Giriş sırasında bir hata oluştu.")
+            } finally {
+                binding.btnGoogleGiris.isEnabled = true
             }
         }
     }
+
+    private fun launchGoogleSignIn_v2() {
+        if (!binding.btnGoogleGiris.isEnabled) {
+            return
+        }
+
+        binding.btnGoogleGiris.isEnabled = false
+        showLoadingPill("Google hesapları yükleniyor...")
+
+        viewLifecycleOwner.lifecycleScope.launch {
+
+            try {
+                val request = googleAuthClient.buildGetCredentialRequest()
+
+                val result = googleAuthClient
+                    .getCredentialManager()
+                    .getCredential(
+                        request = request,
+                        context = requireActivity()
+                    )
+
+                val idToken = googleAuthClient.extractIdToken(
+                    result.credential
+                )
+
+                Log.d(
+                    TAG_GOOGLE_AUTH,
+                    "Google credential başarıyla alındı."
+                )
+
+                viewModel.firebaseAuthWithGoogle(idToken)
+
+            } catch (e: GetCredentialCancellationException) {
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "Google Sign-In kullanıcı tarafından iptal edildi.",
+                    e
+                )
+
+                showErrorPill("Google ile giriş iptal edildi.")
+
+            } catch (e: NoCredentialException) {
+
+                Log.w(
+                    TAG_GOOGLE_AUTH,
+                    "Cihazda kullanılabilir Google credential bulunamadı.",
+                    e
+                )
+
+                showErrorPill(
+                    "Kullanılabilir Google hesabı bulunamadı."
+                )
+
+            } catch (e: GetCredentialUnsupportedException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Credential Manager bu cihazda desteklenmiyor.",
+                    e
+                )
+
+                showErrorPill(
+                    "Bu cihaz Google ile girişi desteklemiyor."
+                )
+
+            } catch (e: GoogleAuthException.UnsupportedCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Beklenmeyen credential: ${e.credentialType}",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı."
+                )
+
+            } catch (e: GoogleAuthException.InvalidGoogleCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google credential parse edilemedi.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
+                )
+
+            } catch (e: GoogleAuthException.EmptyIdToken) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google ID token boş döndü.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google doğrulaması tamamlanamadı."
+                )
+
+            } catch (e: CancellationException) {
+
+                // Coroutine lifecycle nedeniyle iptal edildiyse
+                // ASLA normal hata gibi tüketme.
+                throw e
+
+            } catch (e: GetCredentialException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    """
+                Credential Manager beklenmeyen hata:
+                type=${e.javaClass.simpleName}
+                message=${e.message}
+                """.trimIndent(),
+                    e
+                )
+
+                showErrorPill(
+                    "Google ile giriş şu anda tamamlanamadı."
+                )
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "Google Sign-In beklenmeyen hata.",
+                    e
+                )
+
+                showErrorPill(
+                    "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."
+                )
+
+            } finally {
+
+                if (
+                    isAdded &&
+                    view != null
+                ) {
+                    binding.btnGoogleGiris.isEnabled = true
+                }
+            }
+        }
+    }
+
 
     private fun observeStateFlow() {
         viewLifecycleOwner.lifecycleScope.launch {

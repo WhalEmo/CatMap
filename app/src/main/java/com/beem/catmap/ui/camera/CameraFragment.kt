@@ -284,6 +284,11 @@ class CameraFragment : DialogFragment() {
                 binding.btnCapture.background.mutate().setColorFilter(accentColor, android.graphics.PorterDuff.Mode.SRC_IN)
             }
             CameraMode.IMAGE_PREVIEW -> {
+
+                zoomHideRunnable?.let { binding.tvZoomRatio.removeCallbacks(it) }
+                binding.tvZoomRatio.visibility = View.GONE
+                binding.tvZoomRatio.alpha = 0f
+
                 if (state.activePreviewUri != null) {
                     binding.ivInFragmentPreview.visibility = View.VISIBLE
                     Glide.with(this).load(state.activePreviewUri).into(binding.ivInFragmentPreview)
@@ -423,6 +428,10 @@ class CameraFragment : DialogFragment() {
         )
 
         binding.viewFinder.setOnTouchListener { v, event ->
+            if (viewModel.uiState.value.currentMode == CameraMode.IMAGE_PREVIEW) {
+                return@setOnTouchListener false
+            }
+
             scaleGestureDetector.onTouchEvent(event)
 
             if (event.pointerCount > 1) {
@@ -490,30 +499,22 @@ class CameraFragment : DialogFragment() {
         setSystemBarsTheme(isCameraMode = false)
     }
 
-    /**
-     * 🎨 Üst ve Alt Barları Dinamik Olarak Yöneten Sihirli Metod
-     */
     private fun setSystemBarsTheme(isCameraMode: Boolean) {
         val window = requireActivity().window ?: return
 
         if (isCameraMode) {
-            // 1. Üst ve alt bar renklerini simsiyah yapıyoruz
             window.statusBarColor = Color.BLACK
             window.navigationBarColor = Color.BLACK
 
-            // 2. İkonları, saati ve pil göstergesini BEYAZ yapmak için "Light Mode" bayraklarını temizliyoruz
             WindowCompat.getInsetsController(window, window.decorView).apply {
-                isAppearanceLightStatusBars = false // false = Yazılar ve ikonlar BEYAZ olur
+                isAppearanceLightStatusBars = false
                 isAppearanceLightNavigationBars = false
             }
         } else {
-            // 3. Kameradan çıkarken uygulamanın kendi renklerine geri dönüyoruz
-            // Kendi surface_white veya primary renklerini projedeki R.color'dan çekebilirsin dayıcım
             val originalBarColor = ContextCompat.getColor(requireContext(), com.beem.catmap.R.color.catmap_surface_white)
             window.statusBarColor = originalBarColor
             window.navigationBarColor = originalBarColor
 
-            // 4. Standart ekranlarda yazıların okunması için ikonları tekrar KOYU/SİYAH moda alıyoruz
             WindowCompat.getInsetsController(window, window.decorView).apply {
                 isAppearanceLightStatusBars = true // true = Yazılar ve ikonlar KOYU olur
                 isAppearanceLightNavigationBars = true

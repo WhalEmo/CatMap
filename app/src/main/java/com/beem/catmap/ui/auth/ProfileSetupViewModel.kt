@@ -3,6 +3,8 @@ package com.beem.catmap.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.managers.OnlinePresenceManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -86,7 +88,7 @@ class ProfileSetupViewModel : ViewModel() {
                 firestore.collection("users").document(uid).set(userMap).await()
 
                 _loadingState.value = null
-                _uiEvent.emit(UiEvent.Success)
+                saveUserLocallyAndNavigate(updatedUser)
 
             } catch (e: Exception) {
                 _loadingState.value = null
@@ -104,6 +106,14 @@ class ProfileSetupViewModel : ViewModel() {
             .get()
             .await()
         return !query.isEmpty
+    }
+
+    private fun saveUserLocallyAndNavigate(user: Kullanici) {
+        viewModelScope.launch {
+            UserSession.update(user)
+            OnlinePresenceManager.setUserOnline()
+            _uiEvent.emit(UiEvent.Success)
+        }
     }
 
     sealed class UiEvent {

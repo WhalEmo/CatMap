@@ -3,7 +3,11 @@ package com.beem.catmap.data.repository
 import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.ui.auth.GoogleAuthResult
+import com.beem.catmap.ui.auth.exceptions.AuthError
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -171,8 +175,17 @@ class AuthRepository {
                 }
                 Result.success(GoogleAuthResult.NewUser(newUser))
             }
+        } catch (e: FirebaseNetworkException) {
+            Result.failure(AuthError.NetworkError())
+
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            Result.failure(AuthError.InvalidCredential())
+
+        } catch (e: FirebaseAuthInvalidUserException) {
+            Result.failure(AuthError.UserDisabled())
+
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AuthError.Unknown())
         }
     }
 

@@ -8,6 +8,7 @@ import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.AuthRepository
 import com.beem.catmap.managers.OnlinePresenceManager
+import com.beem.catmap.ui.auth.exceptions.AuthError
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -110,6 +111,10 @@ class AuthViewModel : ViewModel() {
     }
 
     fun firebaseAuthWithGoogle(idToken: String) {
+        if (idToken.isBlank()) {
+            _uiState.value = AuthUiState.Error("Google kimlik doğrulama bilgisi alınamadı.")
+            return
+        }
         _uiState.value = AuthUiState.Loading("Google ile giriş yapılıyor...")
 
         viewModelScope.launch {
@@ -128,7 +133,26 @@ class AuthViewModel : ViewModel() {
                     }
                 }
                 .onFailure { exception ->
-                    _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Google ile giriş başarısız.")
+
+                    val message = when (exception) {
+
+                        is AuthError.NetworkError ->
+                            "İnternet bağlantınızı kontrol edin."
+
+                        is AuthError.InvalidCredential ->
+                            "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
+
+                        is AuthError.UserDisabled ->
+                            "Bu kullanıcı hesabı devre dışı bırakılmış."
+
+                        is AuthError.Unknown ->
+                            "Google ile giriş sırasında beklenmeyen bir hata oluştu."
+
+                        else ->
+                            "Google ile giriş başarısız."
+                    }
+
+                    _uiState.value = AuthUiState.Error(message)
                 }
         }
     }
