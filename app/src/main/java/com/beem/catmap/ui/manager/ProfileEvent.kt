@@ -31,6 +31,16 @@ sealed class ProfileEvent {
         val operatorUserId: String
     ): ProfileEvent()
 
+    data class BlockedUser(
+        val userId: String,
+        val kullaniciAdi: String,
+        val fotoUrl: String,
+        val operatorUserId: String
+    ): ProfileEvent()
 
+    data class UnblockedUser(
+        val userId: String,
+        val operatorUserId: String
+    ): ProfileEvent()
 
 }

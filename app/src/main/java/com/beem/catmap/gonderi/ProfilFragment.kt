@@ -477,13 +477,19 @@ class ProfilFragment : Fragment() {
                         kisiId = myUserId,
                         onResult = { isSuccess ->
                             if (isSuccess) {
-
+                                profileViewModel.setBlockedState()
                                 followViewModel.applyBlockToTargetCounts(
                                     wasIWasFollowing = wasIWasFollowing,
                                     wasHeWasFollowing = wasHeWasFollowing
                                 )
-
-                               profileViewModel.setBlockedState()
+                                ProfileEventBus.emitEvent(
+                                    ProfileEvent.BlockedUser(
+                                        userId = currentProfile.id,
+                                        kullaniciAdi = currentProfile.kullaniciAdi,
+                                        fotoUrl = currentProfile.fotoUrl,
+                                        operatorUserId = myUserId
+                                    )
+                                )
                             }
                         }
                     )
@@ -505,6 +511,14 @@ class ProfilFragment : Fragment() {
                         onResult = { isSuccess ->
                             if (isSuccess) {
                                 profileViewModel.resetProfileState()
+                                currentProfile?.let {
+                                    ProfileEventBus.emitEvent(
+                                        ProfileEvent.UnblockedUser(
+                                            userId = it.id,
+                                            operatorUserId = myUserId
+                                        )
+                                    )
+                                }
                                 followViewModel.setBlockedState(false)
                                 viewModel.resetAndSetBlocked()
                             }
@@ -705,8 +719,9 @@ class ProfilFragment : Fragment() {
                             }
 
                             progressBar.visibility = View.GONE
+
                         val currentProfileState = profileViewModel.fullProfileState.value
-                        if (currentProfileState is UiState.Blocked || currentProfileState is UiState.BlockedBy) {
+                        if (currentProfileState is UiState.Blocked) {
                             snapUiBlocked()
                             return@collect
                         }

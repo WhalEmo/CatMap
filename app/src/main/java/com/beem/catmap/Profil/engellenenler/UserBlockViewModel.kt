@@ -4,7 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.UserBlockRepository
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +26,7 @@ sealed class BlockActionState {
 }
 
 class UserBlockViewModel : ViewModel() {
-
+    private var targetUserId: String? = null
     private val repository: UserBlockRepository = UserBlockRepository.getInstance()
 
     private val _benimEngellediklerim = MutableStateFlow<List<Kullanici>>(emptyList())
@@ -37,10 +40,10 @@ class UserBlockViewModel : ViewModel() {
 
     private val _blockActionState = MutableSharedFlow<BlockActionState>()
     val blockActionState: SharedFlow<BlockActionState> = _blockActionState.asSharedFlow()
-
     private var lastDocument: DocumentSnapshot? = null
 
     fun benimEngellediklerimiGetir(currentUserId: String) {
+        this.targetUserId = currentUserId
         viewModelScope.launch {
             try {
                 _isLastPage.value = false
@@ -70,7 +73,6 @@ class UserBlockViewModel : ViewModel() {
 
     fun dahaFazlaEngellenenGetir(currentUserId: String) {
         if (_isLoadingMore.value || _isLastPage.value || lastDocument == null) return
-
         viewModelScope.launch {
             _isLoadingMore.value = true
 
@@ -109,7 +111,6 @@ class UserBlockViewModel : ViewModel() {
             try {
                 repository.blockUser(kisiId, engellenecekKullanici)
 
-                // Listede zaten varsa tekrar eklemiyoruz, en başa koyuyoruz
                 _benimEngellediklerim.update { current ->
                     val filtered = current.filterNot { it.id == engellenecekKullanici.id }
                     listOf(engellenecekKullanici) + filtered
@@ -149,13 +150,5 @@ class UserBlockViewModel : ViewModel() {
         }
     }
 
-    suspend fun isUserBlocked(currentUserId: String, targetUserId: String): Boolean {
-        // 1. Önce ViewModel'in UI state'ine bak
-        val isBlockedInState = _benimEngellediklerim.value.any { it.id == targetUserId }
-        if (isBlockedInState) return true
-
-        // 2. Yoksa Repository üzerinden LRU Cache / CurrentUserManager / Firestore kademesine git
-        return repository.isUserBlocked(kisiId = currentUserId, targetUserId = targetUserId)
-    }
 
 }
