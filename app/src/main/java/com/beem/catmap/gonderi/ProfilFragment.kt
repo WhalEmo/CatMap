@@ -15,6 +15,7 @@ import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -40,6 +41,7 @@ import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.models.Gonderi
 import com.beem.catmap.ui.components.CatMapDialog
+import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -341,9 +343,88 @@ class ProfilFragment : Fragment() {
             SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE)
         }
         ppMenuButton.setOnClickListener { anchorView ->
-            showOptionMenu(anchorView)
+            showOptionMenuTest(anchorView)
         }
     }
+
+
+    private fun showOptionMenuTest(view: View) {
+        val isMyFollower = followViewModel.followUiState.value.isFollowed
+
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+        val textMutedColor = ContextCompat.getColor(requireContext(), R.color.catmap_text_dark)
+
+        CatMapPopupMenu.Builder(requireContext())
+            // 🔴 1. Takipçiden Çıkar (Koşullu Görünürlük & Özel Diyalog)
+            .addItem(
+                id = R.id.profiltakipciCikar,
+                title = "Takipçiden Çıkar",
+                iconRes = R.drawable.ic_unfollow_user,
+                textColor = redColor,
+                iconTint = redColor,
+                isVisible = isMyFollower
+            ) {
+                showRemoveFollowerConfirmationDialog()
+            }
+
+            // 🚪 2. Çıkış Yap (CatMapDialog Tetiklemesi)
+            .addItem(
+                id = R.id.signOut,
+                title = "Çıkış Yap",
+                iconRes = R.drawable.logout,
+                textColor = textMutedColor,
+                iconTint = textMutedColor,
+                isVisible = true
+            ) {
+                CatMapDialog.build()
+                    .setTitle("Maceraya Mola mı?")
+                    .setMessage("Dostlarımız haritada seni bekliyor olacak! Yine bekleriz, çıkış yapmak istediğine emin misin?")
+                    .setPositiveButton("Evet, Çıkış Yap") {
+                        logout()
+                    }
+                    .setNegativeButton("Kalıyorum")
+                    .show(childFragmentManager, "SignOutDialog")
+            }
+            .build()
+            .show(anchorView = view)
+    }
+
+    /**
+     * 🟢 Takipçiden çıkarma diyalog akışını ayrı ve temiz bir metoda aldık
+     */
+    private fun showRemoveFollowerConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Takipçiden Çıkar")
+            .setMessage("Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?")
+            .setPositiveButton("Evet") { dialog, _ ->
+                targetUserId?.let { id ->
+                    followViewModel.takipcidenCikar(
+                        takipciId = id,
+                        currentUserId = myUserId,
+                        onSuccess = {
+                            val profile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+                            val userId = profile?.id.orEmpty().ifBlank { targetUserId }
+
+                            userId?.let {
+                                ProfileEventBus.emitEvent(
+                                    ProfileEvent.UnFollowerUser(
+                                        userId = it,
+                                        operatorUserId = myUserId
+                                    )
+                                )
+                            }
+                        },
+                        onFailure = {
+                            progressFollow.visibility = View.GONE
+                        }
+                    )
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("İptal", null)
+            .show()
+    }
+
     private fun showOptionMenu(view: View) {
         val popupMenu = PopupMenu(requireContext(), view)
         popupMenu.menuInflater.inflate(R.menu.profil_uc_nokta_menu, popupMenu.menu)

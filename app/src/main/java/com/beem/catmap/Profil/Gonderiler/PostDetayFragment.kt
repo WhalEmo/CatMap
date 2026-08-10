@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -27,6 +28,8 @@ import com.beem.catmap.UyariMesaji
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.components.CatMapDialog
+import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.navigation.Screen
@@ -118,53 +121,8 @@ class GonderiDetayFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 postViewModel.yukleyenID.collect { currentYukleyenId ->
-                    val isMyPost = (currentYukleyenId == currentUserManager.getCurrentUser()?.id)
-                    if (isMyPost) {
-                        gonderiMenu.visibility = View.VISIBLE
-                        gonderiMenu.setOnClickListener { v ->
-                            val popupMenu = PopupMenu(requireContext(), v)
-                            popupMenu.menuInflater.inflate(R.menu.gonderi_uc_nokta, popupMenu.menu)
-                            popupMenu.setOnMenuItemClickListener { item ->
-                                when (item.itemId) {
-                                    R.id.gonderi_sil -> {
-                                        AlertDialog.Builder(requireContext())
-                                            .setTitle("Silme")
-                                            .setMessage("Bu gönderiyi silmek istiyor musunuz?")
-                                            .setPositiveButton("Evet") { _, _ ->
-                                                kediid?.let { id ->
-                                                    postViewModel.gonderiSil(currentYukleyenId, id)
-                                                }
-                                                SmartNavigationEngine.navigateBack()
-                                                popupMenu.dismiss()
-                                            }
-                                            .setNegativeButton("Hayır") { dialog, _ -> dialog.dismiss() }
-                                            .show()
-                                        true
-                                    }
-
-                                    R.id.gonderiharita_sil -> {
-                                        AlertDialog.Builder(requireContext())
-                                            .setTitle("Silme")
-                                            .setMessage("Kediyi haritadan silmek istiyor musunuz? Bu işlemi yaptığınızda, kediye ait gönderiler de silinecektir.")
-                                            .setPositiveButton("Evet") { _, _ ->
-                                                kediid?.let { id ->
-                                                    postViewModel.haritadanVeGonderilerdenSil(currentYukleyenId, id)
-                                                }
-                                                popupMenu.dismiss()
-                                            }
-                                            .setNegativeButton("Hayır") { dialog, _ -> dialog.dismiss() }
-                                            .show()
-                                        true
-                                    }
-
-                                    else -> false
-                                }
-                            }
-                            popupMenu.show()
-                        }
-                    } else {
-                        gonderiMenu.visibility = View.GONE
-                    }
+                    val isMyPost = (currentYukleyenId == currentUserManager.getCurrentUser().id)
+                    gonderiMenu.isVisible = isMyPost
                 }
             }
         }
@@ -213,6 +171,10 @@ class GonderiDetayFragment : Fragment() {
                 }
             }
         }
+
+        gonderiMenu.setOnClickListener { v ->
+            showPostOptionMenu(v)
+        }
     }
 
     private fun populateUi(gonderi: Gonderi) {
@@ -250,6 +212,62 @@ class GonderiDetayFragment : Fragment() {
         }
         photoPager?.registerOnPageChangeCallback(photoPageChangeCallback!!)
     }
+
+    private fun showPostOptionMenu(anchorView: View) {
+        val currentYukleyenId = postViewModel.yukleyenID.value
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+
+        CatMapPopupMenu.Builder(requireContext())
+            .addItem(
+                id = R.id.gonderi_sil,
+                title = "Gönderiyi Sil",
+                iconRes = R.drawable.ic_small_close,
+                textColor = redColor,
+                iconTint = redColor
+            ) {
+                showDeletePostConfirmationDialog(currentYukleyenId)
+            }
+
+            .addItem(
+                id = R.id.gonderiharita_sil,
+                title = "Kediyi Haritadan Sil",
+                iconRes = R.drawable.ic_small_close,
+                textColor = redColor,
+                iconTint = redColor
+            ) {
+                showDeleteCatFromMapConfirmationDialog(currentYukleyenId)
+            }
+            .build()
+            .show(anchorView = anchorView)
+    }
+
+    private fun showDeletePostConfirmationDialog(currentYukleyenId: String) {
+        CatMapDialog.build()
+            .setTitle("Gönderi Silinsin mi?")
+            .setMessage("Bu gönderiyi silmek istediğine emin misin? Bu işlem geri alınamaz.")
+            .setPositiveButton("Evet, Sil") {
+                kediid?.let { id ->
+                    postViewModel.gonderiSil(currentYukleyenId, id)
+                }
+                SmartNavigationEngine.navigateBack()
+            }
+            .setNegativeButton("Vazgeç")
+            .show(childFragmentManager, "DeletePostDialog")
+    }
+
+    private fun showDeleteCatFromMapConfirmationDialog(currentYukleyenId: String) {
+        CatMapDialog.build()
+            .setTitle("Kediyi Haritadan Sil?")
+            .setMessage("Kediyi haritadan silmek istediğine emin misin? Bu işlem kediye ait tüm gönderileri de silebilir.")
+            .setPositiveButton("Evet, Sil") {
+                kediid?.let { id ->
+                    postViewModel.haritadanVeGonderilerdenSil(currentYukleyenId, id)
+                }
+            }
+            .setNegativeButton("İptal")
+            .show(childFragmentManager, "DeleteCatFromMapDialog")
+    }
+
 
     companion object {
         private const val ARG_KEDIID = "kediid"
