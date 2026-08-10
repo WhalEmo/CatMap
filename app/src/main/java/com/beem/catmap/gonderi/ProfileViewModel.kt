@@ -169,4 +169,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     fun resetProfileState() {
         _fullProfileState.value = UiState.Idle
     }
+    fun setBlockedState() {
+        val currentProfile = (_fullProfileState.value as? UiState.Success)?.data?.profile
+        _fullProfileState.value = UiState.Blocked(profile = currentProfile)
+    }
 }

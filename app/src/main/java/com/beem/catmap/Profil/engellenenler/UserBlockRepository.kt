@@ -10,14 +10,13 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import kotlin.math.max
 
 class UserBlockRepository private constructor(
     private val currentUserManager: CurrentUserManager
 ) {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-
-    // 1. Engellenen Kullanıcı Nesnelerini Saklayan LRU Cache (Son 100 Kullanıcı)
-    private val userCache = LruCache<String, Kullanici>(100)
+    private val userCache = LruCache<String, Kullanici>(20)
 
     companion object {
         @Volatile
@@ -32,29 +31,22 @@ class UserBlockRepository private constructor(
         }
     }
 
-    /**
-     * İlk yüklemede önce LRU Cache'e, yoksa Firestore'a başvurur.
-     */
     suspend fun getInitialBlockedUsers(
         kisiId: String,
         limit: Long = 20
     ): Pair<List<Kullanici>, DocumentSnapshot?> {
         val cachedIds = currentUserManager.benimEngellediklerimState.value
 
-        // 1. Durum: Tüm ID'ler LRU Cache'te tam nesne olarak mevcut mu?
         if (cachedIds.isNotEmpty()) {
             val cachedUsers = cachedIds.mapNotNull { id -> userCache.get(id) }
 
-            // Eğer bellekteki profil detayları tamsa doğrudan dön
             if (cachedUsers.size == cachedIds.size) {
                 return Pair(cachedUsers, null)
             }
         }
 
-        // 2. Durum: Bellekte eksik veya veri yoksa Firestore'dan çek
         val (networkUsers, lastDoc) = getBlockedUsersPageFromNetwork(kisiId, limit, null)
 
-        // LRU Cache ve Session güncellemesi
         networkUsers.forEach { user ->
             user.id?.let { userCache.put(it, user) }
         }
@@ -64,9 +56,6 @@ class UserBlockRepository private constructor(
         return Pair(networkUsers, lastDoc)
     }
 
-    /**
-     * Sayfalama (Paging) ile Firestore'dan veri çeker ve LRU Cache'i besler.
-     */
     suspend fun getBlockedUsersPageFromNetwork(
         kisiId: String,
         limit: Long = 20,
@@ -96,7 +85,7 @@ class UserBlockRepository private constructor(
                 this.kullaniciAdi = kullaniciAdi
                 this.fotoUrl = fotoUrl
             }.also { user ->
-                userCache.put(id, user) // Çekilen her veriyi LRU Cache'e atıyoruz
+                userCache.put(id, user)
             }
         }
 
@@ -111,7 +100,25 @@ class UserBlockRepository private constructor(
         val kullaniciAdi = engellenecekKullanici.kullaniciAdi ?: ""
         val fotoUrl = engellenecekKullanici.fotoUrl ?: ""
 
-        // 1. Firestore İşlemi
+        // A. Engellemeden ÖNCE takip bağlarını kontrol et
+        val myFollowingDoc = db.collection("users")
+            .document(kisiId)
+            .collection("takipEdilenler")
+            .document(targetId)
+            .get()
+            .await()
+
+        val myFollowerDoc = db.collection("users")
+            .document(kisiId)
+            .collection("takipciler")
+            .document(targetId)
+            .get()
+            .await()
+
+        val isIWasFollowing = myFollowingDoc.exists()
+        val isHeWasFollowing = myFollowerDoc.exists()
+
+        // 1. Firestore İşlemi (Engellenenler koleksiyonuna yaz)
         db.collection("users")
             .document(kisiId)
             .collection("blockedUsers")
@@ -128,11 +135,30 @@ class UserBlockRepository private constructor(
         // 2. LRU Cache Güncellemesi
         userCache.put(targetId, engellenecekKullanici)
 
-        // 3. Lokal ID Listesi / Shared Güncellemesi
+        // 3. Engellenenler ID Listesini Güncelle
         val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableList()
         if (!currentIds.contains(targetId)) {
             currentIds.add(0, targetId)
             currentUserManager.updateBenimEngellediklerim(currentIds)
+        }
+
+        // 4. LOKAL SAYAÇLARI GÜNCELLE (Eğer takipleşiyorsak sayıları düş)
+        val currentUser = currentUserManager.getCurrentUser()
+        var currentFollowingCount = currentUser.takipEdilenSayisi ?: 0L
+        var currentFollowerCount = currentUser.takipciSayisi ?: 0L
+
+        if (isIWasFollowing) {
+            currentFollowingCount = max(0L, currentFollowingCount - 1)
+        }
+        if (isHeWasFollowing) {
+            currentFollowerCount = max(0L, currentFollowerCount - 1)
+        }
+
+        if (isIWasFollowing || isHeWasFollowing) {
+            currentUserManager.updateFollowCounts(
+                takipciSayisi = currentFollowerCount,
+                takipEdilenSayisi = currentFollowingCount
+            )
         }
     }
 
@@ -163,14 +189,14 @@ class UserBlockRepository private constructor(
         if (targetUserId.isBlank() || kisiId.isBlank()) return false
 
         if (userCache.get(targetUserId) != null) {
-            Log.d("LRU","CHCDEN GELDI")
+            Log.d("LRU", "CHCDEN GELDI")
             return true
         }
 
-        Log.d("LRU","CHCDEN GELMEDI")
+        Log.d("LRU", "CHCDEN GELMEDI")
         val cachedIds = currentUserManager.benimEngellediklerimState.value
-        if (cachedIds.contains(targetUserId)){
-            Log.d("LRU","CHCDEN GELMEDI2")
+        if (cachedIds.contains(targetUserId)) {
+            Log.d("LRU", "CHCDEN GELMEDI2")
             return true
         }
 

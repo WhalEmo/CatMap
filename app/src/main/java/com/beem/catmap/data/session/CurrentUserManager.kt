@@ -100,7 +100,6 @@ class CurrentUserManager private constructor(context: Context) {
     fun setCurrentUser(kullanici: Kullanici) {
         sessionManager.saveUserSession(kullanici)
         _currentUserState.value = kullanici
-        // Tüm profil kaydedildiğinde de sayacın son çekilme zamanı taze tutulur
         markStatsFetched()
     }
 

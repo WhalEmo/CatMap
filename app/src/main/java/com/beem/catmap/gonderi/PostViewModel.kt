@@ -322,5 +322,15 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun resetAndSetBlocked() {
+        _uiState.update {
+            it.copy(
+                isEmpty = true,
+                posts = emptyList(),
+                isAccessDenied = true,
+                isLoading = false
+            )
+        }
+    }
 
 }

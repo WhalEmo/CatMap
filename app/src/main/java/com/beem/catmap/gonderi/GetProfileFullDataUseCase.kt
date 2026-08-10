@@ -157,7 +157,7 @@ class GetProfileFullDataUseCase(
             isSelfProfile = conditions.isSelf,
             isFollowing = isFollowing,
             isFollowed = isFollowed,
-            isAccessDenied = accessDenied
+            isAccessDenied = accessDenied,
         )
     }
 }

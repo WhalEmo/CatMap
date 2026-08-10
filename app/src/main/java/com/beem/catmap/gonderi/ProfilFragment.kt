@@ -52,7 +52,6 @@ import com.facebook.shimmer.ShimmerFrameLayout
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
 class ProfilFragment : Fragment() {
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
@@ -94,6 +93,7 @@ class ProfilFragment : Fragment() {
     private var targetUserId: String? = null
     private var initialIsFollowed: Boolean = false
     private lateinit var uyariMesaji: UyariMesaji
+    private var loadedKullanici: Kullanici? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,11 +130,7 @@ class ProfilFragment : Fragment() {
         yukleVerileri(forceRefresh = false)
     }
 
-    override fun onStop() {
-        super.onStop()
-        profileLoaded = false
-        profileViewModel.resetProfileState()
-    }
+
     private fun initViews(view: View) {
         myConstraintLayout = view.findViewById(R.id.myConstraintLayout)
         shimmerLayout = view.findViewById(R.id.shimmerLayout)
@@ -274,6 +270,7 @@ class ProfilFragment : Fragment() {
                                     operatorUserId = myUserId
                                 )
                             )
+                            profileViewModel.resetProfileState()
                         },
                         onFailure = {
                             takipEdiliyorButonu.setLoadingState(false)
@@ -285,35 +282,68 @@ class ProfilFragment : Fragment() {
         }
         takipciSayisiLayout.setOnClickListener {
             it.bounceAndHaptic()
-            targetUserId?.let { userId ->
-                val args = bundleOf(
-                    "yukleyenID" to userId,
-                    "startPage" to 0,
-                    "kullaniciAdi" to KullaniciAdi.text.toString(),
-                )
 
-                SmartNavigationEngine.navigateTo(
-                    Screen.FOLLOWERS,
-                    args,
-                    "${userId}_0"
-                )
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+
+            if (canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 0,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_0"
+                    )
+                }
             }
         }
 
         takipEdilenSayisiLayout.setOnClickListener {
             it.bounceAndHaptic()
-            targetUserId?.let { userId ->
-                val args = bundleOf(
-                    "yukleyenID" to userId,
-                    "startPage" to 1,
-                    "kullaniciAdi" to KullaniciAdi.text.toString(),
-                )
 
-                SmartNavigationEngine.navigateTo(
-                    Screen.FOLLOWERS,
-                    args,
-                    "${userId}_1"
-                )
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+
+            if (canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 1,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_1"
+                    )
+                }
+            }
+        }
+
+        takipEdilenSayisiLayout.setOnClickListener {
+            it.bounceAndHaptic()
+            val followState = followViewModel.followUiState.value
+            val canNavigate = followState.isSelfProfile == true || (followState.isFollowing && !followState.isBlocked)
+            if(canNavigate) {
+                targetUserId?.let { userId ->
+                    val args = bundleOf(
+                        "yukleyenID" to userId,
+                        "startPage" to 1,
+                        "kullaniciAdi" to KullaniciAdi.text.toString(),
+                    )
+
+                    SmartNavigationEngine.navigateTo(
+                        Screen.FOLLOWERS,
+                        args,
+                        "${userId}_1"
+                    )
+                }
             }
         }
 
@@ -339,6 +369,7 @@ class ProfilFragment : Fragment() {
                                     operatorUserId = myUserId
                                 )
                             )
+                            profileViewModel.resetProfileState()
                         },
                         onFailure = {
                             takipEtButonu.setLoadingState(false)
@@ -351,8 +382,6 @@ class ProfilFragment : Fragment() {
 
         engelKaldirButton.setOnClickListener {
             it.bounceAndHaptic()
-            engelKaldirButton.visibility= View.GONE
-            takipEtButonu.visibility = View.VISIBLE
             showEngelKaldirDialog()
         }
         sohbetButon.setOnClickListener { }
@@ -401,7 +430,7 @@ class ProfilFragment : Fragment() {
         popupMenu.show()
     }
     private fun showTakipcidenCikarDialog() {
-        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+        val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showTakipcidenCikarDialog(
             context = requireContext(),
@@ -432,19 +461,29 @@ class ProfilFragment : Fragment() {
     }
 
     private fun showEngelleDialog() {
-        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+        val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showEngelleDialog(
             context = requireContext(),
             kullaniciAdi = currentProfile?.kullaniciAdi,
             onConfirm = {
                 currentProfile?.let { engellenecekKullanici ->
+
+                    val wasIWasFollowing = followViewModel.followUiState.value.isFollowing
+                    val wasHeWasFollowing = followViewModel.followUiState.value.isFollowed
+
                     userBlockViewModel.engelle(
                         engellenecekKullanici = engellenecekKullanici,
                         kisiId = myUserId,
                         onResult = { isSuccess ->
                             if (isSuccess) {
-                                snapUiBlocked()
+
+                                followViewModel.applyBlockToTargetCounts(
+                                    wasIWasFollowing = wasIWasFollowing,
+                                    wasHeWasFollowing = wasHeWasFollowing
+                                )
+
+                               profileViewModel.setBlockedState()
                             }
                         }
                     )
@@ -453,21 +492,21 @@ class ProfilFragment : Fragment() {
         )
     }
     private fun showEngelKaldirDialog() {
-        val currentProfile = (profileViewModel.fullProfileState.value as? UiState.Success)?.data?.profile
+        val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showEngelKaldirDialog(
             context = requireContext(),
             kullaniciAdi = currentProfile?.kullaniciAdi,
             onConfirm = {
-                engelKaldirButton.visibility= View.GONE
-                takipEtButonu.visibility = View.VISIBLE
                 targetUserId?.let { engellenenId ->
                     userBlockViewModel.engelKaldir(
                         engellenenKullaniciId = engellenenId,
                         kisiId = myUserId,
                         onResult = { isSuccess ->
                             if (isSuccess) {
-
+                                profileViewModel.resetProfileState()
+                                followViewModel.setBlockedState(false)
+                                viewModel.resetAndSetBlocked()
                             }
                         }
                     )
@@ -475,7 +514,8 @@ class ProfilFragment : Fragment() {
             }
         )
     }
-    private fun snapUiBlocked(){
+    private fun snapUiBlocked() {
+
         recyclerView.visibility = View.GONE
         postSectionHeader.visibility = View.GONE
         progressBar.visibility = View.GONE
@@ -551,7 +591,7 @@ class ProfilFragment : Fragment() {
                                 uyariMesaji.BasarisizDurum(state.message, 1500)
                             }
                             is BlockActionState.Idle -> {
-                                // Herhangi bir işlem yok
+
                             }
                         }
                     }
@@ -603,6 +643,7 @@ class ProfilFragment : Fragment() {
 
                             }
                             is UiState.Blocked -> {
+                                followViewModel.setBlockedState(true)
                                 setupBlockedByMeUi(state.profile)
                             }
                             is UiState.Error -> {
@@ -664,6 +705,11 @@ class ProfilFragment : Fragment() {
                             }
 
                             progressBar.visibility = View.GONE
+                        val currentProfileState = profileViewModel.fullProfileState.value
+                        if (currentProfileState is UiState.Blocked || currentProfileState is UiState.BlockedBy) {
+                            snapUiBlocked()
+                            return@collect
+                        }
                             if (state.isAccessDenied) {
                                 recyclerView.visibility = View.GONE
                                 postSectionHeader.visibility = View.GONE
@@ -691,7 +737,8 @@ class ProfilFragment : Fragment() {
     }
 
     private fun bindUserProfileData(kullanici: Kullanici) {
-        KullaniciAdi.text = kullanici.kullaniciAdi.orEmpty()
+        this.loadedKullanici = kullanici
+        KullaniciAdi.text = kullanici.kullaniciAdi
 
         val tamAd = kullanici.ad.trim()
         tvAd.text = tamAd
@@ -712,6 +759,7 @@ class ProfilFragment : Fragment() {
         super.onPause()
     }
 
+
     private fun renderProfileButtons(state: FollowUiState) {
 
         if (state.isBlocked) {
@@ -721,7 +769,10 @@ class ProfilFragment : Fragment() {
             engelKaldirButton.visibility = View.VISIBLE
             progressFollow.visibility = View.GONE
             return
+        } else {
+            engelKaldirButton.visibility = View.GONE
         }
+
         if (state.isSelfProfile == null) {
             profiliDuzenleTiklandi.visibility = View.GONE
             takipEtButonu.visibility = View.GONE
@@ -733,14 +784,13 @@ class ProfilFragment : Fragment() {
         progressFollow.visibility = View.GONE
 
         if (state.isSelfProfile == true) {
-
             profiliDuzenleTiklandi.visibility = View.VISIBLE
             takipEtButonu.visibility = View.GONE
             takipEdiliyorVeMesajLayout.visibility = View.GONE
-
+            ppMenuButton.visibility = View.GONE
         } else {
-
             profiliDuzenleTiklandi.visibility = View.GONE
+            ppMenuButton.visibility = View.VISIBLE
 
             if (state.isFollowing) {
                 takipEdiliyorVeMesajLayout.visibility = View.VISIBLE
@@ -758,7 +808,6 @@ class ProfilFragment : Fragment() {
             }
         }
     }
-
     private fun onGonderiTiklandi(gonderi: Gonderi) {
         val args = bundleOf(
             "kediid" to gonderi.kediID,
@@ -766,8 +815,6 @@ class ProfilFragment : Fragment() {
         )
         SmartNavigationEngine.navigateTo(Screen.POST, args, gonderi.kediID)
     }
-
-
     companion object {
         private const val ARG_USER_ID = "USER_ID"
 

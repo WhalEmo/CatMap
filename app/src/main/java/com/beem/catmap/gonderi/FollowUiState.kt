@@ -7,4 +7,6 @@ data class FollowUiState(
     val isFollowing: Boolean = false,
     val isFollowed: Boolean = false,
     val isLoadingFollowState: Boolean = false,
+    val isBlocked: Boolean = false, // Benim engellediğim durum
+    val isBlockedBy: Boolean = false, // Beni engelleyen durum
 )
