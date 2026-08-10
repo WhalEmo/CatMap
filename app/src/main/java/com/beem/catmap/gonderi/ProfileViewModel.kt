@@ -8,19 +8,21 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FullProfileData
+import com.beem.catmap.data.model.UserBlockedException
 import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.data.repository.PostRepository
+import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.domain.usecase.GetProfileFullDataUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: ProfileRepository = ProfileRepository.getInstance()
+    private val blockRepo: UserBlockRepository = UserBlockRepository.getInstance()
     private val postRepository: PostRepository = PostRepository.getInstance(application)
     private val followRepository: FollowRepository = FollowRepository.getInstance(application)
     private val userManager: CurrentUserManager = CurrentUserManager.getInstance(application)
@@ -31,7 +33,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         profileRepository = repository,
         postRepository = postRepository,
         followRepository = followRepository,
-        userManager = userManager
+        userManager = userManager,
+        userBlockRepository = blockRepo
     )
 
     private val _fullProfileState = MutableStateFlow<UiState<FullProfileData>>(UiState.Idle)
@@ -42,9 +45,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     fun tumProfilVerileriniYukle(targetUserId: String, forceRefresh: Boolean = false) {
         if (targetUserId.isBlank()) return
-        Log.d("SHIMMER","tumppcalıstı")
+        Log.d("SHIMMER", "tumppcalıstı")
+
         viewModelScope.launch {
-            val isMyProfile = targetUserId == UserSession.userId
             _fullProfileState.value = UiState.Loading
 
             getProfileFullDataUseCase(
@@ -52,17 +55,21 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 forceRefresh = forceRefresh
             )
                 .onSuccess { fullData ->
-                    Log.d("SHIMMER","SUCCESS CALSITI")
-                    if (isMyProfile && forceRefresh) {
+                    Log.d("SHIMMER", "SUCCESS CALISTI")
+                    if (fullData.isSelfProfile && forceRefresh) {
                         updateLocalSession(fullData.profile)
                     }
 
                     _fullProfileState.value = UiState.Success(fullData)
                 }
                 .onFailure { exception ->
-                    _fullProfileState.value = UiState.Error(
-                        exception.localizedMessage ?: "Profil yüklenemedi."
-                    )
+                    if (exception is UserBlockedException) {
+                        _fullProfileState.value = UiState.Blocked(exception.profile)
+                    } else {
+                        _fullProfileState.value = UiState.Error(
+                            exception.localizedMessage ?: "Profil yüklenemedi."
+                        )
+                    }
                 }
         }
     }
@@ -158,5 +165,12 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     fun resetUpdateState() {
         _profileUpdateState.value = ProfileUpdateResult.Idle
+    }
+    fun resetProfileState() {
+        _fullProfileState.value = UiState.Idle
+    }
+    fun setBlockedState() {
+        val currentProfile = (_fullProfileState.value as? UiState.Success)?.data?.profile
+        _fullProfileState.value = UiState.Blocked(profile = currentProfile)
     }
 }

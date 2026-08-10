@@ -18,11 +18,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     private val repository = FollowRepository.getInstance(application)
     private val userManager = CurrentUserManager.getInstance(application)
 
-    private val _benimEngellediklerim = MutableStateFlow<List<String>>(emptyList())
-    val benimEngellediklerim: StateFlow<List<String>> = _benimEngellediklerim.asStateFlow()
-
-    private val _beniEngelleyenler = MutableStateFlow<List<String>>(emptyList())
-    val beniEngelleyenler: StateFlow<List<String>> = _beniEngelleyenler.asStateFlow()
 
     private val _followUiState = MutableStateFlow(FollowUiState())
     val followUiState: StateFlow<FollowUiState> = _followUiState.asStateFlow()
@@ -40,15 +35,17 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         followingCount: Long,
         isSelf: Boolean,
         isFollowing: Boolean = false,
-        isFollowed: Boolean = false
+        isFollowed: Boolean = false,
+        isBlocked: Boolean = false
     ) {
     Log.d("ISSELF","buraya gırdı"+isSelf)
         _followUiState.update {
             it.copy(
                 isSelfProfile = isSelf,
-                isFollowing = isFollowing,
-                isFollowed = isFollowed,
-                isLoadingFollowState = false
+                isFollowing = if (isBlocked) false else isFollowing,
+                isFollowed = if (isBlocked) false else isFollowed,
+                isBlocked = isBlocked,
+                isLoadingFollowState = false,
             )
         }
             _targetUserTakipciSayisi.value = followerCount
@@ -70,8 +67,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             val result = repository.takipEt(
                 currentUserId = currentUserId,
                 targetUserId = takipEttiginId,
-                myBlockedList = _benimEngellediklerim.value,
-                blockedMeList = _beniEngelleyenler.value
             )
 
             result.onSuccess { followResult ->
@@ -126,6 +121,15 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    fun setInitialFollowedState(isFollowed: Boolean) {
+        _followUiState.update { currentState ->
+            currentState.copy(
+                isFollowed = isFollowed,
+                isSelfProfile = false
+            )
+        }
+    }
+
 
     fun takipcidenCikar(takipciId: String, currentUserId: String,  onSuccess: () -> Unit = {}, onFailure: () -> Unit) {
         val previousFollowedCount = _targetUserTakipEdilenSayisi.value
@@ -153,6 +157,42 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 _followUiState.update { it.copy(isFollowed = true) }
                 _targetUserTakipEdilenSayisi.value = previousFollowedCount
             }
+        }
+    }
+    fun setBlockedState(isBlocked: Boolean) {
+
+        _followUiState.update { currentState ->
+            currentState.copy(
+                isBlocked = isBlocked,
+                isFollowing = false,
+                isFollowed = false
+            )
+        }
+    }
+    fun applyBlockToTargetCounts(wasIWasFollowing: Boolean, wasHeWasFollowing: Boolean) {
+        if (wasIWasFollowing) {
+            val currentTakipci = _targetUserTakipciSayisi.value
+            _targetUserTakipciSayisi.value = if (currentTakipci > 0) currentTakipci - 1 else 0L
+        }
+
+        if (wasHeWasFollowing) {
+            val currentTakipEdilen = _targetUserTakipEdilenSayisi.value
+            _targetUserTakipEdilenSayisi.value = if (currentTakipEdilen > 0) currentTakipEdilen - 1 else 0L
+        }
+
+    }
+
+
+    /**
+     * Karşı taraf bizi engellediğinde tetiklenecek durum.
+     */
+    fun setBlockedByState(isBlockedBy: Boolean) {
+        _followUiState.update { currentState ->
+            currentState.copy(
+                isBlockedBy = isBlockedBy,
+                isFollowing = if (isBlockedBy) false else currentState.isFollowing,
+                isFollowed = if (isBlockedBy) false else currentState.isFollowed
+            )
         }
     }
 }

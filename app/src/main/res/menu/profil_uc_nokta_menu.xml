@@ -9,4 +9,7 @@
     <item
         android:id="@+id/mesajGonder"
         android:title="Mesaj gönder"/>
+    <item
+        android:id="@+id/profilmenu_engeliKaldir"
+        android:title="Engeli Kaldır" />
 </menu>

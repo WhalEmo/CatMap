@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.extensions
 
+import com.google.firebase.Timestamp
 import java.util.Date;
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -15,4 +16,8 @@ fun getFormattedDate(date: Date): String {
             sdf.format(currentDate)
         }
     }
+}
+fun getFormattedTimestamp(timestamp: Timestamp?): String {
+    if (timestamp == null) return "şimdi"
+    return getFormattedDate(timestamp.toDate())
 }

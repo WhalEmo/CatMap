@@ -118,9 +118,6 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun markAsAddedLocal() {
-        _isAlreadyAdded.value = true
-    }
 
     fun loadOwnerInfo(ownerId: String) {
         viewModelScope.launch {

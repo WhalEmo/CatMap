@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -64,6 +65,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
     private lateinit var photoIndicatorCapsule: MaterialCardView
     private lateinit var photoDotsContainer: LinearLayout
+    private lateinit var loadingContainer : FrameLayout
+    private lateinit var nestedScrollViewContent: NestedScrollView
 
     private val photoIndicatorDots = mutableListOf<View>()
 
@@ -102,6 +105,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         initViews(view)
+        loadStart()
         observeViewModel()
         setupCommentCountObserver()
 
@@ -116,8 +120,10 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                 yorumSayisiToplam()
             }
 
-            kedi.yukleyenId?.let { ownerId ->
-                viewModel.loadOwnerInfo(ownerId)
+            if (!kedi.yukleyenId.isNullOrEmpty()) {
+                viewModel.loadOwnerInfo(kedi.yukleyenId)
+            } else {
+                contentShow()
             }
 
             profilAlani.setOnClickListener {
@@ -162,6 +168,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         fotoPager = view.findViewById(R.id.fotoPager)
         photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule)
         photoDotsContainer = view.findViewById(R.id.fotoDotsContainer)
+        loadingContainer = view.findViewById(R.id.loadingContainer)
+        nestedScrollViewContent = view.findViewById(R.id.nested)
 
         fotoAdapter = FotoGeciciAdapter(requireContext(), null)
         fotoPager.adapter = fotoAdapter
@@ -206,6 +214,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                         .placeholder(R.drawable.kullanici)
                         .dontAnimate()
                         .into(yukleyenPP)
+
+                    contentShow()
                 }
             }
         }
@@ -308,29 +318,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             NavigationHelper.navigateToProfile(kediYukleyenID)
         }
     }
-    /*
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-
-        dialog.setOnShowListener { dialogInterface ->
-            val bottomSheetDialog = dialogInterface as BottomSheetDialog
-            val bottomSheet = bottomSheetDialog.findViewById<FrameLayout>(
-                com.google.android.material.R.id.design_bottom_sheet
-            )
-
-            bottomSheet?.let { sheet ->
-                val behavior = BottomSheetBehavior.from(sheet)
-
-                sheet.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-
-                behavior.skipCollapsed = true
-                behavior.state = BottomSheetBehavior.STATE_EXPANDED
-            }
-        }
-        return dialog
-    }
-
-     */
     override fun onStart() {
         super.onStart()
 
@@ -443,6 +430,15 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
+    }
+    private fun loadStart() {
+        loadingContainer.isVisible = true
+        nestedScrollViewContent.isVisible = false
+    }
+
+    private fun contentShow() {
+        loadingContainer.isVisible = false
+        nestedScrollViewContent.isVisible = true
     }
 
 }

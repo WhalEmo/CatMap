@@ -15,5 +15,6 @@ data class FullProfileData(
     val isSelfProfile: Boolean = false,
     val isFollowing: Boolean,
     val isFollowed: Boolean,
-    val isAccessDenied: Boolean = false
+    val isAccessDenied: Boolean = false,
+
 )
