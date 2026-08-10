@@ -14,6 +14,7 @@ import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -37,7 +38,10 @@ import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.gonderi.ProfileDialogHelper
 import com.beem.catmap.gonderi.ProfileViewModel
 import com.beem.catmap.gonderi.UiState
+import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.components.CatMapDialog
+import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -394,46 +398,74 @@ class ProfilFragment : Fragment() {
             showOptionMenu(anchorView)
         }
     }
-    private fun showOptionMenu(view: View) {
-        val popupMenu = PopupMenu(requireContext(), view)
-        popupMenu.menuInflater.inflate(R.menu.profil_uc_nokta_menu, popupMenu.menu)
 
+    private fun showOptionMenu(view: View) {
         val isMyFollower = followViewModel.followUiState.value.isFollowed
         val isBlocked = userBlockViewModel.benimEngellediklerim.value.any { it.id == targetUserId }
 
-        val removeFollowerItem = popupMenu.menu.findItem(R.id.profiltakipciCikar)
-        removeFollowerItem?.isVisible = isMyFollower
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+        val textPrimaryColor = ContextCompat.getColor(requireContext(), R.color.catmap_text_primary)
 
-        val blockItem = popupMenu.menu.findItem(R.id.profilmenu_engelle)
-        val unblockItem = popupMenu.menu.findItem(R.id.profilmenu_engeliKaldir)
-
-        blockItem?.isVisible = !isBlocked
-        unblockItem?.isVisible = isBlocked
-
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.profiltakipciCikar -> {
-                    showTakipcidenCikarDialog()
-                    true
-                }
-                R.id.profilmenu_engelle -> {
-                    showEngelleDialog()
-                    true
-                }
-                R.id.profilmenu_engeliKaldir -> {
-                    showEngelKaldirDialog()
-                    true
-                }
-                else -> false
+        CatMapPopupMenu.Builder(requireContext())
+            .addItem(
+                id = R.id.profiltakipciCikar,
+                title = "Takipçiden Çıkar",
+                iconRes = R.drawable.ic_unfollow_user,
+                textColor = textPrimaryColor,
+                iconTint = textPrimaryColor,
+                isVisible = isMyFollower && targetUserId != UserSession.userId
+            ) {
+                showTakipcidenCikarDialog()
             }
-        }
-        popupMenu.show()
+            .addItem(
+                id = if (isBlocked) R.id.profilmenu_engeliKaldir else R.id.profilmenu_engelle,
+                title = if (isBlocked) "Engeli Kaldır" else "Kullanıcıyı Engelle",
+                iconRes = if (isBlocked) R.drawable.ic_lock_open else R.drawable.ic_lock,
+                textColor = if (isBlocked) textPrimaryColor else redColor,
+                iconTint = if (isBlocked) textPrimaryColor else redColor,
+                isVisible = targetUserId != UserSession.userId
+            ) {
+                if (isBlocked) {
+                    showEngelKaldirDialog()
+                } else {
+                    showEngelleDialog()
+                }
+            }
+            .addItem(
+                id = R.id.signOut,
+                title = "Çıkış Yap",
+                iconRes = R.drawable.logout,
+                textColor = textPrimaryColor,
+                iconTint = textPrimaryColor,
+                isVisible = targetUserId == UserSession.userId
+            ) {
+                CatMapDialog.build()
+                    .setTitle("Maceraya Mola mı?")
+                    .setMessage("Dostlarımız haritada seni bekliyor olacak! Yine bekleriz, çıkış yapmak istediğine emin misin?")
+                    .setPositiveButton("Evet, Çıkış Yap") {
+                        logout()
+                    }
+                    .setNegativeButton("Kalıyorum")
+                    .show(childFragmentManager, "SignOutDialog")
+            }.addItem(
+                id = R.id.engellenenlerGetir,
+                title = "Engellenenler",
+                iconRes = R.drawable.exit,
+                textColor = textPrimaryColor,
+                iconTint = textPrimaryColor,
+                isVisible = targetUserId == UserSession.userId
+            ) {
+                SmartNavigationEngine.navigateTo(Screen.BLOCKED_USERS)
+            }
+            .build()
+            .show(anchorView = view)
     }
+
     private fun showTakipcidenCikarDialog() {
         val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showTakipcidenCikarDialog(
-            context = requireContext(),
+            fragmentManager = childFragmentManager,
             kullaniciAdi = currentProfile?.kullaniciAdi,
             onConfirm = {
                 targetUserId?.let { id ->
@@ -464,7 +496,7 @@ class ProfilFragment : Fragment() {
         val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showEngelleDialog(
-            context = requireContext(),
+            fragmentManager = childFragmentManager,
             kullaniciAdi = currentProfile?.kullaniciAdi,
             onConfirm = {
                 currentProfile?.let { engellenecekKullanici ->
@@ -501,7 +533,7 @@ class ProfilFragment : Fragment() {
         val currentProfile = loadedKullanici
 
         ProfileDialogHelper.showEngelKaldirDialog(
-            context = requireContext(),
+            fragmentManager = childFragmentManager,
             kullaniciAdi = currentProfile?.kullaniciAdi,
             onConfirm = {
                 targetUserId?.let { engellenenId ->
@@ -775,6 +807,38 @@ class ProfilFragment : Fragment() {
     }
 
 
+    /**
+     * şuan bu metodu öylesine oluşturdum sevgilim
+     * çıkış işleminde bunlarda olması gerekiyor
+     * aklımızda bulunsun diye şimdilik bu metodu yazdım
+     * OnlinePresenceManager objesi çevrimiçi durumunu yönetiyor. <3<3<3
+     */
+    private fun logout() {
+        // 💡 1. Coroutine Scope ile güvenli çıkış işlemi
+        lifecycleScope.launch {
+            // Varsa bir Loading Banner/Pill açabilirsin: "Oturum kapatılıyor..."
+
+            try {
+                OnlinePresenceManager.setUserOffline()
+                UserSession.logout()
+
+            } catch (e: Exception) {
+                Log.e("LOGOUT_ERROR", "Çıkış esnasında temizlik hatası: ${e.localizedMessage}")
+            } finally {
+                navigateToAuthAndClearHistory()
+            }
+        }
+    }
+    private fun navigateToAuthAndClearHistory() {
+        if (!isAdded || isStateSaved) return
+
+        SmartNavigationEngine.navigateTo(
+            targetScreen = Screen.AUTH,
+        )
+    }
+
+
+
     private fun renderProfileButtons(state: FollowUiState) {
 
         if (state.isBlocked) {
@@ -802,10 +866,8 @@ class ProfilFragment : Fragment() {
             profiliDuzenleTiklandi.visibility = View.VISIBLE
             takipEtButonu.visibility = View.GONE
             takipEdiliyorVeMesajLayout.visibility = View.GONE
-            ppMenuButton.visibility = View.GONE
         } else {
             profiliDuzenleTiklandi.visibility = View.GONE
-            ppMenuButton.visibility = View.VISIBLE
 
             if (state.isFollowing) {
                 takipEdiliyorVeMesajLayout.visibility = View.VISIBLE

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.button.MaterialButton
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/btnMenuItem"
+    android:layout_width="wrap_content"
+    android:layout_height="48dp"
+    android:minWidth="180dp"
+    android:maxWidth="240dp"
+    style="@style/Widget.Material3.Button.TextButton"
+    android:gravity="center_vertical|start"
+    android:paddingHorizontal="16dp"
+    android:insetTop="0dp"
+    android:insetBottom="0dp"
+    android:fontFamily="@font/rubik_medium"
+    android:textSize="14sp"
+    android:textColor="?attr/colorOnSurface"
+    app:iconSize="20dp"
+    app:iconPadding="12dp"
+    app:iconTint="?attr/colorOnSurface"
+    tools:text="Takipçiden Çıkar"
+    tools:icon="@drawable/ic_check_circle" />

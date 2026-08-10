@@ -30,6 +30,8 @@ import com.beem.catmap.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.models.Gonderi
+import com.beem.catmap.ui.components.CatMapDialog
+import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -253,64 +255,77 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
-
     private fun showOptionMenu(view: View) {
-        val popupMenu = PopupMenu(requireContext(), view)
-        popupMenu.menuInflater.inflate(R.menu.kediyi_gosterme_uc_nokta, popupMenu.menu)
-
-
         val isCatAdded = viewModel.isAlreadyAdded.value
         val currentCat = viewModel.selectedCat.value ?: return
         val likeCount = viewModel.likeCount.value
 
-        val addMenuItem = popupMenu.menu.findItem(R.id.gonderi_ekle)
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+        val successColor = ContextCompat.getColor(requireContext(), R.color.catmap_success)
+        val addCatColor = ContextCompat.getColor(requireContext(), R.color.catmap_text_dark)
 
-        if (isCatAdded) {
-            addMenuItem.title = "✓ Gönderilerinizde Ekli"
-            addMenuItem.isEnabled = false
-        }
-
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.gonderi_ekle -> {
-                    if (isCatAdded) return@setOnMenuItemClickListener true
-
-                    AlertDialog.Builder(requireContext())
-                        .setTitle("Ekleme")
-                        .setMessage("Bu kediyi gönderilerinize eklemek istiyor musunuz?")
-                        .setPositiveButton("Evet") { _, _ ->
-                            val newPost = Gonderi(
-                                kediID = currentCat.id,
-                                kediAdi = currentCat.isim,
-                                aciklama = currentCat.hakkindasi,
-                                fotoUrlListesi = currentCat.urLler,
-                                tarih = currentCat.createdAt.toFirebaseTimestamp(),
-                                begeniSayisi = likeCount.toLong()
-                            )
-
-                            viewModel.addCatToUserPosts(newPost)
-                            dismiss()
-                        }
-                        .setNegativeButton("Hayır", null)
-                        .show()
-                    true
-                }
-                R.id.HaritadanSilme -> {
-                    AlertDialog.Builder(requireContext())
-                        .setTitle("Silme")
-                        .setMessage("Kediyi haritadan silmek istiyor musunuz? Bu işlem kediye ait gönderileri de silecektir.")
-                        .setPositiveButton("Evet") { _, _ ->
-                            viewModel.deleteCatFromUserAndMap()
-                        }
-                        .setNegativeButton("Hayır", null)
-                        .show()
-                    true
-                }
-                else -> false
+        CatMapPopupMenu.Builder(requireContext())
+            .addItem(
+                id = R.id.gonderi_ekle,
+                title = if (isCatAdded) "Gönderilerinizde Ekli" else "Gönderilerime Ekle",
+                iconRes = if (isCatAdded) R.drawable.ic_check_circle else R.drawable.ic_add,
+                textColor = if (isCatAdded) successColor else addCatColor,
+                iconTint = if (isCatAdded) successColor else addCatColor,
+                isEnabled = !isCatAdded
+            ) {
+                showAddCatConfirmationDialog(currentCat, likeCount)
             }
-        }
-        popupMenu.show()
+            .addItem(
+                id = R.id.HaritadanSilme,
+                title = "Haritadan Sil",
+                iconRes = R.drawable.ic_small_close,
+                textColor = redColor,
+                iconTint = redColor,
+                isVisible = true
+            ) {
+                showDeleteCatConfirmationDialog()
+            }
+            .build()
+            .show(anchorView = view)
     }
+
+    /**
+     * 🟢 Kedi ekleme diyalog akışı (CatMapDialog)
+     */
+    private fun showAddCatConfirmationDialog(currentCat: Kediler, likeCount: Int) {
+        CatMapDialog.build()
+            .setTitle("Gönderilerine Eklensin mi?")
+            .setMessage("${currentCat.isim} isimli dostumuzu gönderilerine eklemek istiyor musun?")
+            .setPositiveButton("Evet, Ekle") {
+                val newPost = Gonderi(
+                    kediID = currentCat.id,
+                    kediAdi = currentCat.isim,
+                    aciklama = currentCat.hakkindasi,
+                    fotoUrlListesi = currentCat.urLler,
+                    tarih = currentCat.createdAt.toFirebaseTimestamp(),
+                    begeniSayisi = likeCount.toLong()
+                )
+                viewModel.addCatToUserPosts(newPost)
+                dismiss()
+            }
+            .setNegativeButton("Vazgeç")
+            .show(childFragmentManager, "AddCatDialog")
+    }
+
+    /**
+     * 🔴 Kedi silme diyalog akışı (CatMapDialog)
+     */
+    private fun showDeleteCatConfirmationDialog() {
+        CatMapDialog.build()
+            .setTitle("Kediyi Haritadan Sil?")
+            .setMessage("Bu dostumuzu haritadan silmek istediğine emin misin? Bu işlem kediye ait tüm gönderileri de silecektir.")
+            .setPositiveButton("Evet, Sil") {
+                viewModel.deleteCatFromUserAndMap()
+            }
+            .setNegativeButton("İptal")
+            .show(childFragmentManager, "DeleteCatDialog")
+    }
+
 
     private fun yukleyenProfilineGit(kediYukleyenID: String?) {
         if (!kediYukleyenID.isNullOrEmpty()) {
@@ -318,6 +333,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             NavigationHelper.navigateToProfile(kediYukleyenID)
         }
     }
+
+
     override fun onStart() {
         super.onStart()
 

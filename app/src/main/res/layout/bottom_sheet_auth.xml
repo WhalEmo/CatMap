@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@drawable/bg_bottom_sheet_surface"
+    android:orientation="vertical"
+    android:paddingBottom="32dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_drag_handle" />
+
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardStatusBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/catmap_divider"
+        app:cardBackgroundColor="@color/white"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/bannerProgress"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminate="true"
+                app:indicatorSize="20dp"
+                app:trackThickness="2.5dp"
+                app:indicatorColor="@color/catmap_primary" />
+
+            <ImageView
+                android:id="@+id/imgBannerIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:visibility="gone"
+                tools:src="@drawable/ic_check_circle"
+                tools:ignore="ContentDescription" />
+
+            <TextView
+                android:id="@+id/tvBannerMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/montserrat"
+                android:textColor="@color/catmap_text_primary"
+                android:textSize="13sp"
+                tools:text="Giriş yapılıyor, lütfen bekleyin..." />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <ViewFlipper
+        android:id="@+id/viewFlipperAuth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inAnimation="@anim/slide_in_right"
+        android:outAnimation="@anim/slide_out_left"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <LinearLayout
+            android:id="@+id/layoutLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/patidolu"
+                    app:tint="@color/catmap_accent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tekrar Hoş Geldin"
+                    android:textColor="@color/catmap_text_dark"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp"
+                android:text="Devam etmek için giriş yap."
+                android:textColor="@color/catmap_text_muted"
+                android:textSize="14sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilLoginUser"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Kullanıcı Adı"
+                app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp"
+                app:startIconDrawable="@drawable/ic_person">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtLoginUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilLoginPass"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Şifre"
+                app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp"
+                app:endIconMode="password_toggle"
+                app:startIconDrawable="@drawable/ic_lock">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtLoginPass"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/btnGoToForgot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Şifremi Unuttum?"
+                android:textColor="@color/catmap_primary"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="Giriş Yap"
+                app:backgroundTint="@color/catmap_accent"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/btnGoToRegister"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:text="Hesabın yok mu? Kaydol"
+                android:textColor="@color/catmap_primary"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/layoutRegister"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="10dp"
+                        android:src="@drawable/ic_cat"
+                        app:tint="@color/catmap_accent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Yeni Bir Pati Dostu"
+                        android:textColor="@color/catmap_text_dark"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Hemen aramıza katıl."
+                    android:textColor="@color/catmap_text_muted"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegName"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:hint="Ad"
+                        app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                        app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtRegName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegSurname"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:hint="Soyad"
+                        app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                        app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edtRegSurname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegEmail"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="E-posta"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:startIconDrawable="@drawable/ic_email">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtRegEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegUser"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Kullanıcı Adı"
+                    app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp"
+                    app:startIconDrawable="@drawable/ic_person">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtRegUser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegPass"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Şifre"
+                    app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp"
+                    app:endIconMode="password_toggle"
+                    app:startIconDrawable="@drawable/ic_lock">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtRegPass"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRegister"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="20dp"
+                    android:text="Kaydol"
+                    app:backgroundTint="@color/catmap_accent"
+                    app:cornerRadius="14dp" />
+
+                <TextView
+                    android:id="@+id/btnGoToLoginFromReg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:text="Zaten hesabın var mı? Giriş Yap"
+                    android:textColor="@color/catmap_primary"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/layoutForgot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/ic_lock_reset"
+                    app:tint="@color/catmap_accent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Şifrenizi mi Unuttunuz?"
+                    android:textColor="@color/catmap_text_dark"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp"
+                android:text="E-posta adresini gir, sana bir kod gönderelim."
+                android:textColor="@color/catmap_text_muted"
+                android:textSize="14sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilForgotEmail"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="E-posta Adresi"
+
+                app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp" app:boxCornerRadiusBottomEnd="14dp"
+                app:startIconDrawable="@drawable/ic_email">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtForgotEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnResetPassword"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:text="Kod Gönder"
+                app:backgroundTint="@color/catmap_accent"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/btnGoToLoginFromForgot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:text="Hatırladın mı? Giriş Yap"
+                android:textColor="@color/catmap_primary"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </ViewFlipper>
+
+</LinearLayout>

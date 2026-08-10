@@ -45,9 +45,22 @@
         <item name="shouldRemoveExpandedCorners">false</item>
     </style>
 
-    <!-- YENİ EKLENEN ANİMASYON STİLİ -->
     <style name="BottomSheetAnimation">
         <item name="android:windowEnterAnimation">@anim/bottom_sheet_enter</item>
         <item name="android:windowExitAnimation">@anim/bottom_sheet_exit</item>
     </style>
+
+    <style name="ShapeAppearance.Catmap.OvalFAB" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">50%</item>
+        <item name="cornerSizeTopLeft">50%</item>
+        <item name="cornerSizeTopRight">50%</item>
+        <item name="cornerSizeBottomLeft">50%</item>
+        <item name="cornerSizeBottomRight">50%</item>
+    </style>
+
+    <style name="CatMapDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
 </resources>

@@ -164,6 +164,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         _followUiState.update { currentState ->
             currentState.copy(
                 isBlocked = isBlocked,
+                isSelfProfile = false,
+                isLoadingFollowState = false,
                 isFollowing = false,
                 isFollowed = false
             )

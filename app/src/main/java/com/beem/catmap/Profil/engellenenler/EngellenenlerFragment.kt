@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
 
 class EngellenenlerFragment : Fragment() {
 
-    private val viewModel: UserBlockViewModel by viewModels()
+    private val viewModel: UserBlockViewModel by activityViewModels()
     private lateinit var adapter: EngellenenlerAdapter
 
     private lateinit var recyclerView: RecyclerView

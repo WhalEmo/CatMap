@@ -1,4 +1,30 @@
 <resources>
     <string name="app_name">CatMap</string>
     <string name="title_activity_maps">MapsActivity</string>
+
+
+    <string name="user_agreement_and_privacy_policy">Devam ederek Kullanıcı Sözleşmesi ve Gizlilik Politikası\'nı kabul etmiş sayılırsınız.</string>
+    <string name="user_agreement_title">Kullanıcı Sözleşmesi</string>
+    <string name="user_agreement_content">
+        1. Taraflar ve Amaç\n
+        Bu sözleşme, CatMap uygulamasını kullanan tüm kullanıcılar için geçerlidir. Amacımız sokak hayvanlarının takibini ve bakımını kolaylaştırmaktır.\n\n
+        2. Kullanım Kuralları\n
+        Uygulama içerisinde yanlış konum bildirmek, topluluk kurallarına aykırı veya yanıltıcı içerik/fotoğraf paylaşmak yasaktır. İhlal durumunda hesabınız askıya alınabilir.\n\n
+        3. Sorumluluk Reddi\n
+        CatMap, kullanıcılar tarafından eklenen içeriklerin doğruluğunu garanti etmez.
+    </string>
+
+    <string name="privacy_policy_title">Gizlilik Politikası</string>
+    <string name="privacy_policy_content">
+        1. Toplanan Veriler\n
+        Uygulamamızı kullanırken konum bilginiz, profil fotoğrafınız ve mesajlarınız Firebase/sunucu altyapımızda güvenle saklanır.\n\n
+        2. Verilerin Kullanımı\n
+        Kişisel verileriniz asla 3. şahıslara veya reklam şirketlerine satılmaz. Sadece haritada kedi konumlarını göstermek ve kullanıcı etkileşimini sağlamak amacıyla işlenir.\n\n
+        3. Haklarınız (KVKK / GDPR)\n
+        Dilediğiniz zaman hesabınızı ve verilerinizi silme hakkına sahipsiniz.
+    </string>
+
+
+    <string name="at_symbol">\@</string>
+
 </resources>

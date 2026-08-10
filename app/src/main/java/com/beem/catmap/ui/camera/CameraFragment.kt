@@ -29,6 +29,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -85,16 +87,6 @@ class CameraFragment : DialogFragment() {
         }
     }
 
-    private val requestPermissionsLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.values.all { it }) startCamera()
-        else {
-            UiMessageManager.emitMessage(UiMessageState.Error("Kamera izinleri eksik!"))
-            parentFragmentManager.popBackStack()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Material_NoActionBar_Fullscreen)
@@ -124,6 +116,7 @@ class CameraFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
+        setSystemBarsTheme(isCameraMode = true)
 
         dialog?.window?.let { window ->
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
@@ -291,6 +284,11 @@ class CameraFragment : DialogFragment() {
                 binding.btnCapture.background.mutate().setColorFilter(accentColor, android.graphics.PorterDuff.Mode.SRC_IN)
             }
             CameraMode.IMAGE_PREVIEW -> {
+
+                zoomHideRunnable?.let { binding.tvZoomRatio.removeCallbacks(it) }
+                binding.tvZoomRatio.visibility = View.GONE
+                binding.tvZoomRatio.alpha = 0f
+
                 if (state.activePreviewUri != null) {
                     binding.ivInFragmentPreview.visibility = View.VISIBLE
                     Glide.with(this).load(state.activePreviewUri).into(binding.ivInFragmentPreview)
@@ -368,11 +366,28 @@ class CameraFragment : DialogFragment() {
             actionDialog.dismiss()
         }
 
+        dialogBinding.btnDialogRemoveFromStrip.setOnClickListener {
+            viewModel.removeImageFromStrip(activeUri)
+            actionDialog.dismiss()
+        }
+
         dialogBinding.btnDialogContinue.setOnClickListener {
             actionDialog.dismiss()
         }
 
         actionDialog.show()
+
+        actionDialog.window?.apply {
+            setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
+
+            // 📏 280dp'yi piksel cinsine dönüştürüyoruz (İstersen 260dp de yapabilirsin)
+            val density = requireContext().resources.displayMetrics.density
+            val widthInPx = (270 * density).toInt()
+
+            // Window genişliğini tam olarak bu değere çiviliyoruz!
+            setLayout(widthInPx, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            setGravity(android.view.Gravity.CENTER)
+        }
     }
 
 
@@ -413,6 +428,10 @@ class CameraFragment : DialogFragment() {
         )
 
         binding.viewFinder.setOnTouchListener { v, event ->
+            if (viewModel.uiState.value.currentMode == CameraMode.IMAGE_PREVIEW) {
+                return@setOnTouchListener false
+            }
+
             scaleGestureDetector.onTouchEvent(event)
 
             if (event.pointerCount > 1) {
@@ -462,6 +481,44 @@ class CameraFragment : DialogFragment() {
         if (isAdded && isResumed) {
             val gallerySheet = GalleryBottomSheet()
             gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setSystemBarsTheme(isCameraMode = true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        setSystemBarsTheme(isCameraMode = false)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        setSystemBarsTheme(isCameraMode = false)
+    }
+
+    private fun setSystemBarsTheme(isCameraMode: Boolean) {
+        val window = requireActivity().window ?: return
+
+        if (isCameraMode) {
+            window.statusBarColor = Color.BLACK
+            window.navigationBarColor = Color.BLACK
+
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        } else {
+            val originalBarColor = ContextCompat.getColor(requireContext(), com.beem.catmap.R.color.catmap_surface_white)
+            window.statusBarColor = originalBarColor
+            window.navigationBarColor = originalBarColor
+
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = true // true = Yazılar ve ikonlar KOYU olur
+                isAppearanceLightNavigationBars = true
+            }
         }
     }
 

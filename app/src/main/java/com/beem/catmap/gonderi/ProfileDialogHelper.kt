@@ -1,13 +1,12 @@
 package com.beem.catmap.gonderi
-//package com.beem.catmap.ui.helper
 
-import android.content.Context
-import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.FragmentManager
+import com.beem.catmap.ui.components.CatMapDialog
 
 object ProfileDialogHelper {
 
     fun showTakipcidenCikarDialog(
-        context: Context,
+        fragmentManager: FragmentManager,
         kullaniciAdi: String?,
         onConfirm: () -> Unit
     ) {
@@ -17,19 +16,18 @@ object ProfileDialogHelper {
             "Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?"
         }
 
-        AlertDialog.Builder(context)
+        CatMapDialog.build()
             .setTitle("Takipçiden Çıkar")
             .setMessage(message)
-            .setPositiveButton("Evet") { dialog, _ ->
+            .setPositiveButton("Evet, Çıkar") {
                 onConfirm()
-                dialog.dismiss()
             }
-            .setNegativeButton("İptal", null)
-            .show()
+            .setNegativeButton("İptal")
+            .show(fragmentManager, "TakipcidenCikarDialog")
     }
 
     fun showEngelleDialog(
-        context: Context,
+        fragmentManager: FragmentManager,
         kullaniciAdi: String?,
         onConfirm: () -> Unit
     ) {
@@ -39,19 +37,18 @@ object ProfileDialogHelper {
             "Bu kullanıcıyı engellemek istediğinize emin misiniz? Bu kullanıcı artık profilinizi göremeyecek."
         }
 
-        AlertDialog.Builder(context)
+        CatMapDialog.build()
             .setTitle("Kullanıcıyı Engelle")
             .setMessage(message)
-            .setPositiveButton("Engelle") { dialog, _ ->
+            .setPositiveButton("Engelle") {
                 onConfirm()
-                dialog.dismiss()
             }
-            .setNegativeButton("İptal", null)
-            .show()
+            .setNegativeButton("Vazgeç")
+            .show(fragmentManager, "EngelleDialog")
     }
 
     fun showEngelKaldirDialog(
-        context: Context,
+        fragmentManager: FragmentManager,
         kullaniciAdi: String?,
         onConfirm: () -> Unit
     ) {
@@ -61,14 +58,13 @@ object ProfileDialogHelper {
             "Bu kullanıcının engelini kaldırmak istediğinize emin misiniz?"
         }
 
-        AlertDialog.Builder(context)
+        CatMapDialog.build()
             .setTitle("Engeli Kaldır")
             .setMessage(message)
-            .setPositiveButton("Engeli Kaldır") { dialog, _ ->
+            .setPositiveButton("Engeli Kaldır") {
                 onConfirm()
-                dialog.dismiss()
             }
-            .setNegativeButton("İptal", null)
-            .show()
+            .setNegativeButton("İptal")
+            .show(fragmentManager, "EngelKaldirDialog")
     }
 }
