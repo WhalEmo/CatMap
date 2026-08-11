@@ -46,9 +46,11 @@ import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.extensions.setLoadingState
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.ui.viewmodel.BlockActionState
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.bumptech.glide.Glide
@@ -388,7 +390,11 @@ class ProfilFragment : Fragment() {
             it.bounceAndHaptic()
             showEngelKaldirDialog()
         }
-        sohbetButon.setOnClickListener { }
+        sohbetButon.setOnClickListener {
+            targetUserId?.let {
+                NavigationHelper.navigateToChat(it)
+            }
+        }
 
         profiliDuzenleTiklandi.setOnClickListener {
             it.bounceAndHaptic()
@@ -447,6 +453,21 @@ class ProfilFragment : Fragment() {
                     }
                     .setNegativeButton("Kalıyorum")
                     .show(childFragmentManager, "SignOutDialog")
+            }
+            .addItem(
+                id = 3,
+                title = "Profili Bildir",
+                iconRes = R.drawable.ic_error_outline,
+                textColor = redColor, iconTint = redColor,
+                isVisible = targetUserId != UserSession.userId
+            ) {
+                targetUserId?.let {
+                    NavigationHelper.showReportBottomSheet(
+                        childFragmentManager,
+                        targetId = it,
+                        reportType = ReportType.PROFILE
+                    )
+                }
             }
             .build()
             .show(anchorView = view)

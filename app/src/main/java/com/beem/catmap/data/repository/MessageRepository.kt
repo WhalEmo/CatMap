@@ -127,6 +127,7 @@ class MessageRepository(
             }
 
             messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(photoMap).await()
+            updateRecentChatsSummary(chatId, senderId, "📷 Fotoğraf")
             true
         } catch (e: Exception) {
             Log.e("ChatRepository", "Fotoğraf gönderme hatası: ${e.localizedMessage}", e)
@@ -304,6 +305,8 @@ class MessageRepository(
             }
 
             messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(false).await()
+            val summaryText = if (replyTo != null) "↩️ $text" else text
+            updateRecentChatsSummary(chatId, senderId, summaryText)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -354,6 +357,54 @@ class MessageRepository(
      */
     fun setTypingStatus(chatId: String, senderId: String, isTyping: Boolean) {
         messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(isTyping)
+    }
+
+    private suspend fun updateRecentChatsSummary(
+        chatId: String,
+        senderId: String,
+        lastMessageText: String
+    ) {
+        try {
+            val parts = chatId.split("_")
+            if (parts.size < 2) return
+
+            val receiverId = if (parts[0] == senderId) parts[1] else parts[0]
+            val timestamp = System.currentTimeMillis()
+
+            val recentDbRef = messageRef.root.child("recent_chats")
+
+            // 🟢 1. GÖNDEREN (Sender) İÇİN ÖZET (Okunmamış sayısı 0)
+            val senderSummary = mapOf(
+                "chatId" to chatId,
+                "otherUserId" to receiverId,
+                "lastMessage" to lastMessageText,
+                "lastMessageTimestamp" to timestamp,
+                "unreadCount" to 0
+            )
+
+            // 🟢 2. ALICI (Receiver) İÇİN ÖZET
+            // 🔥 KRİTİK DÜZELTME: Okuma (.get()) yapmıyoruz!
+            // ServerValue.increment(1) ile var olan sayıyı okumadan sunucuda 1 artırıyoruz.
+            val receiverSummary = mapOf(
+                "chatId" to chatId,
+                "otherUserId" to senderId,
+                "lastMessage" to lastMessageText,
+                "lastMessageTimestamp" to timestamp,
+                "unreadCount" to com.google.firebase.database.ServerValue.increment(1)
+            )
+
+            // 🚀 İki düğüme birden atomik yazma yapıyoruz (Multi-location update)
+            val childUpdates = hashMapOf<String, Any>(
+                "/$senderId/$receiverId" to senderSummary,
+                "/$receiverId/$senderId" to receiverSummary
+            )
+
+            recentDbRef.updateChildren(childUpdates).await()
+            Log.d("RecentChatDebug", "✅ Çift taraflı 'recent_chats' düğümü sorunsuz güncellendi!")
+
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ RecentChat özet güncelleme hatası: ${e.localizedMessage}", e)
+        }
     }
 
 }

@@ -26,6 +26,7 @@ import com.beem.catmap.Maps.FotoYuklemeListener
 import com.beem.catmap.Maps.MapViewModel
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.gonderi.PostViewModel
 import com.beem.catmap.models.Gonderi
@@ -35,9 +36,11 @@ import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.ui.report.ReportType
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -124,14 +127,6 @@ class GonderiDetayFragment : Fragment() {
             postViewModel.setYukleyenID(id)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                postViewModel.yukleyenID.collect { currentYukleyenId ->
-                    val isMyPost = (currentYukleyenId == currentUserManager.getCurrentUser().id)
-                    gonderiMenu.isVisible = isMyPost
-                }
-            }
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -221,6 +216,7 @@ class GonderiDetayFragment : Fragment() {
 
     private fun showPostOptionMenu(anchorView: View) {
         val currentYukleyenId = postViewModel.yukleyenID.value
+        val isMyPost = UserSession.userId == currentYukleyenId
         val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
 
         CatMapPopupMenu.Builder(requireContext())
@@ -229,7 +225,8 @@ class GonderiDetayFragment : Fragment() {
                 title = "Gönderiyi Sil",
                 iconRes = R.drawable.ic_small_close,
                 textColor = redColor,
-                iconTint = redColor
+                iconTint = redColor,
+                isVisible = isMyPost
             ) {
                 showDeletePostConfirmationDialog(currentYukleyenId)
             }
@@ -239,9 +236,25 @@ class GonderiDetayFragment : Fragment() {
                 title = "Kediyi Haritadan Sil",
                 iconRes = R.drawable.ic_small_close,
                 textColor = redColor,
-                iconTint = redColor
+                iconTint = redColor,
+                isVisible = isMyPost
             ) {
                 showDeleteCatFromMapConfirmationDialog(currentYukleyenId)
+            }
+            .addItem(
+                id = 3,
+                title = "Gönderiyi Bildir",
+                iconRes = R.drawable.ic_error_outline,
+                textColor = redColor, iconTint = redColor,
+                isVisible = !isMyPost
+            ) {
+                kediid?.let { catId ->
+                    NavigationHelper.showReportBottomSheet(
+                        childFragmentManager,
+                        catId,
+                        reportType = ReportType.POST
+                    )
+                }
             }
             .build()
             .show(anchorView = anchorView)

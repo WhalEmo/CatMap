@@ -34,8 +34,7 @@ enum class ReportType(val title: String, val reasons: List<String>) {
         reasons = listOf(
             "Kedi profil bilgileri sahte veya yanıltıcı",
             "Sokak hayvanı değil / sahipli ev kedisi",
-            "Görsel kediye ait değil veya uygunsuz",
-            "Mükerrer (aynı kedi zaten eklenmiş) kayıt"
+            "Görsel kediye ait değil veya uygunsuz"
         )
     ),
     PROFILE(

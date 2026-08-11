@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.RecentChatsRepository
+import com.beem.catmap.data.repository.RecentChatsRepository2
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RecentChatsViewModel(
-    private val repository: RecentChatsRepository = RecentChatsRepository()
+    private val repository: RecentChatsRepository2 = RecentChatsRepository2()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecentChatsUiState())
