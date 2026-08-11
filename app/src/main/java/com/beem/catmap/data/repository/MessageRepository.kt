@@ -3,11 +3,14 @@ package com.beem.catmap.data.repository
 import android.util.Log
 import com.beem.catmap.models.ChatMessage
 import com.beem.catmap.models.toChatMessage
+import com.beem.catmap.ui.message.models.BlockState
+import com.beem.catmap.ui.message.models.MessageProfile
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +62,8 @@ class MessageRepository(
         })
     }
 
+    /*
+
     suspend fun fetchReceiverProfileInfo(receiverId: String): Pair<String, String> {
         return try {
             val document = firestore.collection("users").document(receiverId).get().await()
@@ -74,6 +79,8 @@ class MessageRepository(
             Pair("", "")
         }
     }
+
+    */
 
     suspend fun sendPhotoMessage(
         chatId: String,
@@ -170,6 +177,20 @@ class MessageRepository(
             messageRef.child(chatId).child("anaMesaj").updateChildren(updates).await()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun resetUnreadCount(currentUserId: String, otherUserId: String) {
+        try {
+            realDb.getReference("recent_chats")
+                .child(currentUserId)
+                .child(otherUserId)
+                .child("unreadCount")
+                .setValue(0)
+                .await()
+            Log.d("RecentChatDebug", "🧹 unreadCount sıfırlandı: $currentUserId -> $otherUserId")
+        } catch (e: Exception) {
+            Log.e("RecentChatDebug", "❌ unreadCount sıfırlama hatası: ${e.localizedMessage}")
         }
     }
 
@@ -272,7 +293,7 @@ class MessageRepository(
                 }
 
                 val yanitMap = mapOf(
-                    "gonderici" to senderId,
+                    "gonderen" to senderId,
                     "mesaj" to text,
                     "zaman" to System.currentTimeMillis(),
                     "goruldu" to false,
@@ -332,6 +353,71 @@ class MessageRepository(
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    suspend fun fetchReceiverProfileInfo(receiverId: String): MessageProfile {
+        return try {
+            val document = firestore.collection("users").document(receiverId).get().await()
+            if (document.exists()) {
+                val name = document.getString("KullaniciAdi") ?: ""
+                val photoUrl = document.getString("profilFotoUrl") ?: ""
+                MessageProfile(
+                    name = name,
+                    photoUrl = photoUrl
+                )
+            } else {
+                fetchFromPublicUsers(receiverId)
+            }
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                Log.w("MessageRepository", "⚠️ 'users' koleksiyonuna erişim engellendi (Permission Denied). 'public_users' deneniyor... ReceiverId: $receiverId")
+                fetchFromPublicUsers(receiverId)
+            } else {
+                Log.e("MessageRepository", "❌ Firestore Hatası: ${e.localizedMessage}")
+                MessageProfile(
+                    name = "Kullanıcı",
+                    ""
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ Genel Hata: ${e.localizedMessage}")
+            MessageProfile(
+                name = "Kullanıcı",
+                ""
+            )
+        }
+    }
+
+    /**
+     * Engellenme durumunda veya kullanıcı ana koleksiyonda bulunamadığında çağrılan yedek metod.
+     */
+    private suspend fun fetchFromPublicUsers(receiverId: String): MessageProfile {
+        return try {
+            val publicDoc = firestore.collection("publicUsers").document(receiverId).get().await()
+            if (publicDoc.exists()) {
+                val name = publicDoc.getString("KullaniciAdi")
+                    ?: publicDoc.getString("kullaniciAdi")
+                    ?: publicDoc.getString("Ad")
+                    ?: "Kullanıcı"
+                val photoUrl = publicDoc.getString("profilFotoUrl") ?: ""
+                MessageProfile(
+                    name = name,
+                    photoUrl = photoUrl,
+                    blockState = BlockState.BlockedByUser
+                )
+            } else {
+                MessageProfile(
+                    name = "Kullanıcı",
+                    ""
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ 'public_users' çekilirken kilitlendi: ${e.localizedMessage}")
+            MessageProfile(
+                name = "Kullanıcı",
+                ""
+            )
         }
     }
 

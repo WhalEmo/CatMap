@@ -1,5 +1,6 @@
 package com.beem.catmap.data.repository
 
+import com.beem.catmap.data.model.PresenceState
 import com.beem.catmap.utils.toFormattedLastSeen
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -17,7 +18,7 @@ class UserRepository(
 ) {
     private val durumlarRef = realDb.getReference("durumlar")
 
-    fun getUserPresenceFlow(userId: String): Flow<String> = callbackFlow {
+    fun getUserPresenceFlow(userId: String): Flow<PresenceState> = callbackFlow {
         val userStatusRef = durumlarRef.child(userId)
 
         val listener = object : ValueEventListener {
@@ -33,11 +34,15 @@ class UserRepository(
                     "Çevrimdışı"
                 }
 
-                trySend(statusText)
+                trySend(PresenceState.Success(isOnline = isOnline, lastSeenText = statusText))
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    trySend(PresenceState.Blocked)
+                } else {
+                    trySend(PresenceState.Error(error.toException()))
+                }
             }
         }
 

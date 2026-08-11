@@ -3,6 +3,8 @@ package com.beem.catmap.ui.message
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.model.PresenceState
 import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
@@ -55,9 +57,14 @@ class MessageViewModel(
             val generatedChatId = repository.getOrCreateChatId(senderId, receiverId)
             chatId = generatedChatId
 
-            val (name, photoUrl) = repository.fetchReceiverProfileInfo(receiverId)
+            val messageProfile = repository.fetchReceiverProfileInfo(receiverId)
+
             _uiState.update {
-                it.copy(receiverName = name, receiverPhotoUrl = photoUrl)
+                it.copy(
+                    receiverName = messageProfile.name,
+                    receiverPhotoUrl = messageProfile.photoUrl,
+                    blockState = messageProfile.blockState
+                )
             }
 
             // 2. Mesaj Akışını Başlat
@@ -139,6 +146,8 @@ class MessageViewModel(
             viewModelScope.launch {
                 Log.d("LifecycleDebug", "🔥 VERİTABANINDA OKUNDU YAPILIYOR! ID'ler: $unreadIdsFromOther")
                 repository.markMessagesAsReadByIds(activeChatId, unreadIdsFromOther)
+
+                repository.resetUnreadCount(UserSession.userId, receiverId)
             }
         }
     }
@@ -251,8 +260,19 @@ class MessageViewModel(
     private fun observeReceiverPresence() {
         presenceJob?.cancel()
         presenceJob = viewModelScope.launch {
-            userRepo.getUserPresenceFlow(receiverId).collectLatest { status ->
-                _uiState.update { it.copy(receiverStatus = status) }
+            userRepo.getUserPresenceFlow(receiverId).collectLatest { presence ->
+                val statusText = when (presence) {
+                    is PresenceState.Success -> presence.lastSeenText
+                    is PresenceState.Blocked -> ""
+                    is PresenceState.Offline -> "Çevrimdışı"
+                    is PresenceState.Error -> ""
+                }
+                _uiState.update { state ->
+                    state.copy(
+                        receiverStatus = statusText,
+                        blockState = if (presence is PresenceState.Blocked) BlockState.BlockedByUser else BlockState.None
+                    )
+                }
             }
         }
     }
