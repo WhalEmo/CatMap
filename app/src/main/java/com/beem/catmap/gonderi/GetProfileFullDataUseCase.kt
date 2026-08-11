@@ -11,6 +11,7 @@ import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.gonderi.ProfileRepository
 import com.beem.catmap.gonderi.UiState
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -64,7 +65,8 @@ class GetProfileFullDataUseCase(
 
         val cachedUser = if (isSelf) userManager.getCurrentUser() else null
         val hasValidLocalProfile = isSelf && !cachedUser?.kullaniciAdi.isNullOrBlank()
-        val shouldFetchStats = hasValidLocalProfile && !forceRefresh && !userManager.isStatsCacheValid()
+        val shouldFetchStats =
+            hasValidLocalProfile && !forceRefresh && !userManager.isStatsCacheValid()
 
         return FetchConditions(
             isSelf = isSelf,
@@ -80,34 +82,52 @@ class GetProfileFullDataUseCase(
         forceRefresh: Boolean,
         conditions: FetchConditions
     ): FullProfileData = coroutineScope {
-        val isFollowingDeferred = if (!conditions.isSelf && !conditions.amIBlocking) {
+
+        // 1. Önce SADECE Profil Bilgisini Çek (Eğer engellendiysek PERMISSION_DENIED alacağız)
+        val profileState =
+            profileRepository.getUserProfile(targetUserId, forceRefresh = forceRefresh)
+
+        // 2. Bizi Engellemiş mi Kontrol Et
+        if (profileState is UiState.BlockedBy) {
+            // Engellendiğimiz için takip/post sorgularını HİÇ ÇALIŞTIRMADAN public profil bilgisini çekip fırlatıyoruz
+            val publicProfile = profileRepository.getPublicUserProfile(targetUserId).getOrNull()
+            throw IsBlockedByException(publicProfile = publicProfile)
+        }
+
+        var profileData = (profileState as? UiState.Success)?.data
+            ?: throw Exception((profileState as? UiState.Error)?.message ?: "Profil yüklenemedi.")
+
+        // 3. Biz Engellediysek de İlerlemeyelim
+        if (conditions.amIBlocking) {
+            Log.d(
+                "USECASE",
+                "Kullanıcı engellenenler listesinde. Sadece profil verisiyle Exception fırlatılıyor."
+            )
+            throw UserBlockedException(
+                message = "Engellediğiniz kullanıcı",
+                profile = profileData
+            )
+        }
+
+        // 4. Artık Engelleme Olmadığından Eminiz! Takip, İstatistik ve Post İsteklerini Güvenle Paralel Başlatabiliriz
+        val isFollowingDeferred = if (!conditions.isSelf) {
             async { followRepository.isFollowing(targetUserId, forceRefresh).getOrDefault(false) }
         } else null
 
-        val isFollowedDeferred = if (!conditions.isSelf && !conditions.amIBlocking) {
+        val isFollowedDeferred = if (!conditions.isSelf) {
             async { followRepository.isFollowedBy(targetUserId, forceRefresh).getOrDefault(false) }
         } else null
 
-        val profileDeferred = async {
-            if (conditions.hasValidLocalProfile && !forceRefresh) {
-                Log.d("CACHE", "Statik profil verisi SharedPref'ten alındı.")
-                UiState.Success(conditions.cachedUser)
-            } else {
-                profileRepository.getUserProfile(targetUserId, forceRefresh = forceRefresh)
-            }
-        }
-
-        val statsDeferred = if (conditions.shouldFetchStats && !conditions.amIBlocking) {
+        val statsDeferred = if (conditions.shouldFetchStats) {
             async { profileRepository.getUserStats(targetUserId).getOrNull() }
         } else null
 
         val isFollowing = isFollowingDeferred?.await() ?: false
         val isFollowed = isFollowedDeferred?.await() ?: false
 
-        // 4. Post Erişim İzni Kontrolü
-        val accessDenied = conditions.amIBlocking || (!conditions.isSelf && !isFollowing)
+        // 5. Takip Etmiyorsak Gizli Profil / Post Erişim İzni Kontrolü
+        val accessDenied = !conditions.isSelf && !isFollowing // İsteğe bağlı gizli hesap mantığınız
 
-        // 5. Postları Çekme (Engelliyse veya izin yoksa çekilmez)
         val postsDeferred = if (!accessDenied) {
             async {
                 postRepository.getKullaniciGonderileri(
@@ -117,18 +137,6 @@ class GetProfileFullDataUseCase(
                 )
             }
         } else null
-
-        val profileState = profileDeferred.await()
-        var profileData = (profileState as? UiState.Success)?.data
-            ?: throw Exception((profileState as? UiState.Error)?.message ?: "Profil yüklenemedi.")
-
-        if (conditions.amIBlocking) {
-            Log.d("USECASE", "Kullanıcı engellenenler listesinde. Sadece profil verisiyle Exception fırlatılıyor.")
-            throw UserBlockedException(
-                message = "Engellediğiniz kullanıcı",
-                profile = profileData
-            )
-        }
 
         val freshStats = statsDeferred?.await()
         val postsResult = postsDeferred?.await()

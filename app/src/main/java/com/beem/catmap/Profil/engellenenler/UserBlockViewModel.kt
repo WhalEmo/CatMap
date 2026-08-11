@@ -4,10 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.UserBlockRepository
-import com.beem.catmap.ui.manager.ProfileEvent
-import com.beem.catmap.ui.manager.ProfileEventBus
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +29,10 @@ class UserBlockViewModel : ViewModel() {
     private val _benimEngellediklerim = MutableStateFlow<List<Kullanici>>(emptyList())
     val benimEngellediklerim: StateFlow<List<Kullanici>> = _benimEngellediklerim.asStateFlow()
 
+    // Fragment'ın SwipeRefresh/Shimmer kontrolü için dinlediği yükleme durumu
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
@@ -45,6 +46,7 @@ class UserBlockViewModel : ViewModel() {
     fun benimEngellediklerimiGetir(currentUserId: String) {
         this.targetUserId = currentUserId
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 _isLastPage.value = false
                 lastDocument = null
@@ -57,8 +59,6 @@ class UserBlockViewModel : ViewModel() {
                 lastDocument = newLastDoc
                 _benimEngellediklerim.value = liste
 
-                // Veri boşsa veya ilk veri Firestore yerine Cache'ten (lastDoc = null) geldiyse
-                // başka ağ sayfası çekilemeyeceği için isLastPage = true yapılır.
                 if (liste.isEmpty() || newLastDoc == null) {
                     _isLastPage.value = true
                 }
@@ -67,6 +67,8 @@ class UserBlockViewModel : ViewModel() {
                 Log.e("UserBlockViewModel", "Engellenenler getirilemedi: ${e.message}")
                 _benimEngellediklerim.value = emptyList()
                 _isLastPage.value = true
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -87,7 +89,6 @@ class UserBlockViewModel : ViewModel() {
                     _isLastPage.value = true
                 } else {
                     lastDocument = newLastDoc
-                    // Mükerrer nesne eklenmesini önlemek için distinctBy ile birleştirilir
                     _benimEngellediklerim.update { current ->
                         (current + yeniListe).distinctBy { it.id }
                     }
@@ -149,6 +150,4 @@ class UserBlockViewModel : ViewModel() {
             }
         }
     }
-
-
 }

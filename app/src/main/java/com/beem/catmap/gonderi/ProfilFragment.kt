@@ -1,5 +1,4 @@
 package com.beem.catmap.Profil
-
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -53,9 +52,11 @@ import com.beem.catmap.ui.viewmodel.BlockActionState
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
+import com.google.android.material.imageview.ShapeableImageView
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
 class ProfilFragment : Fragment() {
     private val viewModel: PostViewModel by viewModels()
     private val followViewModel: FollowViewModel by viewModels()
@@ -89,6 +90,7 @@ class ProfilFragment : Fragment() {
     private lateinit var KullaniciAdi: TextView
     private lateinit var tvAd: TextView
     private lateinit var profilFotoImageView: CircleImageView
+    private lateinit var imgProfilFotoEngel: ShapeableImageView
     private lateinit var gonderiAdapter: GonderiAdapter
     private val loadingFooterAdapter = LoadingFooterAdapter()
     private lateinit var concatAdapter: ConcatAdapter
@@ -159,6 +161,7 @@ class ProfilFragment : Fragment() {
         KullaniciAdi = view.findViewById(R.id.KullaniciAdi)
         tvAd = view.findViewById(R.id.tvAdSoyad)
         profilFotoImageView = view.findViewById(R.id.profilFotoImageView)
+        imgProfilFotoEngel = view.findViewById(R.id.imgProfilFotoEngel)
         postSectionHeader = view.findViewById(R.id.postSectionHeader)
         blockedUserLayout = view.findViewById(R.id.blockedUserLayout)
         btnBackEngel = view.findViewById(R.id.btnBackEngel)
@@ -239,6 +242,10 @@ class ProfilFragment : Fragment() {
 
     private fun setupListeners() {
         btnBack.setOnClickListener {
+            it.bounceAndHaptic()
+            SmartNavigationEngine.navigateBack()
+        }
+        btnBackEngel.setOnClickListener {
             it.bounceAndHaptic()
             SmartNavigationEngine.navigateBack()
         }
@@ -575,6 +582,24 @@ class ProfilFragment : Fragment() {
         takipEdiliyorVeMesajLayout.visibility = View.GONE
         engelKaldirButton.visibility = View.VISIBLE
     }
+
+    private fun setupBlockedByUi(kullanici: Kullanici?){
+        shimmerLayout.stopShimmer()
+        shimmerLayout.visibility = View.GONE
+
+        myConstraintLayout.visibility = View.GONE
+        blockedUserLayout.visibility = View.VISIBLE
+        swipeRefreshLayout.isRefreshing = false
+        KullaniciAdiEngel.text = kullanici?.kullaniciAdi
+
+        Glide.with(requireContext())
+            .load(kullanici?.fotoUrl)
+            .placeholder(R.drawable.kullanici)
+            .error(R.drawable.kullanici)
+            .into(imgProfilFotoEngel)
+
+
+    }
     private fun setupBlockedByMeUi(kullanici: Kullanici?) {
         shimmerLayout.stopShimmer()
         shimmerLayout.visibility = View.GONE
@@ -680,13 +705,7 @@ class ProfilFragment : Fragment() {
                                 hideShimmerLoading()
                             }
                             is UiState.BlockedBy -> {
-                                shimmerLayout.stopShimmer()
-                                shimmerLayout.visibility = View.GONE
-
-                                myConstraintLayout.visibility = View.GONE
-                                blockedUserLayout.visibility = View.VISIBLE
-                                swipeRefreshLayout.isRefreshing = false
-
+                                setupBlockedByUi(state.profile)
                             }
                             is UiState.Blocked -> {
                                 followViewModel.setBlockedState(true)
@@ -709,6 +728,13 @@ class ProfilFragment : Fragment() {
                             is ProfileEvent.ProfileUpdated -> {
                                 val guncelKullanici = event.updatedUser
                                 guncelKullanici?.let { bindUserProfileData(it) }
+                            }
+                            is ProfileEvent.UnblockedUser -> {
+                                if (event.userId == targetUserId) {
+                                    profileViewModel.resetProfileState()
+                                    followViewModel.setBlockedState(false)
+                                    viewModel.resetAndSetBlocked()
+                                }
                             }
                             else -> {}
                         }

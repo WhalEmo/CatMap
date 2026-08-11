@@ -65,7 +65,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
 
         viewModelScope.launch {
             val result = repository.takipEt(
-                currentUserId = currentUserId,
                 targetUserId = takipEttiginId,
             )
 
@@ -81,7 +80,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 onSuccess()
             }.onFailure {
                 onFailure()
-                _followUiState.update { it.copy(isFollowing = false) }
+                _followUiState.update { it.copy(isFollowing = false, isLoadingFollowState = false) }
                 _targetUserTakipciSayisi.value = previousFollowerCount
             }
         }
@@ -102,7 +101,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
 
         viewModelScope.launch {
             val result = repository.unfollowUser(
-                currentUserId = currentUserId,
                 targetUserId = takiptenCiktiginId
             )
 
@@ -116,7 +114,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 onSuccess()
             }.onFailure {
                 onFailure()
-                _followUiState.update { it.copy(isFollowing = true) }
+                _followUiState.update { it.copy(isFollowing = true, isLoadingFollowState = false) }
                 _targetUserTakipciSayisi.value = previousFollowerCount
             }
         }
@@ -140,7 +138,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
 
         viewModelScope.launch {
             val result = repository.removeFollower(
-                currentUserId = currentUserId,
                 followerId = takipciId
             )
 
@@ -154,7 +151,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
                 onSuccess()
             }.onFailure {
                 onFailure()
-                _followUiState.update { it.copy(isFollowed = true) }
+                _followUiState.update { it.copy(isFollowed = true, isLoadingFollowState = false) }
                 _targetUserTakipEdilenSayisi.value = previousFollowedCount
             }
         }

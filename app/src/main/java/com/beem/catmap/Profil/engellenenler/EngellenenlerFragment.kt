@@ -1,18 +1,28 @@
 package com.beem.catmap.Profil.engellenenler
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.TextView
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.gonderi.ProfileDialogHelper
+import com.beem.catmap.ui.extensions.bounceAndHaptic
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
+import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.facebook.shimmer.ShimmerFrameLayout
 import kotlinx.coroutines.flow.collectLatest
@@ -25,6 +35,9 @@ class EngellenenlerFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var shimmerFrameLayout: ShimmerFrameLayout
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var btnBack: ImageButton
+    private lateinit var tvEmpty: TextView
 
     private val currentUserId: String = UserSession.userId
 
@@ -40,36 +53,77 @@ class EngellenenlerFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         initViews(view)
+        setupListeners()
         setupRecyclerView()
         observeViewModel()
 
-
+        showShimmer()
         viewModel.benimEngellediklerimiGetir(currentUserId)
     }
 
     private fun initViews(view: View) {
         recyclerView = view.findViewById(R.id.engellenenRecyclerView)
         shimmerFrameLayout = view.findViewById(R.id.engellenenShimmer)
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
+        btnBack = view.findViewById(R.id.btnBack)
+        tvEmpty = view.findViewById(R.id.tvEmpty)
+    }
+
+    private fun setupListeners() {
+        btnBack.setOnClickListener {
+            it.bounceAndHaptic()
+            SmartNavigationEngine.navigateBack()
+        }
+
+        swipeRefreshLayout.setOnRefreshListener {
+            viewModel.benimEngellediklerimiGetir(currentUserId)
+        }
+    }
+
+    private fun showShimmer() {
+        if (!swipeRefreshLayout.isRefreshing) {
+            shimmerFrameLayout.visibility = View.VISIBLE
+            shimmerFrameLayout.startShimmer()
+            recyclerView.visibility = View.GONE
+        }
+    }
+
+    private fun hideShimmer() {
+        shimmerFrameLayout.stopShimmer()
+        shimmerFrameLayout.visibility = View.GONE
     }
 
     private fun setupRecyclerView() {
         adapter = EngellenenlerAdapter(
             onEngelClick = { kullanici ->
                 kullanici.id?.let { engellenenId ->
-                    viewModel.engelKaldir(
-                        engellenenKullaniciId = engellenenId,
-                        kisiId = currentUserId,
-                        onResult = { isSuccess ->
-                            if (isSuccess) {
-                                // Liste zaten ViewModel içindeki `_benimEngellediklerim` state'inden
-                                // güncellendiği için adapter listen otomatik yenilenecektir.
-                            }
+                    ProfileDialogHelper.showEngelKaldirDialog(
+                        fragmentManager = childFragmentManager,
+                        kullaniciAdi = kullanici.kullaniciAdi,
+                        onConfirm = {
+                            viewModel.engelKaldir(
+                                engellenenKullaniciId = engellenenId,
+                                kisiId = currentUserId,
+                                onResult = { isSuccess ->
+                                    if (isSuccess) {
+                                        ProfileEventBus.emitEvent(
+                                            ProfileEvent.UnblockedUser(
+                                                userId = engellenenId,
+                                                operatorUserId = currentUserId
+                                            )
+                                        )
+                                    }
+                                }
+                            )
                         }
                     )
                 }
             },
             onKullaniciClick = { kullaniciId ->
-                // Kullanıcı profiline gitme işlemleri
+                SmartNavigationEngine.navigateTo(
+                    Screen.PROFILE,
+                    bundleOf("ARG_USER_ID" to kullaniciId)
+                )
             }
         )
 
@@ -98,12 +152,29 @@ class EngellenenlerFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-
                 viewModel.benimEngellediklerim.collectLatest { blockedList ->
-                    adapter.submitList(blockedList)
-                    shimmerFrameLayout.stopShimmer()
-                    shimmerFrameLayout.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
+                    hideShimmer()
+                    swipeRefreshLayout.isRefreshing = false
+
+                    adapter.submitList(blockedList) {
+                        if (blockedList.isEmpty()) {
+                            recyclerView.visibility = View.GONE
+                            tvEmpty.visibility = View.VISIBLE
+                        } else {
+                            recyclerView.visibility = View.VISIBLE
+                            tvEmpty.visibility = View.GONE
+                        }
+                    }
+                }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isLoading.collectLatest { isLoading ->
+                    if (!isLoading) {
+                        swipeRefreshLayout.isRefreshing = false
+                        hideShimmer()
+                    }
                 }
             }
         }

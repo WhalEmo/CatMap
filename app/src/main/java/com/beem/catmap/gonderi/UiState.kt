@@ -7,7 +7,7 @@ sealed interface UiState<out T> {
     object Loading : UiState<Nothing>
     data class Success<T>(val data: T) : UiState<T>
     data class Error(val message: String) : UiState<Nothing>
-    object BlockedBy : UiState<Nothing>//BU KULLANCII BENI ENGELLEDI
+    data class BlockedBy(val profile: Kullanici? = null) : UiState<Nothing>//BU KULLANCII BENI ENGELLEDI
 
     data class Blocked(val profile: Kullanici? = null) : UiState<Nothing>//BEN ENGELELDIYSEM
 }
