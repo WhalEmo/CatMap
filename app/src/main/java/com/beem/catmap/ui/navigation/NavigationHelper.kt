@@ -1,9 +1,12 @@
 package com.beem.catmap.ui.navigation
 
 import android.util.Log
+import androidx.fragment.app.FragmentManager
 import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.ui.message.MessageFragment
+import com.beem.catmap.ui.report.ReportBottomSheetFragment
+import com.beem.catmap.ui.report.ReportType
 
 object NavigationHelper {
     @JvmStatic
@@ -31,5 +34,16 @@ object NavigationHelper {
             args,
             key = receiverId
         )
+    }
+
+
+    @JvmStatic
+    fun showReportBottomSheet(
+        fragmentManager: FragmentManager,
+        targetId: String,
+        reportType: ReportType
+    ) {
+        val bottomSheet = ReportBottomSheetFragment.newInstance(targetId, reportType)
+        bottomSheet.show(fragmentManager, "ReportBottomSheetFragment")
     }
 }

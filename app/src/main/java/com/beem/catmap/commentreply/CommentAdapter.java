@@ -91,6 +91,9 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
         void onDeleteReply(@NonNull ReplyModel yanit, @NonNull String yorumId);
         void onReplyUpdate(@NonNull ReplyModel yanit, @NonNull String yorumId);
         void onLoadMoreRepliesClicked(CommentModel yorum);
+
+        void onCommentMenuClicked(View anchorView, CommentModel yorum);
+        void onReplyMenuClicked(View anchorView, ReplyModel yanit, String parentYorumId);
     }
 
     private final Context context;
@@ -235,27 +238,12 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
             if (listener != null) listener.onCommentLikeClicked(yorum,holder.kalpImageView);
         });
 
-        if (currentUserId != null && currentUserId.equals(yorum.getLoadId())) {
-            holder.menuButonu.setVisibility(VISIBLE);
-            holder.menuButonu.setOnClickListener(menu -> {
-                PopupMenu popupmenu = new PopupMenu(context, holder.menuButonu);
-                popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu, popupmenu.getMenu());
-                popupmenu.setOnMenuItemClickListener(menuItem -> {
-                    int id = menuItem.getItemId();
-                    if (id == R.id.menu_guncelle) {
-                        if (listener != null) listener.onUpdateClicked(yorum);
-                        return true;
-                    } else if (id == R.id.menu_sil) {
-                        if (listener != null) listener.onDeleteClicked(yorum);
-                        return true;
-                    }
-                    return false;
-                });
-                popupmenu.show();
-            });
-        } else {
-            holder.menuButonu.setVisibility(GONE);
-        }
+        holder.menuButonu.setVisibility(VISIBLE);
+        holder.menuButonu.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onCommentMenuClicked(v, yorum);
+            }
+        });
 
         if (yorum.isAreRepliesVisible()) {
 
@@ -326,27 +314,12 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
             }
         });
 
-        if (currentUserId != null && currentUserId.equals(yanit.getReplyUserId())) {
-            holder.menuButonuYnt.setVisibility(VISIBLE);
-            holder.menuButonuYnt.setOnClickListener(menu -> {
-                PopupMenu popupmenu = new PopupMenu(context, holder.menuButonuYnt);
-                popupmenu.getMenuInflater().inflate(R.menu.uc_nokta_menu, popupmenu.getMenu());
-                popupmenu.setOnMenuItemClickListener(item -> {
-                    int id = item.getItemId();
-                    if (id == R.id.menu_guncelle) {
-                        if (listener != null) listener.onReplyUpdate(yanit, parentYorumId);
-                        return true;
-                    } else if (id == R.id.menu_sil) {
-                        if (listener != null) listener.onDeleteReply(yanit, parentYorumId);
-                        return true;
-                    }
-                    return false;
-                });
-                popupmenu.show();
-            });
-        } else {
-            holder.menuButonuYnt.setVisibility(GONE);
-        }
+        holder.menuButonuYnt.setVisibility(VISIBLE);
+        holder.menuButonuYnt.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onReplyMenuClicked(v, yanit, parentYorumId);
+            }
+        });
     }
 
     private void bindDahaFazla(DahaFazlaViewHolder holder, CommentModel yorum) {

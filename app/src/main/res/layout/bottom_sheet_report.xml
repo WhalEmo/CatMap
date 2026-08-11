@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet_surface"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_drag_handle" />
+
+    <TextView
+        android:id="@+id/txtReportTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/catmap_text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="Bu yorumu neden bildiriyorsunuz?" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardStatusBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/catmap_surface_white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/catmap_divider"
+        app:strokeWidth="1dp"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/bannerProgress"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminate="true"
+                app:indicatorColor="@color/catmap_primary"
+                app:indicatorSize="20dp"
+                app:trackThickness="2.5dp" />
+
+            <ImageView
+                android:id="@+id/imgBannerIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:visibility="gone"
+                tools:ignore="ContentDescription"
+                tools:src="@drawable/ic_check_circle" />
+
+            <TextView
+                android:id="@+id/tvBannerMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:textColor="@color/catmap_text_primary"
+                android:textSize="13sp"
+                tools:text="Bildiriminiz iletiliyor, lütfen bekleyin..." />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <RadioGroup
+        android:id="@+id/rgReportReasons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSubmitReport"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="20dp"
+        android:alpha="0.3"
+        android:enabled="false"
+        android:text="Bildirimi Gönder"
+        android:textColor="@color/catmap_text_light"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/catmap_error"
+        app:cornerRadius="14dp" />
+
+</LinearLayout>
