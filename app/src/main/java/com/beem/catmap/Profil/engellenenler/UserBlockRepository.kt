@@ -35,23 +35,15 @@ class UserBlockRepository private constructor(
         kisiId: String,
         limit: Long = 20
     ): Pair<List<Kullanici>, DocumentSnapshot?> {
-        val cachedIds = currentUserManager.benimEngellediklerimState.value
-
-        if (cachedIds.isNotEmpty()) {
-            val cachedUsers = cachedIds.mapNotNull { id -> userCache.get(id) }
-
-            if (cachedUsers.size == cachedIds.size) {
-                return Pair(cachedUsers, null)
-            }
-        }
-
+        // İlk yükleme network'ten taze veriyle yapılır
         val (networkUsers, lastDoc) = getBlockedUsersPageFromNetwork(kisiId, limit, null)
 
-        networkUsers.forEach { user ->
-            user.id?.let { userCache.put(it, user) }
-        }
         val newIds = networkUsers.mapNotNull { it.id }
-        currentUserManager.updateBenimEngellediklerim(newIds)
+
+        // Mevcut engellenenler ID listesine ekle/güncelle (Listeyi tamamen ezmek yerine birleştir)
+        val currentIds = currentUserManager.benimEngellediklerimState.value.toMutableSet()
+        currentIds.addAll(newIds)
+        currentUserManager.updateBenimEngellediklerim(currentIds.toList())
 
         return Pair(networkUsers, lastDoc)
     }

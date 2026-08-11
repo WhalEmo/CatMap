@@ -29,7 +29,6 @@ class UserBlockViewModel : ViewModel() {
     private val _benimEngellediklerim = MutableStateFlow<List<Kullanici>>(emptyList())
     val benimEngellediklerim: StateFlow<List<Kullanici>> = _benimEngellediklerim.asStateFlow()
 
-    // Fragment'ın SwipeRefresh/Shimmer kontrolü için dinlediği yükleme durumu
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -138,7 +137,11 @@ class UserBlockViewModel : ViewModel() {
                 repository.unblockUser(kisiId, engellenenKullaniciId)
 
                 _benimEngellediklerim.update { current ->
-                    current.filterNot { it.id == engellenenKullaniciId }
+                    val updated = current.filterNot { it.id == engellenenKullaniciId }
+                    if (updated.isEmpty()) {
+                        _isLastPage.value = true
+                    }
+                    updated
                 }
 
                 _blockActionState.emit(BlockActionState.Success("Engel kaldırıldı"))

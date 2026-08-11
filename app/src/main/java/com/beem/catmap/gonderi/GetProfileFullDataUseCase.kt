@@ -55,7 +55,7 @@ class GetProfileFullDataUseCase(
         forceRefresh: Boolean
     ): FetchConditions {
         val isSelf = (targetUserId == UserSession.userId)
-
+        Log.d("BLOCKK", targetUserId)
         val amIBlocking = if (!isSelf) {
             userBlockRepository.isUserBlocked(
                 kisiId = UserSession.userId,
@@ -87,9 +87,7 @@ class GetProfileFullDataUseCase(
         val profileState =
             profileRepository.getUserProfile(targetUserId, forceRefresh = forceRefresh)
 
-        // 2. Bizi Engellemiş mi Kontrol Et
         if (profileState is UiState.BlockedBy) {
-            // Engellendiğimiz için takip/post sorgularını HİÇ ÇALIŞTIRMADAN public profil bilgisini çekip fırlatıyoruz
             val publicProfile = profileRepository.getPublicUserProfile(targetUserId).getOrNull()
             throw IsBlockedByException(publicProfile = publicProfile)
         }
@@ -97,19 +95,14 @@ class GetProfileFullDataUseCase(
         var profileData = (profileState as? UiState.Success)?.data
             ?: throw Exception((profileState as? UiState.Error)?.message ?: "Profil yüklenemedi.")
 
-        // 3. Biz Engellediysek de İlerlemeyelim
+
         if (conditions.amIBlocking) {
-            Log.d(
-                "USECASE",
-                "Kullanıcı engellenenler listesinde. Sadece profil verisiyle Exception fırlatılıyor."
-            )
             throw UserBlockedException(
                 message = "Engellediğiniz kullanıcı",
                 profile = profileData
             )
         }
 
-        // 4. Artık Engelleme Olmadığından Eminiz! Takip, İstatistik ve Post İsteklerini Güvenle Paralel Başlatabiliriz
         val isFollowingDeferred = if (!conditions.isSelf) {
             async { followRepository.isFollowing(targetUserId, forceRefresh).getOrDefault(false) }
         } else null
@@ -125,8 +118,7 @@ class GetProfileFullDataUseCase(
         val isFollowing = isFollowingDeferred?.await() ?: false
         val isFollowed = isFollowedDeferred?.await() ?: false
 
-        // 5. Takip Etmiyorsak Gizli Profil / Post Erişim İzni Kontrolü
-        val accessDenied = !conditions.isSelf && !isFollowing // İsteğe bağlı gizli hesap mantığınız
+        val accessDenied = !conditions.isSelf && !isFollowing
 
         val postsDeferred = if (!accessDenied) {
             async {

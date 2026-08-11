@@ -67,11 +67,11 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 .onFailure { exception ->
                     when (exception) {
                         is UserBlockedException -> {
-                            // Siz engellediniz
+                            Log.d("ENGELLENENLERCLICK", "UserBlockedException")
                             _fullProfileState.value = UiState.Blocked(exception.profile)
                         }
                         is IsBlockedByException -> {
-                            // Karşı tarafın sizi engellediği durum (Public bilgiler eklendi)
+                            Log.d("ENGELLENENLERCLICK", "IsBlockedByException")
                             val publicUser = exception.publicProfile
                             val fallbackProfile = Kullanici().apply {
                                 id = targetUserId
@@ -81,6 +81,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                             _fullProfileState.value = UiState.BlockedBy(profile = fallbackProfile)
                         }
                         else -> {
+                            Log.d("ENGELLENENLERCLICK", exception.localizedMessage )
                             _fullProfileState.value = UiState.Error(
                                 exception.localizedMessage ?: "Profil yüklenemedi."
                             )

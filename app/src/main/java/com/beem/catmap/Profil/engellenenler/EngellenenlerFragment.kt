@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -21,11 +20,11 @@ import com.beem.catmap.gonderi.ProfileDialogHelper
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
-import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.facebook.shimmer.ShimmerFrameLayout
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class EngellenenlerFragment : Fragment() {
@@ -39,7 +38,8 @@ class EngellenenlerFragment : Fragment() {
     private lateinit var btnBack: ImageButton
     private lateinit var tvEmpty: TextView
 
-    private val currentUserId: String = UserSession.userId
+    private val currentUserId: String
+        get() = UserSession.userId.orEmpty()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,6 +57,7 @@ class EngellenenlerFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
 
+        // İlk açılışta shimmer gösterip veriyi çekiyoruz
         showShimmer()
         viewModel.benimEngellediklerimiGetir(currentUserId)
     }
@@ -85,6 +86,7 @@ class EngellenenlerFragment : Fragment() {
             shimmerFrameLayout.visibility = View.VISIBLE
             shimmerFrameLayout.startShimmer()
             recyclerView.visibility = View.GONE
+            tvEmpty.visibility = View.GONE
         }
     }
 
@@ -119,11 +121,8 @@ class EngellenenlerFragment : Fragment() {
                     )
                 }
             },
-            onKullaniciClick = { kullaniciId ->
-                SmartNavigationEngine.navigateTo(
-                    Screen.PROFILE,
-                    bundleOf("ARG_USER_ID" to kullaniciId)
-                )
+            onUserClick = { kullaniciId ->
+                kullaniciId?.let { NavigationHelper.navigateToProfile(it, false) }
             }
         )
 
@@ -152,28 +151,30 @@ class EngellenenlerFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.benimEngellediklerim.collectLatest { blockedList ->
-                    hideShimmer()
-                    swipeRefreshLayout.isRefreshing = false
+                // UI durumunu hem liste hem de loading bilgisi birleştiğinde güncelliyoruz
+                combine(viewModel.benimEngellediklerim, viewModel.isLoading) { blockedList, isLoading ->
+                    Pair(blockedList, isLoading)
+                }.collect { (blockedList, isLoading) ->
 
-                    adapter.submitList(blockedList) {
-                        if (blockedList.isEmpty()) {
-                            recyclerView.visibility = View.GONE
-                            tvEmpty.visibility = View.VISIBLE
-                        } else {
-                            recyclerView.visibility = View.VISIBLE
-                            tvEmpty.visibility = View.GONE
+                    if (isLoading) {
+                        // Eğer SwipeRefresh ile yenilemiyorsak Shimmer başlat
+                        if (!swipeRefreshLayout.isRefreshing) {
+                            showShimmer()
                         }
-                    }
-                }
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.isLoading.collectLatest { isLoading ->
-                    if (!isLoading) {
-                        swipeRefreshLayout.isRefreshing = false
+                    } else {
+                        // Yükleme bittiğinde animasyonları ve refresh ikonu durdur
                         hideShimmer()
+                        swipeRefreshLayout.isRefreshing = false
+
+                        adapter.submitList(blockedList) {
+                            if (blockedList.isEmpty()) {
+                                recyclerView.visibility = View.GONE
+                                tvEmpty.visibility = View.VISIBLE
+                            } else {
+                                recyclerView.visibility = View.VISIBLE
+                                tvEmpty.visibility = View.GONE
+                            }
+                        }
                     }
                 }
             }

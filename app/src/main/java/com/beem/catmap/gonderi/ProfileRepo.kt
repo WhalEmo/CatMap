@@ -87,13 +87,13 @@ class ProfileRepository private constructor() {
                 return@withContext UiState.Success(cachedProfile)
             }
         }
-
+        Log.d("PROFILEREPOcalsııt", userId)
         try {
             val snapshot = db.collection("users")
                 .document(userId)
                 .get()
                 .await()
-
+            Log.d("PROFILEREPOcalsııt", userId)
             if (snapshot.exists()) {
                 val profileData = Kullanici().apply {
                     id = userId
@@ -116,11 +116,14 @@ class ProfileRepository private constructor() {
             }
         } catch (e: FirebaseFirestoreException) {
             if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                Log.d("PROFILEREPO", e.toString())
                 UiState.BlockedBy()
             } else {
+                Log.d("PROFILEREPO",e.toString())
                 UiState.Error(e.localizedMessage ?: "Veritabanı hatası oluştu.")
             }
         } catch (e: Exception) {
+            Log.d("PROFILEREPO",e.toString())
             UiState.Error(e.localizedMessage ?: "Bilinmeyen bir hata oluştu.")
         }
     }
