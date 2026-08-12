@@ -93,17 +93,52 @@ class RecentChatsRepository2(
     }
 
     suspend fun fetchUserInfo(userId: String): Pair<String, String> {
+        if (userId.isBlank()) return Pair("CatMap Kullanıcısı", "")
+
         return try {
+            // 1. KADEME: 'users' ana koleksiyonundan çekmeyi dene
             val doc = firestore.collection("users").document(userId).get().await()
             if (doc.exists()) {
                 val name = "${doc.getString("Ad") ?: ""} ${doc.getString("Soyad") ?: ""}".trim()
                 val photoUrl = doc.getString("profilFotoUrl") ?: ""
-                Pair(name, photoUrl)
+
+                // İsim boşsa fallback'e gitmesin diye kontrol
+                val finalName = if (name.isNotBlank()) name else "CatMap Kullanıcısı"
+                Pair(finalName, photoUrl)
             } else {
-                Pair("Kullanıcı", "")
+                // Document yoksa 2. Kademe (publicUsers) dene
+                fetchFromPublicUsers(userId)
             }
         } catch (e: Exception) {
-            Pair("Kullanıcı", "")
+            // 2. KADEME: Permission Denied veya herhangi bir Firestore hatasında publicUsers'a düş
+            Log.w("RecentChatsRepo", "⚠️ 'users' koleksiyonuna erişilemedi (${e.localizedMessage}). 'publicUsers' deneniyor... UserId: $userId")
+            fetchFromPublicUsers(userId)
+        }
+    }
+
+    /**
+     * 2. Kademe: Engellenme veya 'users' içinde bulunamama durumunda çalışan yedek fonksiyon
+     */
+    private suspend fun fetchFromPublicUsers(userId: String): Pair<String, String> {
+        return try {
+            val publicDoc = firestore.collection("publicUsers").document(userId).get().await()
+            if (publicDoc.exists()) {
+                // Farklı key isimleri ihtimaline karşı fallback alanları
+                val name = publicDoc.getString("KullaniciAdi")
+                    ?: publicDoc.getString("kullaniciAdi")
+                    ?: publicDoc.getString("Ad")
+                    ?: "CatMap Kullanıcısı"
+
+                val photoUrl = publicDoc.getString("profilFotoUrl") ?: ""
+                Pair(name, photoUrl)
+            } else {
+                // 3. KADEME: publicUsers içinde de yoksa varsayılan
+                Pair("CatMap Kullanıcısı", "")
+            }
+        } catch (e: Exception) {
+            // 3. KADEME: publicUsers çekerken de hata alındıysa son çare varsayılan
+            Log.e("RecentChatsRepo", "❌ 'publicUsers' çekilirken hata oluştu: ${e.localizedMessage}")
+            Pair("CatMap Kullanıcısı", "")
         }
     }
 }
