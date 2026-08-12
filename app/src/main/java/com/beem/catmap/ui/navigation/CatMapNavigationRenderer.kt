@@ -72,6 +72,7 @@ class CatMapNavigationRenderer(
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
+            NavigationTrigger.RESET -> renderResetAnimation(transaction)
         }
 
         val validTags = Screen.entries.map { it.tag }
@@ -81,14 +82,22 @@ class CatMapNavigationRenderer(
                 val baseTag = f.tag?.extractBaseTag()
 
                 if (validTags.contains(baseTag)) {
-                    if (f.tag != targetScreenId) {
+                    if (trigger == NavigationTrigger.RESET){
+                        transaction.remove(f)
+                        Log.d("NAV_ENGINE", "${f.tag} remove")
+                    } else if (f.tag != targetScreenId) {
                         transaction.hide(f)
                         transaction.setMaxLifecycle(f, Lifecycle.State.STARTED)
+                        Log.d("NAV_ENGINE", "${f.tag} hide")
                     }
                 }
             }
         }
-        val targetFragment = fm.findFragmentByTag(targetScreenId)
+        val targetFragment = if (trigger == NavigationTrigger.RESET) {
+            null
+        } else {
+            fm.findFragmentByTag(targetScreenId)
+        }
 
         when {
             targetFragment == null -> {
@@ -142,5 +151,11 @@ class CatMapNavigationRenderer(
             Log.d("Yon", "backward ${oldScreen.tag} - ${targetScreen.tag}")
             transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+    }
+
+    private fun renderResetAnimation(transaction: FragmentTransaction) {
+        Log.d("NAV_RENDERER", "🧹 Reset Animasyonu Tetiklendi (Fade In / Fade Out)")
+
+        transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
     }
 }

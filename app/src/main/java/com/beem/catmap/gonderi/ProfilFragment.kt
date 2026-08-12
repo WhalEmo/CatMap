@@ -879,8 +879,8 @@ class ProfilFragment : Fragment() {
     private fun navigateToAuthAndClearHistory() {
         if (!isAdded || isStateSaved) return
 
-        SmartNavigationEngine.navigateTo(
-            targetScreen = Screen.AUTH,
+        SmartNavigationEngine.resetEngineForLogout(
+            navScreen = Screen.AUTH,
         )
     }
 
