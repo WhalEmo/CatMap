@@ -157,7 +157,14 @@ class MessageRepository(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                // 🟢 Çıkış yapıldığında veya yetki bittiğinde coroutine'i patlatmak yerine güvenle kapatıyoruz
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    Log.d("MessageRepository", "🚫 Sohbet yetkisi bitti (Muhtemelen çıkış yapıldı). Akış güvenle kapatılıyor.")
+                    close() // İçeriye exception fırlatmadan akışı sessizce bitirir
+                } else {
+                    // Diğer beklenmeyen gerçek veritabanı hatalarında kanalı kapatıp fırlatabilirsin
+                    close(error.toException())
+                }
             }
         }
 
@@ -432,7 +439,9 @@ class MessageRepository(
                 trySend(isTyping)
             }
 
-            override fun onCancelled(error: DatabaseError) {}
+            override fun onCancelled(error: DatabaseError) {
+                trySend(false)
+            }
         }
         ref.addValueEventListener(listener)
         awaitClose { ref.removeEventListener(listener) }

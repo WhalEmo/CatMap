@@ -5,6 +5,7 @@ import android.util.LruCache
 import com.beem.catmap.CatMapApp
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.utils.BlockUtils
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -20,8 +21,7 @@ class UserBlockRepository private constructor(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val realDb: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val userCache = LruCache<String, Kullanici>(20)
-
-    private val realDbRef = realDb.getReference("blocks")
+    private val blockRelationsRef = realDb.getReference("block_relations")
 
     companion object {
         @Volatile
@@ -215,24 +215,25 @@ class UserBlockRepository private constructor(
         }
     }
 
-
     private suspend fun addBlockToRealtimeDb(kisiId: String, targetId: String) {
         try {
-            realDbRef.child(kisiId)
-                .child(targetId)
+            val relationKey = BlockUtils.generateRelationKey(kisiId, targetId)
+
+            blockRelationsRef.child(relationKey)
+                .child(kisiId)
                 .setValue(true)
                 .await()
         } catch (e: Exception) {
             Log.e("RTDB", "Realtime DB engelleme kaydı yazılamadı: ${e.message}")
         }
     }
-
     private suspend fun removeBlockFromRealtimeDb(kisiId: String, targetId: String) {
         try {
-            realDbRef
+            val relationKey = BlockUtils.generateRelationKey(kisiId, targetId)
+
+            blockRelationsRef.child(relationKey)
                 .child(kisiId)
-                .child(targetId)
-                .removeValue()
+                .setValue(false)
                 .await()
         } catch (e: Exception) {
             Log.e("RTDB", "Realtime DB engelleme kaydı silinemedi: ${e.message}")

@@ -22,6 +22,10 @@ class RecentChatsRepository2(
      * Güvenlik açığı oluşmaz ve Permission Denied hatası vermez!
      */
     fun getRecentChatsFlow(currentUserId: String): Flow<List<RecentChat>> = callbackFlow {
+        if (currentUserId.isBlank()) {
+            trySend(emptyList())
+            return@callbackFlow
+        }
         Log.d("RecentChatDebug", "🚀 getRecentChatsFlow başlatıldı. UserId: $currentUserId")
 
         val userRecentRef = realDb.getReference("recent_chats").child(currentUserId)
@@ -52,8 +56,17 @@ class RecentChatsRepository2(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("RecentChatDebug", "❌ Firebase Hatası (onCancelled): ${error.message}", error.toException())
-                close(error.toException())
+                // 🟢 Çıkış yapıldığında veya yetki gittiğinde uygulamayı patlatmak yerine akışı güvenle kapatıyoruz
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    Log.d("RecentChats", "Oturum kapandı veya yetki bitti, dinleyici güvenle sonlandırılıyor.")
+
+                    // Kanala boş liste gönderip akışı çökme olmadan kapatabilirsin
+                    trySend(emptyList())
+                    close()
+                } else {
+                    // Diğer beklenmeyen gerçek hataları logla
+                    Log.e("RecentChats", "Realtime DB Hatası: ${error.message}")
+                }
             }
         }
 
