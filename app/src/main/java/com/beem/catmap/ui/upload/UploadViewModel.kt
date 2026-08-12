@@ -4,7 +4,6 @@ import android.app.Application
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.CatMapApp
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.MapRepository
 import com.beem.catmap.data.repository.PostRepository
@@ -12,16 +11,11 @@ import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.ImageUploadManager
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.security.Timestamp
-import java.util.Date
 
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -56,7 +50,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
 
         viewModelScope.launch {
 
-            postRepository.kullaniciGonderiKaydet(UserSession.userId, catId)
+            postRepository.userPostSave(UserSession.userId, catId)
                 .onSuccess {
                     onComplete(true)
                 }

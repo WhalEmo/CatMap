@@ -6,8 +6,8 @@ import android.util.Log
 import android.util.LruCache
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.models.Gonderi
-import com.beem.catmap.models.GonderilenKediItem
+import com.beem.catmap.data.model.Post
+import com.beem.catmap.data.model.SendCatItem
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
@@ -47,21 +47,21 @@ class PostRepository private constructor(context: Context) {
     private val userManager = CurrentUserManager.getInstance(context)
 
     private data class CachedPostData(
-        val posts: List<Gonderi>,
+        val posts: List<Post>,
         val lastDocument: DocumentSnapshot?,
         val isLastPage: Boolean
     )
     private val userPostsCache = LruCache<String, CachedPostData>(USER_POSTS_CACHE_SIZE)
 
-    private val postDetailCache = LruCache<String, Gonderi>(DETAIL_CACHE_SIZE)
+    private val postDetailCache = LruCache<String, Post>(DETAIL_CACHE_SIZE)
 
     data class PostPageResult(
-        val posts: List<Gonderi>,
+        val posts: List<Post>,
         val lastDocument: DocumentSnapshot?,
         val isLastPage: Boolean
     )
 
-    suspend fun getKullaniciGonderileri(
+    suspend fun getUsersPost(
         userId: String,
         lastDocument: DocumentSnapshot? = null,
         forceRefresh: Boolean = false
@@ -110,11 +110,11 @@ class PostRepository private constructor(context: Context) {
             val batchItems = snapshot.documents.mapNotNull { doc ->
                 val kediID = doc.getString("kediID")
                 val tarih = doc.getTimestamp("tarih")
-                if (kediID != null) GonderilenKediItem(kediID = kediID, tarih = tarih) else null
+                if (kediID != null) SendCatItem(catId = kediID, date = tarih) else null
             }
 
             val isLast = snapshot.size() < PAGE_SIZE.toInt()
-            val newGonderiler = fetchGonderiOzetleriByIds(batchItems)
+            val newGonderiler = fetchPostDetailsByIds(batchItems)
 
             val existingPosts = if (lastDocument != null) {
                 userPostsCache.get(userId)?.posts ?: emptyList()
@@ -138,10 +138,10 @@ class PostRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun getGonderiDetay(
+    suspend fun getPostDetail(
         kediId: String,
         forceRefresh: Boolean = false
-    ): Result<Gonderi> = withContext(Dispatchers.IO) {
+    ): Result<Post> = withContext(Dispatchers.IO) {
         if (kediId.isBlank()) return@withContext Result.failure(Exception("Geçersiz KediID"))
 
         // 1. Bellek Önbelleği (Detail Cache) Kontrolü
@@ -159,26 +159,26 @@ class PostRepository private constructor(context: Context) {
             }
 
             val fotoList = doc.get("photoUri") as? List<String> ?: emptyList()
-            val gonderi = Gonderi(
-                kediID = doc.id,
-                fotoUrlListesi = fotoList,
-                aciklama = doc.getString("kediHakkinda"),
-                kediAdi = doc.getString("kediAdi"),
-                tarih = doc.getTimestamp("createdAt"),
-                begeniSayisi = doc.getLong("begeniSayisi") ?: 0L
+            val post = Post(
+                catId = doc.id,
+                photoUrlList = fotoList,
+                bio = doc.getString("kediHakkinda"),
+                catName = doc.getString("kediAdi"),
+                date = doc.getTimestamp("createdAt"),
+                likeCount = doc.getLong("begeniSayisi") ?: 0L
             )
 
             // Çekilen detayı belleğe ekle
-            postDetailCache.put(kediId, gonderi)
+            postDetailCache.put(kediId, post)
 
-            Result.success(gonderi)
+            Result.success(post)
         } catch (e: Exception) {
             Log.e("PostRepository", "Gönderi detayı çekilirken hata: ${e.message}")
             Result.failure(e)
         }
     }
 
-    suspend fun kullaniciGonderiSil(
+    suspend fun userPostDelete(
         userId: String,
         kediId: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
@@ -207,7 +207,7 @@ class PostRepository private constructor(context: Context) {
             invalidatePostCache(userId, kediId)
 
             if (userId == UserSession.userId) {
-                val currentCount = userManager.profileState.value.gonderiSayisi
+                val currentCount = userManager.profileState.value.postCount
                 userManager.updateGonderiSayisi(max(currentCount - 1, 0L))
             }
             Result.success(Unit)
@@ -217,12 +217,12 @@ class PostRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun haritadanKediSil(kediId: String): Result<Unit> = runCatching {
+    suspend fun mapCatDelete(kediId: String): Result<Unit> = runCatching {
         catsCollection.document(kediId).delete().await()
         postDetailCache.remove(kediId)
     }
 
-    suspend fun kullaniciGonderiKaydet(
+    suspend fun userPostSave(
         userId: String,
         kediId: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
@@ -248,7 +248,7 @@ class PostRepository private constructor(context: Context) {
             invalidateUserCache(userId)
 
             if (userId == UserSession.userId) {
-                val currentCount = userManager.profileState.value.gonderiSayisi
+                val currentCount = userManager.profileState.value.postCount
                 userManager.updateGonderiSayisi(currentCount + 1)
             }
 
@@ -270,15 +270,11 @@ class PostRepository private constructor(context: Context) {
         }
     }
 
-    fun clearAllCache() {
-        userPostsCache.evictAll()
-        postDetailCache.evictAll()
-    }
 
-    private suspend fun fetchGonderiOzetleriByIds(items: List<GonderilenKediItem>): List<Gonderi> {
+    private suspend fun fetchPostDetailsByIds(items: List<SendCatItem>): List<Post> {
         if (items.isEmpty()) return emptyList()
-        val tarihMap = items.associate { it.kediID to it.tarih }
-        val kediIds = items.map { it.kediID }.distinct()
+        val tarihMap = items.associate { it.catId to it.date }
+        val kediIds = items.map { it.catId }.distinct()
         val chunks = kediIds.chunked(30)
 
         return coroutineScope {
@@ -289,17 +285,17 @@ class PostRepository private constructor(context: Context) {
                         val fotoList = doc.get("photoUri") as? List<String> ?: emptyList()
                         if (fotoList.isEmpty()) return@mapNotNull null
 
-                        Gonderi(
-                            kediID = doc.id,
-                            fotoUrlListesi = listOf(fotoList.first()),
-                            aciklama = null,
-                            kediAdi = null,
-                            tarih = tarihMap[doc.id],
-                            begeniSayisi = 0L
+                        Post(
+                            catId = doc.id,
+                            photoUrlList = listOf(fotoList.first()),
+                            bio = null,
+                            catName = null,
+                            date = tarihMap[doc.id],
+                            likeCount = 0L
                         )
                     }
                 }
-            }.awaitAll().flatten().sortedByDescending { it.tarih }
+            }.awaitAll().flatten().sortedByDescending { it.date }
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.beem.catmap.ui.chatlist
 
-import com.beem.catmap.models.RecentChat
+import com.beem.catmap.data.model.RecentChat
 
 data class RecentChatsUiState(
     val chats: List<RecentChat> = emptyList(),

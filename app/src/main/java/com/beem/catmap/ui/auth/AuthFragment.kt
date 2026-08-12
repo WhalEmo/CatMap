@@ -400,8 +400,8 @@ class AuthFragment : Fragment() {
                             is AuthEvent.NavigateToProfileSetup -> {
                                 SmartNavigationEngine.navigateTo(
                                     targetScreen = Screen.PROFILE_SETUP,
-                                    args = ProfileSetupFragment.newBundle(event.user),
-                                    key = event.user.id
+                                    args = ProfileSetupFragment.newBundle(event.userModel),
+                                    key = event.userModel.id
                                 )
                             }
                         }

@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.data.model.UserModel;
 import com.beem.catmap.R;
 import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.sohbet.SohbetYonetici;
@@ -34,8 +34,8 @@ public class MesajlasmaYonetici {
     private DatabaseReference mesajlar = FirebaseDatabase.getInstance().getReference("mesajlar");
 
     private String sohbetID;
-    private Kullanici gonderen = UserSession.INSTANCE.getUser();
-    private Kullanici alici;
+    private UserModel gonderen = UserSession.INSTANCE.getUserModel();
+    private UserModel alici;
     private static MesajlasmaYonetici yonetici;
     private ChildEventListener dinleyici;
     private ValueEventListener yaziyorDinleyici;
@@ -270,19 +270,19 @@ public class MesajlasmaYonetici {
             return;
         }
         if (SohbetYonetici.getInstance().getKullanicilar().containsKey(alici.id)) {
-            alici = (Kullanici) SohbetYonetici.getInstance().getKullanicilar().get(alici.id);
+            alici = (UserModel) SohbetYonetici.getInstance().getKullanicilar().get(alici.id);
         }
-        if (alici.kullaniciAdi != null && !alici.kullaniciAdi.isEmpty()) {
-            kisiAdiText.setText(alici.kullaniciAdi);
-            if (alici.isCevrimiciMi) {
+        if (alici.username != null && !alici.username.isEmpty()) {
+            kisiAdiText.setText(alici.username);
+            if (alici.isOnline) {
                 durum.setText("Çevrimiçi");
             } else {
-                durum.setText("Son Görülme: " + alici.sonGorulme);
+                durum.setText("Son Görülme: " + alici.lastSeen);
             }
-            if (alici.fotoBitmap != null) {
-                kisiProfilFoto.setImageBitmap(alici.fotoBitmap);
+            if (alici.photoBitmap != null) {
+                kisiProfilFoto.setImageBitmap(alici.photoBitmap);
                 return;
-            } else if (alici.fotoUrl == null || alici.fotoUrl.isEmpty()) {
+            } else if (alici.photoUrl == null || alici.photoUrl.isEmpty()) {
                 kisiProfilFoto.setImageResource(R.drawable.kullanici);
                 return;
             }
@@ -294,16 +294,16 @@ public class MesajlasmaYonetici {
                 .get()
                 .addOnSuccessListener(veri -> {
                     if (veri.exists()) {
-                        alici.ad = veri.getString("Ad");
-                        alici.fotoUrl = veri.getString("profilFotoUrl");
-                        alici.soyad = veri.getString("Soyad");
-                        alici.kullaniciAdi = veri.getString("KullaniciAdi");
-                        kisiAdiText.setText(alici.kullaniciAdi);
+                        alici.name = veri.getString("Ad");
+                        alici.photoUrl = veri.getString("profilFotoUrl");
+                        alici.surname = veri.getString("Soyad");
+                        alici.username = veri.getString("KullaniciAdi");
+                        kisiAdiText.setText(alici.username);
                         if (engelledim || engelledi) return;
 
-                        if (alici.fotoUrl != null && !alici.fotoUrl.isEmpty()) {
+                        if (alici.photoUrl != null && !alici.photoUrl.isEmpty()) {
                             Picasso.get()
-                                    .load(alici.fotoUrl)
+                                    .load(alici.photoUrl)
                                     .placeholder(R.drawable.kullanici)
                                     .error(R.drawable.kullanici)
                                     .into(kisiProfilFoto);
@@ -324,8 +324,8 @@ public class MesajlasmaYonetici {
                 if (yaziyor) {
                     kisiDurumText.setText("Yazıyor...");
                 } else {
-                    if (!alici.isCevrimiciMi) {
-                        kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
+                    if (!alici.isOnline) {
+                        kisiDurumText.setText("Son Görülme: " + alici.lastSeen);
                     } else {
                         kisiDurumText.setText("Çevrimiçi");
                     }
@@ -334,7 +334,7 @@ public class MesajlasmaYonetici {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
+                kisiDurumText.setText("Son Görülme: " + alici.lastSeen);
             }
         };
 
@@ -351,13 +351,13 @@ public class MesajlasmaYonetici {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Boolean cevrimiciMi = snapshot.child("cevrimici").getValue(Boolean.class);
                 Long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
-                alici.isCevrimiciMi = cevrimiciMi != null && cevrimiciMi;
-                alici.sonGorulme = sonGorulme != null ? sonGorulme : 0L;
+                alici.isOnline = cevrimiciMi != null && cevrimiciMi;
+                alici.lastSeen = sonGorulme != null ? sonGorulme : 0L;
 
-                if (alici.isCevrimiciMi) {
+                if (alici.isOnline) {
                     kisiDurumText.setText("Çevrimiçi");
                 } else {
-                    kisiDurumText.setText("Son Görülme: " + alici.sonGorulme);
+                    kisiDurumText.setText("Son Görülme: " + alici.lastSeen);
                 }
             }
 
@@ -572,19 +572,19 @@ public class MesajlasmaYonetici {
         this.sohbetID = sohbetID;
     }
 
-    public Kullanici getGonderen() {
+    public UserModel getGonderen() {
         return gonderen;
     }
 
-    public void setGonderen(Kullanici gonderen) {
+    public void setGonderen(UserModel gonderen) {
         this.gonderen = gonderen;
     }
 
-    public Kullanici getAlici() {
+    public UserModel getAlici() {
         return alici;
     }
 
-    public void setAlici(Kullanici alici) {
+    public void setAlici(UserModel alici) {
         this.alici = alici;
         engelledi = false;
         engelledim = false;

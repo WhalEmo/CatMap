@@ -12,7 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.databinding.FragmentProfileSetupBinding
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -24,7 +24,7 @@ class ProfileSetupFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: ProfileSetupViewModel by viewModels()
-    private var currentUser: Kullanici? = null
+    private var currentUserModel: UserModel? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,7 +38,7 @@ class ProfileSetupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        currentUser = arguments?.getSerializable(KEY_USER) as? Kullanici
+        currentUserModel = arguments?.getSerializable(KEY_USER) as? UserModel
 
         setupUsernameFilter()
         setupClickListeners()
@@ -55,10 +55,10 @@ class ProfileSetupFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        currentUser?.let { user ->
+        currentUserModel?.let { user ->
             // Ad Soyad Google'dan gelen isimle doluyor
-            if (user.ad.isNotBlank()) {
-                binding.etFullName.setText(user.ad)
+            if (user.name.isNotBlank()) {
+                binding.etFullName.setText(user.name)
             }
 
             // Email'den otomatik kullanıcı adı türetme (@ öncesini alma)
@@ -113,7 +113,7 @@ class ProfileSetupFragment : Fragment() {
             }
 
             viewModel.completeProfile(
-                user = currentUser,
+                userModel = currentUserModel,
                 preferredUsername = username,
                 fullName = fullName,
                 bio = bio
@@ -123,10 +123,10 @@ class ProfileSetupFragment : Fragment() {
         // 💨 "Şimdilik Atla" Butonu (Varsayılan e-posta kullanıcı adı ile arka planda kayıt)
         binding.btnSkipSetup.setOnClickListener {
             val defaultUsername = binding.etUsername.text.toString().trim().lowercase()
-            val defaultName = currentUser?.ad ?: ""
+            val defaultName = currentUserModel?.name ?: ""
 
             viewModel.completeProfile(
-                user = currentUser,
+                userModel = currentUserModel,
                 preferredUsername = defaultUsername,
                 fullName = defaultName,
                 bio = "",
@@ -172,14 +172,14 @@ class ProfileSetupFragment : Fragment() {
     companion object {
         private const val KEY_USER = "key_google_user"
 
-        fun newInstance(user: Kullanici): ProfileSetupFragment {
+        fun newInstance(userModel: UserModel): ProfileSetupFragment {
             return ProfileSetupFragment().apply {
-                arguments = newBundle(user)
+                arguments = newBundle(userModel)
             }
         }
 
-        fun newBundle(user: Kullanici): Bundle {
-            return bundleOf(KEY_USER to user)
+        fun newBundle(userModel: UserModel): Bundle {
+            return bundleOf(KEY_USER to userModel)
         }
     }
 

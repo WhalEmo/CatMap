@@ -14,12 +14,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.beem.catmap.Maps.LocationEngine
+import com.beem.catmap.maps.LocationEngine
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
-import com.beem.catmap.models.CatModel
-import com.beem.catmap.models.Gonderi
+import com.beem.catmap.data.model.CatModel
+import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -197,13 +197,13 @@ class YuklemeArayuzuFragment : Fragment() {
             viewModel.addCatPostMyProfile(cat.id) { isSuccess ->
                 if (isSuccess) {
 
-                    val newPost = Gonderi(
-                        kediID = cat.id,
-                        kediAdi = cat.kediAdi,
-                        aciklama = cat.kediHakkinda,
-                        fotoUrlListesi = cat.photoUri,
-                        tarih = Timestamp.now(),
-                        begeniSayisi = 0L
+                    val newPost = Post(
+                        catId = cat.id,
+                        catName = cat.kediAdi,
+                        bio = cat.kediHakkinda,
+                        photoUrlList = cat.photoUri,
+                        date = Timestamp.now(),
+                        likeCount = 0L
                     )
 
                     viewLifecycleOwner.lifecycleScope.launch {

@@ -1,11 +1,11 @@
 package com.beem.catmap.sohbet;
 
-import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.data.model.UserModel;
 import com.beem.catmap.mesaj.Mesaj;
 
 public class Sohbet {
     private String SohbetID;
-    private Kullanici alici;
+    private UserModel alici;
     private Mesaj mesaj;
     private boolean sohbetYuklendiMi = false;
     private int okunmamisMesajSayisi = 0;
@@ -15,7 +15,7 @@ public class Sohbet {
 
     }
 
-    public Sohbet(String sohbetID, Kullanici alici, Mesaj mesaj) {
+    public Sohbet(String sohbetID, UserModel alici, Mesaj mesaj) {
         this.SohbetID = sohbetID;
         this.alici = alici;
         this.mesaj = mesaj;
@@ -29,11 +29,11 @@ public class Sohbet {
         this.mesaj = mesaj;
     }
 
-    public Kullanici getAlici() {
+    public UserModel getAlici() {
         return alici;
     }
 
-    public void setAlici(Kullanici alici) {
+    public void setAlici(UserModel alici) {
         this.alici = alici;
     }
 

@@ -57,7 +57,7 @@
             android:value="AIzaSyA58fD4xQDaP2bi1ElUsk8x_LKfFuqpREI" />
 
         <activity
-            android:name=".Maps.MapsActivity"
+            android:name=".maps.MapsActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.CatMap.Splash"
             android:windowSoftInputMode="adjustResize"

@@ -5,7 +5,7 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 
-import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.data.model.UserModel;
 import com.beem.catmap.data.local.UserSession;
 import com.beem.catmap.mesaj.Mesaj;
 import com.beem.catmap.R;
@@ -26,7 +26,7 @@ import java.util.HashMap;
 public class SohbetYonetici {
     private DatabaseReference sohbetDB = FirebaseDatabase.getInstance().getReference("mesajlar");
     private HashMap<String, Object> ProfilFotolari = new HashMap<>();
-    private HashMap<String, Kullanici> Kullanicilar = new HashMap<>();
+    private HashMap<String, UserModel> Kullanicilar = new HashMap<>();
     private HashMap<String, Mesaj> SonMesajlar = new HashMap<>();
     private static SohbetYonetici yonetici;
     private HashMap<String, Target> FotolariCek = new HashMap<>();
@@ -56,13 +56,13 @@ public class SohbetYonetici {
                     String currentUserId = UserSession.INSTANCE.getUserId();
 
                     if (idler[0].equals(currentUserId)) {
-                        Kullanici alici = new Kullanici();
+                        UserModel alici = new UserModel();
                         alici.id = idler[1];
                         Sohbet sohbet1 = new Sohbet(sohbetID, alici, new Mesaj());
                         sohbetArrayList.add(sohbet1);
                     }
                     if (idler[1].equals(currentUserId)) {
-                        Kullanici alici = new Kullanici();
+                        UserModel alici = new UserModel();
                         alici.id = idler[0];
                         Sohbet sohbet1 = new Sohbet(sohbetID, alici, null);
                         sohbetArrayList.add(sohbet1);
@@ -99,10 +99,10 @@ public class SohbetYonetici {
                         .get()
                         .addOnSuccessListener(veri -> {
                             if (veri.exists()) {
-                                sohbet.getAlici().ad = veri.getString("Ad") != null ? veri.getString("Ad") : "";
-                                sohbet.getAlici().fotoUrl = veri.getString("profilFotoUrl") != null ? veri.getString("profilFotoUrl") : "";
-                                sohbet.getAlici().soyad = veri.getString("Soyad") != null ? veri.getString("Soyad") : "";
-                                sohbet.getAlici().kullaniciAdi = veri.getString("KullaniciAdi") != null ? veri.getString("KullaniciAdi") : "";
+                                sohbet.getAlici().name = veri.getString("Ad") != null ? veri.getString("Ad") : "";
+                                sohbet.getAlici().photoUrl = veri.getString("profilFotoUrl") != null ? veri.getString("profilFotoUrl") : "";
+                                sohbet.getAlici().surname = veri.getString("Soyad") != null ? veri.getString("Soyad") : "";
+                                sohbet.getAlici().username = veri.getString("KullaniciAdi") != null ? veri.getString("KullaniciAdi") : "";
 
                                 Kullanicilar.put(sohbet.getAlici().id, sohbet.getAlici());
                                 FotolariCek(sohbet, tamamdir);
@@ -157,7 +157,7 @@ public class SohbetYonetici {
     private void FotolariCek(Sohbet sohbet, Runnable tamamdir) {
         if (sohbet.isEngelliSohbetMi() || sohbet.getAlici() == null) return;
 
-        String fotoUrl = sohbet.getAlici().fotoUrl;
+        String fotoUrl = sohbet.getAlici().photoUrl;
 
         if (fotoUrl == null || fotoUrl.isEmpty()) {
             if (tamamdir != null) tamamdir.run();
@@ -166,14 +166,14 @@ public class SohbetYonetici {
         }
 
         if (ProfilFotolari.containsKey(fotoUrl)) {
-            sohbet.getAlici().fotoBitmap = (Bitmap) ProfilFotolari.get(fotoUrl);
+            sohbet.getAlici().photoBitmap = (Bitmap) ProfilFotolari.get(fotoUrl);
             if (tamamdir != null) tamamdir.run();
             sohbet.setSohbetYuklendiMi(true);
             return;
         }
 
-        if (sohbet.getAlici().fotoBitmap != null) {
-            ProfilFotolari.put(fotoUrl, sohbet.getAlici().fotoBitmap);
+        if (sohbet.getAlici().photoBitmap != null) {
+            ProfilFotolari.put(fotoUrl, sohbet.getAlici().photoBitmap);
             sohbet.setSohbetYuklendiMi(true);
             if (tamamdir != null) tamamdir.run();
             return;
@@ -197,8 +197,8 @@ public class SohbetYonetici {
                         Boolean cevrimici = snapshot.child("cevrimici").getValue(Boolean.class);
                         Long sonGorulme = snapshot.child("sonGorulme").getValue(Long.class);
 
-                        sohbet.getAlici().isCevrimiciMi = cevrimici != null && cevrimici;
-                        sohbet.getAlici().sonGorulme = sonGorulme != null ? sonGorulme : 0L;
+                        sohbet.getAlici().isOnline = cevrimici != null && cevrimici;
+                        sohbet.getAlici().lastSeen = sonGorulme != null ? sonGorulme : 0L;
                     }
 
                     @Override
@@ -223,10 +223,10 @@ public class SohbetYonetici {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 if (sohbet.getAlici() != null) {
-                    sohbet.getAlici().fotoBitmap = bitmap;
-                    if (sohbet.getAlici().fotoUrl != null) {
-                        ProfilFotolari.put(sohbet.getAlici().fotoUrl, bitmap);
-                        FotolariCek.remove(sohbet.getAlici().fotoUrl);
+                    sohbet.getAlici().photoBitmap = bitmap;
+                    if (sohbet.getAlici().photoUrl != null) {
+                        ProfilFotolari.put(sohbet.getAlici().photoUrl, bitmap);
+                        FotolariCek.remove(sohbet.getAlici().photoUrl);
                     }
                 }
                 sohbet.setSohbetYuklendiMi(true);
@@ -236,7 +236,7 @@ public class SohbetYonetici {
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
                 if (sohbet.getAlici() != null) {
-                    sohbet.getAlici().fotoBitmap = null;
+                    sohbet.getAlici().photoBitmap = null;
                 }
                 sohbet.setSohbetYuklendiMi(true);
                 if (tamamdir != null) tamamdir.run();
@@ -245,15 +245,15 @@ public class SohbetYonetici {
             @Override
             public void onPrepareLoad(Drawable placeHolderDrawable) {
                 if (sohbet.getAlici() != null) {
-                    sohbet.getAlici().fotoBitmap = null;
+                    sohbet.getAlici().photoBitmap = null;
                 }
                 sohbet.setSohbetYuklendiMi(true);
                 if (tamamdir != null) tamamdir.run();
             }
         };
 
-        if (sohbet.getAlici() != null && sohbet.getAlici().fotoUrl != null) {
-            FotolariCek.put(sohbet.getAlici().fotoUrl, target);
+        if (sohbet.getAlici() != null && sohbet.getAlici().photoUrl != null) {
+            FotolariCek.put(sohbet.getAlici().photoUrl, target);
         }
         return target;
     }
@@ -266,11 +266,11 @@ public class SohbetYonetici {
         ProfilFotolari = profilFotolari;
     }
 
-    public void setKullanicilar(HashMap<String, Kullanici> kullanicilar) {
+    public void setKullanicilar(HashMap<String, UserModel> kullanicilar) {
         Kullanicilar = kullanicilar;
     }
 
-    public HashMap<String, Kullanici> getKullanicilar() {
+    public HashMap<String, UserModel> getKullanicilar() {
         return Kullanicilar;
     }
 

@@ -1,6 +1,6 @@
 package com.beem.catmap.data.repository
 
-import com.beem.catmap.models.ReplyModel
+import com.beem.catmap.data.model.ReplyModel
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue

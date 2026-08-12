@@ -2,7 +2,7 @@ package com.beem.catmap.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.google.firebase.auth.FirebaseAuth
@@ -31,13 +31,13 @@ class ProfileSetupViewModel : ViewModel() {
      * [isAutoGenerateIfTaken] true ise ve kullanıcı adı kapılmışsa arkasına rastgele sayı takar.
      */
     fun completeProfile(
-        user: Kullanici?,
+        userModel: UserModel?,
         preferredUsername: String,
         fullName: String,
         bio: String,
         isAutoGenerateIfTaken: Boolean = false
     ) {
-        val uid = auth.currentUser?.uid ?: user?.id ?: return
+        val uid = auth.currentUser?.uid ?: userModel?.id ?: return
 
         viewModelScope.launch {
             _loadingState.value = "Profiliniz doğrulanıyor..."
@@ -72,23 +72,23 @@ class ProfileSetupViewModel : ViewModel() {
                 val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
 
                 // Kullanıcı nesnesini güncelle
-                val updatedUser = (user ?: Kullanici()).apply {
+                val updatedUserModel = (userModel ?: UserModel()).apply {
                     id = uid
-                    kullaniciAdi = finalUsername
-                    ad = firstName
-                    soyad = lastName
-                    biyografi = bio
+                    username = finalUsername
+                    name = firstName
+                    surname = lastName
+                    this.bio = bio
                     email = auth.currentUser?.email ?: email
                 }
 
                 // 🎯 Senkronize Map verisini çekiyoruz
-                val userMap = updatedUser.KullaniciData()
+                val userMap = updatedUserModel.KullaniciData()
 
                 // Firestore'a kaydet
                 firestore.collection("users").document(uid).set(userMap).await()
 
                 _loadingState.value = null
-                saveUserLocallyAndNavigate(updatedUser)
+                saveUserLocallyAndNavigate(updatedUserModel)
 
             } catch (e: Exception) {
                 _loadingState.value = null
@@ -108,9 +108,9 @@ class ProfileSetupViewModel : ViewModel() {
         return !query.isEmpty
     }
 
-    private fun saveUserLocallyAndNavigate(user: Kullanici) {
+    private fun saveUserLocallyAndNavigate(userModel: UserModel) {
         viewModelScope.launch {
-            UserSession.update(user)
+            UserSession.update(userModel)
             OnlinePresenceManager.setUserOnline()
             _uiEvent.emit(UiEvent.Success)
         }

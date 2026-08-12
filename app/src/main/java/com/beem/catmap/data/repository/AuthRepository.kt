@@ -1,7 +1,7 @@
 package com.beem.catmap.data.repository
 
-import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.userAuth.VerifyAuth
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.ui.auth.GoogleAuthResult
 import com.beem.catmap.ui.auth.exceptions.AuthError
 import com.beem.catmap.utils.CatLogger
@@ -32,12 +32,12 @@ class AuthRepository {
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val mAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val authYonetici: DogrulamaKodYonetici = DogrulamaKodYonetici()
+    private val authYonetici: VerifyAuth = VerifyAuth()
 
     private val userNameTag = "KullaniciAdi"
 
 
-    suspend fun login(username: String, password: String): Result<Kullanici> {
+    suspend fun login(username: String, password: String): Result<UserModel> {
         return try {
             val query = db.collection("users")
                 .whereEqualTo("KullaniciAdi", username)
@@ -50,31 +50,31 @@ class AuthRepository {
             }
 
             val doc = query.documents[0]
-            val user = Kullanici(username, password).apply {
-                kullaniciAdi = doc.getString("KullaniciAdi") ?: username
-                ad = doc.getString("Ad") ?: ""
-                soyad = doc.getString("Soyad") ?: ""
+            val userModel = UserModel(username, password).apply {
+                this.username = doc.getString("KullaniciAdi") ?: username
+                name = doc.getString("Ad") ?: ""
+                surname = doc.getString("Soyad") ?: ""
                 email = doc.getString("Email") ?: ""
-                fotoUrl = doc.getString("profilFotoUrl") ?: ""
-                biyografi = doc.getString("Hakkinda") ?: ""
-                takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
-                takipciSayisi = doc.getLong("takipciSayisi")
-                gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
+                photoUrl = doc.getString("profilFotoUrl") ?: ""
+                bio = doc.getString("Hakkinda") ?: ""
+                followingCount = doc.getLong("TakipEdilenSayisi")
+                followersCount = doc.getLong("takipciSayisi")
+                postCount = doc.getLong("gonderiSayisi") ?: 0L
                 id = doc.id
             }
 
-            if (user.email.isEmpty()) {
+            if (userModel.email.isEmpty()) {
                 return Result.failure(Exception("Kullanıcı mail bilgisi eksik!"))
             }
 
             val girisBasarili = suspendCancellableCoroutine<Boolean> { continuation ->
-                authYonetici.girisYap(user.email, password) { basarili ->
+                authYonetici.login(userModel.email, password) { basarili ->
                     if (continuation.isActive) continuation.resume(basarili)
                 }
             }
 
             if (girisBasarili) {
-                Result.success(user)
+                Result.success(userModel)
             } else {
                 Result.failure(Exception("Şifre hatalı veya giriş başarısız!"))
             }
@@ -84,20 +84,20 @@ class AuthRepository {
         }
     }
 
-    suspend fun register(user: Kullanici): Result<Kullanici> {
+    suspend fun register(userModel: UserModel): Result<UserModel> {
         return try {
-            val emailSonuc = db.collection("users").whereEqualTo("Email", user.email).get().await()
+            val emailSonuc = db.collection("users").whereEqualTo("Email", userModel.email).get().await()
             if (!emailSonuc.isEmpty) {
                 return Result.failure(Exception("Email ile daha önce kayıt yapılmış."))
             }
 
-            val userSonuc = db.collection("users").whereEqualTo("KullaniciAdi", user.kullaniciAdi).get().await()
+            val userSonuc = db.collection("users").whereEqualTo("KullaniciAdi", userModel.username).get().await()
             if (!userSonuc.isEmpty) {
                 return Result.failure(Exception("Bu kullanıcı adı zaten alınmış."))
             }
 
             val kayitBasarili = suspendCancellableCoroutine<Boolean> { continuation ->
-                authYonetici.kaydetSifreEmail(user.email, user.sifre) { basarili ->
+                authYonetici.savePasswordEmail(userModel.email, userModel.password) { basarili ->
                     if (continuation.isActive) continuation.resume(basarili)
                 }
             }
@@ -108,17 +108,17 @@ class AuthRepository {
 
             val currentUid = mAuth.currentUser?.uid ?: return Result.failure(Exception("Kullanıcı ID alınamadı!"))
 
-            db.collection("users").document(currentUid).set(user.KullaniciData()).await()
+            db.collection("users").document(currentUid).set(userModel.KullaniciData()).await()
 
             val publicData = mapOf(
-                "KullaniciAdi" to user.kullaniciAdi,
-                "FotoUrl" to (user.fotoUrl ?: "")
+                "KullaniciAdi" to userModel.username,
+                "FotoUrl" to (userModel.photoUrl ?: "")
             )
             db.collection("publicUsers").document(currentUid).set(publicData).await()
 
-            user.id = currentUid
+            userModel.id = currentUid
 
-            Result.success(user)
+            Result.success(userModel)
         } catch (e: Exception) {
             CatLogger.logError("AuthReposıtory", "register", e)
             Result.failure(e)
@@ -128,7 +128,7 @@ class AuthRepository {
     suspend fun resetPassword(email: String): Result<Unit> {
         return try {
             val basarili = suspendCancellableCoroutine<Boolean> { continuation ->
-                authYonetici.sifreSifirla(email) { sonuc ->
+                authYonetici.resetPassword(email) { sonuc ->
                     if (continuation.isActive) continuation.resume(sonuc)
                 }
             }
@@ -155,39 +155,39 @@ class AuthRepository {
             val doc = userRef.get().await()
 
             if (doc.exists() && !doc.getString(userNameTag).isNullOrBlank()) {
-                val user = Kullanici(
-                    kullaniciAdi = doc.getString("KullaniciAdi") ?: (firebaseUser.email?.substringBefore("@") ?: ""),
-                    sifre = ""
+                val userModel = UserModel(
+                    username = doc.getString("KullaniciAdi") ?: (firebaseUser.email?.substringBefore("@") ?: ""),
+                    password = ""
                 ).apply {
                     id = uid
-                    ad = doc.getString("Ad") ?: (firebaseUser.displayName ?: "")
-                    soyad = doc.getString("Soyad") ?: ""
+                    name = doc.getString("Ad") ?: (firebaseUser.displayName ?: "")
+                    surname = doc.getString("Soyad") ?: ""
                     email = doc.getString("Email") ?: (firebaseUser.email ?: "")
-                    fotoUrl = doc.getString("profilFotoUrl") ?: (firebaseUser.photoUrl?.toString() ?: "")
-                    biyografi = doc.getString("Hakkinda") ?: ""
-                    takipEdilenSayisi = doc.getLong("TakipEdilenSayisi")
-                    takipciSayisi = doc.getLong("takipciSayisi")
-                    gonderiSayisi = doc.getLong("gonderiSayisi") ?: 0L
+                    photoUrl = doc.getString("profilFotoUrl") ?: (firebaseUser.photoUrl?.toString() ?: "")
+                    bio = doc.getString("Hakkinda") ?: ""
+                    followingCount = doc.getLong("TakipEdilenSayisi")
+                    followersCount = doc.getLong("takipciSayisi")
+                    postCount = doc.getLong("gonderiSayisi") ?: 0L
                 }
-                Result.success(GoogleAuthResult.ExistingUser(user))
+                Result.success(GoogleAuthResult.ExistingUser(userModel))
             } else {
-                val newUser = Kullanici(
-                    ad = firebaseUser.displayName ?: "",
-                    soyad = "",
+                val newUserModel = UserModel(
+                    name = firebaseUser.displayName ?: "",
+                    surname = "",
                     email = firebaseUser.email ?: "",
-                    kullaniciAdi = firebaseUser.email?.substringBefore("@") ?: "user_${uid.take(5)}",
+                    username = firebaseUser.email?.substringBefore("@") ?: "user_${uid.take(5)}",
                 ).apply {
                     id = uid
-                    fotoUrl = firebaseUser.photoUrl?.toString() ?: ""
+                    photoUrl = firebaseUser.photoUrl?.toString() ?: ""
                 }
 
                 val publicData = mapOf(
-                    "KullaniciAdi" to newUser.kullaniciAdi,
-                    "FotoUrl" to newUser.fotoUrl
+                    "KullaniciAdi" to newUserModel.username,
+                    "FotoUrl" to newUserModel.photoUrl
                 )
                 db.collection("publicUsers").document(uid).set(publicData).await()
 
-                Result.success(GoogleAuthResult.NewUser(newUser))
+                Result.success(GoogleAuthResult.NewUser(newUserModel))
             }
         } catch (e: FirebaseNetworkException) {
             Result.failure(AuthError.NetworkError())

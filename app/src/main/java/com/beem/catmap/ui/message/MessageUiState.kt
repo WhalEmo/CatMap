@@ -1,6 +1,6 @@
 package com.beem.catmap.ui.message
 
-import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.data.model.ChatMessage
 import com.beem.catmap.ui.message.models.BlockState
 
 data class MessageUiState(

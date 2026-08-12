@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.data.model.ChatMessage
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.message.models.BlockState
