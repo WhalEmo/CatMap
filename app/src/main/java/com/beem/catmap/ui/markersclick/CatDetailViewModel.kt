@@ -87,7 +87,6 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
                 }
         }
     }
-
     fun toggleLike() {
         val currentCat = _selectedCat.value ?: return
         val userId = UserSession.userId ?: return
@@ -125,8 +124,6 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
             _isMyCat.value = (ownerId == currentUserId)
 
             val currentCatId = _selectedCat.value?.id
-
-            val userDataDeferred = async { repository.getUserInfo(ownerId) }
             val isAlreadyAddedDeferred = async {
                 if (currentCatId != null) {
                     repository.isCatSent(ownerId, currentCatId)
@@ -134,14 +131,29 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
                     false
                 }
             }
+            val userDataDeferred = async {
+                try {
+                    val data = repository.getUserInfo(ownerId)
+                    if (data != null) {
+                        data
+                    } else {
+                        repository.getPublicUserInfo(ownerId)
+                    }
+                } catch (e: Exception) {
+                    repository.getPublicUserInfo(ownerId)
+                }
+            }
             val userData = userDataDeferred.await()
             val isAlreadyAdded = isAlreadyAddedDeferred.await()
 
-            userData?.let { data ->
-                val username = data["KullaniciAdi"] as? String ?: "Bilinmeyen"
-                val photoUrl = data["profilFotoUrl"] as? String
+            if (userData != null) {
+                val username = (userData["KullaniciAdi"] ?: userData["kullaniciAdi"]) as? String ?: "Kullanıcı"
+                val photoUrl = (userData["profilFotoUrl"] ?: userData["FotoUrl"]) as? String
                 _ownerInfo.value = Pair(username, photoUrl)
+            } else {
+                _ownerInfo.value = Pair("Kullanıcı", null)
             }
+
             _isAlreadyAdded.value = isAlreadyAdded
         }
     }

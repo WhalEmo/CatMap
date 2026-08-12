@@ -4,6 +4,7 @@ import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.ui.auth.GoogleAuthResult
 import com.beem.catmap.ui.auth.exceptions.AuthError
+import com.beem.catmap.utils.CatLogger
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -66,7 +67,6 @@ class AuthRepository {
                 return Result.failure(Exception("Kullanıcı mail bilgisi eksik!"))
             }
 
-            // Callback yapısını Coroutine'e çeviriyoruz
             val girisBasarili = suspendCancellableCoroutine<Boolean> { continuation ->
                 authYonetici.girisYap(user.email, password) { basarili ->
                     if (continuation.isActive) continuation.resume(basarili)
@@ -79,11 +79,11 @@ class AuthRepository {
                 Result.failure(Exception("Şifre hatalı veya giriş başarısız!"))
             }
         } catch (e: Exception) {
+            CatLogger.logError("AuthReposıtory", "login", e)
             Result.failure(e)
         }
     }
 
-    // 📝 Yeni Kullanıcı Kaydı
     suspend fun register(user: Kullanici): Result<Kullanici> {
         return try {
             val emailSonuc = db.collection("users").whereEqualTo("Email", user.email).get().await()
@@ -109,15 +109,22 @@ class AuthRepository {
             val currentUid = mAuth.currentUser?.uid ?: return Result.failure(Exception("Kullanıcı ID alınamadı!"))
 
             db.collection("users").document(currentUid).set(user.KullaniciData()).await()
+
+            val publicData = mapOf(
+                "KullaniciAdi" to user.kullaniciAdi,
+                "FotoUrl" to (user.fotoUrl ?: "")
+            )
+            db.collection("publicUsers").document(currentUid).set(publicData).await()
+
             user.id = currentUid
 
             Result.success(user)
         } catch (e: Exception) {
+            CatLogger.logError("AuthReposıtory", "register", e)
             Result.failure(e)
         }
     }
 
-    // 🔐 Şifre Sıfırlama
     suspend fun resetPassword(email: String): Result<Unit> {
         return try {
             val basarili = suspendCancellableCoroutine<Boolean> { continuation ->
@@ -132,11 +139,11 @@ class AuthRepository {
                 Result.failure(Exception("E-posta gönderilemedi!"))
             }
         } catch (e: Exception) {
+            CatLogger.logError("AuthReposıtory", "resetPassword", e)
             Result.failure(e)
         }
     }
 
-    // 🌐 Google ile Giriş & Kayıt
     suspend fun signInWithGoogle(idToken: String): Result<GoogleAuthResult> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -173,6 +180,13 @@ class AuthRepository {
                     id = uid
                     fotoUrl = firebaseUser.photoUrl?.toString() ?: ""
                 }
+
+                val publicData = mapOf(
+                    "KullaniciAdi" to newUser.kullaniciAdi,
+                    "FotoUrl" to newUser.fotoUrl
+                )
+                db.collection("publicUsers").document(uid).set(publicData).await()
+
                 Result.success(GoogleAuthResult.NewUser(newUser))
             }
         } catch (e: FirebaseNetworkException) {

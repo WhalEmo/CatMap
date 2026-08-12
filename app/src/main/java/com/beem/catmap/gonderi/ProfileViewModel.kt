@@ -14,6 +14,7 @@ import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.domain.usecase.GetProfileFullDataUseCase
+import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,13 +63,29 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
                     _fullProfileState.value = UiState.Success(fullData)
                 }
+
                 .onFailure { exception ->
-                    if (exception is UserBlockedException) {
-                        _fullProfileState.value = UiState.Blocked(exception.profile)
-                    } else {
-                        _fullProfileState.value = UiState.Error(
-                            exception.localizedMessage ?: "Profil yüklenemedi."
-                        )
+                    when (exception) {
+                        is UserBlockedException -> {
+                            Log.d("ENGELLENENLERCLICK", "UserBlockedException")
+                            _fullProfileState.value = UiState.Blocked(exception.profile)
+                        }
+                        is IsBlockedByException -> {
+                            Log.d("ENGELLENENLERCLICK", "IsBlockedByException")
+                            val publicUser = exception.publicProfile
+                            val fallbackProfile = Kullanici().apply {
+                                id = targetUserId
+                                kullaniciAdi = publicUser?.kullaniciAdi.orEmpty()
+                                fotoUrl = publicUser?.fotoUrl.orEmpty()
+                            }
+                            _fullProfileState.value = UiState.BlockedBy(profile = fallbackProfile)
+                        }
+                        else -> {
+                            Log.d("ENGELLENENLERCLICK", exception.localizedMessage )
+                            _fullProfileState.value = UiState.Error(
+                                exception.localizedMessage ?: "Profil yüklenemedi."
+                            )
+                        }
                     }
                 }
         }

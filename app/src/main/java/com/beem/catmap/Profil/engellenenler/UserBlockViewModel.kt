@@ -23,11 +23,14 @@ sealed class BlockActionState {
 }
 
 class UserBlockViewModel : ViewModel() {
-
+    private var targetUserId: String? = null
     private val repository: UserBlockRepository = UserBlockRepository.getInstance()
 
     private val _benimEngellediklerim = MutableStateFlow<List<Kullanici>>(emptyList())
     val benimEngellediklerim: StateFlow<List<Kullanici>> = _benimEngellediklerim.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
@@ -37,11 +40,12 @@ class UserBlockViewModel : ViewModel() {
 
     private val _blockActionState = MutableSharedFlow<BlockActionState>()
     val blockActionState: SharedFlow<BlockActionState> = _blockActionState.asSharedFlow()
-
     private var lastDocument: DocumentSnapshot? = null
 
     fun benimEngellediklerimiGetir(currentUserId: String) {
+        this.targetUserId = currentUserId
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 _isLastPage.value = false
                 lastDocument = null
@@ -54,8 +58,6 @@ class UserBlockViewModel : ViewModel() {
                 lastDocument = newLastDoc
                 _benimEngellediklerim.value = liste
 
-                // Veri boşsa veya ilk veri Firestore yerine Cache'ten (lastDoc = null) geldiyse
-                // başka ağ sayfası çekilemeyeceği için isLastPage = true yapılır.
                 if (liste.isEmpty() || newLastDoc == null) {
                     _isLastPage.value = true
                 }
@@ -64,13 +66,14 @@ class UserBlockViewModel : ViewModel() {
                 Log.e("UserBlockViewModel", "Engellenenler getirilemedi: ${e.message}")
                 _benimEngellediklerim.value = emptyList()
                 _isLastPage.value = true
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun dahaFazlaEngellenenGetir(currentUserId: String) {
         if (_isLoadingMore.value || _isLastPage.value || lastDocument == null) return
-
         viewModelScope.launch {
             _isLoadingMore.value = true
 
@@ -85,7 +88,6 @@ class UserBlockViewModel : ViewModel() {
                     _isLastPage.value = true
                 } else {
                     lastDocument = newLastDoc
-                    // Mükerrer nesne eklenmesini önlemek için distinctBy ile birleştirilir
                     _benimEngellediklerim.update { current ->
                         (current + yeniListe).distinctBy { it.id }
                     }
@@ -109,7 +111,6 @@ class UserBlockViewModel : ViewModel() {
             try {
                 repository.blockUser(kisiId, engellenecekKullanici)
 
-                // Listede zaten varsa tekrar eklemiyoruz, en başa koyuyoruz
                 _benimEngellediklerim.update { current ->
                     val filtered = current.filterNot { it.id == engellenecekKullanici.id }
                     listOf(engellenecekKullanici) + filtered
@@ -136,7 +137,11 @@ class UserBlockViewModel : ViewModel() {
                 repository.unblockUser(kisiId, engellenenKullaniciId)
 
                 _benimEngellediklerim.update { current ->
-                    current.filterNot { it.id == engellenenKullaniciId }
+                    val updated = current.filterNot { it.id == engellenenKullaniciId }
+                    if (updated.isEmpty()) {
+                        _isLastPage.value = true
+                    }
+                    updated
                 }
 
                 _blockActionState.emit(BlockActionState.Success("Engel kaldırıldı"))
@@ -148,14 +153,4 @@ class UserBlockViewModel : ViewModel() {
             }
         }
     }
-
-    suspend fun isUserBlocked(currentUserId: String, targetUserId: String): Boolean {
-        // 1. Önce ViewModel'in UI state'ine bak
-        val isBlockedInState = _benimEngellediklerim.value.any { it.id == targetUserId }
-        if (isBlockedInState) return true
-
-        // 2. Yoksa Repository üzerinden LRU Cache / CurrentUserManager / Firestore kademesine git
-        return repository.isUserBlocked(kisiId = currentUserId, targetUserId = targetUserId)
-    }
-
 }

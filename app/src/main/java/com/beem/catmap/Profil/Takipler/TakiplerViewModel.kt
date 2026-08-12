@@ -37,7 +37,8 @@ class TakiplerViewModel() : ViewModel() {
 
     init {
         observeEvents()
-    }private fun observeEvents() {
+    }
+    private fun observeEvents() {
         viewModelScope.launch {
             ProfileEventBus.profileEvent.collect { event ->
                 val currentUserId = UserSession.userId
@@ -68,6 +69,12 @@ class TakiplerViewModel() : ViewModel() {
                             if (isMyOwnList) {
                                 takipciCikar(event.userId)
                             }
+                        }
+                    }
+                    is ProfileEvent.BlockedUser -> {
+                        if (event.operatorUserId == currentUserId && isMyOwnList) {
+                            takipEdilenCikar(event.userId)
+                            takipciCikar(event.userId)
                         }
                     }
                     else -> {}

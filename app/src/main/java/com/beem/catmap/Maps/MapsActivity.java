@@ -33,6 +33,7 @@ import com.beem.catmap.KullaniciAuth.Kullanici;
 import com.beem.catmap.Profil.EditProfileFragment;
 import com.beem.catmap.Profil.ProfilFragment;
 import com.beem.catmap.Profil.Takipler.TakiplerFragment;
+import com.beem.catmap.Profil.engellenenler.EngellenenlerFragment;
 import com.beem.catmap.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni;
 import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
@@ -118,10 +119,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case PROFILE -> new ProfilFragment();
                 case MESSAGE -> new MessageFragment();
                 case EDIT_PROFILE -> new EditProfileFragment();
-                case BLOCKED_USERS -> {
-                    yield null;
-                    //new engellenenlerFragmnet();
-                }
+                case BLOCKED_USERS -> new EngellenenlerFragment();
                 case FOLLOWERS -> new TakiplerFragment();
                 case POST -> new GonderiDetayFragment();
                 case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();

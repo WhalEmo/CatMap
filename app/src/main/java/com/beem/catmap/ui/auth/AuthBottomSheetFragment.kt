@@ -17,7 +17,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.KullaniciAuth.Kullanici
 import com.beem.catmap.R
 import com.beem.catmap.UyariMesaji
-import com.beem.catmap.data.session.CurrentUserManager
+
 import com.beem.catmap.databinding.BottomSheetAuthBinding
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -32,7 +32,12 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
 
     private val viewModel: AuthViewModel by viewModels()
-    private lateinit var uyariMesaji: UyariMesaji
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NORMAL, R.style.Dialog_FullWidth)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,7 +50,6 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        uyariMesaji = UyariMesaji(requireContext(), false)
 
         val initialModeName = arguments?.getString(ARG_INITIAL_MODE)
         if (initialModeName != null) {
@@ -155,7 +159,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
     // 🚀 StateFlow & SharedFlow Dinleyicisi
     private fun observeStateFlow() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 // 1. UI State Dinleyicisi
                 launch {

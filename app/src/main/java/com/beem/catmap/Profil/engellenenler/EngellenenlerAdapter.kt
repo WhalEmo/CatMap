@@ -15,7 +15,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 import java.util.Objects
 class EngellenenlerAdapter(
     private val onEngelClick: (Kullanici) -> Unit,
-    private val onKullaniciClick: (String) -> Unit
+    private val onUserClick: (String?) -> Unit
 ) : ListAdapter<Kullanici, EngellenenlerAdapter.ViewHolder>(DiffCallback()) {
 
 
@@ -27,6 +27,7 @@ class EngellenenlerAdapter(
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.herbi_engellenen, parent, false)
 
+
         return ViewHolder(view)
     }
 
@@ -35,7 +36,7 @@ class EngellenenlerAdapter(
         holder: ViewHolder,
         position: Int
     ) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position),onUserClick)
     }
 
     inner class ViewHolder(
@@ -44,7 +45,7 @@ class EngellenenlerAdapter(
         private val foto = itemView.findViewById<CircleImageView>(R.id.recyclerFotoImageView)
         private val kullaniciAdi = itemView.findViewById<TextView>(R.id.RecyclerkullaniciAdi)
         private val engelButton = itemView.findViewById<Button>(R.id.engel)
-        fun bind(kullanici: Kullanici) {
+        fun bind(kullanici: Kullanici,onUserClick: (String?) -> Unit) {
             kullaniciAdi.text = kullanici.kullaniciAdi
 
 
@@ -60,12 +61,8 @@ class EngellenenlerAdapter(
             engelButton.setOnClickListener {
                 onEngelClick(kullanici)
             }
-            itemView.setOnClickListener {
-
-                kullanici.id?.let {
-                    onKullaniciClick(it)
-                }
-
+            kullaniciAdi.setOnClickListener {
+                onUserClick(kullanici.id)
             }
         }
     }

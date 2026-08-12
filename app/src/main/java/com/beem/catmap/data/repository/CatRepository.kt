@@ -5,7 +5,9 @@ import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
 import com.beem.catmap.data.session.CurrentUserManager
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class CatRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -63,6 +65,22 @@ class CatRepository {
         return try {
             val snapshot = db.collection("users").document(userId).get().await()
             if (snapshot.exists()) snapshot.data else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+    suspend fun getPublicUserInfo(userId: String): Map<String, Any>? = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("publicUsers")
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                snapshot.data
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }

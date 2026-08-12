@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import android.util.LruCache
 import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.model.PublicUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
@@ -77,6 +78,7 @@ class ProfileRepository private constructor() {
             Result.failure(e)
         }
     }
+
     suspend fun getUserProfile(userId: String, forceRefresh: Boolean = false): UiState<Kullanici> = withContext(Dispatchers.IO) {
         if (!forceRefresh) {
             val cachedProfile = profileCache.get(userId)
@@ -85,13 +87,13 @@ class ProfileRepository private constructor() {
                 return@withContext UiState.Success(cachedProfile)
             }
         }
-
+        Log.d("PROFILEREPOcalsııt", userId)
         try {
             val snapshot = db.collection("users")
                 .document(userId)
                 .get()
                 .await()
-
+            Log.d("PROFILEREPOcalsııt", userId)
             if (snapshot.exists()) {
                 val profileData = Kullanici().apply {
                     id = userId
@@ -114,11 +116,14 @@ class ProfileRepository private constructor() {
             }
         } catch (e: FirebaseFirestoreException) {
             if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                UiState.BlockedBy
+                Log.d("PROFILEREPO", e.toString())
+                UiState.BlockedBy()
             } else {
+                Log.d("PROFILEREPO",e.toString())
                 UiState.Error(e.localizedMessage ?: "Veritabanı hatası oluştu.")
             }
         } catch (e: Exception) {
+            Log.d("PROFILEREPO",e.toString())
             UiState.Error(e.localizedMessage ?: "Bilinmeyen bir hata oluştu.")
         }
     }
@@ -136,6 +141,7 @@ class ProfileRepository private constructor() {
     ): ProfileUpdateResult = withContext(Dispatchers.IO) {
         try {
             val updates = mutableMapOf<String, Any>()
+            val publicUpdates = mutableMapOf<String, Any>()
             var uploadedPhotoUrl: String? = null
 
             val finalUsername = newUsername.trim()
@@ -149,6 +155,7 @@ class ProfileRepository private constructor() {
                     return@withContext ProfileUpdateResult.UsernameAlreadyTaken
                 }
                 updates["KullaniciAdi"] = finalUsername
+                publicUpdates["KullaniciAdi"] = finalUsername
             }
 
             if (finalAd != currentAd.trim()) updates["Ad"] = finalAd
@@ -156,12 +163,13 @@ class ProfileRepository private constructor() {
 
             updates["Hakkinda"] = finalHakkinda
 
-
             if (newImageUri != null) {
                 uploadedPhotoUrl = uploadProfilePhotoToStorage(newImageUri, currentUserId)
                 updates["profilFotoUrl"] = uploadedPhotoUrl
+                publicUpdates["FotoUrl"] = uploadedPhotoUrl
             }
 
+            // 1. "users" koleksiyonunu güncelle
             if (updates.isNotEmpty()) {
                 db.collection("users")
                     .document(currentUserId)
@@ -171,10 +179,17 @@ class ProfileRepository private constructor() {
                 profileCache.remove(currentUserId)
             }
 
+            // 2. YENİ: "publicUsers" koleksiyonunu güncelle (Eğer Kullanıcı Adı veya Fotoğraf değiştiyse)
+            if (publicUpdates.isNotEmpty()) {
+                db.collection("publicUsers")
+                    .document(currentUserId)
+                    .set(publicUpdates, com.google.firebase.firestore.SetOptions.merge())
+                    .await()
+            }
+
             val finalPhotoUrl = if (uploadedPhotoUrl != null) {
                 uploadedPhotoUrl
             } else {
-
                 val documentSnapshot = db.collection("users").document(currentUserId).get().await()
                 documentSnapshot.getString("profilFotoUrl")
             }
@@ -207,4 +222,25 @@ class ProfileRepository private constructor() {
         return snapshot.isEmpty || snapshot.documents.all { it.id == currentUserId }
     }
 
+    suspend fun getPublicUserProfile(userId: String): Result<PublicUser> = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("publicUsers")
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                val publicData = PublicUser(
+                    id = userId,
+                    kullaniciAdi = snapshot.getString("KullaniciAdi").orEmpty(),
+                    fotoUrl = snapshot.getString("FotoUrl").orEmpty()
+                )
+                Result.success(publicData)
+            } else {
+                Result.failure(Exception("Public profil bulunamadı."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

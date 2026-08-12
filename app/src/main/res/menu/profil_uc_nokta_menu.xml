@@ -15,4 +15,7 @@
     <item
         android:id="@+id/profilmenu_engeliKaldir"
         android:title="Engeli Kaldır" />
+    <item
+        android:id="@+id/engellenenlerGetir"
+        android:title="Engellenenler" />
 </menu>
