@@ -3,7 +3,7 @@ package com.beem.catmap.data.session
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.model.UserModel
 
 class UserSessionManager private constructor(context: Context) {
 
@@ -46,20 +46,20 @@ class UserSessionManager private constructor(context: Context) {
     /**
      * Kullanıcıyı yerel disk belleğine mühürler
      */
-    fun saveUserSession(kullanici: Kullanici) {
+    fun saveUserSession(userModel: UserModel) {
         prefs.edit().apply {
-            putString(KEY_ID, kullanici.id)
-            putString(KEY_AD, kullanici.ad)
-            putString(KEY_SOYAD, kullanici.soyad)
-            putString(KEY_EMAIL, kullanici.email)
-            putString(KEY_USERNAME, kullanici.kullaniciAdi)
-            putString(KEY_PASSWORD, kullanici.sifre)
-            putString(KEY_FOTO_URL, kullanici.fotoUrl)
+            putString(KEY_ID, userModel.id)
+            putString(KEY_AD, userModel.name)
+            putString(KEY_SOYAD, userModel.surname)
+            putString(KEY_EMAIL, userModel.email)
+            putString(KEY_USERNAME, userModel.username)
+            putString(KEY_PASSWORD, userModel.password)
+            putString(KEY_FOTO_URL, userModel.photoUrl)
             putBoolean(KEY_IS_LOGGED_IN, true)
-            kullanici.gonderiSayisi?.let { putLong(KEY_POST_COUNT, it) }
-            kullanici.takipciSayisi?.let { putLong(KEY_TAKIPCI_SAYISI, it) }
-            kullanici.takipEdilenSayisi?.let { putLong(KEY_TAKIP_EDILEN_SAYISI, it) }
-            putString(KEY_BIYOGRAFI, kullanici.biyografi)
+            userModel.postCount?.let { putLong(KEY_POST_COUNT, it) }
+            userModel.followersCount?.let { putLong(KEY_TAKIPCI_SAYISI, it) }
+            userModel.followingCount?.let { putLong(KEY_TAKIP_EDILEN_SAYISI, it) }
+            putString(KEY_BIYOGRAFI, userModel.bio)
             apply() // Disk yazımını arka planda asenkron yapar
         }
     }
@@ -67,21 +67,21 @@ class UserSessionManager private constructor(context: Context) {
     /**
      * Diskten kayıtlı kullanıcıyı çekip nesneye dönüştürür
      */
-    fun getUserSession(): Kullanici? {
+    fun getUserSession(): UserModel? {
         if (!isLoggedIn()) return null
 
-        return Kullanici().apply {
+        return UserModel().apply {
             id = prefs.getString(KEY_ID, "") ?: ""
-            ad = prefs.getString(KEY_AD, "") ?: ""
-            soyad = prefs.getString(KEY_SOYAD, "") ?: ""
+            name = prefs.getString(KEY_AD, "") ?: ""
+            surname = prefs.getString(KEY_SOYAD, "") ?: ""
             email = prefs.getString(KEY_EMAIL, "") ?: ""
-            kullaniciAdi = prefs.getString(KEY_USERNAME, "") ?: ""
-            sifre = prefs.getString(KEY_PASSWORD, "") ?: ""
-            fotoUrl = prefs.getString(KEY_FOTO_URL, "") ?: ""
-            biyografi = prefs.getString(KEY_BIYOGRAFI, "") ?: ""
-            takipciSayisi = prefs.getLong(KEY_TAKIPCI_SAYISI, 0)
-            takipEdilenSayisi = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI, 0)
-            gonderiSayisi = prefs.getLong(KEY_POST_COUNT, 0)
+            username = prefs.getString(KEY_USERNAME, "") ?: ""
+            password = prefs.getString(KEY_PASSWORD, "") ?: ""
+            photoUrl = prefs.getString(KEY_FOTO_URL, "") ?: ""
+            bio = prefs.getString(KEY_BIYOGRAFI, "") ?: ""
+            followersCount = prefs.getLong(KEY_TAKIPCI_SAYISI, 0)
+            followingCount = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI, 0)
+            postCount = prefs.getLong(KEY_POST_COUNT, 0)
         }
     }
 

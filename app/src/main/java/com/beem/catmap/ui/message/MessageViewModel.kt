@@ -10,7 +10,7 @@ import com.beem.catmap.data.repository.MessageRepository
 import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
-import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.data.model.ChatMessage
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager

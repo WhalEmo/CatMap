@@ -1,8 +1,8 @@
 package com.beem.catmap.data.repository
 
 import android.util.Log
-import com.beem.catmap.models.ChatMessage
-import com.beem.catmap.models.toChatMessage
+import com.beem.catmap.data.model.ChatMessage
+import com.beem.catmap.data.model.toChatMessage
 import com.beem.catmap.ui.message.models.BlockState
 import com.beem.catmap.ui.message.models.MessageProfile
 import com.google.firebase.database.DataSnapshot

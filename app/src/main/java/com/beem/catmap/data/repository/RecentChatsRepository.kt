@@ -1,7 +1,7 @@
 package com.beem.catmap.data.repository
 
 import android.util.Log
-import com.beem.catmap.models.RecentChat
+import com.beem.catmap.data.model.RecentChat
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase

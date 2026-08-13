@@ -14,9 +14,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.R
-import com.beem.catmap.UyariMesaji
 
 import com.beem.catmap.databinding.BottomSheetAuthBinding
 import com.beem.catmap.ui.navigation.Screen
@@ -133,14 +132,14 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
             }
 
             if (!hasError) {
-                val user = Kullanici(
-                    ad = name,
-                    soyad = surname,
+                val userModel = UserModel(
+                    name = name,
+                    surname = surname,
                     email = email,
-                    kullaniciAdi = username,
-                    sifre = password
+                    username = username,
+                    password = password
                 )
-                viewModel.register(user)
+                viewModel.register(userModel)
             }
         }
 
@@ -211,7 +210,11 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                                 Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
                             }
                             is AuthEvent.NavigateToMap -> {
-                                SmartNavigationEngine.navigateTo(Screen.MAP)
+                                if (event.isNewRegister) {
+                                    SmartNavigationEngine.navigateTo(Screen.ONBOARDING)
+                                } else {
+                                    SmartNavigationEngine.navigateTo(Screen.MAP)
+                                }
                             }
                             else -> {}
                         }

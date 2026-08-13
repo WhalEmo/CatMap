@@ -225,7 +225,7 @@
                 android:layout_marginStart="8dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="kullanici_adi"
+                android:text="catMapp_kullanıcısı"
                 android:textColor="#000000"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -271,7 +271,7 @@
                 android:layout_marginStart="16dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Ad"
+                android:text="Kullanıcı"
                 android:textColor="#000000"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -611,6 +611,21 @@
                 app:layout_constraintStart_toEndOf="@id/imgProfilFotoEngel"
                 app:layout_constraintTop_toTopOf="@id/imgProfilFotoEngel"
                 tools:text="renault43toros" />
+            <ImageView
+                android:id="@+id/menuButtonEngel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Menü"
+                android:focusable="true"
+                android:padding="6dp"
+                android:src="@drawable/baseline_more_vert_24"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="@id/btnBackEngel"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btnBackEngel"
+                app:tint="#888888" />
 
             <!-- Ekran Ortasında Uyarı Mesajları -->
             <LinearLayout

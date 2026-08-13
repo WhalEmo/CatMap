@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="@color/catmap_primary" />
+            <size android:width="22dp" android:height="5dp" />
+        </shape>
+    </item>
+    
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="@color/soft_gray" />
+            <size android:width="10dp" android:height="5dp" />
+        </shape>
+    </item>
+</selector>

@@ -1,8 +1,8 @@
 package com.beem.catmap.ui.navigation
 
 import android.util.Log
+import com.beem.catmap.ui.profile.common.ProfileFragment
 import androidx.fragment.app.FragmentManager
-import com.beem.catmap.Profil.ProfilFragment
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.ui.message.MessageFragment
 import com.beem.catmap.ui.report.ReportBottomSheetFragment
@@ -14,7 +14,7 @@ object NavigationHelper {
         Log.d("NAV_BACK_DEDEKTOR", "id: $targetProfileId, isFollowed: $isFollowed")
         val screen = if (targetProfileId == UserSession.userId) Screen.PROFILE else Screen.OTHER_PROFILE
 
-        val args = ProfilFragment.newArgs(targetProfileId).apply {
+        val args = ProfileFragment.newArgs(targetProfileId).apply {
             putBoolean("IS_FOLLOWED", isFollowed)
         }
 

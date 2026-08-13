@@ -1,6 +1,5 @@
 package com.beem.catmap.ui.markersclick
 
-import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,10 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.FrameLayout
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -23,19 +20,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
-import com.beem.catmap.Maps.FotoGeciciAdapter
-import com.beem.catmap.Maps.mapkedi.Kediler
-import com.beem.catmap.commentreply.CommentViewModel
-import com.beem.catmap.commentreply.CommentsBottomSheetFragment
+import com.beem.catmap.maps.FotoGeciciAdapter
+import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.ui.commentreply.CommentViewModel
+import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.R
-import com.beem.catmap.data.local.UserSession
-import com.beem.catmap.models.Gonderi
+import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
-import com.beem.catmap.ui.manager.ProfileEvent
-import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
@@ -315,13 +309,13 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             .setTitle("Gönderilerine Eklensin mi?")
             .setMessage("${currentCat.isim} isimli dostumuzu gönderilerine eklemek istiyor musun?")
             .setPositiveButton("Evet, Ekle") {
-                val newPost = Gonderi(
-                    kediID = currentCat.id,
-                    kediAdi = currentCat.isim,
-                    aciklama = currentCat.hakkindasi,
-                    fotoUrlListesi = currentCat.urLler,
-                    tarih = currentCat.createdAt.toFirebaseTimestamp(),
-                    begeniSayisi = likeCount.toLong()
+                val newPost = Post(
+                    catId = currentCat.id,
+                    catName = currentCat.isim,
+                    bio = currentCat.hakkindasi,
+                    photoUrlList = currentCat.urLler,
+                    date = currentCat.createdAt.toFirebaseTimestamp(),
+                    likeCount = likeCount.toLong()
                 )
                 viewModel.addCatToUserPosts(newPost)
                 dismiss()

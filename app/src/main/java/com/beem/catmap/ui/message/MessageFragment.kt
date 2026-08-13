@@ -29,13 +29,13 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
-import com.beem.catmap.Maps.MapsActivity
+import com.beem.catmap.maps.MapsActivity
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
 import com.beem.catmap.databinding.MesajlasmaBinding
-import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.data.model.ChatMessage
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -382,8 +382,6 @@ class MessageFragment : Fragment() {
 
                 viewModel.uiState.collectLatest { state ->
                     Log.d("LifecycleDebug", "📩 uiState Emit Geldi! (Mesaj Sayısı: ${state.messages.size})")
-
-                    Log.d("LifecycleDebug", "📩 uiState Emit Geldi! State Detayı: $state")
                     renderUi(state)
                     viewModel.markUnreadMessagesAsRead()
                 }

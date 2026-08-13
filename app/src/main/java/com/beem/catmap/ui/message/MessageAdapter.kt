@@ -2,7 +2,6 @@ package com.beem.catmap.ui.message
 
 import android.content.Context
 import android.graphics.Typeface
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,7 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.R
 import com.beem.catmap.databinding.MesajBinding
-import com.beem.catmap.models.ChatMessage
+import com.beem.catmap.data.model.ChatMessage
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import java.text.SimpleDateFormat

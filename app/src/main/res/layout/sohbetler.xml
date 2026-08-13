@@ -61,6 +61,29 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
+    <!-- 🐾 Boş Durum Görünümü (Sohbet Yoksa Görünür) -->
+    <LinearLayout
+        android:id="@+id/emptyStateLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/baslikText">
 
+
+        <TextView
+            android:id="@+id/tvEmptyMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Henüz hiç sohbetiniz yok \nHaritadaki kedileri keşfederek sohbet başlatın!"
+            android:textAlignment="center"
+            android:textColor="@color/catmap_text_muted"
+            android:textSize="15sp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,7 +2,7 @@ package com.beem.catmap.data.repository
 
 import android.net.Uri
 import android.util.Log
-import com.beem.catmap.models.CatModel
+import com.beem.catmap.data.model.CatModel
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.utils.formatBadgeId
 import com.firebase.geofire.GeoFireUtils
