@@ -12,11 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.Maps.MapsActivity;
 import com.beem.catmap.R;
-import com.beem.catmap.ui.navigation.NavigationHelper;
-import com.beem.catmap.ui.navigation.Screen;
-import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.facebook.shimmer.ShimmerFrameLayout;
 
 import java.util.ArrayList;

@@ -16,7 +16,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.KullaniciAuth.Kullanici;
+import com.beem.catmap.data.model.UserModel;
 import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 
@@ -76,7 +76,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             currentUserManager = CurrentUserManager.Companion.getInstance(context);
         }
 
-        Kullanici currentUser = currentUserManager.getCurrentUser();
+        UserModel currentUserModel = currentUserManager.getCurrentUser();
 
         if(mesaj.isYaniyorMu()){
             holder.itemView.startAnimation(anim);
@@ -85,7 +85,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
 
         if(mesaj instanceof YanitMesaj){
             YanitMesaj yanitMesaj = (YanitMesaj) mesaj;
-            if(yanitMesaj.getGonderici().equals(currentUser.id)){
+            if(yanitMesaj.getGonderici().equals(currentUserModel.id)){
                 holder.cevapKutusu.setVisibility(View.VISIBLE);
                 holder.cevapMetni.setText(yanitMesaj.getYanitlananMesaj().getMesaj());
                 holder.cevapKutusu.setOnClickListener(v->{
@@ -101,7 +101,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
             }
         }
         if(!mesaj.getTur().equals("foto")) {
-            if (mesaj.getGonderici().equals(currentUser.id)) {
+            if (mesaj.getGonderici().equals(currentUserModel.id)) {
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.sagMesajText.setVisibility(View.VISIBLE);
@@ -122,7 +122,7 @@ MesajAdapter extends RecyclerView.Adapter<MesajAdapter.MesajViewHolder> {
         }
         else {
             // burası fotograf mesajları için
-            if (mesaj.getGonderici().equals(currentUser.id)) {
+            if (mesaj.getGonderici().equals(currentUserModel.id)) {
                 holder.sagMesajLayout.setVisibility(View.VISIBLE);
                 holder.solMesajLayout.setVisibility(View.GONE);
                 holder.sagFotoLayout.setVisibility(View.VISIBLE);

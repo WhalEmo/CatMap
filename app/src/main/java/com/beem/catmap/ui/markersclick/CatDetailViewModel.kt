@@ -3,13 +3,12 @@ package com.beem.catmap.ui.markersclick
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.CatMapApp
-import com.beem.catmap.Maps.mapkedi.Kediler
-import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
+import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.data.local.CacheHelperPostLike
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
 import com.beem.catmap.data.repository.PostRepository
-import com.beem.catmap.models.Gonderi
+import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -48,8 +47,8 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
     private val _postCount = MutableStateFlow(0)
     val postCount: StateFlow<Int> = _postCount.asStateFlow()
 
-    private val _postsList = MutableStateFlow<List<Gonderi>>(emptyList())
-    val postsList: StateFlow<List<Gonderi>> = _postsList.asStateFlow()
+    private val _postsList = MutableStateFlow<List<Post>>(emptyList())
+    val postsList: StateFlow<List<Post>> = _postsList.asStateFlow()
 
     private val _isAlreadyAdded = MutableStateFlow(false)
     val isAlreadyAdded: StateFlow<Boolean> = _isAlreadyAdded.asStateFlow()
@@ -57,7 +56,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
     fun setCatData(cat: Kediler) {
         _selectedCat.value = cat
 
-        val liked = CacheHelperGonderiBegeni.getInstance().begenmisMi(cat.id)
+        val liked = CacheHelperPostLike.getInstance().begenmisMi(cat.id)
         _isLiked.value = liked
 
         fetchLikeCount(cat.id)
@@ -70,12 +69,12 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun addCatToUserPosts(newPost: Gonderi) {
-        val catId = newPost.kediID ?: return
+    fun addCatToUserPosts(newPost: Post) {
+        val catId = newPost.catId ?: return
         val userId = UserSession.userId
 
         viewModelScope.launch {
-            postRepository.kullaniciGonderiKaydet(userId, catId)
+            postRepository.userPostSave(userId, catId)
                 .onSuccess {
                     UiMessageManager.emitMessage(UiMessageState.Success("Gönderi profilinize eklendi!"))
                     ProfileEventBus.emitEvent(ProfileEvent.PostAdded(newPost))
@@ -87,7 +86,6 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
                 }
         }
     }
-
     fun toggleLike() {
         val currentCat = _selectedCat.value ?: return
         val userId = UserSession.userId ?: return
@@ -125,8 +123,6 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
             _isMyCat.value = (ownerId == currentUserId)
 
             val currentCatId = _selectedCat.value?.id
-
-            val userDataDeferred = async { repository.getUserInfo(ownerId) }
             val isAlreadyAddedDeferred = async {
                 if (currentCatId != null) {
                     repository.isCatSent(ownerId, currentCatId)
@@ -134,14 +130,29 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
                     false
                 }
             }
+            val userDataDeferred = async {
+                try {
+                    val data = repository.getUserInfo(ownerId)
+                    if (data != null) {
+                        data
+                    } else {
+                        repository.getPublicUserInfo(ownerId)
+                    }
+                } catch (e: Exception) {
+                    repository.getPublicUserInfo(ownerId)
+                }
+            }
             val userData = userDataDeferred.await()
             val isAlreadyAdded = isAlreadyAddedDeferred.await()
 
-            userData?.let { data ->
-                val username = data["KullaniciAdi"] as? String ?: "Bilinmeyen"
-                val photoUrl = data["profilFotoUrl"] as? String
+            if (userData != null) {
+                val username = (userData["KullaniciAdi"] ?: userData["kullaniciAdi"]) as? String ?: "Kullanıcı"
+                val photoUrl = (userData["profilFotoUrl"] ?: userData["FotoUrl"]) as? String
                 _ownerInfo.value = Pair(username, photoUrl)
+            } else {
+                _ownerInfo.value = Pair("Kullanıcı", null)
             }
+
             _isAlreadyAdded.value = isAlreadyAdded
         }
     }
@@ -151,12 +162,12 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
         val userId = UserSession.userId ?: return
 
         viewModelScope.launch {
-            val isRemovedFromUser = postRepository.kullaniciGonderiSil(userId, currentCat.id)
+            val isRemovedFromUser = postRepository.userPostDelete(userId, currentCat.id)
 
             val isDeletedFromMap = repository.deleteCatFromMap(currentCat.id)
 
             if (isRemovedFromUser.isSuccess || isDeletedFromMap) {
-                val updatedList = _postsList.value.filterNot { it.kediID == currentCat.id }
+                val updatedList = _postsList.value.filterNot { it.catId == currentCat.id }
                 _postsList.value = updatedList
                 _postCount.value = (_postCount.value - 1).coerceAtLeast(0)
 

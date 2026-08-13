@@ -2,24 +2,21 @@ package com.beem.catmap.data.repository
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.LruCache
+import android.util.Log
+import androidx.collection.LruCache
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.local.UserSession
-import com.google.firebase.firestore.FieldValue
+import com.beem.catmap.data.model.FollowResult
+import com.beem.catmap.data.model.PaginatedResult
+import com.beem.catmap.data.model.RemoveFollowerResult
+import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.FirebaseFunctionsException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import kotlin.math.max
-
-data class FollowResult(
-    val currentFollowingCount: Long,
-    val targetFollowerCount: Long
-)
-
-data class RemoveFollowerResult(
-    val currentFollowerCount: Long,
-    val followerFollowingCount: Long
-)
 
 class FollowRepository private constructor(context: Context) {
 
@@ -38,20 +35,27 @@ class FollowRepository private constructor(context: Context) {
     }
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val functions: FirebaseFunctions = FirebaseFunctions.getInstance()
+
+    // Önbellek Tanımlamaları
     private val isFollowingCache = LruCache<String, Boolean>(100)
     private val isFollowedByCache = LruCache<String, Boolean>(100)
+    private val takipcilerCache = LruCache<String, PaginatedResult<UserModel>>(10)
+    private val takipEdilenlerCache = LruCache<String, PaginatedResult<UserModel>>(10)
 
     private val currentUserId: String?
         get() = UserSession.userId
+
+    // =========================================================================
+    // 1. SORGULAMA VE LİSTELEME İŞLEMLERİ (FIRESTORE)
+    // =========================================================================
 
     suspend fun isFollowing(targetUserId: String, forceRefresh: Boolean = false): Result<Boolean> = withContext(Dispatchers.IO) {
         val userId = currentUserId ?: return@withContext Result.failure(Exception("Oturum açık değil"))
 
         if (!forceRefresh) {
             val cachedState = isFollowingCache.get(targetUserId)
-            if (cachedState != null) {
-                return@withContext Result.success(cachedState)
-            }
+            if (cachedState != null) return@withContext Result.success(cachedState)
         }
 
         return@withContext try {
@@ -63,9 +67,7 @@ class FollowRepository private constructor(context: Context) {
                 .await()
 
             val isFollowing = documentSnapshot.exists()
-            // RAM Cache'e kaydet
             isFollowingCache.put(targetUserId, isFollowing)
-
             Result.success(isFollowing)
         } catch (e: Exception) {
             Result.failure(e)
@@ -77,9 +79,7 @@ class FollowRepository private constructor(context: Context) {
 
         if (!forceRefresh) {
             val cachedState = isFollowedByCache.get(targetUserId)
-            if (cachedState != null) {
-                return@withContext Result.success(cachedState)
-            }
+            if (cachedState != null) return@withContext Result.success(cachedState)
         }
 
         return@withContext try {
@@ -91,194 +91,202 @@ class FollowRepository private constructor(context: Context) {
                 .await()
 
             val isFollowed = documentSnapshot.exists()
-            // RAM Cache'e kaydet
             isFollowedByCache.put(targetUserId, isFollowed)
-
             Result.success(isFollowed)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun takipEt(
-        currentUserId: String,
-        targetUserId: String,
-    ): Result<FollowResult> = withContext(Dispatchers.IO) {
+    suspend fun getTakipciler(
+        userId: String,
+        limit: Long = 10,
+        lastDocument: DocumentSnapshot? = null,
+        forceRefresh: Boolean = false
+    ): Result<PaginatedResult<UserModel>> = runCatching {
+        if (forceRefresh) {
+            clearUserCache(userId)
+        } else if (lastDocument == null) {
+            takipcilerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
+            }
+        }
+
+        var query = db.collection("users")
+            .document(userId)
+            .collection("takipciler")
+            .limit(limit)
+
+        if (lastDocument != null) {
+            query = query.startAfter(lastDocument)
+        }
+
+        val snapshot = query.get().await()
+        val items = snapshot.documents.mapNotNull { doc ->
+            UserModel().apply {
+                id = doc.getString("ID") ?: doc.id
+                username = doc.getString("KullaniciAdi") ?: ""
+                photoUrl = doc.getString("profilFotoUrl") ?: ""
+                isFollowers = 2
+            }
+        }
+
+        val result = PaginatedResult(
+            items = items,
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
+        )
+
+        if (lastDocument == null) {
+            takipcilerCache.put(userId, result)
+        }
+
+        result
+    }
+
+    suspend fun getTakipEdilenler(
+        userId: String,
+        limit: Long = 10,
+        lastDocument: DocumentSnapshot? = null,
+        forceRefresh: Boolean = false
+    ): Result<PaginatedResult<UserModel>> = runCatching {
+        if (forceRefresh) {
+            clearUserCache(userId)
+        } else if (lastDocument == null) {
+            takipEdilenlerCache.get(userId)?.let { cachedResult ->
+                return@runCatching cachedResult
+            }
+        }
+
+        var query = db.collection("users")
+            .document(userId)
+            .collection("takipEdilenler")
+            .limit(limit)
+
+        if (lastDocument != null) {
+            query = query.startAfter(lastDocument)
+        }
+
+        val snapshot = query.get().await()
+        val items = snapshot.documents.mapNotNull { doc ->
+            UserModel().apply {
+                username = doc.getString("KullaniciAdi") ?: ""
+                photoUrl = doc.getString("profilFotoUrl") ?: ""
+                id = doc.getString("ID") ?: ""
+                isFollowing = 2
+            }
+        }
+
+        val result = PaginatedResult(
+            items = items,
+            lastDocument = snapshot.documents.lastOrNull(),
+            isLastPage = items.size < limit
+        )
+
+        if (lastDocument == null) {
+            takipEdilenlerCache.put(userId, result)
+        }
+
+        result
+    }
+
+    // =========================================================================
+    // 2. YAZMA VE MUTASYON İŞLEMLERİ (CLOUD FUNCTIONS)
+    // =========================================================================
+
+    suspend fun takipEt(targetUserId: String): Result<FollowResult> = withContext(Dispatchers.IO) {
         isFollowingCache.put(targetUserId, true)
+        clearUserCache(targetUserId)
+        currentUserId?.let { clearUserCache(it) }
 
-        val currentUserRef = db.collection("users").document(currentUserId)
-        val targetUserRef = db.collection("users").document(targetUserId)
+        val data = hashMapOf("targetUserId" to targetUserId)
 
         return@withContext try {
-            val result = db.runTransaction { transaction ->
-                val currentSnap = transaction.get(currentUserRef)
-                val targetSnap = transaction.get(targetUserRef)
+            Log.d("FOLLOW_DEBUG", "1. Repository: Cloud Function çağrısı başlatılıyor... targetUserId: $targetUserId")
+            val httpsResult = functions
+                .getHttpsCallable("followUser")
+                .call(data)
+                .await()
 
-                var followingCount = currentSnap.getLong("TakipEdilenSayisi") ?: 0L
-                var followerCount = targetSnap.getLong("takipciSayisi") ?: 0L
+            val resultMap = httpsResult.data as? Map<*, *>
+            val followingCount = (resultMap?.get("currentFollowingCount") as? Number)?.toLong() ?: 0L
+            val followerCount = (resultMap?.get("targetFollowerCount") as? Number)?.toLong() ?: 0L
 
-                val followingSubCol = currentUserRef.collection("takipEdilenler")
-                val followersSubCol = targetUserRef.collection("takipciler")
+            Result.success(FollowResult(followingCount, followerCount))
+        } catch (e: FirebaseFunctionsException) {
+            isFollowingCache.put(targetUserId, false) // Rollback
 
-                val followingDocRef = followingSubCol.document(targetUserId)
-                val followerDocRef = followersSubCol.document(currentUserId)
-
-                val followingDocSnap = transaction.get(followingDocRef)
-                val followerDocSnap = transaction.get(followerDocRef)
-
-                var isFollowAdded = false
-
-                if (!followingDocSnap.exists()) {
-                    val followingData = hashMapOf(
-                        "followedAt" to FieldValue.serverTimestamp(),
-                        "KullaniciAdi" to targetSnap.getString("KullaniciAdi"),
-                        "profilFotoUrl" to targetSnap.getString("profilFotoUrl"),
-                        "ID" to targetSnap.id
-                    )
-                    transaction.set(followingDocRef, followingData)
-                    followingCount += 1
-                    isFollowAdded = true
-                }
-
-                if (!followerDocSnap.exists()) {
-                    val followerData = hashMapOf(
-                        "followedAt" to FieldValue.serverTimestamp(),
-                        "KullaniciAdi" to currentSnap.getString("KullaniciAdi"),
-                        "profilFotoUrl" to currentSnap.getString("profilFotoUrl"),
-                        "ID" to currentSnap.id
-                    )
-                    transaction.set(followerDocRef, followerData)
-                    if (isFollowAdded) {
-                        followerCount += 1
-                    }
-                }
-
-                transaction.update(currentUserRef, "TakipEdilenSayisi", followingCount)
-                transaction.update(targetUserRef, "takipciSayisi", followerCount)
-
-                FollowResult(
-                    currentFollowingCount = followingCount,
-                    targetFollowerCount = followerCount
-                )
-            }.await()
-
-            Result.success(result)
+            if (e.code == FirebaseFunctionsException.Code.PERMISSION_DENIED) {
+                Result.failure(IsBlockedByException())
+            } else {
+                Result.failure(e)
+            }
         } catch (e: Exception) {
-            // İşlem başarısız olursa Cache'i geri al (Rollback)
-            isFollowingCache.put(targetUserId, false)
+            isFollowingCache.put(targetUserId, false) // Rollback
             Result.failure(e)
         }
     }
 
-    suspend fun unfollowUser(
-        currentUserId: String,
-        targetUserId: String
-    ): Result<FollowResult> = withContext(Dispatchers.IO) {
+    suspend fun unfollowUser(targetUserId: String): Result<FollowResult> = withContext(Dispatchers.IO) {
         isFollowingCache.put(targetUserId, false)
+        clearUserCache(targetUserId)
+        currentUserId?.let { clearUserCache(it) }
 
-        val currentUserRef = db.collection("users").document(currentUserId)
-        val targetUserRef = db.collection("users").document(targetUserId)
+        val data = hashMapOf("targetUserId" to targetUserId)
 
         return@withContext try {
-            val result = db.runTransaction { transaction ->
-                val currentSnap = transaction.get(currentUserRef)
-                val targetSnap = transaction.get(targetUserRef)
+            val httpsResult = functions
+                .getHttpsCallable("unfollowUser")
+                .call(data)
+                .await()
 
-                var followingCount = currentSnap.getLong("TakipEdilenSayisi") ?: 0L
-                var followerCount = targetSnap.getLong("takipciSayisi") ?: 0L
+            val resultMap = httpsResult.data as? Map<*, *>
+            val followingCount = (resultMap?.get("currentFollowingCount") as? Number)?.toLong() ?: 0L
+            val followerCount = (resultMap?.get("targetFollowerCount") as? Number)?.toLong() ?: 0L
 
-                val followingDocRef = currentUserRef.collection("takipEdilenler").document(targetUserId)
-                val followerDocRef = targetUserRef.collection("takipciler").document(currentUserId)
-
-                val followingDocSnap = transaction.get(followingDocRef)
-                val followerDocSnap = transaction.get(followerDocRef)
-
-                var isUnfollowed = false
-
-                if (followingDocSnap.exists()) {
-                    transaction.delete(followingDocRef)
-                    followingCount = max(followingCount - 1, 0L)
-                    isUnfollowed = true
-                }
-
-                if (followerDocSnap.exists()) {
-                    transaction.delete(followerDocRef)
-                    if (isUnfollowed) {
-                        followerCount = max(followerCount - 1, 0L)
-                    }
-                }
-
-                transaction.update(currentUserRef, "TakipEdilenSayisi", followingCount)
-                transaction.update(targetUserRef, "takipciSayisi", followerCount)
-
-                FollowResult(
-                    currentFollowingCount = followingCount,
-                    targetFollowerCount = followerCount
-                )
-            }.await()
-
-            Result.success(result)
+            Result.success(FollowResult(followingCount, followerCount))
         } catch (e: Exception) {
-            // İşlem başarısız olursa Cache'i geri al (Rollback)
-            isFollowingCache.put(targetUserId, true)
+            isFollowingCache.put(targetUserId, true) // Rollback
             Result.failure(e)
         }
     }
 
-    suspend fun removeFollower(
-        currentUserId: String,
-        followerId: String
-    ): Result<RemoveFollowerResult> = withContext(Dispatchers.IO) {
-        // Optimistic Cache Güncellemesi
+    suspend fun removeFollower(followerId: String): Result<RemoveFollowerResult> = withContext(Dispatchers.IO) {
         isFollowedByCache.put(followerId, false)
+        clearUserCache(followerId)
+        currentUserId?.let { clearUserCache(it) }
 
-        val currentUserRef = db.collection("users").document(currentUserId)
-        val followerRef = db.collection("users").document(followerId)
+        val data = hashMapOf("followerId" to followerId)
 
         return@withContext try {
-            val result = db.runTransaction { transaction ->
-                val currentSnap = transaction.get(currentUserRef)
-                val followerSnap = transaction.get(followerRef)
+            val httpsResult = functions
+                .getHttpsCallable("removeFollower")
+                .call(data)
+                .await()
 
-                var followerCount = currentSnap.getLong("takipciSayisi") ?: 0L
-                var followingCount = followerSnap.getLong("TakipEdilenSayisi") ?: 0L
+            val resultMap = httpsResult.data as? Map<*, *>
+            val followerCount = (resultMap?.get("currentFollowerCount") as? Number)?.toLong() ?: 0L
+            val followingCount = (resultMap?.get("followerFollowingCount") as? Number)?.toLong() ?: 0L
 
-                val followerDocRef = currentUserRef.collection("takipciler").document(followerId)
-                val followingDocRef = followerRef.collection("takipEdilenler").document(currentUserId)
-
-                val followerDocSnap = transaction.get(followerDocRef)
-                val followingDocSnap = transaction.get(followingDocRef)
-
-                var isFollowerRemoved = false
-
-                if (followerDocSnap.exists()) {
-                    transaction.delete(followerDocRef)
-                    followerCount = max(followerCount - 1, 0L)
-                    isFollowerRemoved = true
-                }
-
-                if (followingDocSnap.exists()) {
-                    transaction.delete(followingDocRef)
-                    if (isFollowerRemoved) {
-                        followingCount = max(followingCount - 1, 0L)
-                    }
-                }
-
-                transaction.update(currentUserRef, "takipciSayisi", followerCount)
-                transaction.update(followerRef, "TakipEdilenSayisi", followingCount)
-
-                RemoveFollowerResult(
-                    currentFollowerCount = followerCount,
-                    followerFollowingCount = followingCount
-                )
-            }.await()
-
-            Result.success(result)
+            Result.success(RemoveFollowerResult(followerCount, followingCount))
         } catch (e: Exception) {
-            isFollowedByCache.put(followerId, true)
+            isFollowedByCache.put(followerId, true) // Rollback
             Result.failure(e)
         }
     }
 
 
+    fun clearUserCache(userId: String) {
+        isFollowingCache.remove(userId)
+        isFollowedByCache.remove(userId)
+        takipcilerCache.remove(userId)
+        takipEdilenlerCache.remove(userId)
+    }
+
+    fun clearAllCache() {
+        isFollowingCache.evictAll()
+        isFollowedByCache.evictAll()
+        takipcilerCache.evictAll()
+        takipEdilenlerCache.evictAll()
+    }
 }

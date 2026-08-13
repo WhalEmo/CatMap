@@ -1,16 +1,16 @@
 package com.beem.catmap.ui.auth
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.KullaniciAuth.DogrulamaKodYonetici
-import com.beem.catmap.KullaniciAuth.Kullanici
+import com.beem.catmap.userAuth.VerifyAuth
+import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.AuthRepository
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.ui.auth.exceptions.AuthError
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +24,7 @@ class AuthViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val mAuth = FirebaseAuth.getInstance()
-    private val authYonetici = DogrulamaKodYonetici()
+    private val authYonetici = VerifyAuth()
 
     private val repository = AuthRepository.getInstance()
 
@@ -39,7 +39,7 @@ class AuthViewModel : ViewModel() {
     private val _event = MutableSharedFlow<AuthEvent>()
     val event: SharedFlow<AuthEvent> = _event.asSharedFlow()
 
-    // 🔑 KULLANICI ADI İLE GİRİŞ
+    // 🔑 KULLANICI ADI İLE GİRİŞ (Mevcut kullanıcı -> isNewRegister = false)
     fun login(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) {
             _uiState.value = AuthUiState.Error("Lütfen tüm alanları doldurun!")
@@ -52,7 +52,7 @@ class AuthViewModel : ViewModel() {
             repository.login(username, password)
                 .onSuccess { user ->
                     _uiState.value = AuthUiState.Success(user, "Giriş Başarılı!")
-                    saveUserLocallyAndNavigate(user)
+                    saveUserLocallyAndNavigate(user, isNewRegister = false)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Giriş başarısız!")
@@ -65,13 +65,13 @@ class AuthViewModel : ViewModel() {
         _uiState.value = AuthUiState.Idle
     }
 
-
-    fun register(user: Kullanici) {
-        if (!Patterns.EMAIL_ADDRESS.matcher(user.email).matches()) {
+    // 📝 YENİ KAYIT (Yeni kullanıcı -> isNewRegister = true)
+    fun register(userModel: UserModel) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(userModel.email).matches()) {
             _uiState.value = AuthUiState.Error("Lütfen geçerli bir email adresi giriniz!")
             return
         }
-        if (user.sifre.length < 5) {
+        if (userModel.password.length < 5) {
             _uiState.value = AuthUiState.Error("Lütfen şifreyi en az 5 haneli giriniz!")
             return
         }
@@ -79,10 +79,10 @@ class AuthViewModel : ViewModel() {
         _uiState.value = AuthUiState.Loading("Kayıt Yapılıyor...")
 
         viewModelScope.launch {
-            repository.register(user)
+            repository.register(userModel)
                 .onSuccess { registeredUser ->
                     _uiState.value = AuthUiState.Success(registeredUser, "Kayıt Başarılı!")
-                    saveUserLocallyAndNavigate(registeredUser)
+                    saveUserLocallyAndNavigate(registeredUser, isNewRegister = true)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Kayıt başarısız!")
@@ -102,7 +102,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             repository.resetPassword(email)
                 .onSuccess {
-                    _uiState.value = AuthUiState.Success(Kullanici(), "Sıfırlama bağlantısı e-postanıza gönderildi.")
+                    _uiState.value = AuthUiState.Success(UserModel(), "Sıfırlama bağlantısı e-postanıza gönderildi.")
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "E-posta gönderilemedi!")
@@ -122,13 +122,13 @@ class AuthViewModel : ViewModel() {
                 .onSuccess { result ->
                     when (result) {
                         is GoogleAuthResult.ExistingUser -> {
-                            _uiState.value = AuthUiState.Success(result.user, "Tekrar Hoş Geldin!")
-                            saveUserLocallyAndNavigate(result.user)
+                            _uiState.value = AuthUiState.Success(result.userModel, "Tekrar Hoş Geldin!")
+                            saveUserLocallyAndNavigate(result.userModel, isNewRegister = false)
                         }
                         is GoogleAuthResult.NewUser -> {
                             _uiState.value = AuthUiState.Idle
-                            _uiState.value = AuthUiState.Success(result.user, "Google ile giriş başarılı!")
-                            _event.emit(AuthEvent.NavigateToProfileSetup(result.user))
+                            _uiState.value = AuthUiState.Success(result.userModel, "Google ile giriş başarılı!")
+                            _event.emit(AuthEvent.NavigateToProfileSetup(result.userModel))
                         }
                     }
                 }
@@ -148,8 +148,10 @@ class AuthViewModel : ViewModel() {
                         is AuthError.Unknown ->
                             "Google ile giriş sırasında beklenmeyen bir hata oluştu."
 
-                        else ->
+                        else -> {
+                            Log.e("AuthViewModel", "Ele alınmayan Google auth hatası: ${exception.javaClass.simpleName} - ${exception.localizedMessage}", exception)
                             "Google ile giriş başarısız."
+                            }
                     }
 
                     _uiState.value = AuthUiState.Error(message)
@@ -157,11 +159,11 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private fun saveUserLocallyAndNavigate(user: Kullanici) {
+    private fun saveUserLocallyAndNavigate(userModel: UserModel, isNewRegister: Boolean) {
         viewModelScope.launch {
-            UserSession.update(user)
+            UserSession.update(userModel)
             OnlinePresenceManager.setUserOnline()
-            _event.emit(AuthEvent.NavigateToMap)
+            _event.emit(AuthEvent.NavigateToMap(isNewRegister = isNewRegister))
         }
     }
 

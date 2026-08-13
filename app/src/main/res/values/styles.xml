@@ -24,25 +24,34 @@
         <item name="cornerSize">8dp</item>
     </style>
 
-    <style name="Dialog.FullWidth" parent="Theme.MaterialComponents.Light.BottomSheetDialog">
+    <style name="Dialog.FullWidth" parent="Theme.Material3.DayNight.BottomSheetDialog">
+        <item name="colorPrimary">@color/catmap_primary</item>
+        <item name="colorOnPrimary">@color/catmap_text_light</item>
+        <item name="colorSecondary">@color/catmap_accent</item>
+        <item name="colorAccent">@color/catmap_accent</item>
+        <item name="colorSurface">@color/catmap_surface_white</item>
+        <item name="colorOnSurface">@color/catmap_text_dark</item>
+        <item name="colorError">@color/catmap_error</item>
+
+        <item name="textInputStyle">@style/Widget.CatMap.TextInputLayout</item>
+        <item name="materialButtonStyle">@style/Widget.CatMap.Button</item>
+
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
         <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>
-
-
         <item name="android:windowAnimationStyle">@style/BottomSheetAnimation</item>
     </style>
 
-    <style name="ShapeAppearance.BottomSheet.Rounded" parent="ShapeAppearance.MaterialComponents.LargeComponent">
+    <style name="CustomBottomSheetStyle" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BottomSheet.Rounded</item>
+        <item name="backgroundTint">@color/catmap_surface_white</item>
+        <item name="shouldRemoveExpandedCorners">false</item>
+    </style>
+
+    <style name="ShapeAppearance.BottomSheet.Rounded" parent="ShapeAppearance.Material3.Corner.Large">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeTopLeft">28dp</item>
         <item name="cornerSizeTopRight">28dp</item>
-    </style>
-
-    <style name="CustomBottomSheetStyle" parent="Widget.MaterialComponents.BottomSheet.Modal">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BottomSheet.Rounded</item>
-        <item name="backgroundTint">@android:color/white</item>
-        <item name="shouldRemoveExpandedCorners">false</item>
     </style>
 
     <style name="BottomSheetAnimation">

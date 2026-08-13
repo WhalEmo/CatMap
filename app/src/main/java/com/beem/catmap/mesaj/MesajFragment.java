@@ -36,8 +36,8 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beem.catmap.Maps.MapsActivity;
-import com.beem.catmap.Profil.ProfilFragment;
+import com.beem.catmap.maps.MapsActivity;
+import com.beem.catmap.ui.profile.common.ProfileFragment;
 import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.ui.navigation.Screen;
@@ -284,7 +284,7 @@ public class MesajFragment extends Fragment {
 
 
     private void ProfilSayfasinaYonlendir(){
-        Bundle args = ProfilFragment.newArgs(mesajlasmaYonetici.getAlici().id);
+        Bundle args = ProfileFragment.newArgs(mesajlasmaYonetici.getAlici().id);
         SmartNavigationEngine.navigateTo(
                 Screen.OTHER_PROFILE,
                 args,
@@ -482,11 +482,11 @@ public class MesajFragment extends Fragment {
         kisiDurumText.setVisibility(View.VISIBLE);
         engelKaldir.setVisibility(View.GONE);
         mesaj_gonder_layout.setVisibility(View.VISIBLE);
-        if(mesajlasmaYonetici.getAlici().fotoBitmap==null){
+        if(mesajlasmaYonetici.getAlici().photoBitmap ==null){
             kisiProfilFoto.setImageResource(R.drawable.kullanici);
         }
         else{
-            kisiProfilFoto.setImageBitmap(mesajlasmaYonetici.getAlici().fotoBitmap);
+            kisiProfilFoto.setImageBitmap(mesajlasmaYonetici.getAlici().photoBitmap);
         }
     }
 

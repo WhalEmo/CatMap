@@ -1,8 +1,8 @@
 package com.beem.catmap.data.session
 
 import android.content.Context
-import com.beem.catmap.KullaniciAuth.Kullanici
-import com.beem.catmap.gonderi.ProfileState
+import com.beem.catmap.data.model.UserModel
+import com.beem.catmap.data.model.ProfileState
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,26 +21,26 @@ class CurrentUserManager private constructor(context: Context) {
 
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val _currentUserState = MutableStateFlow(
+    private val _currentUserModelState = MutableStateFlow(
         if (FirebaseAuth.getInstance().currentUser != null) {
-            sessionManager.getUserSession() ?: Kullanici()
+            sessionManager.getUserSession() ?: UserModel()
         } else {
-            Kullanici()
+            UserModel()
         }
     )
-    val currentUserState: StateFlow<Kullanici> = _currentUserState.asStateFlow()
+    val currentUserModelState: StateFlow<UserModel> = _currentUserModelState.asStateFlow()
 
     // profileState, currentUserState'teki değişikliklerde ad, soyad ve kullaniciAdi ile otomatik güncellenir
-    val profileState: StateFlow<ProfileState> = _currentUserState.map { user ->
+    val profileState: StateFlow<ProfileState> = _currentUserModelState.map { user ->
         ProfileState(
-            ad = user.ad,
-            soyad = user.soyad,
-            kullaniciAdi = user.kullaniciAdi,
-            takipciSayisi = user.takipciSayisi ?: 0L,
-            takipEdilenSayisi = user.takipEdilenSayisi ?: 0L,
-            gonderiSayisi = user.gonderiSayisi ?: 0L,
-            biyografi = user.biyografi,
-            fotoUrl = user.fotoUrl
+            name = user.name,
+            surname = user.surname,
+            username = user.username,
+            followersCount = user.followersCount ?: 0L,
+            followingCount = user.followingCount ?: 0L,
+            postCount = user.postCount ?: 0L,
+            bio = user.bio,
+            photoUrl = user.photoUrl
         )
     }.stateIn(
         scope = managerScope,
@@ -68,8 +68,8 @@ class CurrentUserManager private constructor(context: Context) {
 
     fun isStatsCacheValid(timeoutMillis: Long = 2 * 60 * 1000L): Boolean {
         if (FirebaseAuth.getInstance().currentUser == null) return false
-        val currentUser = _currentUserState.value
-        if (currentUser.kullaniciAdi.isNullOrBlank()) return false
+        val currentUser = _currentUserModelState.value
+        if (currentUser.username.isNullOrBlank()) return false
 
         // Zaman damgasını RAM yerine sessionManager üzerinden kalıcı bellekten alıyoruz
         val lastFetchTime = sessionManager.getLastStatsFetchTime()
@@ -85,21 +85,21 @@ class CurrentUserManager private constructor(context: Context) {
 
     // --- KULLANICI ERİŞİM VE GÜNCELLEME İŞLEMLERİ ---
 
-    fun getCurrentUser(): Kullanici {
+    fun getCurrentUser(): UserModel {
         if (FirebaseAuth.getInstance().currentUser == null) {
             clearLocalCache()
-            return Kullanici()
+            return UserModel()
         }
-        return _currentUserState.value
+        return _currentUserModelState.value
     }
 
     fun getCurrentUserId(): String {
         return getCurrentUser().id
     }
 
-    fun setCurrentUser(kullanici: Kullanici) {
-        sessionManager.saveUserSession(kullanici)
-        _currentUserState.value = kullanici
+    fun setCurrentUser(userModel: UserModel) {
+        sessionManager.saveUserSession(userModel)
+        _currentUserModelState.value = userModel
         markStatsFetched()
     }
 
@@ -110,8 +110,8 @@ class CurrentUserManager private constructor(context: Context) {
     /**
      * Kullanıcı nesnesinin belirli alanlarını güvenli bir şekilde güncellemek için yardımcı metot.
      */
-    fun updateCurrentUser(updateBlock: (Kullanici) -> Kullanici) {
-        val currentUser = _currentUserState.value
+    fun updateCurrentUser(updateBlock: (UserModel) -> UserModel) {
+        val currentUser = _currentUserModelState.value
         val updatedUser = updateBlock(currentUser)
         setCurrentUser(updatedUser)
     }
@@ -130,14 +130,14 @@ class CurrentUserManager private constructor(context: Context) {
     ) {
         updateCurrentUser { user ->
             user.copy(
-                ad = ad ?: user.ad,
-                soyad = soyad ?: user.soyad,
-                kullaniciAdi = kullaniciAdi ?: user.kullaniciAdi,
-                takipciSayisi = takipci ?: user.takipciSayisi,
-                takipEdilenSayisi = takipEdilen ?: user.takipEdilenSayisi,
-                gonderiSayisi = gonderiSayisi ?: user.gonderiSayisi,
-                biyografi = biyografi ?: user.biyografi,
-                fotoUrl = fotoUrl ?: user.fotoUrl
+                name = ad ?: user.name,
+                surname = soyad ?: user.surname,
+                username = kullaniciAdi ?: user.username,
+                followersCount = takipci ?: user.followersCount,
+                followingCount = takipEdilen ?: user.followingCount,
+                postCount = gonderiSayisi ?: user.postCount,
+                bio = biyografi ?: user.bio,
+                photoUrl = fotoUrl ?: user.photoUrl
             )
         }
     }
@@ -145,8 +145,8 @@ class CurrentUserManager private constructor(context: Context) {
     fun updateFollowCounts(takipciSayisi: Long, takipEdilenSayisi: Long) {
         updateCurrentUser { user ->
             user.copy(
-                takipciSayisi = takipciSayisi,
-                takipEdilenSayisi = takipEdilenSayisi
+                followersCount = takipciSayisi,
+                followingCount = takipEdilenSayisi
             )
         }
         // Sayaçlar güncellendiği için zaman damgasını kaydet
@@ -155,19 +155,19 @@ class CurrentUserManager private constructor(context: Context) {
 
     fun updateGonderiSayisi(gonderiSayisi: Long) {
         updateCurrentUser { user ->
-            user.copy(gonderiSayisi = gonderiSayisi)
+            user.copy(postCount = gonderiSayisi)
         }
     }
 
     fun updateBiyografi(biyografi: String) {
         updateCurrentUser { user ->
-            user.copy(biyografi = biyografi)
+            user.copy(bio = biyografi)
         }
     }
 
     fun updateFotoUrl(fotoUrl: String) {
         updateCurrentUser { user ->
-            user.copy(fotoUrl = fotoUrl)
+            user.copy(photoUrl = fotoUrl)
         }
     }
 
@@ -196,7 +196,7 @@ class CurrentUserManager private constructor(context: Context) {
         sessionManager.clearSession()
         blockSessionManager.clearBlockCache()
 
-        _currentUserState.value = Kullanici()
+        _currentUserModelState.value = UserModel()
         _benimEngellediklerimState.value = emptyList()
 
         blockedUsersLoaded = false

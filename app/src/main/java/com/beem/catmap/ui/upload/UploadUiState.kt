@@ -1,7 +1,7 @@
 package com.beem.catmap.ui.upload
 
 import android.net.Uri
-import com.beem.catmap.models.CatModel
+import com.beem.catmap.data.model.CatModel
 
 data class UploadUiState(
     val selectedImages: List<Uri> = emptyList(),

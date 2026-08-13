@@ -1,6 +1,6 @@
 package com.beem.catmap.ui.manager
 
-import com.beem.catmap.models.CatModel
+import com.beem.catmap.data.model.CatModel
 
 sealed class CatMapEvent {
     data class Created(val cat: CatModel) : CatMapEvent()

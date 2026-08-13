@@ -2,16 +2,14 @@ package com.beem.catmap.ui.chatlist
 
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.R
-import com.beem.catmap.models.RecentChat
+import com.beem.catmap.data.model.RecentChat
 import com.beem.catmap.databinding.SohbetKutusuBinding
-import com.beem.catmap.utils.toFormattedLastSeen
 import com.beem.catmap.utils.toFormattedMessageTime
 import com.bumptech.glide.Glide
 

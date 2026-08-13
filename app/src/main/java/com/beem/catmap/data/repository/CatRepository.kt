@@ -1,11 +1,11 @@
 package com.beem.catmap.data.repository
 
-import com.beem.catmap.CatMapApp
-import com.beem.catmap.Profil.Gonderiler.CacheHelperGonderiBegeni
-import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.data.local.CacheHelperPostLike
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class CatRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -30,7 +30,7 @@ class CatRepository {
 
             userRef.update("begendigiGonderiler", FieldValue.arrayUnion(catId)).await()
             catRef.update("begeniSayisi", FieldValue.increment(1)).await()
-            CacheHelperGonderiBegeni.getInstance().begen(catId)
+            CacheHelperPostLike.getInstance().begen(catId)
             true
         } catch (e: Exception) {
             false
@@ -44,7 +44,7 @@ class CatRepository {
 
             userRef.update("begendigiGonderiler", FieldValue.arrayRemove(catId)).await()
             catRef.update("begeniSayisi", FieldValue.increment(-1)).await()
-            CacheHelperGonderiBegeni.getInstance().begeniKaldir(catId)
+            CacheHelperPostLike.getInstance().begeniKaldir(catId)
             true
         } catch (e: Exception) {
             false
@@ -63,6 +63,22 @@ class CatRepository {
         return try {
             val snapshot = db.collection("users").document(userId).get().await()
             if (snapshot.exists()) snapshot.data else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+    suspend fun getPublicUserInfo(userId: String): Map<String, Any>? = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("publicUsers")
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                snapshot.data
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }

@@ -240,10 +240,9 @@ class AuthFragment : Fragment() {
 
             } catch (e: GetCredentialCancellationException) {
 
-                Log.i(
+                Log.d(
                     TAG_GOOGLE_AUTH,
-                    "Google Sign-In kullanıcı tarafından iptal edildi.",
-                    e
+                    e.toString(),
                 )
 
                 showErrorPill("Google ile giriş iptal edildi.")
@@ -400,8 +399,8 @@ class AuthFragment : Fragment() {
                             is AuthEvent.NavigateToProfileSetup -> {
                                 SmartNavigationEngine.navigateTo(
                                     targetScreen = Screen.PROFILE_SETUP,
-                                    args = ProfileSetupFragment.newBundle(event.user),
-                                    key = event.user.id
+                                    args = ProfileSetupFragment.newBundle(event.userModel),
+                                    key = event.userModel.id
                                 )
                             }
                         }
