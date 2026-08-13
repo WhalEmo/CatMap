@@ -154,7 +154,14 @@ class UploadFragment : Fragment() {
             }
         }
     }
+    fun Fragment.hideKeyboard() {
+        view?.let { activity?.hideKeyboard(it) }
+    }
 
+    fun android.content.Context.hideKeyboard(view: View) {
+        val inputMethodManager = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+        inputMethodManager?.hideSoftInputFromWindow(view.windowToken, 0)
+    }
     private fun handlePhotoListVisibility(images: List<Uri>) {
         if (images.isNotEmpty()) {
             binding.layoutPlaceholder.fadeOut(200)
@@ -170,6 +177,7 @@ class UploadFragment : Fragment() {
 
 
     private fun checkLocationPermissionAndUpload() {
+        hideKeyboard()
         if(!LocationEngine.hasLocationPermission(requireContext())){
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 102)
             return
@@ -205,7 +213,10 @@ class UploadFragment : Fragment() {
                         bio = cat.kediHakkinda,
                         photoUrlList = cat.photoUri,
                         date = Timestamp.now(),
-                        likeCount = 0L
+                        likeCount = 0L,
+                        city = cat.city,
+                        district = cat.district,
+                        neighborhood = cat.neighborhood
                     )
 
                     viewLifecycleOwner.lifecycleScope.launch {

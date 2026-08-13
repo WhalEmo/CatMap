@@ -405,9 +405,18 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private fun modelToKediler(model: CatModel): Kediler {
         return Kediler(
-            model.id, model.kediAdi, model.kediHakkinda,
-            model.latitude, model.longitude, model.mainPhotoUrl,
-            ArrayList(model.photoUri), model.YukleyenKullaniciID,model.createdAt
+            model.id,
+            model.kediAdi,
+            model.kediHakkinda,
+            model.latitude,
+            model.longitude,
+            model.mainPhotoUrl,
+            ArrayList(model.photoUri),
+            model.YukleyenKullaniciID,
+            model.createdAt,
+            model.city,
+            model.district,
+            model.neighborhood
         )
     }
 

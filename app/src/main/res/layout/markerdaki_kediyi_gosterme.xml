@@ -3,8 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/gonderiBasligi"
@@ -40,7 +39,7 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="24dp">
+            android:paddingBottom="32dp">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/profilKart"
@@ -50,7 +49,7 @@
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp"
+                app:cardElevation="2dp"
                 app:layout_constraintEnd_toStartOf="@id/GonderiEkleButton"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -84,7 +83,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
                             android:text="Kullanıcı Adı"
-                            android:textColor="@color/catmap_accent"
+                            android:textColor="@color/catmap_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
 
@@ -160,7 +159,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Buraya aynı fotoIndicatorCapsule yapını koy -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/fotoIndicatorCapsule"
                     android:layout_width="wrap_content"
@@ -199,6 +197,52 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/fotoSliderContainer">
 
+                <!-- 1. KONUM CHIP (SOLDA) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/konumChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    app:cardBackgroundColor="@color/catmap_accent_alpha_15"
+                    app:cardCornerRadius="17dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="12dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="Konum"
+                            android:src="@drawable/baseline_location_on_24"
+                            app:tint="@color/catmap_accent" />
+
+                        <TextView
+                            android:id="@+id/konumText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Konya · Selçuklu · Yazır"
+                            android:textColor="#616161"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 2. ARAYA BOŞLUK -->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <!-- 3. BEĞENİ ALANI (SAĞDA) -->
                 <ImageView
                     android:id="@+id/kalpImageView"
                     android:layout_width="28dp"
@@ -239,7 +283,7 @@
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp"
+                app:cardElevation="2dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/begeniAlani"
@@ -281,7 +325,7 @@
                 android:layout_marginTop="10dp"
                 app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="1dp"
+                app:cardElevation="2dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/isimKart"
@@ -316,17 +360,17 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- YORUMLAR BUTONU -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnYorumlar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
+                android:layout_marginTop="16dp"
                 android:backgroundTint="@color/catmap_accent"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
+                app:cardElevation="4dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -338,12 +382,12 @@
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="20dp"
-                    android:paddingVertical="10dp">
+                    android:paddingHorizontal="24dp"
+                    android:paddingVertical="12dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:src="@drawable/patiliyorum"
                         app:tint="#FFFFFF" />
 
@@ -353,7 +397,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="sans-serif-medium"
-                        android:text="Yorumlar(0)"
+                        android:text="Yorumlar (0)"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -363,7 +407,7 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- YÜKLENİYOR ALANI (BEYAZ ARKA PLAN + ORTADA PROGRESS BAR) -->
+    <!-- YÜKLENİYOR ALANI -->
     <FrameLayout
         android:id="@+id/loadingContainer"
         android:layout_width="match_parent"
@@ -371,7 +415,7 @@
         android:background="#FFFFFF"
         android:clickable="true"
         android:focusable="true"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topDivider">
 

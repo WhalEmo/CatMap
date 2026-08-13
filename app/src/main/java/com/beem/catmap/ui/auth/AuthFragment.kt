@@ -46,10 +46,6 @@ class AuthFragment : Fragment() {
 
     private val viewModel: AuthViewModel by viewModels()
 
-    private var dialog: BottomSheetDialog? = null
-    private var isPasswordVisible = false
-    private val db = FirebaseFirestore.getInstance()
-
     private val googleAuthClient by lazy { GoogleAuthClient(requireContext()) }
 
     private val TAG_GOOGLE_AUTH = "GoogleAuth"
@@ -74,18 +70,23 @@ class AuthFragment : Fragment() {
 
         binding.btnAuthKaydol.setOnClickListener { view ->
             view.post {
-                AuthBottomSheetFragment.newInstance(AuthMode.REGISTER).show(
-                    childFragmentManager,
-                    AuthBottomSheetFragment.TAG
-                )
+                if (childFragmentManager.findFragmentByTag(AuthBottomSheetFragment.TAG) == null) {
+                    AuthBottomSheetFragment.newInstance(AuthMode.REGISTER).show(
+                        childFragmentManager,
+                        AuthBottomSheetFragment.TAG
+                    )
+                }
             }
         }
+
         binding.btnUsernameGiris.setOnClickListener { view ->
             view.post {
-                AuthBottomSheetFragment.newInstance(AuthMode.LOGIN).show(
-                    childFragmentManager,
-                    AuthBottomSheetFragment.TAG
-                )
+                if (childFragmentManager.findFragmentByTag(AuthBottomSheetFragment.TAG) == null) {
+                    AuthBottomSheetFragment.newInstance(AuthMode.LOGIN).show(
+                        childFragmentManager,
+                        AuthBottomSheetFragment.TAG
+                    )
+                }
             }
         }
 
@@ -173,41 +174,6 @@ class AuthFragment : Fragment() {
     }
 
 
-    private fun launchGoogleSignIn() {
-        binding.btnGoogleGiris.isEnabled = false
-        showLoadingPill("Google hesapları yükleniyor...")
-
-        val request = googleAuthClient.buildGetCredentialRequest()
-
-        // 🎯 Hileli 'post' yerine direkt coroutine scope'u güvenli şekilde çağırıyoruz
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val result = CredentialManager.create(requireContext()).getCredential(
-                    request = request,
-                    context = requireActivity() // Pencere hiyerarşisi için Activity context'i şart
-                )
-
-                // 🚀 Token'ı temizce ayıkla ve ViewModel'e uçur!
-                googleAuthClient.extractIdToken(result.credential)?.let { idToken ->
-                    viewModel.firebaseAuthWithGoogle(idToken)
-                } ?: throw Exception("Token ayıklanamadı.")
-
-            } catch (e: androidx.credentials.exceptions.GetCredentialException) {
-                Log.e("GOOGLE_AUTH", "Hata: ${e.javaClass.simpleName} | ${e.localizedMessage}")
-
-                if (e.javaClass.simpleName.contains("Cancellation", ignoreCase = true)) {
-                    showErrorPill("Giriş iptal edildi.")
-                } else {
-                    showErrorPill("Google hesabı şu an meşgul, tekrar deneyin.")
-                }
-            } catch (e: Exception) {
-                Log.e("GOOGLE_AUTH", "Genel Hata: ${e.localizedMessage}")
-                showErrorPill("Giriş sırasında bir hata oluştu.")
-            } finally {
-                binding.btnGoogleGiris.isEnabled = true
-            }
-        }
-    }
 
     private fun launchGoogleSignIn_v2() {
         if (!binding.btnGoogleGiris.isEnabled) {

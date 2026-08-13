@@ -1,6 +1,4 @@
 package com.beem.catmap.maps;
-
-
 import android.Manifest;
 import android.app.Dialog;
 import android.content.pm.PackageManager;

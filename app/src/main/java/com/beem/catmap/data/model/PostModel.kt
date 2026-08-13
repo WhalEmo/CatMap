@@ -8,7 +8,10 @@ data class Post(
     var catName: String? = null,
     var date: Timestamp? = null,
     var likeCount: Long? = 0L,
-    var catId: String? = null
+    var catId: String? = null,
+    var city: String? = null,
+    var district: String? = null,
+    var neighborhood: String? = null
 )
 data class SendCatItem(
     val catId: String = "",
