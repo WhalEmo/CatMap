@@ -175,7 +175,7 @@ object SmartNavigationEngine {
     }
 
     private fun emitCurrentState(entry: NavBackStackEntry) {
-        uiBridge?.updateUISilently(entry.screen)
+       // uiBridge?.updateUISilently(entry.screen)
         currentStack = entry
         _navigationEvents.tryEmit(
             NavigationState.Active(
@@ -185,6 +185,11 @@ object SmartNavigationEngine {
                 screenId = entry.screenId
             )
         )
+    }
+
+    @JvmStatic
+    fun notifyScreenRendered(screen: Screen) {
+        uiBridge?.updateUISilently(screen)
     }
 
 
