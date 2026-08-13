@@ -42,8 +42,7 @@ import com.beem.catmap.Profil.Gonderiler.GonderiDetayFragment;
 import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
-import com.beem.catmap.mesaj.MesajFotoGosterFragment;
-import com.beem.catmap.sohbet.SohbetFragment;
+
 import com.beem.catmap.ui.auth.AuthFragment;
 import com.beem.catmap.ui.auth.ProfileSetupFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
@@ -58,7 +57,7 @@ import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
-import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
+import com.beem.catmap.ui.upload.UploadFragment;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
@@ -112,7 +111,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             Screen screen = Screen.Companion.fromTag(tag);
             return switch (screen) {
                 case MAP -> new CatMapFragment();
-                case UPLOAD -> new YuklemeArayuzuFragment();
+                case UPLOAD -> new UploadFragment();
                 case OTHER_PROFILE -> new ProfilFragment();
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new ChatFragment();
@@ -122,7 +121,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case BLOCKED_USERS -> new EngellenenlerFragment();
                 case FOLLOWERS -> new TakiplerFragment();
                 case POST -> new GonderiDetayFragment();
-                case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
+                case MESSAGE_PHOTO_PREVIEW -> null;
                 case AUTH -> new AuthFragment();
                 case PROFILE_SETUP -> new ProfileSetupFragment();
             };

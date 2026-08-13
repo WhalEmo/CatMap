@@ -16,125 +16,126 @@ class RecentChatsRepository(
     private val realDb: FirebaseDatabase = FirebaseDatabase.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    private final val messageRefKey = "mesajlar_v2"
-    private val messageRef = realDb.getReference(messageRefKey)
 
     /**
-     * Oturum açan kullanıcının dahil olduğu tüm sohbetleri canlı olarak dinler.
+     * SADECE kullanıcının kendi son sohbetler listesini canlı dinler.
+     * Güvenlik açığı oluşmaz ve Permission Denied hatası vermez!
      */
     fun getRecentChatsFlow(currentUserId: String): Flow<List<RecentChat>> = callbackFlow {
-        Log.d("RecentChatDebug", "🚀 getRecentChatsFlow başlatıldı. Akış dinleniyor... CurrentUserId: $currentUserId")
+        if (currentUserId.isBlank()) {
+            trySend(emptyList())
+            return@callbackFlow
+        }
+        Log.d("RecentChatDebug", "🚀 getRecentChatsFlow başlatıldı. UserId: $currentUserId")
+
+        val userRecentRef = realDb.getReference("recent_chats").child(currentUserId)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                Log.d("RecentChatDebug", "--------------------------------------------------")
-                Log.d("RecentChatDebug", "📥 onDataChange tetiklendi! Toplam Sohbet Düğümü Sayısı: ${snapshot.childrenCount}")
-
                 val chatList = mutableListOf<RecentChat>()
 
                 for (child in snapshot.children) {
-                    val chatId = child.key ?: continue
-                    val parts = chatId.split("_")
-
-                    if (parts.size < 2) {
-                        Log.w("RecentChatDebug", "⚠️ Geçersiz chatId formatı atlandı: $chatId")
-                        continue
-                    }
-
-                    // Oturum açan kullanıcının chatId içinde olup olmadığını kontrol et
-                    val otherUserId = when (currentUserId) {
-                        parts[0] -> parts[1]
-                        parts[1] -> parts[0]
-                        else -> null
-                    }
-
-                    if (otherUserId == null) {
-                        Log.d("RecentChatDebug", "🙈 Kullanıcı bu sohbete dahil değil, atlandı: $chatId (Oturum: $currentUserId)")
-                        continue
-                    }
-
-                    Log.d("RecentChatDebug", "✅ Eşleşen Sohbet Bulundu! ChatId: $chatId | Karşı Taraf: $otherUserId")
-
-                    // Son mesajı al
-                    val anaMesajSnapshot = child.child("anaMesaj")
-                    val lastMessageSnapshot = anaMesajSnapshot.children.lastOrNull()
-
-                    var lastMessageText = ""
-                    var lastMessageTime = 0L
-
-                    if (lastMessageSnapshot != null) {
-                        val type = lastMessageSnapshot.child("tur").getValue(String::class.java) ?: "metin"
-                        lastMessageTime = lastMessageSnapshot.child("zaman").getValue(Long::class.java) ?: 0L
-
-                        lastMessageText = if (type == "foto") {
-                            "📷 Fotoğraf"
-                        } else {
-                            lastMessageSnapshot.child("mesaj").getValue(String::class.java) ?: ""
-                        }
-                    } else {
-                        Log.w("RecentChatDebug", "⚠️ 'anaMesaj' altında hiç mesaj yok: $chatId")
-                    }
-
-                    // Okunmamış mesaj sayısını hesapla
-                    var unreadCount = 0
-                    for (msg in anaMesajSnapshot.children) {
-                        val sender = msg.child("gonderen").getValue(String::class.java)
-                            ?: msg.child("gonderici").getValue(String::class.java)
-                        val isRead = msg.child("goruldu").getValue(Boolean::class.java) ?: false
-
-                        if (sender == otherUserId && !isRead) {
-                            unreadCount++
-                        }
-                    }
+                    val chatId = child.child("chatId").getValue(String::class.java) ?: continue
+                    val otherUserId = child.child("otherUserId").getValue(String::class.java) ?: continue
+                    val lastMessage = child.child("lastMessage").getValue(String::class.java) ?: ""
+                    val lastMessageTimestamp = child.child("lastMessageTimestamp").getValue(Long::class.java) ?: 0L
+                    val unreadCount = child.child("unreadCount").getValue(Int::class.java) ?: 0
 
                     val recentChat = RecentChat(
                         chatId = chatId,
                         otherUserId = otherUserId,
-                        lastMessage = lastMessageText,
-                        lastMessageTimestamp = lastMessageTime,
+                        lastMessage = lastMessage,
+                        lastMessageTimestamp = lastMessageTimestamp,
                         unreadCount = unreadCount
                     )
-
                     chatList.add(recentChat)
-                    Log.d("RecentChatDebug", "➕ Listeye Eklendi: $recentChat")
                 }
 
-                // Son mesaja göre azalan sırala
                 val sortedList = chatList.sortedByDescending { it.lastMessageTimestamp }
-                Log.d("RecentChatDebug", "🏁 İşlem Bitti. UI'a Gönderilen Toplam Sohbet Sayısı: ${sortedList.size}")
-                Log.d("RecentChatDebug", "--------------------------------------------------")
-
                 trySend(sortedList)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("RecentChatDebug", "❌ Firebase Hatarı (onCancelled): ${error.message}", error.toException())
-                close(error.toException())
+                // 🟢 Çıkış yapıldığında veya yetki gittiğinde uygulamayı patlatmak yerine akışı güvenle kapatıyoruz
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    Log.d("RecentChats", "Oturum kapandı veya yetki bitti, dinleyici güvenle sonlandırılıyor.")
+
+                    // Kanala boş liste gönderip akışı çökme olmadan kapatabilirsin
+                    trySend(emptyList())
+                    close()
+                } else {
+                    // Diğer beklenmeyen gerçek hataları logla
+                    Log.e("RecentChats", "Realtime DB Hatası: ${error.message}")
+                }
             }
         }
 
-        messageRef.addValueEventListener(listener)
+        userRecentRef.addValueEventListener(listener)
         awaitClose {
-            Log.d("RecentChatDebug", "🛑 Flow kapandı, ValueEventListener kaldırılıyor.")
-            messageRef.removeEventListener(listener)
+            userRecentRef.removeEventListener(listener)
         }
     }
 
     /**
-     * Karşı tarafın kullanıcı adını ve profil resmini Firestore'dan çeker.
+     * Kullanıcı sohbeti açtığında okunmamış mesaj sayısını sıfırlar
      */
+    suspend fun clearUnreadCount(currentUserId: String, otherUserId: String) {
+        try {
+            realDb.getReference("recent_chats")
+                .child(currentUserId)
+                .child(otherUserId)
+                .child("unreadCount")
+                .setValue(0)
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     suspend fun fetchUserInfo(userId: String): Pair<String, String> {
+        if (userId.isBlank()) return Pair("CatMap Kullanıcısı", "")
+
         return try {
+            // 1. KADEME: 'users' ana koleksiyonundan çekmeyi dene
             val doc = firestore.collection("users").document(userId).get().await()
             if (doc.exists()) {
                 val name = "${doc.getString("Ad") ?: ""} ${doc.getString("Soyad") ?: ""}".trim()
                 val photoUrl = doc.getString("profilFotoUrl") ?: ""
-                Pair(name, photoUrl)
+
+                // İsim boşsa fallback'e gitmesin diye kontrol
+                val finalName = if (name.isNotBlank()) name else "CatMap Kullanıcısı"
+                Pair(finalName, photoUrl)
             } else {
-                Pair("Kullanıcı", "")
+                // Document yoksa 2. Kademe (publicUsers) dene
+                fetchFromPublicUsers(userId)
             }
         } catch (e: Exception) {
-            Pair("Kullanıcı", "")
+            // 2. KADEME: Permission Denied veya herhangi bir Firestore hatasında publicUsers'a düş
+            Log.w("RecentChatsRepo", "⚠️ 'users' koleksiyonuna erişilemedi (${e.localizedMessage}). 'publicUsers' deneniyor... UserId: $userId")
+            fetchFromPublicUsers(userId)
+        }
+    }
+
+    /**
+     * 2. Kademe: Engellenme veya 'users' içinde bulunamama durumunda çalışan yedek fonksiyon
+     */
+    private suspend fun fetchFromPublicUsers(userId: String): Pair<String, String> {
+        return try {
+            val publicDoc = firestore.collection("publicUsers").document(userId).get().await()
+            if (publicDoc.exists()) {
+                val name = publicDoc.getString("KullaniciAdi")
+                    ?: publicDoc.getString("kullaniciAdi")
+                    ?: publicDoc.getString("Ad")
+                    ?: "CatMap Kullanıcısı"
+
+                val photoUrl = publicDoc.getString("profilFotoUrl") ?: ""
+                Pair(name, photoUrl)
+            } else {
+                Pair("CatMap Kullanıcısı", "")
+            }
+        } catch (e: Exception) {
+            Log.e("RecentChatsRepo", "❌ 'publicUsers' çekilirken hata oluştu: ${e.localizedMessage}")
+            Pair("CatMap Kullanıcısı", "")
         }
     }
 }
