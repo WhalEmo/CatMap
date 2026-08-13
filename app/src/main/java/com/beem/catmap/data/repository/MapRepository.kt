@@ -4,11 +4,13 @@ import android.net.Uri
 import android.util.Log
 import com.beem.catmap.data.model.CatModel
 import com.beem.catmap.ui.manager.UploadProgressState
+import com.beem.catmap.utils.formatBadgeId
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -68,7 +70,10 @@ class MapRepository {
         latitude: Double,
         longitude: Double,
         userId: String,
-        imageUris: List<Uri>
+        imageUris: List<Uri>,
+        city: String,
+        district: String,
+        neighborhood: String
     ): Flow<UploadProgressState> = callbackFlow {
 
         if (imageUris.isEmpty()) {
@@ -85,6 +90,11 @@ class MapRepository {
         // Bu mantıkla her resim bittiğinde ana yüzdeyi güvenle yukarı tetikleriz
         fun uploadImageAt(index: Int) {
             if (index >= totalImages) {
+
+                val newCatRef = catsCollection.document()
+
+                val batch = db.batch()
+
                 // 🚀 TÜM RESİMLER BİTTİ: Şimdi Firestore'a kayıt zamanı
                 val catData = hashMapOf(
                     "kediAdi" to catName,
@@ -97,10 +107,30 @@ class MapRepository {
                     "createdAt" to FieldValue.serverTimestamp()
                 )
 
-                catsCollection.add(catData)
-                    .addOnSuccessListener { documentRef ->
+                batch.set(newCatRef, catData)
+
+                if (city.isNotBlank() && district.isNotBlank() && neighborhood.isNotBlank()) {
+                    val badgeId = formatBadgeId(city, district, neighborhood)
+                    val badgeRef = db.collection("users")
+                        .document(userId)
+                        .collection("neighborhoodBadges")
+                        .document(badgeId)
+
+                    val badgeData = hashMapOf(
+                        "badgeId" to badgeId,
+                        "city" to city,
+                        "district" to district,
+                        "neighborhood" to neighborhood,
+                        "unlockedAt" to FieldValue.serverTimestamp(),
+                        "catCount" to FieldValue.increment(1)
+                    )
+                    batch.set(badgeRef, badgeData, SetOptions.merge())
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
                         val newCat = CatModel(
-                            id = documentRef.id,
+                            id = newCatRef.id,
                             kediAdi = catName,
                             kediHakkinda = catAbout,
                             latitude = latitude,
@@ -109,11 +139,7 @@ class MapRepository {
                             YukleyenKullaniciID = userId,
                             createdAt = Timestamp.now().toDate()
                         )
-                        trySend(
-                            UploadProgressState.Success(
-                                catModel = newCat
-                            )
-                        )
+                        trySend(UploadProgressState.Success(catModel = newCat))
                         close()
                     }
                     .addOnFailureListener { e ->

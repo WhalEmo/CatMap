@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,6 +36,7 @@ import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
 import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.data.model.ChatMessage
+import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -409,24 +411,6 @@ class MessageFragment : Fragment() {
         binding.yukleniyorProgress.isVisible = state.isLoading
         binding.mesajRecyclerView.isVisible = !state.isLoading
 
-        /*
-        val isBlocked = state.isBlockedByMe || state.isBlockedByOther
-        mesajAdapter.isBlocked = isBlocked
-
-        binding.gonderButton.isVisible = !isBlocked
-        binding.mesajEditText.isVisible = !isBlocked
-        binding.fotoEkleButton.isVisible = !isBlocked
-        binding.engelKaldir.isVisible = isBlocked
-
-        if (state.isBlockedByMe) {
-            binding.engelKaldir.text = "ENGELİ KALDIR"
-            binding.engelKaldir.isClickable = true
-        } else if (state.isBlockedByOther) {
-            binding.engelKaldir.text = "ENGELLENDİN"
-            binding.engelKaldir.isClickable = false
-        }
-
-         */
 
         val isBlocked = state.blockState !is BlockState.None
         mesajAdapter.isBlocked = isBlocked
@@ -636,20 +620,17 @@ class MessageFragment : Fragment() {
      */
     // 🔓 Engeli Kaldır Onay Dialog'u
     private fun showUnblockConfirmationDialog() {
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        CatMapDialog.build()
             .setTitle("Engeli Kaldır")
             .setMessage("Bu kullanıcının engelini kaldırmak istediğinize emin misiniz?")
-            .setPositiveButton("Engeli Kaldır") { dialog, _ ->
+            .setNegativeButton("İptal")
+            .setPositiveButton("Engeli Kaldır") {
                 // 🧪 MOCK TEST: Sanal durumu normale çeviriyoruz
                 viewModel.unblockUserMock()
 
                 UiMessageManager.emitMessage(UiMessageState.Success("Kullanıcının engeli kaldırıldı."))
-                dialog.dismiss()
             }
-            .setNegativeButton("Vazgeç") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+            .show(childFragmentManager, "CatMapDialog_Engel")
     }
 
     // 🔒 Kullanıcıyı Engelle Onay Dialog'u

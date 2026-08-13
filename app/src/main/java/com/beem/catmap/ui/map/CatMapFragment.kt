@@ -58,6 +58,7 @@ import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
 import com.beem.catmap.ui.markersclick.CatDetailViewModel
+import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
@@ -122,6 +123,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        handleBackPressWithEngine()
 
         mapViewModel = ViewModelProvider(requireActivity())[MapViewModel::class.java]
 

@@ -28,6 +28,9 @@ class CatMapDialog : DialogFragment() {
     private var negativeBtnText: String? = null
     private var negativeAction: (() -> Unit)? = null
 
+
+    private var messageGravity: Int = Gravity.CENTER
+
     // 🔴 1. Başlığı Kapatmak İçin Kurşungeçirmez Yöntem
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
@@ -51,6 +54,8 @@ class CatMapDialog : DialogFragment() {
         binding.txtDialogTitle.text = titleText
         binding.txtDialogMessage.text = messageText
         binding.btnDialogPositive.text = positiveBtnText
+
+        binding.txtDialogMessage.gravity = messageGravity
 
         binding.btnDialogPositive.setOnClickListener {
             positiveAction?.invoke()
@@ -107,6 +112,11 @@ class CatMapDialog : DialogFragment() {
     fun setNegativeButton(text: String, action: (() -> Unit)? = null): CatMapDialog {
         this.negativeBtnText = text
         this.negativeAction = action
+        return this
+    }
+
+    fun setMessageGravity(gravity: Int): CatMapDialog {
+        this.messageGravity = gravity
         return this
     }
 

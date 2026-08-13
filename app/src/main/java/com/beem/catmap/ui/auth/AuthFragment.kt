@@ -7,6 +7,7 @@ import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -166,6 +167,7 @@ class AuthFragment : Fragment() {
         CatMapDialog.build()
             .setTitle(getString(titleResId))
             .setMessage(getString(contentResId))
+            .setMessageGravity(Gravity.START)
             .setPositiveButton("Anladım")
             .show(childFragmentManager, "CatMapLegalDialog")
     }

@@ -3,10 +3,16 @@ package com.beem.catmap.ui.message
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.CatMapApp
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.model.PresenceState
 import com.beem.catmap.data.repository.MessageRepository
+import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.data.model.ChatMessage
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.message.models.BlockState
@@ -30,6 +36,8 @@ class MessageViewModel(
     private val _uiState = MutableStateFlow(MessageUiState())
     val uiState: StateFlow<MessageUiState> = _uiState.asStateFlow()
 
+    private val blockRepository: UserBlockRepository = UserBlockRepository.getInstance()
+
     private var chatId: String? = null
     private var typingTimer: Timer? = null
     private var messagesJob: Job? = null
@@ -41,6 +49,8 @@ class MessageViewModel(
     private var hasMoreOlderMessages = true
 
     val currentUserId: String get() = currentUserManager.getCurrentUserId()
+
+    private var typingListenJob: Job? = null
 
     init {
         initializeChat()
@@ -55,16 +65,27 @@ class MessageViewModel(
             val generatedChatId = repository.getOrCreateChatId(senderId, receiverId)
             chatId = generatedChatId
 
-            val (name, photoUrl) = repository.fetchReceiverProfileInfo(receiverId)
+            val messageProfile = repository.fetchReceiverProfileInfo(receiverId)
+
+            val isBlockedByMe = blockRepository.isUserBlocked(currentUserId, receiverId)
+
+            val myBlockState = if (isBlockedByMe) BlockState.BlockedByMe else BlockState.None
+
+            val blockState = calculateBlockState(myBlockState, messageProfile.blockState)
+
             _uiState.update {
-                it.copy(receiverName = name, receiverPhotoUrl = photoUrl)
+                it.copy(
+                    receiverName = messageProfile.name,
+                    receiverPhotoUrl = messageProfile.photoUrl,
+                    blockState = blockState
+                )
             }
 
             // 2. Mesaj Akışını Başlat
             observeMessages(generatedChatId)
 
             // 3. Yazıyor... Durumunu Dinle
-            observeTypingStatus(generatedChatId)
+            //observeTypingStatus(generatedChatId)
 
             observeReceiverPresence()
 
@@ -139,24 +160,40 @@ class MessageViewModel(
             viewModelScope.launch {
                 Log.d("LifecycleDebug", "🔥 VERİTABANINDA OKUNDU YAPILIYOR! ID'ler: $unreadIdsFromOther")
                 repository.markMessagesAsReadByIds(activeChatId, unreadIdsFromOther)
+
+                repository.resetUnreadCount(UserSession.userId, receiverId)
             }
         }
     }
 
     fun unblockUserMock() {
         viewModelScope.launch {
-            val newBlockState = when(_uiState.value.blockState) {
-                BlockState.BlockedByMe -> BlockState.None
-                BlockState.BlockedByUser -> BlockState.BlockedByUser
-                BlockState.MutualBlock -> BlockState.BlockedByUser
-                BlockState.None -> BlockState.None
-            }
-            _uiState.update { currentState ->
-                currentState.copy(
-                    blockState = newBlockState
+            try {
+                blockRepository.unblockUser(
+                    UserSession.userId,
+                    receiverId
                 )
+                val newBlockState = when(_uiState.value.blockState) {
+                    BlockState.BlockedByMe -> BlockState.None
+                    BlockState.BlockedByUser -> BlockState.BlockedByUser
+                    BlockState.MutualBlock -> BlockState.BlockedByUser
+                    BlockState.None -> BlockState.None
+                }
+                ProfileEventBus.emitEvent(
+                    ProfileEvent.UnblockedUser(
+                        receiverId,
+                        UserSession.userId
+                    )
+                )
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        blockState = newBlockState
+                    )
+                }
+                UiMessageManager.emitMessage(UiMessageState.Success("Kullanıcının engeli kaldırıldı."))
+            } catch (e: Exception) {
+                UiMessageManager.emitMessage(UiMessageState.Error("Kullanıcının engeli kaldıralamadı."))
             }
-            UiMessageManager.emitMessage(UiMessageState.Success("Kullanıcının engeli kaldırıldı."))
         }
     }
 
@@ -174,14 +211,6 @@ class MessageViewModel(
                 )
             }
             UiMessageManager.emitMessage(UiMessageState.Info("Kullanıcı engellendi."))
-        }
-    }
-
-    fun testBlockState(state: BlockState) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                blockState = state
-            )
         }
     }
 
@@ -251,9 +280,29 @@ class MessageViewModel(
     private fun observeReceiverPresence() {
         presenceJob?.cancel()
         presenceJob = viewModelScope.launch {
-            userRepo.getUserPresenceFlow(receiverId).collectLatest { status ->
-                _uiState.update { it.copy(receiverStatus = status) }
-            }
+            userRepo.getUserPresenceAndBlockFlow(currentUserId, receiverId)
+                .collectLatest { result ->
+                    val statusText = when (val presence = result.presenceState) {
+                        is PresenceState.Success -> presence.lastSeenText
+                        is PresenceState.Offline -> "Çevrimdışı"
+                        else -> ""
+                    }
+
+                    if (result.blockState == BlockState.None && chatId != null) {
+                        Log.d("TypingDebug", "🔓 Engel yok/kalktı. Yazıyor dinleyicisi kuruluyor...")
+                        startObservingTypingStatus(chatId!!)
+                    } else {
+                        Log.d("TypingDebug", "🔒 Engel tespit edildi (${result.blockState}). Dinleyici temizleniyor.")
+                        stopObservingTypingStatus()
+                    }
+
+                    _uiState.update { state ->
+                        state.copy(
+                            receiverStatus = statusText,
+                            blockState = result.blockState
+                        )
+                    }
+                }
         }
     }
 
@@ -263,6 +312,28 @@ class MessageViewModel(
                 _uiState.update { it.copy(isOtherUserTyping = isTyping) }
             }
         }
+    }
+
+    private fun startObservingTypingStatus(chatId: String) {
+        // ⚔️ KRİTİK NOKTA: Eğer halihazırda çalışan eski bir dinleyici işi varsa önce onu KESİN olarak iptal et
+        typingListenJob?.cancel()
+
+        // Yeni dinleyiciyi başlat ve referansını sakla
+        typingListenJob = viewModelScope.launch {
+            repository.listenTypingStatus(chatId, receiverId).collectLatest { isTyping ->
+                _uiState.update { it.copy(isOtherUserTyping = isTyping) }
+            }
+        }
+    }
+
+    /**
+     * Dinleyiciyi güvenli bir şekilde kapatan yardımcı fonksiyon
+     */
+    private fun stopObservingTypingStatus() {
+        typingListenJob?.cancel()
+        typingListenJob = null
+        // Karşı taraf yazıyor bilgisini de hemen false çekelim ki ekran temiz kalsın
+        _uiState.update { it.copy(isOtherUserTyping = false) }
     }
 
 
@@ -341,6 +412,25 @@ class MessageViewModel(
 
     fun setReplyMessage(message: ChatMessage?) {
         _uiState.update { it.copy(replyMessage = message) }
+    }
+
+
+    private fun calculateBlockState(
+        myBlockState: BlockState,
+        receiverBlockState: BlockState
+    ): BlockState {
+        return when {
+            myBlockState == BlockState.MutualBlock ||
+                    receiverBlockState == BlockState.MutualBlock ||
+                    (receiverBlockState == BlockState.BlockedByUser && myBlockState == BlockState.BlockedByMe) -> {
+                BlockState.MutualBlock
+            }
+
+            myBlockState == BlockState.BlockedByMe -> BlockState.BlockedByMe
+            receiverBlockState == BlockState.BlockedByUser -> BlockState.BlockedByUser
+
+            else -> BlockState.None
+        }
     }
 
     override fun onCleared() {

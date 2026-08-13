@@ -2,9 +2,11 @@ package com.beem.catmap.ui.upload
 
 import android.app.Application
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.local.location.LocationHelper
 import com.beem.catmap.data.repository.MapRepository
 import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.ui.manager.CatEventBus
@@ -65,7 +67,8 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
         catName: String,
         catAbout: String,
         location: Location?,
-        userId: String
+        userId: String,
+        locationHelper: LocationHelper
     ) {
         if (catName.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Lütfen kediye bir isim veriniz!") }
@@ -85,6 +88,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                     uploadProgress = 0,
                     errorMessage = null,
                     isSuccess = false,
+                    isUploadComplete = false,
                     isAllDone = false,
                     createdDocument = null,
                     uploadStage = UploadStage.FETCHING_LOCATION
@@ -102,6 +106,16 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
 
+            val addressModel = locationHelper.getFormattedAddress(
+                latitude = location.latitude,
+                longitude = location.longitude
+            )
+
+            val city = addressModel?.city ?: ""
+            val district = addressModel?.district ?: ""
+            val neighborhood = addressModel?.neighborhood ?: ""
+
+
             _uiState.update { it.copy(uploadStage = UploadStage.UPLOADING_ASSETS) }
 
             repository.uploadCatPostWithProgress(
@@ -110,7 +124,10 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 latitude = location.latitude,
                 longitude = location.longitude,
                 userId = userId,
-                imageUris = selectedPhotos
+                imageUris = selectedPhotos,
+                city = city,
+                district = district,
+                neighborhood = neighborhood
             ).collect { progressState ->
 
                 when (progressState) {

@@ -3,11 +3,14 @@ package com.beem.catmap.data.repository
 import android.util.Log
 import com.beem.catmap.data.model.ChatMessage
 import com.beem.catmap.data.model.toChatMessage
+import com.beem.catmap.ui.message.models.BlockState
+import com.beem.catmap.ui.message.models.MessageProfile
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +62,8 @@ class MessageRepository(
         })
     }
 
+    /*
+
     suspend fun fetchReceiverProfileInfo(receiverId: String): Pair<String, String> {
         return try {
             val document = firestore.collection("users").document(receiverId).get().await()
@@ -74,6 +79,8 @@ class MessageRepository(
             Pair("", "")
         }
     }
+
+    */
 
     suspend fun sendPhotoMessage(
         chatId: String,
@@ -127,6 +134,7 @@ class MessageRepository(
             }
 
             messageRef.child(chatId).child("anaMesaj").child(mesajKey).setValue(photoMap).await()
+            updateRecentChatsSummary(chatId, senderId, "📷 Fotoğraf")
             true
         } catch (e: Exception) {
             Log.e("ChatRepository", "Fotoğraf gönderme hatası: ${e.localizedMessage}", e)
@@ -149,7 +157,14 @@ class MessageRepository(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                // 🟢 Çıkış yapıldığında veya yetki bittiğinde coroutine'i patlatmak yerine güvenle kapatıyoruz
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    Log.d("MessageRepository", "🚫 Sohbet yetkisi bitti (Muhtemelen çıkış yapıldı). Akış güvenle kapatılıyor.")
+                    close() // İçeriye exception fırlatmadan akışı sessizce bitirir
+                } else {
+                    // Diğer beklenmeyen gerçek veritabanı hatalarında kanalı kapatıp fırlatabilirsin
+                    close(error.toException())
+                }
             }
         }
 
@@ -169,6 +184,20 @@ class MessageRepository(
             messageRef.child(chatId).child("anaMesaj").updateChildren(updates).await()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun resetUnreadCount(currentUserId: String, otherUserId: String) {
+        try {
+            realDb.getReference("recent_chats")
+                .child(currentUserId)
+                .child(otherUserId)
+                .child("unreadCount")
+                .setValue(0)
+                .await()
+            Log.d("RecentChatDebug", "🧹 unreadCount sıfırlandı: $currentUserId -> $otherUserId")
+        } catch (e: Exception) {
+            Log.e("RecentChatDebug", "❌ unreadCount sıfırlama hatası: ${e.localizedMessage}")
         }
     }
 
@@ -271,7 +300,7 @@ class MessageRepository(
                 }
 
                 val yanitMap = mapOf(
-                    "gonderici" to senderId,
+                    "gonderen" to senderId,
                     "mesaj" to text,
                     "zaman" to System.currentTimeMillis(),
                     "goruldu" to false,
@@ -304,6 +333,8 @@ class MessageRepository(
             }
 
             messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(false).await()
+            val summaryText = if (replyTo != null) "↩️ $text" else text
+            updateRecentChatsSummary(chatId, senderId, summaryText)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -332,6 +363,71 @@ class MessageRepository(
         }
     }
 
+    suspend fun fetchReceiverProfileInfo(receiverId: String): MessageProfile {
+        return try {
+            val document = firestore.collection("users").document(receiverId).get().await()
+            if (document.exists()) {
+                val name = document.getString("KullaniciAdi") ?: ""
+                val photoUrl = document.getString("profilFotoUrl") ?: ""
+                MessageProfile(
+                    name = name,
+                    photoUrl = photoUrl
+                )
+            } else {
+                fetchFromPublicUsers(receiverId)
+            }
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                Log.w("MessageRepository", "⚠️ 'users' koleksiyonuna erişim engellendi (Permission Denied). 'public_users' deneniyor... ReceiverId: $receiverId")
+                fetchFromPublicUsers(receiverId)
+            } else {
+                Log.e("MessageRepository", "❌ Firestore Hatası: ${e.localizedMessage}")
+                MessageProfile(
+                    name = "Kullanıcı",
+                    ""
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ Genel Hata: ${e.localizedMessage}")
+            MessageProfile(
+                name = "Kullanıcı",
+                ""
+            )
+        }
+    }
+
+    /**
+     * Engellenme durumunda veya kullanıcı ana koleksiyonda bulunamadığında çağrılan yedek metod.
+     */
+    private suspend fun fetchFromPublicUsers(receiverId: String): MessageProfile {
+        return try {
+            val publicDoc = firestore.collection("publicUsers").document(receiverId).get().await()
+            if (publicDoc.exists()) {
+                val name = publicDoc.getString("KullaniciAdi")
+                    ?: publicDoc.getString("kullaniciAdi")
+                    ?: publicDoc.getString("Ad")
+                    ?: "Kullanıcı"
+                val photoUrl = publicDoc.getString("profilFotoUrl") ?: ""
+                MessageProfile(
+                    name = name,
+                    photoUrl = photoUrl,
+                    blockState = BlockState.BlockedByUser
+                )
+            } else {
+                MessageProfile(
+                    name = "Kullanıcı",
+                    ""
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ 'public_users' çekilirken kilitlendi: ${e.localizedMessage}")
+            MessageProfile(
+                name = "Kullanıcı",
+                ""
+            )
+        }
+    }
+
     /**
      * Karşı Tarafın "Yazıyor..." Durumunu Flow İle Dinleme
      */
@@ -343,7 +439,9 @@ class MessageRepository(
                 trySend(isTyping)
             }
 
-            override fun onCancelled(error: DatabaseError) {}
+            override fun onCancelled(error: DatabaseError) {
+                trySend(false)
+            }
         }
         ref.addValueEventListener(listener)
         awaitClose { ref.removeEventListener(listener) }
@@ -354,6 +452,54 @@ class MessageRepository(
      */
     fun setTypingStatus(chatId: String, senderId: String, isTyping: Boolean) {
         messageRef.child(chatId).child("yaziyorMu").child(senderId).setValue(isTyping)
+    }
+
+    private suspend fun updateRecentChatsSummary(
+        chatId: String,
+        senderId: String,
+        lastMessageText: String
+    ) {
+        try {
+            val parts = chatId.split("_")
+            if (parts.size < 2) return
+
+            val receiverId = if (parts[0] == senderId) parts[1] else parts[0]
+            val timestamp = System.currentTimeMillis()
+
+            val recentDbRef = messageRef.root.child("recent_chats")
+
+            // 🟢 1. GÖNDEREN (Sender) İÇİN ÖZET (Okunmamış sayısı 0)
+            val senderSummary = mapOf(
+                "chatId" to chatId,
+                "otherUserId" to receiverId,
+                "lastMessage" to lastMessageText,
+                "lastMessageTimestamp" to timestamp,
+                "unreadCount" to 0
+            )
+
+            // 🟢 2. ALICI (Receiver) İÇİN ÖZET
+            // 🔥 KRİTİK DÜZELTME: Okuma (.get()) yapmıyoruz!
+            // ServerValue.increment(1) ile var olan sayıyı okumadan sunucuda 1 artırıyoruz.
+            val receiverSummary = mapOf(
+                "chatId" to chatId,
+                "otherUserId" to senderId,
+                "lastMessage" to lastMessageText,
+                "lastMessageTimestamp" to timestamp,
+                "unreadCount" to com.google.firebase.database.ServerValue.increment(1)
+            )
+
+            // 🚀 İki düğüme birden atomik yazma yapıyoruz (Multi-location update)
+            val childUpdates = hashMapOf<String, Any>(
+                "/$senderId/$receiverId" to senderSummary,
+                "/$receiverId/$senderId" to receiverSummary
+            )
+
+            recentDbRef.updateChildren(childUpdates).await()
+            Log.d("RecentChatDebug", "✅ Çift taraflı 'recent_chats' düğümü sorunsuz güncellendi!")
+
+        } catch (e: Exception) {
+            Log.e("MessageRepository", "❌ RecentChat özet güncelleme hatası: ${e.localizedMessage}", e)
+        }
     }
 
 }

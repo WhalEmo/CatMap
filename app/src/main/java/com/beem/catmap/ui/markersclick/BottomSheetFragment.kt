@@ -33,6 +33,7 @@ import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.NavigationHelper
+import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.utils.toFirebaseTimestamp
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -216,11 +217,13 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             }
         }
 
+        /*
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.isMyCat.collectLatest { isMyCat ->
                 gonderiEkleButton.isVisible = isMyCat
             }
         }
+        */
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.likeCount.collectLatest { count ->
@@ -253,6 +256,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         val isCatAdded = viewModel.isAlreadyAdded.value
         val currentCat = viewModel.selectedCat.value ?: return
         val likeCount = viewModel.likeCount.value
+        val isMyCat = currentCat.yukleyenId == UserSession.userId
 
         val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
         val successColor = ContextCompat.getColor(requireContext(), R.color.catmap_success)
@@ -265,7 +269,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                 iconRes = if (isCatAdded) R.drawable.ic_check_circle else R.drawable.ic_add,
                 textColor = if (isCatAdded) successColor else addCatColor,
                 iconTint = if (isCatAdded) successColor else addCatColor,
-                isEnabled = !isCatAdded
+                isEnabled = !isCatAdded,
+                isVisible = isMyCat
             ) {
                 showAddCatConfirmationDialog(currentCat, likeCount)
             }
@@ -275,9 +280,22 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                 iconRes = R.drawable.ic_small_close,
                 textColor = redColor,
                 iconTint = redColor,
-                isVisible = true
+                isVisible = isMyCat
             ) {
                 showDeleteCatConfirmationDialog()
+            }
+            .addItem(
+                id = 3,
+                title = "Kediyi Bildir",
+                iconRes = R.drawable.ic_error_outline,
+                textColor = redColor, iconTint = redColor,
+                isVisible = !isMyCat
+            ) {
+                NavigationHelper.showReportBottomSheet(
+                    childFragmentManager,
+                    currentCat.id,
+                    reportType = ReportType.CAT
+                )
             }
             .build()
             .show(anchorView = view)

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -21,13 +22,28 @@ class CatMapNavigationRenderer(
     private val provider: FragmentProvider
 ) : DefaultLifecycleObserver {
 
+    private val fragmentLifecycleCallback = object : FragmentManager.FragmentLifecycleCallbacks() {
+        override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+            super.onFragmentResumed(fm, f)
 
+            val baseTag = f.tag?.extractBaseTag()
+            val currentScreen = Screen.entries.firstOrNull { it.tag == baseTag }
+
+            currentScreen?.let { screen ->
+                SmartNavigationEngine.notifyScreenRendered(screen)
+            }
+        }
+    }
 
     init {
         activity.lifecycle.addObserver(this)
     }
 
     override fun onCreate(owner: LifecycleOwner) {
+
+        activity.supportFragmentManager.registerFragmentLifecycleCallbacks(fragmentLifecycleCallback, true)
+
+
         activity.lifecycleScope.launch {
             SmartNavigationEngine.navigationEvents.collect { state ->
                 Log.d("NAV_RENDERER", "🔥 KESİNTİSİZ EVENT -> Ekran: ${state.screen}")
@@ -72,6 +88,7 @@ class CatMapNavigationRenderer(
             NavigationTrigger.INITIAL -> renderInitialAnimation(transaction)
             NavigationTrigger.FORWARD -> renderForwardAnimation(transaction, oldScreen, targetScreen)
             NavigationTrigger.BACKWARD -> renderBackwardAnimation(transaction, oldScreen, targetScreen)
+            NavigationTrigger.RESET -> renderResetAnimation(transaction)
         }
 
         val validTags = Screen.entries.map { it.tag }
@@ -81,14 +98,22 @@ class CatMapNavigationRenderer(
                 val baseTag = f.tag?.extractBaseTag()
 
                 if (validTags.contains(baseTag)) {
-                    if (f.tag != targetScreenId) {
+                    if (trigger == NavigationTrigger.RESET){
+                        transaction.remove(f)
+                        Log.d("NAV_ENGINE", "${f.tag} remove")
+                    } else if (f.tag != targetScreenId) {
                         transaction.hide(f)
                         transaction.setMaxLifecycle(f, Lifecycle.State.STARTED)
+                        Log.d("NAV_ENGINE", "${f.tag} hide")
                     }
                 }
             }
         }
-        val targetFragment = fm.findFragmentByTag(targetScreenId)
+        val targetFragment = if (trigger == NavigationTrigger.RESET) {
+            null
+        } else {
+            fm.findFragmentByTag(targetScreenId)
+        }
 
         when {
             targetFragment == null -> {
@@ -142,5 +167,16 @@ class CatMapNavigationRenderer(
             Log.d("Yon", "backward ${oldScreen.tag} - ${targetScreen.tag}")
             transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+    }
+
+    private fun renderResetAnimation(transaction: FragmentTransaction) {
+        Log.d("NAV_RENDERER", "🧹 Reset Animasyonu Tetiklendi (Fade In / Fade Out)")
+
+        transaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        super.onDestroy(owner)
+        activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(fragmentLifecycleCallback)
     }
 }

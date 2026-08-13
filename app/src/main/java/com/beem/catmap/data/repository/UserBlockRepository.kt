@@ -5,10 +5,13 @@ import android.util.LruCache
 import com.beem.catmap.CatMapApp
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.utils.BlockUtils
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import kotlin.math.max
 
@@ -17,6 +20,8 @@ class UserBlockRepository private constructor(
 ) {
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val userModelCache = LruCache<String, UserModel>(20)
+    private val realDb: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val blockRelationsRef = realDb.getReference("block_relations")
 
     companion object {
         @Volatile
@@ -131,6 +136,8 @@ class UserBlockRepository private constructor(
             )
             .await()
 
+        addBlockToRealtimeDb(kisiId = userId, targetId = targetId)
+
         // 2. LRU Cache Güncellemesi
         userModelCache.put(targetId, blockUserModel)
 
@@ -173,6 +180,8 @@ class UserBlockRepository private constructor(
             .delete()
             .await()
 
+        removeBlockFromRealtimeDb(kisiId = kisiId, targetId = engelliKullaniciId)
+
         // 2. LRU Cache'ten Kaldırma
         userModelCache.remove(engelliKullaniciId)
 
@@ -210,6 +219,31 @@ class UserBlockRepository private constructor(
             doc.exists()
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private suspend fun addBlockToRealtimeDb(kisiId: String, targetId: String) {
+        try {
+            val relationKey = BlockUtils.generateRelationKey(kisiId, targetId)
+
+            blockRelationsRef.child(relationKey)
+                .child(kisiId)
+                .setValue(true)
+                .await()
+        } catch (e: Exception) {
+            Log.e("RTDB", "Realtime DB engelleme kaydı yazılamadı: ${e.message}")
+        }
+    }
+    private suspend fun removeBlockFromRealtimeDb(kisiId: String, targetId: String) {
+        try {
+            val relationKey = BlockUtils.generateRelationKey(kisiId, targetId)
+
+            blockRelationsRef.child(relationKey)
+                .child(kisiId)
+                .setValue(false)
+                .await()
+        } catch (e: Exception) {
+            Log.e("RTDB", "Realtime DB engelleme kaydı silinemedi: ${e.message}")
         }
     }
 

@@ -30,8 +30,12 @@ import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.ReplyModel
 import com.beem.catmap.data.model.CommentModel
+import com.beem.catmap.ui.components.CatMapDialog
+import com.beem.catmap.ui.components.CatMapInputDialog
+import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.navigation.NavigationHelper
+import com.beem.catmap.ui.report.ReportType
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -203,31 +207,13 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             }
 
             override fun onUpdateClicked(yorum: CommentModel) {
-                val context = requireContext()
-                val builder = AlertDialog.Builder(context, R.style.ModernAlertDialog)
-                builder.setTitle("Yorumu Güncelle")
-
-                val input = EditText(context).apply {
-                    setText(yorum.commentContent)
-                    inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
-                    minLines = 3
-                    maxLines = 6
-                    gravity = Gravity.TOP or Gravity.START
-                    background = ContextCompat.getDrawable(context, R.drawable.edittext_oval_bg)
-                    setPadding(30, 30, 30, 30)
-                }
-                builder.setView(input)
-
-                builder.setPositiveButton("Güncelle") { _, _ ->
-                    val yeniYorum = input.text.toString().trim()
-                    if (yeniYorum.isNotEmpty() && yorum.commentId != null) {
-                        viewModel.updateComment(yorum.commentId, yeniYorum)
-                        Toast.makeText(context, "Yorum güncellendi", Toast.LENGTH_SHORT).show()
+                CatMapInputDialog.build()
+                    .setTitle("Yorumu Düzenle")
+                    .setInitialText(yorum.commentContent)
+                    .setPositiveButton("Güncelle") { yeniMetin ->
+                        viewModel.updateComment(yorum.commentId, yeniMetin)
                     }
-                }
-                builder.setNegativeButton("İptal") { dialog, _ -> dialog.cancel() }
-                val dialog = builder.create()
-                dialog.show()
+                    .show(childFragmentManager, "CatMapInputDialog")
             }
 
             override fun onReplyLikeClicked(yanit: ReplyModel, yorumId: String, kalpView: ImageView) {
@@ -274,6 +260,21 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
                     viewModel.loadReplies(yorumId, 3, false)
                 }
             }
+
+            override fun onCommentMenuClicked(
+                anchorView: View?,
+                yorum: CommentModel?
+            ) {
+                showCommentPopupMenu(anchorView, yorum)
+            }
+
+            override fun onReplyMenuClicked(
+                anchorView: View?,
+                yanit: ReplyModel?,
+                parentYorumId: String?
+            ) {
+                showReplyPopupMenu(anchorView, yanit, parentYorumId)
+            }
         })
 
         commentRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -291,6 +292,111 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         })
     }
+
+    private fun showCommentPopupMenu(
+        anchorView: View?,
+        comment: CommentModel?
+    ) {
+        anchorView ?: return
+        comment ?: return
+        val isMyComment = UserSession.userId == comment.getLoadId()
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+
+        val menuBuilder = CatMapPopupMenu.Builder(requireContext())
+
+        if (isMyComment) {
+            menuBuilder
+                .addItem(id = 1, title = "Yorumu Düzenle", iconRes = R.drawable.ic_edit) {
+                    CatMapInputDialog.build()
+                        .setTitle("Yorumu Düzenle")
+                        .setInitialText(comment.commentContent)
+                        .setNegativeButton("İptal")
+                        .setPositiveButton("Güncelle") { yeniMetin ->
+                            viewModel.updateComment(comment.commentId, yeniMetin)
+                        }
+                        .show(childFragmentManager, "CatMapInputDialog")
+                }
+                .addItem(id = 2, title = "Yorumu Sil", iconRes = R.drawable.ic_delete, textColor = redColor, iconTint = redColor) {
+                    showDeleteCommentConfirmationDialog(comment)
+                }
+        } else {
+            menuBuilder.addItem(id = 3, title = "Yorumu Bildir", iconRes = R.drawable.ic_error_outline, textColor = redColor, iconTint = redColor) {
+                NavigationHelper.showReportBottomSheet(
+                    childFragmentManager,
+                    comment.commentId,
+                    reportType = ReportType.COMMENT
+                )
+            }
+        }
+
+        menuBuilder.build().show(anchorView)
+    }
+
+    private fun showDeleteCommentConfirmationDialog(comment: CommentModel) {
+        CatMapDialog.build()
+            .setTitle("Yorum Silinsin mi?")
+            .setMessage("Bu yorumu silmek istediğine emin misin? Bu işlem geri alınamaz.")
+            .setPositiveButton("Evet, Sil") {
+                viewModel.deleteComment(comment.commentId)
+            }
+            .setNegativeButton("Vazgeç")
+            .show(childFragmentManager, "DeleteCommentDialog")
+    }
+
+    private fun showReplyPopupMenu(
+        anchorView: View?,
+        yanit: ReplyModel?,
+        parentYorumId: String?
+    ) {
+        anchorView ?: return
+        yanit ?: return
+        parentYorumId ?: return
+
+        val isMyReply = UserSession.userId == yanit.getReplyUserId()
+        val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
+
+        val menuBuilder = CatMapPopupMenu.Builder(requireContext())
+
+        if (isMyReply) {
+            // 🟢 Benim Yanıtım: Düzenle ve Sil
+            menuBuilder
+                .addItem(id = 1, title = "Yanıtı Düzenle", iconRes = R.drawable.ic_edit) {
+                    CatMapInputDialog.build()
+                        .setTitle("Yanıtı Düzenle")
+                        .setInitialText(yanit.replyContent)
+                        .setNegativeButton("İptal")
+                        .setPositiveButton("Güncelle") { yeniMetin ->
+                            viewModel.updateReply(parentYorumId, yanit.replyId, yeniMetin)
+                        }
+                        .show(childFragmentManager, "CatMapInputDialog")
+                }
+                .addItem(id = 2, title = "Yanıtı Sil", iconRes = R.drawable.ic_delete, textColor = redColor, iconTint = redColor) {
+                    showDeleteReplyConfirmationDialog(yanit, parentYorumId)
+                }
+        } else {
+            menuBuilder.addItem(id = 3, title = "Yanıtı Bildir", iconRes = R.drawable.ic_error_outline, textColor = redColor, iconTint = redColor) {
+                NavigationHelper.showReportBottomSheet(
+                    childFragmentManager,
+                    yanit.replyId,
+                    reportType = ReportType.REPLY
+                )
+            }
+        }
+
+        menuBuilder.build().show(anchorView)
+    }
+
+    private fun showDeleteReplyConfirmationDialog(yanit: ReplyModel, parentYorumId: String) {
+        CatMapDialog.build()
+            .setTitle("Yanıt Silinsin mi?")
+            .setMessage("Bu yanıtı silmek istediğine emin misin? Bu işlem geri alınamaz.")
+            .setPositiveButton("Evet, Sil") {
+                viewModel.deleteReply(parentYorumId, yanit.replyId)
+            }
+            .setNegativeButton("Vazgeç")
+            .show(childFragmentManager, "DeleteReplyDialog")
+    }
+
     private fun setupTextWatchers() {
         commentEditText.doOnTextChanged { text, _, _, _ -> setButtonState(sendCommentButton, !text.isNullOrBlank()) }
         replyEditText.doOnTextChanged { text, _, _, _ -> setButtonState(sendReplyButton, !text.isNullOrBlank()) }

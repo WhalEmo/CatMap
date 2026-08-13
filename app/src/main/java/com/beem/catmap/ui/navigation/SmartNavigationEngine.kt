@@ -152,8 +152,30 @@ object SmartNavigationEngine {
         Log.d("NAV_BACK_DEDEKTOR", "---------------------------")
     }
 
+    @JvmStatic
+    fun resetEngineForLogout(navScreen: Screen, args: Bundle? = null, key: String? = null) {
+        val targetScreenId = generateScreenId(navScreen, key)
+
+        val newEntry = NavBackStackEntry(
+            screen = navScreen,
+            screenId = targetScreenId,
+            args = args ?: Bundle(),
+            trigger = NavigationTrigger.RESET
+        )
+
+        backStack.clear()
+        backStack.addLast(newEntry)
+
+        oldScreen = null
+        currentScreen = navScreen
+
+        emitCurrentState(newEntry)
+
+        Log.d("NAV_ENGINE", "🧹 NAVIGATOR SIFIRLANDI: Bütün eski Fragment'lar ve ViewModel'ler yok edildi.")
+    }
+
     private fun emitCurrentState(entry: NavBackStackEntry) {
-        uiBridge?.updateUISilently(entry.screen)
+       // uiBridge?.updateUISilently(entry.screen)
         currentStack = entry
         _navigationEvents.tryEmit(
             NavigationState.Active(
@@ -163,6 +185,11 @@ object SmartNavigationEngine {
                 screenId = entry.screenId
             )
         )
+    }
+
+    @JvmStatic
+    fun notifyScreenRendered(screen: Screen) {
+        uiBridge?.updateUISilently(screen)
     }
 
 

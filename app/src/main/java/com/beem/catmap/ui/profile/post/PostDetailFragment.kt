@@ -23,6 +23,7 @@ import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.R
 import com.beem.catmap.WarningMessage
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.components.CatMapDialog
@@ -30,9 +31,11 @@ import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.ui.report.ReportType
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -40,7 +43,7 @@ import kotlinx.coroutines.launch
 
 class PostDetailFragment : Fragment() {
 
-    private lateinit var WarningMessage: WarningMessage
+    private lateinit var warningMessage: WarningMessage
 
     private val mapViewModel: MapViewModel by activityViewModels()
 
@@ -70,7 +73,7 @@ class PostDetailFragment : Fragment() {
             catId = it.getString(ARG_KEDIID)
             loaderId = it.getString(ARG_YUKLEYEN_ID)
         }
-        WarningMessage = WarningMessage(requireContext(), true)
+        warningMessage = WarningMessage(requireContext(), true)
     }
 
     override fun onResume() {
@@ -214,6 +217,7 @@ class PostDetailFragment : Fragment() {
 
     private fun showPostOptionMenu(anchorView: View) {
         val currentYukleyenId = postViewModel.loaderId.value
+        val isMyPost = UserSession.userId == currentYukleyenId
         val redColor = ContextCompat.getColor(requireContext(), R.color.catmap_error)
 
         CatMapPopupMenu.Builder(requireContext())
@@ -222,7 +226,8 @@ class PostDetailFragment : Fragment() {
                 title = "Gönderiyi Sil",
                 iconRes = R.drawable.ic_small_close,
                 textColor = redColor,
-                iconTint = redColor
+                iconTint = redColor,
+                isVisible = isMyPost
             ) {
                 showDeletePostConfirmationDialog(currentYukleyenId)
             }
@@ -232,9 +237,25 @@ class PostDetailFragment : Fragment() {
                 title = "Kediyi Haritadan Sil",
                 iconRes = R.drawable.ic_small_close,
                 textColor = redColor,
-                iconTint = redColor
+                iconTint = redColor,
+                isVisible = isMyPost
             ) {
                 showDeleteCatFromMapConfirmationDialog(currentYukleyenId)
+            }
+            .addItem(
+                id = 3,
+                title = "Gönderiyi Bildir",
+                iconRes = R.drawable.ic_error_outline,
+                textColor = redColor, iconTint = redColor,
+                isVisible = !isMyPost
+            ) {
+                catId?.let { catId ->
+                    NavigationHelper.showReportBottomSheet(
+                        childFragmentManager,
+                        catId,
+                        reportType = ReportType.POST
+                    )
+                }
             }
             .build()
             .show(anchorView = anchorView)

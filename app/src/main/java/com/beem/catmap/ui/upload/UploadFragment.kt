@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.maps.LocationEngine
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.local.location.LocationHelper
 import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.data.model.CatModel
 import com.beem.catmap.data.model.Post
@@ -44,7 +45,7 @@ import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class YuklemeArayuzuFragment : Fragment() {
+class UploadFragment : Fragment() {
 
     private var _binding: YuklemeArayuzuBinding? = null
     private val binding get() = _binding!!
@@ -179,7 +180,8 @@ class YuklemeArayuzuFragment : Fragment() {
                 catName = binding.isimText.text.toString(),
                 catAbout = binding.hakkindaText.text.toString(),
                 location = location,
-                userId = UserSession.userId
+                userId = UserSession.userId,
+                locationHelper = LocationHelper(requireContext())
             )
         }
     }

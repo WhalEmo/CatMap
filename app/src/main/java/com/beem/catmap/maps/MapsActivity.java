@@ -40,7 +40,7 @@ import com.beem.catmap.data.local.CacheHelperPostLike;
 import com.beem.catmap.R;
 import com.beem.catmap.data.session.CurrentUserManager;
 import com.beem.catmap.databinding.ActivityMapsBinding;
-import com.beem.catmap.mesaj.MesajFotoGosterFragment;
+
 import com.beem.catmap.ui.auth.AuthFragment;
 import com.beem.catmap.ui.auth.ProfileSetupFragment;
 import com.beem.catmap.ui.camera.CameraFragment;
@@ -55,10 +55,10 @@ import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
+import com.beem.catmap.ui.upload.UploadFragment;
 import com.beem.catmap.ui.profile.edit.EditProfileFragment;
 import com.beem.catmap.ui.profile.follow.fragment.FollowFragment;
 import com.beem.catmap.ui.profile.post.PostDetailFragment;
-import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
 import com.beem.catmap.utils.NetworkObserver;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
@@ -113,7 +113,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             Screen screen = Screen.Companion.fromTag(tag);
             return switch (screen) {
                 case MAP -> new CatMapFragment();
-                case UPLOAD -> new YuklemeArayuzuFragment();
+                case UPLOAD -> new UploadFragment();
                 case OTHER_PROFILE -> new ProfileFragment();
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new ChatFragment();
@@ -123,7 +123,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case BLOCKED_USERS -> new UserBlockFragment();
                 case FOLLOWERS -> new FollowFragment();
                 case POST -> new PostDetailFragment();
-                case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
+                case MESSAGE_PHOTO_PREVIEW -> null;
                 case AUTH -> new AuthFragment();
                 case PROFILE_SETUP -> new ProfileSetupFragment();
                 case ONBOARDING -> new OnboardingFragment();
