@@ -3,6 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="transparent">#00000000</color>
+    <color name="soft_gray">#26000000</color>
 
     <color name="catmap_primary">#1E293B</color>
     <color name="catmap_primary_dark">#0F172A</color>

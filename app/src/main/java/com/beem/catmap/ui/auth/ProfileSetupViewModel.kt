@@ -87,6 +87,12 @@ class ProfileSetupViewModel : ViewModel() {
                 // Firestore'a kaydet
                 firestore.collection("users").document(uid).set(userMap).await()
 
+                val publicData = mapOf(
+                    "KullaniciAdi" to updatedUserModel.username,
+                    "FotoUrl" to (updatedUserModel.photoUrl ?: "")
+                )
+                firestore.collection("publicUsers").document(uid).set(publicData).await()
+
                 _loadingState.value = null
                 saveUserLocallyAndNavigate(updatedUserModel)
 
@@ -101,7 +107,7 @@ class ProfileSetupViewModel : ViewModel() {
      * Firestore'da kullanıcı adının varlığını kontrol eden asenkron yardımcı metot
      */
     private suspend fun checkIsUsernameTaken(username: String): Boolean {
-        val query = firestore.collection("users")
+        val query = firestore.collection("publicUsers")
             .whereEqualTo("KullaniciAdi", username)
             .get()
             .await()

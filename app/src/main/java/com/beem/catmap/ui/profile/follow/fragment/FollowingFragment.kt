@@ -97,7 +97,6 @@ class FollowingFragment : Fragment() {
             }
         })
     }
-
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -105,7 +104,6 @@ class FollowingFragment : Fragment() {
                     viewModel.followingState.collect { state ->
                         when (state) {
                             is FollowUiState.Loading -> {
-                                // Sadece SwipeRefresh AKTİF DEĞİLSE Shimmer göster
                                 if (!swipeRefresh.isRefreshing) {
                                     shimmerContainer.isVisible = true
                                     shimmerContainer.startShimmer()
@@ -114,7 +112,6 @@ class FollowingFragment : Fragment() {
                             }
 
                             is FollowUiState.Success -> {
-                                // İşlem bittiğinde SwipeRefresh animasyonunu kapat
                                 swipeRefresh.isRefreshing = false
 
                                 shimmerContainer.stopShimmer()
@@ -131,15 +128,12 @@ class FollowingFragment : Fragment() {
                                 shimmerContainer.isVisible = false
                                 recyclerView.isVisible = true
                                 footerAdapter.setLoading(false)
-
-                                // İsteğe bağlı: Toast veya Snackbar ile hata mesajı gösterilebilir
                             }
 
                             else -> {}
                         }
                     }
                 }
-
             }
         }
     }

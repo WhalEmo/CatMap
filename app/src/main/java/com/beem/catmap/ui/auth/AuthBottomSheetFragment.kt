@@ -210,7 +210,11 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                                 Toast.makeText(requireContext(), event.message, Toast.LENGTH_SHORT).show()
                             }
                             is AuthEvent.NavigateToMap -> {
-                                SmartNavigationEngine.navigateTo(Screen.MAP)
+                                if (event.isNewRegister) {
+                                    SmartNavigationEngine.navigateTo(Screen.ONBOARDING)
+                                } else {
+                                    SmartNavigationEngine.navigateTo(Screen.MAP)
+                                }
                             }
                             else -> {}
                         }

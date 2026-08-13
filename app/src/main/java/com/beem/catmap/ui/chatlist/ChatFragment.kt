@@ -65,6 +65,8 @@ class ChatFragment : Fragment() {
                     } else {
                         binding.shimmerLayout.stopShimmer()
                     }
+                    binding.emptyStateLayout.isVisible = state.isEmpty
+                    binding.kisilerRecyclerView.isVisible = !state.isEmpty
                 }
             }
         }

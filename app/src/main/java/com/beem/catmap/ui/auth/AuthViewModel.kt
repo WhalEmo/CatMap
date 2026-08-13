@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.auth
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,7 +39,7 @@ class AuthViewModel : ViewModel() {
     private val _event = MutableSharedFlow<AuthEvent>()
     val event: SharedFlow<AuthEvent> = _event.asSharedFlow()
 
-    // 🔑 KULLANICI ADI İLE GİRİŞ
+    // 🔑 KULLANICI ADI İLE GİRİŞ (Mevcut kullanıcı -> isNewRegister = false)
     fun login(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) {
             _uiState.value = AuthUiState.Error("Lütfen tüm alanları doldurun!")
@@ -51,7 +52,7 @@ class AuthViewModel : ViewModel() {
             repository.login(username, password)
                 .onSuccess { user ->
                     _uiState.value = AuthUiState.Success(user, "Giriş Başarılı!")
-                    saveUserLocallyAndNavigate(user)
+                    saveUserLocallyAndNavigate(user, isNewRegister = false)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Giriş başarısız!")
@@ -64,7 +65,7 @@ class AuthViewModel : ViewModel() {
         _uiState.value = AuthUiState.Idle
     }
 
-
+    // 📝 YENİ KAYIT (Yeni kullanıcı -> isNewRegister = true)
     fun register(userModel: UserModel) {
         if (!Patterns.EMAIL_ADDRESS.matcher(userModel.email).matches()) {
             _uiState.value = AuthUiState.Error("Lütfen geçerli bir email adresi giriniz!")
@@ -81,7 +82,7 @@ class AuthViewModel : ViewModel() {
             repository.register(userModel)
                 .onSuccess { registeredUser ->
                     _uiState.value = AuthUiState.Success(registeredUser, "Kayıt Başarılı!")
-                    saveUserLocallyAndNavigate(registeredUser)
+                    saveUserLocallyAndNavigate(registeredUser, isNewRegister = true)
                 }
                 .onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.localizedMessage ?: "Kayıt başarısız!")
@@ -122,7 +123,7 @@ class AuthViewModel : ViewModel() {
                     when (result) {
                         is GoogleAuthResult.ExistingUser -> {
                             _uiState.value = AuthUiState.Success(result.userModel, "Tekrar Hoş Geldin!")
-                            saveUserLocallyAndNavigate(result.userModel)
+                            saveUserLocallyAndNavigate(result.userModel, isNewRegister = false)
                         }
                         is GoogleAuthResult.NewUser -> {
                             _uiState.value = AuthUiState.Idle
@@ -147,8 +148,10 @@ class AuthViewModel : ViewModel() {
                         is AuthError.Unknown ->
                             "Google ile giriş sırasında beklenmeyen bir hata oluştu."
 
-                        else ->
+                        else -> {
+                            Log.e("AuthViewModel", "Ele alınmayan Google auth hatası: ${exception.javaClass.simpleName} - ${exception.localizedMessage}", exception)
                             "Google ile giriş başarısız."
+                            }
                     }
 
                     _uiState.value = AuthUiState.Error(message)
@@ -156,11 +159,11 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private fun saveUserLocallyAndNavigate(userModel: UserModel) {
+    private fun saveUserLocallyAndNavigate(userModel: UserModel, isNewRegister: Boolean) {
         viewModelScope.launch {
             UserSession.update(userModel)
             OnlinePresenceManager.setUserOnline()
-            _event.emit(AuthEvent.NavigateToMap)
+            _event.emit(AuthEvent.NavigateToMap(isNewRegister = isNewRegister))
         }
     }
 

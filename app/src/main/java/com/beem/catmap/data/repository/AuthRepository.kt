@@ -181,12 +181,6 @@ class AuthRepository {
                     photoUrl = firebaseUser.photoUrl?.toString() ?: ""
                 }
 
-                val publicData = mapOf(
-                    "KullaniciAdi" to newUserModel.username,
-                    "FotoUrl" to newUserModel.photoUrl
-                )
-                db.collection("publicUsers").document(uid).set(publicData).await()
-
                 Result.success(GoogleAuthResult.NewUser(newUserModel))
             }
         } catch (e: FirebaseNetworkException) {

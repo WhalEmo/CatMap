@@ -19,7 +19,6 @@ import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.launch
 
 class ProfileSetupFragment : Fragment() {
-
     private var _binding: FragmentProfileSetupBinding? = null
     private val binding get() = _binding!!
 
@@ -88,7 +87,7 @@ class ProfileSetupFragment : Fragment() {
                     viewModel.uiEvent.collect { event ->
                         when (event) {
                             is ProfileSetupViewModel.UiEvent.Success -> {
-                                SmartNavigationEngine.navigateTo(Screen.MAP)
+                                SmartNavigationEngine.navigateTo(Screen.ONBOARDING)
                             }
                             is ProfileSetupViewModel.UiEvent.Error -> {
                                 binding.tilUsername.error = event.message

@@ -30,6 +30,7 @@ import androidx.fragment.app.Fragment;
 
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.data.model.UserModel;
+import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
 import com.beem.catmap.ui.profile.common.ProfileFragment;
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment;
@@ -58,6 +59,7 @@ import com.beem.catmap.ui.profile.edit.EditProfileFragment;
 import com.beem.catmap.ui.profile.follow.fragment.FollowFragment;
 import com.beem.catmap.ui.profile.post.PostDetailFragment;
 import com.beem.catmap.ui.upload.YuklemeArayuzuFragment;
+import com.beem.catmap.utils.NetworkObserver;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
@@ -77,9 +79,10 @@ import java.util.Map;
 import kotlin.Unit;
 
 public class MapsActivity extends AppCompatActivity implements BottomSheetController {
-
     private ActivityMapsBinding binding;
+    private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private NetworkObserver networkObserver;
 
     private BottomSheetDialog bottomSheetDialog;
     private long sonTiklamaZamani = 0;
@@ -97,7 +100,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     private CatMapNavigationEngine navigationEngine;
     private CatMapNavigationRenderer navigationRenderer;
     private CurrentUserManager currentUserManager;
-
     private double latitude;
     private double longitude;
     private boolean bittimi = true;
@@ -124,6 +126,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case MESSAGE_PHOTO_PREVIEW -> new MesajFotoGosterFragment();
                 case AUTH -> new AuthFragment();
                 case PROFILE_SETUP -> new ProfileSetupFragment();
+                case ONBOARDING -> new OnboardingFragment();
             };
         }
     };
@@ -133,6 +136,35 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         Log.d("ActivityLifecycle", "📌 onCreate: Activity oluşturuldu.");
 
         currentUserManager = CurrentUserManager.Companion.getInstance(getApplicationContext());
+        networkObserver = new NetworkObserver(this);
+
+        networkObserver.observeJava(isConnected -> {
+            if (lastNetworkStatus != null && lastNetworkStatus == isConnected) {
+                return;
+            }
+            if (lastNetworkStatus == null) {
+                lastNetworkStatus = isConnected;
+
+                if (!isConnected) {
+                    UiMessageManager.INSTANCE.emitMessage(
+                            new UiMessageState.Info("İnternet bağlantınız yok!")
+                    );
+                }
+                return;
+            }
+
+            lastNetworkStatus = isConnected;
+
+            if (!isConnected) {
+                UiMessageManager.INSTANCE.emitMessage(
+                        new UiMessageState.Error("İnternet bağlantınız kesildi!", 1500)
+                );
+            } else {
+                UiMessageManager.INSTANCE.emitMessage(
+                        new UiMessageState.Info("Yeniden bağlandınız")
+                );
+            }
+        });
 
         setTheme(R.style.Theme_CatMap);
 
@@ -244,7 +276,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             sonTiklananMarker = null;
         }
     }
-
     private void BegenileriCek() {
         String userId = currentUserManager.getCurrentUserId();
         if (userId == null || userId.isEmpty()) return;

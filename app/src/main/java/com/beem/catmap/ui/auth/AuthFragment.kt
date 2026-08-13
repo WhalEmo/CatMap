@@ -240,10 +240,9 @@ class AuthFragment : Fragment() {
 
             } catch (e: GetCredentialCancellationException) {
 
-                Log.i(
+                Log.d(
                     TAG_GOOGLE_AUTH,
-                    "Google Sign-In kullanıcı tarafından iptal edildi.",
-                    e
+                    e.toString(),
                 )
 
                 showErrorPill("Google ile giriş iptal edildi.")
