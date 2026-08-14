@@ -32,6 +32,7 @@ import androidx.fragment.app.Fragment;
 
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.data.model.UserModel;
+import com.beem.catmap.ui.badge.BadgeFragment;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
 import com.beem.catmap.ui.profile.common.ProfileFragment;
@@ -129,6 +130,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                 case AUTH -> new AuthFragment();
                 case PROFILE_SETUP -> new ProfileSetupFragment();
                 case ONBOARDING -> new OnboardingFragment();
+                case BADGE -> new BadgeFragment();
             };
         }
     };

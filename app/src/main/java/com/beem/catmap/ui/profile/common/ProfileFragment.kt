@@ -30,6 +30,8 @@ import com.beem.catmap.ui.profile.post.PostAdapter
 import com.beem.catmap.R
 import com.beem.catmap.WarningMessage
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.model.BadgeTier
+import com.beem.catmap.data.model.EquippedBadgeModel
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.managers.OnlinePresenceManager
 import com.beem.catmap.ui.profile.block.BlockActionState
@@ -38,6 +40,7 @@ import com.beem.catmap.ui.profile.follow.viewmodel.FollowActionViewModel
 import com.beem.catmap.ui.profile.post.LoadingFooterAdapter
 import com.beem.catmap.ui.profile.post.PostViewModel
 import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
+import com.beem.catmap.ui.badge.BadgeStoryBottomSheet
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.extensions.bounceAndHaptic
@@ -52,8 +55,10 @@ import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
+import com.beem.catmap.utils.withPossessiveSuffix
 import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.imageview.ShapeableImageView
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.flow.collectLatest
@@ -96,6 +101,9 @@ class ProfileFragment : Fragment() {
     private lateinit var tvAd: TextView
     private lateinit var profilePhotoImageView: CircleImageView
     private lateinit var profilePhotoBlock: ShapeableImageView
+    private lateinit var cardEquippedBadge: MaterialCardView
+    private lateinit var imgEquippedBadge: ImageView
+    private lateinit var tvEquippedBadgeTitle: TextView
     private lateinit var postAdapter: PostAdapter
     private val loadingFooterAdapter = LoadingFooterAdapter()
     private lateinit var concatAdapter: ConcatAdapter
@@ -167,6 +175,9 @@ class ProfileFragment : Fragment() {
         tvAd = view.findViewById(R.id.tvAdSoyad)
         profilePhotoImageView = view.findViewById(R.id.profilFotoImageView)
         profilePhotoBlock = view.findViewById(R.id.imgProfilFotoEngel)
+        cardEquippedBadge = view.findViewById(R.id.cardEquippedBadge)
+        imgEquippedBadge = view.findViewById(R.id.imgEquippedBadge)
+        tvEquippedBadgeTitle = view.findViewById(R.id.tvEquippedBadgeTitle)
         postSectionHeader = view.findViewById(R.id.postSectionHeader)
         blockedUserLayout = view.findViewById(R.id.blockedUserLayout)
         btnBackBlock = view.findViewById(R.id.btnBackEngel)
@@ -503,6 +514,16 @@ class ProfileFragment : Fragment() {
                         reportType = ReportType.PROFILE
                     )
                 }
+            }
+            .addItem(
+                id = 4,
+                title = "Rozetler",
+                iconRes = R.drawable.catmap_badge_tier_05,
+                isVisible = targetUserId == UserSession.userId
+            ){
+                SmartNavigationEngine.navigateTo(
+                    targetScreen = Screen.BADGE
+                )
             }
             .build()
             .show(anchorView = view)
@@ -867,8 +888,10 @@ class ProfileFragment : Fragment() {
             .placeholder(R.drawable.kullanici)
             .error(R.drawable.kullanici)
             .into(profilePhotoImageView)
-
-
+            
+        bindEquippedBadge(
+            userModel.equippedBadge
+          )
         ProfilePreviewHelper.attachLongPressPreview(
             context = requireContext(),
             targetView = profilePhotoImageView,
@@ -912,6 +935,149 @@ class ProfileFragment : Fragment() {
         )
     }
 
+
+    private fun bindEquippedBadge(
+        equippedBadge: EquippedBadgeModel?
+    ) {
+        if (
+            equippedBadge == null ||
+            !equippedBadge.isValid
+        ) {
+            cardEquippedBadge.visibility =
+                View.GONE
+
+            return
+        }
+
+        val tier = equippedBadge.tier
+
+        if (tier == null) {
+            cardEquippedBadge.visibility =
+                View.GONE
+
+            return
+        }
+
+        val context = requireContext()
+
+        val accentColor =
+            ContextCompat.getColor(
+                context,
+                tier.accentColorRes
+            )
+
+        val surfaceColor =
+            ContextCompat.getColor(
+                context,
+                tier.pillBgColorRes
+            )
+
+        // =========================================================
+        // GÖRÜNÜRLÜK
+        // =========================================================
+
+        cardEquippedBadge.visibility =
+            View.VISIBLE
+
+        // =========================================================
+        // BADGE ICON
+        // =========================================================
+
+        imgEquippedBadge.setImageResource(
+            tier.iconResId
+        )
+
+        // =========================================================
+        // TITLE
+        //
+        // Yazır'ın Pati Koruyucusu
+        // =========================================================
+
+        val tierTitle =
+            getString(
+                tier.titleResId
+            )
+
+        tvEquippedBadgeTitle.text =
+            if (equippedBadge.neighborhood.isNotBlank()) {
+
+                "${equippedBadge.neighborhood.withPossessiveSuffix()} $tierTitle"
+
+            } else {
+
+                tierTitle
+            }
+
+        // =========================================================
+        // NORMAL TIER TEMASI
+        // =========================================================
+
+        if (tier != BadgeTier.TIER_08) {
+
+            cardEquippedBadge.setCardBackgroundColor(
+                surfaceColor
+            )
+
+            cardEquippedBadge.strokeColor =
+                accentColor
+
+            tvEquippedBadgeTitle.setTextColor(
+                accentColor
+            )
+
+        } else {
+
+            // =====================================================
+            // TIER 08 · GECE ALTINI
+            // =====================================================
+
+            val nightBackground =
+                ContextCompat.getColor(
+                    context,
+                    R.color.badge_tier_08_detail_chip_bg
+                )
+
+            val goldStroke =
+                ContextCompat.getColor(
+                    context,
+                    R.color.badge_tier_08_detail_chip_stroke
+                )
+
+            val goldText =
+                ContextCompat.getColor(
+                    context,
+                    R.color.badge_tier_08_detail_chip_text
+                )
+
+            cardEquippedBadge.setCardBackgroundColor(
+                nightBackground
+            )
+
+            cardEquippedBadge.strokeColor =
+                goldStroke
+
+            tvEquippedBadgeTitle.setTextColor(
+                goldText
+            )
+        }
+
+        // =========================================================
+        // CLICK
+        // =========================================================
+
+        cardEquippedBadge.setOnClickListener { view ->
+
+            view.bounceAndHaptic()
+
+            BadgeStoryBottomSheet.show(
+                fragmentManager =
+                    childFragmentManager,
+
+                equippedBadge =
+                    equippedBadge
+            )
+        }
+    }
 
 
     private fun renderProfileButtons(state: FollowState) {

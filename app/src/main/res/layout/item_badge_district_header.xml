@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="18dp"
+    android:paddingTop="18dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/tvDistrictName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/plus_jakarta_sans_bold"
+        android:includeFontPadding="false"
+        android:letterSpacing="0.06"
+        android:textColor="@color/catmap_text_primary"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="@id/tvNeighborhoodCount"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvNeighborhoodCount"
+        tools:text="SELÇUKLU" />
+
+    <TextView
+        android:id="@+id/tvNeighborhoodCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="@font/plus_jakarta_sans_medium"
+        android:includeFontPadding="false"
+        android:textColor="@color/catmap_text_muted"
+        android:textSize="11sp"
+        app:layout_constraintStart_toEndOf="@id/tvDistrictName"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="• 2 MAHALLE" />
+
+    <View
+        android:id="@+id/viewDistrictDivider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginStart="12dp"
+        android:background="@color/catmap_divider"
+        app:layout_constraintBottom_toBottomOf="@id/tvNeighborhoodCount"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvNeighborhoodCount"
+        app:layout_constraintTop_toTopOf="@id/tvNeighborhoodCount" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

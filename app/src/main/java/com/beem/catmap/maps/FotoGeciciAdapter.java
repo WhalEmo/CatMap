@@ -22,7 +22,8 @@ public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHo
 
     private final Context baglanti;
     private final FotografYukleyiciYonetici yukleyici;
-    private static final DiffUtil.ItemCallback<Uri> DIFF_CALLBACK = new DiffUtil.ItemCallback<Uri>() {
+
+    private static class FotoDiffCallback extends DiffUtil.ItemCallback<Uri> {
         @Override
         public boolean areItemsTheSame(@NonNull Uri oldItem, @NonNull Uri newItem) {
             return oldItem.equals(newItem);
@@ -32,10 +33,10 @@ public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHo
         public boolean areContentsTheSame(@NonNull Uri oldItem, @NonNull Uri newItem) {
             return oldItem.toString().equals(newItem.toString());
         }
-    };
+    }
 
     public FotoGeciciAdapter(Context baglanti, FotografYukleyiciYonetici yukleyici) {
-        super(DIFF_CALLBACK);
+        super(new FotoDiffCallback());
         this.baglanti = baglanti;
         this.yukleyici = yukleyici;
     }

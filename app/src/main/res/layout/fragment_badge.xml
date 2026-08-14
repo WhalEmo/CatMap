@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/catmap_background"
+    android:paddingTop="16dp">
+
+    <!-- ÜST BAŞLIK ALANI -->
+    <TextView
+        android:id="@+id/tvHeaderTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:fontFamily="@font/plus_jakarta_sans_bold"
+        android:text="Mahalle Rozetleri"
+        android:textColor="@color/catmap_text_primary"
+        android:textSize="22sp"
+        app:layout_constraintEnd_toStartOf="@id/tvTotalBadgeCount"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvHeaderSubtitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:fontFamily="@font/plus_jakarta_sans"
+        android:text="Keşfettiğin mahallelerdeki pati unvanların"
+        android:textColor="@color/catmap_text_secondary"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toEndOf="@id/tvHeaderTitle"
+        app:layout_constraintStart_toStartOf="@id/tvHeaderTitle"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle" />
+
+    <!-- TOPLAM KAZANILAN ROZET SAYAÇ ROZETİ -->
+    <TextView
+        android:id="@+id/tvTotalBadgeCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_cat_count_pill"
+        android:fontFamily="@font/plus_jakarta_sans_bold"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:textColor="@color/catmap_accent"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="@id/tvHeaderSubtitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvHeaderTitle"
+        tools:text="3 Rozet Kilitli Değil" />
+
+    <!-- AÇIKLAMA / AYRAÇ ÇİZGİSİ -->
+    <View
+        android:id="@+id/dividerHeader"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="16dp"
+        android:background="@color/catmap_divider"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaderSubtitle" />
+
+    <!-- ROZETLER RECYCLERVIEW -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvBadges"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/dividerHeader"
+        tools:listitem="@layout/item_neighborhood_badge" />
+
+    <!-- YÜKLENİYOR İNDİKATÖRÜ -->
+    <ProgressBar
+        android:id="@+id/progressBarLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminateTint="@color/catmap_accent"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- BOŞ DURUM (EMPTY STATE) -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/catmap_badge_tier_01"
+            app:tint="@color/catmap_text_muted" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/plus_jakarta_sans_bold"
+            android:text="Henüz Mahalle Rozetin Yok"
+            android:textColor="@color/catmap_text_primary"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/plus_jakarta_sans"
+            android:text="Kedi ekledikçe mahallelerde rozet kazanacaksın!"
+            android:textColor="@color/catmap_text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

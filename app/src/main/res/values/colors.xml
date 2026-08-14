@@ -10,6 +10,7 @@
 
     <color name="catmap_accent">#F97316</color>
     <color name="catmap_accent_alpha_15">#26F97316</color>
+    <color name="catmap_accent_alpha_20">#33F97316</color>
     <color name="catmap_background">#F8FAFC</color>
 
     <color name="catmap_surface_white">#FFFFFF</color>
@@ -34,5 +35,200 @@
 
     <color name="catmap_success">#10B981</color>
     <color name="catmap_error">#EF4444</color>
+
+    <color name="badge_card_bg">#1E293B</color>
+    <color name="badge_progress_bg">#334155</color>
+
+    <color name="badge_transparent">#00000000</color>
+    <color name="badge_white">#FFFFFF</color>
+    <color name="badge_ink">#1E293B</color>
+    <color name="badge_deep_navy">#0F172A</color>
+    <color name="badge_catmap_orange">#F97316</color>
+    <color name="badge_soft_cream">#FFF7ED</color>
+    <color name="badge_gold">#F59E0B</color>
+    <color name="badge_light_gold">#FDE68A</color>
+    <color name="badge_silver">#94A3B8</color>
+    <color name="badge_light_silver">#E2E8F0</color>
+    <color name="badge_bronze">#B45309</color>
+    <color name="badge_bronze_light">#D97706</color>
+    <color name="badge_burnt_orange">#C2410C</color>
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 01 · PATİ KAŞİFİ                                 -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_01_base">@color/badge_soft_cream</color>
+    <color name="badge_tier_01_ring">@color/badge_silver</color>
+    <color name="badge_tier_01_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_01_core_fill">@color/badge_white</color>
+    <color name="badge_tier_01_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 02 · MAHALLE İZCİSİ                              -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_02_outer">@color/badge_bronze</color>
+    <color name="badge_tier_02_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_02_ring">@color/badge_light_gold</color>
+    <color name="badge_tier_02_rank_mark">@color/badge_bronze_light</color>
+    <color name="badge_tier_02_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_02_core_fill">@color/badge_white</color>
+    <color name="badge_tier_02_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 03 · MAHALLE KAŞİFİ                              -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_03_outer">@color/badge_deep_navy</color>
+    <color name="badge_tier_03_mid">@color/badge_bronze</color>
+    <color name="badge_tier_03_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_03_star">@color/badge_light_gold</color>
+    <color name="badge_tier_03_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_03_core_fill">@color/badge_white</color>
+    <color name="badge_tier_03_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 04 · PATİ REHBERİ                                -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_04_outer">@color/badge_silver</color>
+    <color name="badge_tier_04_mid">@color/badge_light_silver</color>
+    <color name="badge_tier_04_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_04_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_04_core_fill">@color/badge_white</color>
+    <color name="badge_tier_04_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 05 · MAHALLE GÖZCÜSÜ                             -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_05_outer">@color/badge_deep_navy</color>
+    <color name="badge_tier_05_mid">@color/badge_silver</color>
+    <color name="badge_tier_05_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_05_star">@color/badge_light_silver</color>
+    <color name="badge_tier_05_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_05_core_fill">@color/badge_white</color>
+    <color name="badge_tier_05_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 06 · MAHALLE ÖNCÜSÜ                              -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_06_outer">@color/badge_deep_navy</color>
+    <color name="badge_tier_06_mid">@color/badge_gold</color>
+    <color name="badge_tier_06_inner_mid">@color/badge_light_gold</color>
+    <color name="badge_tier_06_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_06_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_06_core_fill">@color/badge_white</color>
+    <color name="badge_tier_06_core_stroke">@color/badge_ink</color>
+
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 07 · PATİ KORUYUCUSU                             -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_07_outer">@color/badge_deep_navy</color>
+    <color name="badge_tier_07_mid">@color/badge_gold</color>
+    <color name="badge_tier_07_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_07_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_07_core_fill">@color/badge_white</color>
+    <color name="badge_tier_07_core_stroke">@color/badge_ink</color>
+
+
+    <!-- ====================================================== -->
+    <!-- TIER 08 · MAHALLE MUHAFIZI                            -->
+    <!-- Badge artwork                                         -->
+    <!-- ====================================================== -->
+
+    <color name="badge_tier_08_outer">@color/badge_deep_navy</color>
+    <color name="badge_tier_08_mid">@color/badge_gold</color>
+    <color name="badge_tier_08_inner_mid">@color/badge_light_gold</color>
+    <color name="badge_tier_08_inner">@color/badge_soft_cream</color>
+    <color name="badge_tier_08_accent">@color/badge_catmap_orange</color>
+    <color name="badge_tier_08_core_fill">@color/badge_white</color>
+    <color name="badge_tier_08_core_stroke">@color/badge_ink</color>
+
+
+    <!-- ====================================================== -->
+    <!-- BADGE CARD UI PROGRESSION                              -->
+    <!-- ====================================================== -->
+
+    <!-- TIER 01 · PATİ KAŞİFİ -->
+    <!-- Nötr başlangıç -->
+    <color name="badge_tier_01_ui_accent">#64748B</color>
+    <color name="badge_tier_01_ui_surface">#F8FAFC</color>
+    <color name="badge_tier_01_ui_track">#E2E8F0</color>
+
+    <!-- TIER 02 · MAHALLE İZCİSİ -->
+    <!-- İlk bronz -->
+    <color name="badge_tier_02_ui_accent">#B45309</color>
+    <color name="badge_tier_02_ui_surface">#FFF7ED</color>
+    <color name="badge_tier_02_ui_track">#FED7AA</color>
+
+    <!-- TIER 03 · MAHALLE KAŞİFİ -->
+    <!-- Daha koyu / oturmuş bronz -->
+    <color name="badge_tier_03_ui_accent">#9A3412</color>
+    <color name="badge_tier_03_ui_surface">#FFF1E6</color>
+    <color name="badge_tier_03_ui_track">#FDBA74</color>
+
+    <!-- TIER 04 · PATİ REHBERİ -->
+    <!-- Gümüşe geçiş -->
+    <color name="badge_tier_04_ui_accent">#64748B</color>
+    <color name="badge_tier_04_ui_surface">#F1F5F9</color>
+    <color name="badge_tier_04_ui_track">#CBD5E1</color>
+
+    <!-- TIER 05 · MAHALLE GÖZCÜSÜ -->
+    <!-- Daha güçlü çelik / premium gümüş -->
+    <color name="badge_tier_05_ui_accent">#334155</color>
+    <color name="badge_tier_05_ui_surface">#E2E8F0</color>
+    <color name="badge_tier_05_ui_track">#94A3B8</color>
+
+    <!-- TIER 06 · MAHALLE ÖNCÜSÜ -->
+    <!-- Altın başlangıç -->
+    <color name="badge_tier_06_ui_accent">#D97706</color>
+    <color name="badge_tier_06_ui_surface">#FFFBEB</color>
+    <color name="badge_tier_06_ui_track">#FDE68A</color>
+
+    <!-- TIER 07 · PATİ KORUYUCUSU -->
+    <!-- CatMap turuncusu + güçlü altın -->
+    <color name="badge_tier_07_ui_accent">#F97316</color>
+    <color name="badge_tier_07_ui_surface">#FFF7ED</color>
+    <color name="badge_tier_07_ui_track">#FDBA74</color>
+
+    <!-- TIER 08 · MAHALLE MUHAFIZI -->
+    <!-- Prestij: lacivert + altın -->
+    <color name="badge_tier_08_ui_accent">#0F172A</color>
+    <color name="badge_tier_08_ui_surface">#FEF3C7</color>
+    <color name="badge_tier_08_ui_track">#F59E0B</color>
+
+    <color name="badge_tier_08_detail_card_bg">#0B1220</color>
+    <color name="badge_tier_08_detail_card_stroke">#C8A44D</color>
+    <color name="badge_tier_08_detail_title">#FFF8E1</color>
+    <color name="badge_tier_08_detail_text">#E5D7A3</color>
+    <color name="badge_tier_08_detail_value">#FDE68A</color>
+    <color name="badge_tier_08_detail_progress">#F59E0B</color>
+    <color name="badge_tier_08_detail_track">#24324A</color>
+    <color name="badge_tier_08_detail_chip_bg">#111A2C</color>
+    <color name="badge_tier_08_detail_chip_stroke">#D4AF37</color>
+    <color name="badge_tier_08_detail_chip_text">#FDE68A</color>
 
 </resources>
