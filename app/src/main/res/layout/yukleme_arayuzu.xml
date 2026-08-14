@@ -19,7 +19,8 @@
             android:paddingStart="20dp"
             android:paddingTop="20dp"
             android:paddingEnd="20dp"
-            android:paddingBottom="92dp"> <ImageButton
+            android:paddingBottom="100dp">
+            <ImageButton
             android:id="@+id/btnBack"
             android:layout_width="48dp"
             android:layout_height="48dp"

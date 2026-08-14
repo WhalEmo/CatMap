@@ -5,10 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsControllerCompat
@@ -18,16 +15,17 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.viewpager2.widget.ViewPager2
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
-import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.R
 import com.beem.catmap.WarningMessage
 import com.beem.catmap.data.local.UserSession
-import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.data.model.Post
+import com.beem.catmap.data.session.CurrentUserManager
+import com.beem.catmap.databinding.HerbiGonderiIcinBinding
+import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
@@ -36,12 +34,12 @@ import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.beem.catmap.ui.report.ReportType
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 
 class PostDetailFragment : Fragment() {
+
+    private var _binding: HerbiGonderiIcinBinding? = null
+    private val binding get() = _binding!!
 
     private lateinit var warningMessage: WarningMessage
 
@@ -53,19 +51,8 @@ class PostDetailFragment : Fragment() {
     private var catId: String? = null
     private var loaderId: String? = null
 
-    private var photoPager: ViewPager2? = null
-    private var photoDotsContainer: LinearLayout? = null
-    private var photoIndicatorCapsule: MaterialCardView? = null
-    private var progressBar: ProgressBar? = null
-
     private val photoIndicatorDots: MutableList<View?> = ArrayList()
     private var photoPageChangeCallback: OnPageChangeCallback? = null
-
-    private lateinit var catNameText: TextView
-    private lateinit var bioText: TextView
-    private lateinit var likeInfoTextView: TextView
-    private lateinit var postMenu: ImageView
-    private lateinit var postDateText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,21 +86,8 @@ class PostDetailFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.herbi_gonderi_icin, container, false)
-
-        catNameText = view.findViewById(R.id.kediAdiText)
-        bioText = view.findViewById(R.id.kediAciklama)
-        likeInfoTextView = view.findViewById(R.id.begeniBilgiTextView)
-        postMenu = view.findViewById(R.id.GonderiMenu)
-
-        photoPager = view.findViewById(R.id.fotoPager)
-        photoDotsContainer = view.findViewById(R.id.fotoDotsContainer)
-        photoIndicatorCapsule = view.findViewById(R.id.fotoIndicatorCapsule)
-        postDateText = view.findViewById(R.id.gonderiTarihiText)
-
-        // Varsa layout dosyanızdaki ProgressBar ID'si
-        progressBar = view.findViewById(R.id.progressBar)
+    ): View {
+        _binding = HerbiGonderiIcinBinding.inflate(inflater, container, false)
 
         val currentUserManager = CurrentUserManager.getInstance(requireContext())
 
@@ -126,7 +100,7 @@ class PostDetailFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 postViewModel.loaderId.collect { currentYukleyenId ->
                     val isMyPost = (currentYukleyenId == currentUserManager.getCurrentUser().id)
-                    postMenu.isVisible = isMyPost
+                    binding.GonderiMenu.isVisible = isMyPost
                 }
             }
         }
@@ -143,7 +117,7 @@ class PostDetailFragment : Fragment() {
                 }
             }
         }
-        return view
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -151,14 +125,12 @@ class PostDetailFragment : Fragment() {
 
         handleBackPressWithEngine()
 
-        val haritadaGorButton: MaterialButton = view.findViewById(R.id.haritadaGorButon)
-        val toolbar: MaterialToolbar = view.findViewById(R.id.toolbar)
 
-        toolbar.setNavigationOnClickListener {
+        binding.toolbar.setNavigationOnClickListener {
             SmartNavigationEngine.navigateBack()
         }
 
-        haritadaGorButton.setOnClickListener {
+        binding.haritadaGorButon.setOnClickListener {
             if (!catId.isNullOrBlank()) {
                 SmartNavigationEngine.navigateTo(Screen.MAP)
                 mapViewModel.requestZoomToCat(catId!!)
@@ -167,43 +139,55 @@ class PostDetailFragment : Fragment() {
 
         // Tıklanan kediID üzerinden detay verileri Repository'den (önce cache, yoksa Firestore) çekiliyor
         catId?.let { id ->
-            progressBar?.visibility = View.VISIBLE
+            // Layout dosyanızda varsa progressBar erişimi (kullanılmıyorsa güvenli kalır)
             postViewModel.getPostDetail(id) { gonderi ->
-                progressBar?.visibility = View.GONE
                 if (gonderi != null) {
                     populateUi(gonderi)
                 }
             }
         }
 
-        postMenu.setOnClickListener { v ->
+        binding.GonderiMenu.setOnClickListener { v ->
             showPostOptionMenu(v)
         }
     }
 
     private fun populateUi(post: Post) {
-        catNameText.text = post.catName ?: ""
+        binding.kediAdiText.text = post.catName ?: ""
         if (post.bio.isNullOrBlank()) {
-            bioText.text = "Bu sevimli dostumuz için henüz bir açıklama eklenmemiş. 🐾"
+            binding.kediAciklama.text = "Bu sevimli dostumuz için henüz bir açıklama eklenmemiş. 🐾"
         } else {
-            bioText.text = post.bio
+            binding.kediAciklama.text = post.bio
         }
-        postDateText.text = getFormattedTimestamp(post.date) ?: ""
+        binding.gonderiTarihiText.text = getFormattedTimestamp(post.date) ?: ""
         val begeni = post.likeCount ?: 0L
         if (begeni != 0L) {
-            likeInfoTextView.text = String.format("Bu kediyi %d kişi beğendi. Sen de beğenmek istersen haritada göre bas!", begeni)
+            binding.begeniBilgiTextView.text = String.format("Bu kediyi %d kişi beğendi. Sen de beğenmek istersen haritada göre bas!", begeni)
         } else {
-            likeInfoTextView.text = "Bu kediyi henüz kimse beğenmedi. Beğenmek istersen haritada göre bas!"
+            binding.begeniBilgiTextView.text = "Bu kediyi henüz kimse beğenmedi. Beğenmek istersen haritada göre bas!"
+        }
+
+        val locationParts = listOfNotNull(
+            post.city?.takeIf { it.isNotBlank() },
+            post.district?.takeIf { it.isNotBlank() },
+            post.neighborhood?.takeIf { it.isNotBlank() }
+        )
+
+        if (locationParts.isNotEmpty()) {
+            binding.konumChip.isVisible = true
+            binding.konumText.text = locationParts.joinToString(" • ")
+        } else {
+            binding.konumChip.isVisible = false
         }
 
         val fotoListesi = ArrayList(post.photoUrlList ?: emptyList())
-        photoPager?.adapter = PhotoAdapter(fotoListesi)
+        binding.fotoPager.adapter = PhotoAdapter(fotoListesi)
 
         setupPhotoIndicator(fotoListesi.size)
 
         // DÜZELTİLDİ: Eski callback varsa temizlenir
         if (photoPageChangeCallback != null) {
-            photoPager?.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
+            binding.fotoPager.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
         }
 
         photoPageChangeCallback = object : OnPageChangeCallback() {
@@ -212,7 +196,7 @@ class PostDetailFragment : Fragment() {
                 updatePhotoIndicator(position)
             }
         }
-        photoPager?.registerOnPageChangeCallback(photoPageChangeCallback!!)
+        binding.fotoPager.registerOnPageChangeCallback(photoPageChangeCallback!!)
     }
 
     private fun showPostOptionMenu(anchorView: View) {
@@ -288,7 +272,6 @@ class PostDetailFragment : Fragment() {
             .show(childFragmentManager, "DeleteCatFromMapDialog")
     }
 
-
     companion object {
         private const val ARG_KEDIID = "kediid"
         private const val ARG_YUKLEYEN_ID = "yukleyenId"
@@ -306,31 +289,27 @@ class PostDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (photoPager != null && photoPageChangeCallback != null) {
-            photoPager!!.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
+        if (photoPageChangeCallback != null) {
+            _binding?.fotoPager?.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
         }
 
-        photoPager = null
-        photoDotsContainer = null
-        photoIndicatorCapsule = null
         photoPageChangeCallback = null
-        progressBar = null
-
         photoIndicatorDots.clear()
+        _binding = null
 
         super.onDestroyView()
     }
 
     private fun setupPhotoIndicator(photoCount: Int) {
-        photoDotsContainer?.removeAllViews()
+        binding.fotoDotsContainer.removeAllViews()
         photoIndicatorDots.clear()
 
         if (photoCount <= 1) {
-            photoIndicatorCapsule?.visibility = View.GONE
+            binding.fotoIndicatorCapsule.visibility = View.GONE
             return
         }
 
-        photoIndicatorCapsule?.visibility = View.VISIBLE
+        binding.fotoIndicatorCapsule.visibility = View.VISIBLE
 
         for (i in 0 until photoCount) {
             val dot = View(requireContext())
@@ -347,7 +326,7 @@ class PostDetailFragment : Fragment() {
                 if (isSelected) R.drawable.dot_active else R.drawable.dot_inactive
             )
 
-            photoDotsContainer?.addView(dot)
+            binding.fotoDotsContainer.addView(dot)
             photoIndicatorDots.add(dot)
         }
     }

@@ -11,6 +11,7 @@ import com.beem.catmap.data.model.SendCatItem
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
@@ -165,10 +166,13 @@ class PostRepository private constructor(context: Context) {
                 bio = doc.getString("kediHakkinda"),
                 catName = doc.getString("kediAdi"),
                 date = doc.getTimestamp("createdAt"),
-                likeCount = doc.getLong("begeniSayisi") ?: 0L
+                likeCount = doc.getLong("begeniSayisi") ?: 0L,
+                district = doc.getString("district"),
+                neighborhood = doc.getString("neighborhood"),
+                city = doc.getString("city")
             )
 
-            // Çekilen detayı belleğe ekle
+
             postDetailCache.put(kediId, post)
 
             Result.success(post)

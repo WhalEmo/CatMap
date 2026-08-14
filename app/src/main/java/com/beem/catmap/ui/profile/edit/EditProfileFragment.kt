@@ -21,6 +21,7 @@ import com.beem.catmap.ui.profile.common.ProfileViewModel
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.ProfileUpdateResult
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
@@ -88,6 +89,10 @@ class EditProfileFragment : Fragment() {
         if (currentUserId.isNotBlank()) {
             profileViewModel.allProfileLoad(currentUserId, forceRefresh = false)
         }
+        editUsername.applyInputLimits(maxLength = 20, maxLines = 2)
+        editName.applyInputLimits(maxLength = 20, maxLines = 2)
+        editSurname.applyInputLimits(maxLength = 20, maxLines = 2)
+        editBio.applyInputLimits(maxLength = 150, maxLines = 10)
     }
 
     private fun initViews(view: View) {

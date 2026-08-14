@@ -1,5 +1,6 @@
 package com.beem.catmap.ui.commentreply
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
@@ -33,6 +34,7 @@ import com.beem.catmap.data.model.CommentModel
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapInputDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.report.ReportType
@@ -99,12 +101,28 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
         setupRecyclerView()
         setupTextWatchers()
+        setupTouchListeners()
         observeViewModel()
         loadCurrentUserProfileImage()
 
         if (catId.isNotEmpty()) {
             viewModel.initCatId(catId)
         }
+        commentEditText.applyInputLimits(maxLength = 280, maxLines = 10)
+        replyEditText.applyInputLimits(maxLength = 280, maxLines = 10)
+    }
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupTouchListeners() {
+        val touchListener = View.OnTouchListener { view, event ->
+            view.parent?.requestDisallowInterceptTouchEvent(true)
+            if ((event.action and android.view.MotionEvent.ACTION_MASK) == android.view.MotionEvent.ACTION_UP) {
+                view.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+            false
+        }
+
+        commentEditText.setOnTouchListener(touchListener)
+        replyEditText.setOnTouchListener(touchListener)
     }
 
     private fun initViews(view: View) {

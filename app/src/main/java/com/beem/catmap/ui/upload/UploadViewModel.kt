@@ -13,32 +13,29 @@ import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.ImageUploadManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class UploadViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MapRepository.getInstance()
     private val postRepository = PostRepository.getInstance(application)
 
-
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()
-
 
     init {
         viewModelScope.launch {
             ImageUploadManager.selectedImages.collect { uris ->
                 _uiState.update { it.copy(selectedImages = uris) }
-
             }
         }
     }
-
-
 
     fun onProgressDialogDismissed() {
         _uiState.update { it.copy(isAllDone = true) }
@@ -51,7 +48,6 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         viewModelScope.launch {
-
             postRepository.userPostSave(UserSession.userId, catId)
                 .onSuccess {
                     onComplete(true)
@@ -61,7 +57,6 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 }
         }
     }
-
 
     fun uploadCat(
         catName: String,
@@ -106,15 +101,17 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
 
-            val addressModel = locationHelper.getFormattedAddress(
-                latitude = location.latitude,
-                longitude = location.longitude
-            )
+            // 📍 Adres çözümleme (Geocoder) işlemini IO thread'e alıyoruz (Performans için)
+            val addressModel = withContext(Dispatchers.IO) {
+                locationHelper.getFormattedAddress(
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+            }
 
             val city = addressModel?.city ?: ""
             val district = addressModel?.district ?: ""
             val neighborhood = addressModel?.neighborhood ?: ""
-
 
             _uiState.update { it.copy(uploadStage = UploadStage.UPLOADING_ASSETS) }
 

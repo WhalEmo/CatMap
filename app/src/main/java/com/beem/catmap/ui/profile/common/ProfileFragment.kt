@@ -888,9 +888,14 @@ class ProfileFragment : Fragment() {
             .placeholder(R.drawable.kullanici)
             .error(R.drawable.kullanici)
             .into(profilePhotoImageView)
-
+            
         bindEquippedBadge(
             userModel.equippedBadge
+          )
+        ProfilePreviewHelper.attachLongPressPreview(
+            context = requireContext(),
+            targetView = profilePhotoImageView,
+            photoUrl = userModel?.photoUrl
         )
     }
 

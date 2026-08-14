@@ -24,18 +24,9 @@
         <item name="cornerSize">8dp</item>
     </style>
 
-    <style name="Dialog.FullWidth" parent="Theme.Material3.DayNight.BottomSheetDialog">
-        <item name="colorPrimary">@color/catmap_primary</item>
-        <item name="colorOnPrimary">@color/catmap_text_light</item>
-        <item name="colorSecondary">@color/catmap_accent</item>
-        <item name="colorAccent">@color/catmap_accent</item>
-        <item name="colorSurface">@color/catmap_surface_white</item>
-        <item name="colorOnSurface">@color/catmap_text_dark</item>
-        <item name="colorError">@color/catmap_error</item>
-
-        <item name="textInputStyle">@style/Widget.CatMap.TextInputLayout</item>
-        <item name="materialButtonStyle">@style/Widget.CatMap.Button</item>
-
+    <style name="Dialog.FullWidth" parent="Theme.CatMap">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
         <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>

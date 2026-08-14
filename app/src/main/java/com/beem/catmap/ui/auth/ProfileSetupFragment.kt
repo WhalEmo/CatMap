@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.databinding.FragmentProfileSetupBinding
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import kotlinx.coroutines.launch
@@ -43,6 +44,7 @@ class ProfileSetupFragment : Fragment() {
         setupClickListeners()
         setupInitialData()
         observeViewModel()
+        setupEditText()
     }
 
     private fun setupUsernameFilter() {
@@ -97,6 +99,11 @@ class ProfileSetupFragment : Fragment() {
                 }
             }
         }
+    }
+    private fun setupEditText() {
+        binding.etFullName.applyInputLimits(40,8)
+        binding.etUsername.applyInputLimits(20,2)
+        binding.etBio.applyInputLimits(150,10)
     }
 
     private fun setupClickListeners() {

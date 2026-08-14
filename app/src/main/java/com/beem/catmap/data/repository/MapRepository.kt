@@ -104,6 +104,9 @@ class MapRepository {
                     "geohash" to hash,
                     "photoUri" to uploadedUrls,
                     "YukleyenKullaniciID" to userId,
+                    "city" to city,
+                    "district" to district,
+                    "neighborhood" to neighborhood,
                     "createdAt" to FieldValue.serverTimestamp()
                 )
 
@@ -135,6 +138,9 @@ class MapRepository {
                             kediHakkinda = catAbout,
                             latitude = latitude,
                             longitude = longitude,
+                            city = city,
+                            district = district,
+                            neighborhood = neighborhood,
                             photoUri = uploadedUrls.toList(),
                             YukleyenKullaniciID = userId,
                             createdAt = Timestamp.now().toDate()

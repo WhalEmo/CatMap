@@ -17,6 +17,11 @@ public class Kediler implements Serializable {
     private String YukleyenId;
     private Date createdAt;
 
+    // 📍 Adres Bilgileri
+    private String city = "";
+    private String district = "";
+    private String neighborhood = "";
+
     // 1. Firebase'in nesneyi hatasız oluşturabilmesi için BOŞ constructor ŞARTTIR!
     public Kediler() {
     }
@@ -31,6 +36,22 @@ public class Kediler implements Serializable {
         this.URLler = URLler;
         this.YukleyenId = YukleyenId;
         this.createdAt = createdAt;
+    }
+
+    // 📍 Adres Alanları İçeren Tam Constructor
+    public Kediler(String ID, String isim, String hakkindasi, double latitude, double longitude, String URL, ArrayList<String> URLler, String YukleyenId, Date createdAt, String city, String district, String neighborhood){
+        this.ID = ID;
+        this.isim = isim;
+        this.hakkindasi = hakkindasi;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.URL = URL;
+        this.URLler = URLler;
+        this.YukleyenId = YukleyenId;
+        this.createdAt = createdAt;
+        this.city = city;
+        this.district = district;
+        this.neighborhood = neighborhood;
     }
 
     public ArrayList<String> getURLler() {
@@ -113,5 +134,30 @@ public class Kediler implements Serializable {
     @PropertyName("YukleyenKullaniciID")
     public void setYukleyenId(String yukleyenId) {
         YukleyenId = yukleyenId;
+    }
+
+    // 📍 Adres Getter & Setter Metotları
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getNeighborhood() {
+        return neighborhood;
+    }
+
+    public void setNeighborhood(String neighborhood) {
+        this.neighborhood = neighborhood;
     }
 }
