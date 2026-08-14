@@ -25,6 +25,7 @@ import com.beem.catmap.databinding.HerbiGonderiIcinBinding
 import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
@@ -123,6 +124,7 @@ class PostDetailFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         handleBackPressWithEngine()
+
 
         binding.toolbar.setNavigationOnClickListener {
             SmartNavigationEngine.navigateBack()

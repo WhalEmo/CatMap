@@ -867,6 +867,13 @@ class ProfileFragment : Fragment() {
             .placeholder(R.drawable.kullanici)
             .error(R.drawable.kullanici)
             .into(profilePhotoImageView)
+
+
+        ProfilePreviewHelper.attachLongPressPreview(
+            context = requireContext(),
+            targetView = profilePhotoImageView,
+            photoUrl = userModel?.photoUrl
+        )
     }
 
     override fun onPause() {

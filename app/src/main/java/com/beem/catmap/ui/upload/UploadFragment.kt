@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.upload
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -22,6 +23,7 @@ import com.beem.catmap.databinding.YuklemeArayuzuBinding
 import com.beem.catmap.data.model.CatModel
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.camera.GalleryBottomSheet
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import com.beem.catmap.ui.manager.CatEventBus
@@ -75,6 +77,9 @@ class UploadFragment : Fragment() {
         observeUiState()
         setupBackPressed()
         loadInterstitialAd()
+
+        binding.hakkindaText.applyInputLimits(maxLength = 280, maxLines = 10)
+        binding.isimText.applyInputLimits(maxLength = 20, maxLines = 2)
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -98,6 +103,7 @@ class UploadFragment : Fragment() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
         // Kaydetme Butonu (Mermer gibi validasyon ve tetikleme)
         binding.kaydetmeButonu.setOnClickListener {
@@ -113,6 +119,13 @@ class UploadFragment : Fragment() {
                 val gallerySheet = GalleryBottomSheet()
                 gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
             }
+        }
+        binding.hakkindaText.setOnTouchListener { view, event ->
+            view.parent.requestDisallowInterceptTouchEvent(true)
+            if ((event.action and android.view.MotionEvent.ACTION_MASK) == android.view.MotionEvent.ACTION_UP) {
+                view.parent.requestDisallowInterceptTouchEvent(false)
+            }
+            false
         }
     }
 

@@ -18,6 +18,7 @@ import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.R
 
 import com.beem.catmap.databinding.BottomSheetAuthBinding
+import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -59,6 +60,7 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
         setupErrorClearingOnTextChange()
         setupListeners()
         observeStateFlow()
+        setupEditText()
     }
 
     override fun onStart() {
@@ -309,6 +311,16 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                 _binding?.cardStatusBanner?.isVisible = false
             }
             ?.start()
+    }
+
+    private fun setupEditText() {
+        binding.edtRegName.applyInputLimits(20,2)
+        binding.edtRegEmail.applyInputLimits(100,1)
+        binding.edtRegSurname.applyInputLimits(20,2)
+        binding.edtRegUser.applyInputLimits(20,2)
+        binding.edtRegPass.applyInputLimits(100,10)
+        binding.edtLoginUser.applyInputLimits(20,2)
+        binding.edtLoginPass.applyInputLimits(100,10)
     }
 
 

@@ -81,4 +81,15 @@
         <item name="android:fontFamily">sans-serif-condensed-bold</item>
     </style>
 
+    <style name="Theme.ProfilePreviewDialog" parent="Theme.CatMap">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.75</item> <!-- Arka plan kararma yoğunluğu -->
+    </style>
+    <style name="ShapeAppearance.CatMap.CircleImage" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

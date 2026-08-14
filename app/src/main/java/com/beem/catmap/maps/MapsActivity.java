@@ -10,6 +10,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
@@ -22,7 +23,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 
@@ -189,6 +193,34 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        ViewCompat.setOnApplyWindowInsetsListener(
+                binding.getRoot(),
+                (v, insets) -> {
+
+                    Insets imeInsets = insets.getInsets(
+                            WindowInsetsCompat.Type.ime()
+                    );
+
+                    Insets systemInsets = insets.getInsets(
+                            WindowInsetsCompat.Type.systemBars()
+                    );
+
+                    boolean keyboardVisible = imeInsets.bottom > systemInsets.bottom;
+
+                    if (keyboardVisible) {
+                        float translationY = imeInsets.bottom - systemInsets.bottom;
+
+                        binding.bottomNavigation.setTranslationY(translationY);
+                        binding.btnCaptureLayout.setTranslationY(translationY);
+
+                    } else {
+                        binding.bottomNavigation.setTranslationY(0f);
+                        binding.btnCaptureLayout.setTranslationY(0f);
+                    }
+
+                    return insets;
+                }
+        );
 
         navigationEngine = new CatMapNavigationEngine(this, binding);
         navigationRenderer = new CatMapNavigationRenderer(this, R.id.fragment_container, fragmentProvider);

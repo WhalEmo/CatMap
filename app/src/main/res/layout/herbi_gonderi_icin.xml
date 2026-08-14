@@ -199,9 +199,10 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Kedi adı:"
+                            android:text="İsim:"
+                            android:fontFamily="sans-serif-medium"
                             android:textColor="@color/catmap_text_primary"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@id/gonderiTarihiText" />
@@ -211,14 +212,16 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:textColor="@color/catmap_text_primary"
-                            android:textSize="16sp"
+                            android:lineSpacingMultiplier="1.3"
+                            android:textColor="@color/catmap_text_muted"
+                            android:textSize="14sp"
                             app:layout_constraintBaseline_toBaselineOf="@id/kediAdiBaslik"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@id/kediAdiBaslik"
-                            tools:text="Pamuk" />
+                            android:text="Pamuk" />
 
                         <!-- Açıklama -->
+                        <!-- Açıklama Başlık -->
                         <TextView
                             android:id="@+id/kediAciklamaBaslik"
                             android:layout_width="wrap_content"
@@ -227,23 +230,24 @@
                             android:text="Açıklama:"
                             android:textColor="@color/catmap_text_primary"
                             android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium"
                             android:textStyle="bold"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@id/kediAdiBaslik" />
 
+                        <!-- Açıklama Metni (Artık sol kenardan başlıyor) -->
                         <TextView
                             android:id="@+id/kediAciklama"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:lineSpacingMultiplier="1.3"
+                            android:text="Kedi hakkında çok uzun bir açıklama olabilir..."
                             android:textColor="@color/catmap_text_muted"
                             android:textSize="14sp"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@id/kediAciklamaBaslik"
-                            tools:text="Kedi hakkında çok uzun bir açıklama olabilir..." />
-
+                            app:layout_constraintTop_toBottomOf="@id/kediAciklamaBaslik" />
                         <!-- Konum Çipi -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/konumChip"

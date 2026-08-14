@@ -16,6 +16,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import com.beem.catmap.R
 import com.beem.catmap.databinding.DialogCatmapInputBinding
+import com.beem.catmap.ui.extensions.applyInputLimits
 
 class CatMapInputDialog : DialogFragment() {
 
@@ -61,23 +62,7 @@ class CatMapInputDialog : DialogFragment() {
         binding.btnDialogPositive.isEnabled = false
         binding.btnDialogPositive.alpha = 0.3f
 
-        val maxLinesFilter = InputFilter { source, start, end, dest, dstart, dend ->
-            val newText = dest.subSequence(0, dstart).toString() +
-                    source.subSequence(start, end) +
-                    dest.subSequence(dend, dest.length)
-
-            if (newText.count { it == '\n' } >= maxLinesCount) {
-                ""
-            } else {
-                null
-            }
-        }
-
-        // Filtreleri bağla: 280 Karakter Sınırı + Maksimum 5 Satır Sınırı
-        binding.etDialogInput.filters = arrayOf(
-            InputFilter.LengthFilter(280),
-            maxLinesFilter
-        )
+        binding.etDialogInput.applyInputLimits(maxLength = 280, maxLines = maxLinesCount)
 
         binding.etDialogInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
