@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- TIER 05 · SILVER II: reinforced hex + twin rank stars -->
+    <path android:fillColor="#0F172A" android:pathData="M24,2.5 L42.5,12.8 L42.5,35.2 L24,45.5 L5.5,35.2 L5.5,12.8 Z" />
+    <path android:fillColor="#94A3B8" android:pathData="M24,4.5 L40.5,13.8 L40.5,34.2 L24,43.5 L7.5,34.2 L7.5,13.8 Z" />
+    <path android:fillColor="#FFF7ED" android:pathData="M24,7.4 L37.8,15.3 L37.8,32.7 L24,40.6 L10.2,32.7 L10.2,15.3 Z" />
+    <path android:fillColor="#E2E8F0" android:pathData="M14.6,37.2 L15.5,39 L17.5,39.3 L16,40.7 L16.4,42.7 L14.6,41.8 L12.8,42.7 L13.2,40.7 L11.7,39.3 L13.7,39 Z" />
+    <path android:fillColor="#E2E8F0" android:pathData="M33.4,37.2 L34.3,39 L36.3,39.3 L34.8,40.7 L35.2,42.7 L33.4,41.8 L31.6,42.7 L32,40.7 L30.5,39.3 L32.5,39 Z" />
+
+    <!-- CatMap core mark: identical across the whole badge family -->
+    <path android:fillColor="#FFFFFF" android:strokeColor="#1E293B" android:strokeWidth="1.8" android:strokeLineJoin="round"
+        android:pathData="M17.2,21 L15.4,16.7 L20.1,19.1 C21.3,18.5 22.6,18.2 24,18.2 C25.4,18.2 26.7,18.5 27.9,19.1 L32.6,16.7 L30.8,21 C32.1,22.5 32.8,24.4 32.8,26.5 C32.8,31.6 29.1,35.2 24,35.2 C18.9,35.2 15.2,31.6 15.2,26.5 C15.2,24.4 15.9,22.5 17.2,21 Z" />
+    <path android:fillColor="#1E293B" android:pathData="M20.5,25.2 A1.05,1.05 0,1 1,20.5,27.3 A1.05,1.05 0,1 1,20.5,25.2" />
+    <path android:fillColor="#1E293B" android:pathData="M27.5,25.2 A1.05,1.05 0,1 1,27.5,27.3 A1.05,1.05 0,1 1,27.5,25.2" />
+    <path android:fillColor="#F97316" android:pathData="M22.7,29.2 L24,30.1 L25.3,29.2 L24,31 Z" />
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#1E293B" android:strokeWidth="1.15" android:strokeLineCap="round"
+        android:pathData="M24,30.6 L24,31.8 M19.3,30.2 L16.9,29.7 M19.3,31.6 L17.1,32.1 M28.7,30.2 L31.1,29.7 M28.7,31.6 L30.9,32.1" />
+</vector>

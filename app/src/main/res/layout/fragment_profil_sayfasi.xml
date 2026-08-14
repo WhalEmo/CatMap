@@ -203,7 +203,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="16dp"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <!-- Geri Butonu -->
             <ImageButton
@@ -262,6 +262,64 @@
                 app:civ_border_width="2dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnBack" />
+
+            <!-- ====================================================== -->
+            <!-- AKTİF / SERGİLENEN ROZET                               -->
+            <!-- ====================================================== -->
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEquippedBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginTop="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/catmap_surface_white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:layout_constraintStart_toStartOf="@id/profilFotoImageView"
+                app:layout_constraintTop_toBottomOf="@id/profilFotoImageView"
+                app:strokeColor="@color/catmap_divider"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="10dp">
+
+                    <!-- ROZET İKONU -->
+                    <ImageView
+                        android:id="@+id/imgEquippedBadge"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:contentDescription="@string/profile_equipped_badge"
+                        android:scaleType="fitCenter"
+                        tools:src="@drawable/catmap_badge_tier_07" />
+
+                    <!-- ROZET ÜNVANI -->
+                    <TextView
+                        android:id="@+id/tvEquippedBadgeTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/plus_jakarta_sans_bold"
+                        android:includeFontPadding="false"
+                        android:maxWidth="230dp"
+                        android:maxLines="1"
+                        android:textColor="@color/catmap_text_primary"
+                        android:textSize="11sp"
+                        tools:text="Yazır'ın Pati Koruyucusu" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- AD SOYAD -->
             <TextView
@@ -374,7 +432,7 @@
                 android:textSize="14sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/profilFotoImageView" />
+                app:layout_constraintTop_toBottomOf="@id/cardEquippedBadge" />
 
             <Button
                 android:id="@+id/profiliDuzenleTiklandi"
@@ -568,7 +626,7 @@
             android:layout_height="match_parent"
             android:background="@android:color/white"
             android:padding="16dp"
-            android:visibility="visible">
+            android:visibility="gone">
 
             <ImageButton
                 android:id="@+id/btnBackEngel"

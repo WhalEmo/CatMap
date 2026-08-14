@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dolmamış Arka Plan (Açık Gri Yol) -->
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="10dp" />
+            <solid android:color="@color/catmap_divider" />
+        </shape>
+    </item>
+
+    <!-- Dolu İlerleme Kısmı (Turuncu) -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <corners android:radius="10dp" />
+                <solid android:color="@color/catmap_accent" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

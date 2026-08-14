@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardNeighborhood"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/catmap_surface_white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/catmap_divider"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="76dp"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="12dp">
+
+
+        <!-- ====================================================== -->
+        <!-- TIER ACCENT                                           -->
+        <!-- Açık mahallede tier rengine boyayacağız               -->
+        <!-- ====================================================== -->
+
+        <View
+            android:id="@+id/viewTierAccent"
+            android:layout_width="3dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_neighborhood_accent"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
+
+
+        <!-- ====================================================== -->
+        <!-- CURRENT TIER BADGE                                    -->
+        <!-- ====================================================== -->
+
+        <FrameLayout
+            android:id="@+id/layoutCurrentTierIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_neighborhood_badge_icon"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/imgCurrentTier"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                tools:src="@drawable/catmap_badge_tier_05" />
+
+        </FrameLayout>
+
+
+        <!-- ====================================================== -->
+        <!-- NEIGHBORHOOD NAME                                     -->
+        <!-- ====================================================== -->
+
+        <TextView
+            android:id="@+id/tvNeighborhoodName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/plus_jakarta_sans_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/catmap_text_primary"
+            android:textSize="15sp"
+            app:layout_constraintEnd_toStartOf="@id/imgChevron"
+            app:layout_constraintStart_toEndOf="@id/layoutCurrentTierIcon"
+            app:layout_constraintTop_toTopOf="@id/layoutCurrentTierIcon"
+            tools:text="Yazır Mahallesi" />
+
+
+        <!-- ====================================================== -->
+        <!-- SUMMARY                                               -->
+        <!-- Mahalle Gözcüsü • 18 kedi • 5/8 rozet                -->
+        <!-- ====================================================== -->
+
+        <TextView
+            android:id="@+id/tvNeighborhoodSummary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/plus_jakarta_sans_medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/catmap_text_muted"
+            android:textSize="11sp"
+            app:layout_constraintBottom_toBottomOf="@id/layoutCurrentTierIcon"
+            app:layout_constraintEnd_toStartOf="@id/imgChevron"
+            app:layout_constraintStart_toEndOf="@id/layoutCurrentTierIcon"
+            app:layout_constraintTop_toBottomOf="@id/tvNeighborhoodName"
+            tools:text="Mahalle Gözcüsü  •  18 kedi  •  5/8 rozet" />
+
+
+        <!-- ====================================================== -->
+        <!-- CHEVRON                                               -->
+        <!-- Kapalı: >                                             -->
+        <!-- Açık: aşağı doğru rotate                             -->
+        <!-- ====================================================== -->
+
+        <ImageView
+            android:id="@+id/imgChevron"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="@null"
+            android:padding="5dp"
+            android:src="@drawable/ic_chevron_right"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/catmap_text_muted"
+            tools:rotation="90" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

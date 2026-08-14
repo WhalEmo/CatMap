@@ -23,7 +23,8 @@ data class UserModel(
     @JvmField var followingCount: Long? = 0L,
     @JvmField var postCount: Long? = 0L,
     @JvmField var bio: String = "",
-    @JvmField var isProfileLoaded: Boolean = false
+    @JvmField var isProfileLoaded: Boolean = false,
+    @Transient @JvmField var equippedBadge: EquippedBadgeModel? = null
 ): Serializable {
     fun KullaniciData(): Map<String, Any?> {
         return mapOf(

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardBadge"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="7dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/catmap_surface_white"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/catmap_divider"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="108dp"
+        android:padding="16dp">
+
+        <!-- ============================== -->
+        <!-- ROZET                          -->
+        <!-- ============================== -->
+
+        <LinearLayout
+            android:id="@+id/layoutBadgeContainer"
+            android:layout_width="68dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp">
+
+                <ImageView
+                    android:id="@+id/imgBadgeIcon"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    tools:src="@drawable/catmap_badge_tier_06" />
+
+                <ImageView
+                    android:id="@+id/imgLockOverlay"
+                    android:layout_width="21dp"
+                    android:layout_height="21dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/bg_lock_badge_circle"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_lock"
+                    android:visibility="gone"
+                    app:tint="@color/badge_ink"
+                    tools:visibility="visible" />
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvTierLevelBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_cat_count_pill"
+                android:fontFamily="@font/plus_jakarta_sans_bold"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/catmap_accent"
+                android:textSize="9sp"
+                android:textAllCaps="true"
+                tools:text="SEVİYE 6" />
+
+        </LinearLayout>
+
+        <!-- ============================== -->
+        <!-- MAHALLE                       -->
+        <!-- ============================== -->
+
+        <TextView
+            android:id="@+id/tvDisplayName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/plus_jakarta_sans_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/catmap_text_primary"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toStartOf="@id/tvCatCountPill"
+            app:layout_constraintStart_toEndOf="@id/layoutBadgeContainer"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Selçuklu / Yazır" />
+
+        <!-- ============================== -->
+        <!-- KEDİ SAYACI                   -->
+        <!-- ============================== -->
+
+        <TextView
+            android:id="@+id/tvCatCountPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_cat_count_pill"
+            android:fontFamily="@font/plus_jakarta_sans_bold"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="5dp"
+            android:textColor="@color/catmap_accent"
+            android:textSize="11sp"
+            app:layout_constraintBottom_toBottomOf="@id/tvDisplayName"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvDisplayName"
+            tools:text="10 / 15" />
+
+        <!-- ============================== -->
+        <!-- ROZET ÜNVANI                  -->
+        <!-- ============================== -->
+
+        <TextView
+            android:id="@+id/tvBadgeTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:fontFamily="@font/plus_jakarta_sans_medium"
+            android:includeFontPadding="false"
+            android:textColor="@color/catmap_accent"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvDisplayName"
+            app:layout_constraintTop_toBottomOf="@id/tvDisplayName"
+            tools:text="Mahalle Öncüsü" />
+
+        <!-- ============================== -->
+        <!-- PROGRESS                      -->
+        <!-- ============================== -->
+
+        <ProgressBar
+            android:id="@+id/progressBarBadge"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="6dp"
+            android:layout_marginTop="11dp"
+            android:max="100"
+            android:progressDrawable="@drawable/bg_custom_progress_bar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvDisplayName"
+            app:layout_constraintTop_toBottomOf="@id/tvBadgeTitle"
+            tools:progress="68" />
+
+        <!-- ============================== -->
+        <!-- İLERLEME AÇIKLAMASI           -->
+        <!-- ============================== -->
+
+        <TextView
+            android:id="@+id/tvProgressInfo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:fontFamily="@font/plus_jakarta_sans"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/catmap_text_secondary"
+            android:textSize="11sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvDisplayName"
+            app:layout_constraintTop_toBottomOf="@id/progressBarBadge"
+            tools:text="Pati Koruyucusu için 5 kedi kaldı" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

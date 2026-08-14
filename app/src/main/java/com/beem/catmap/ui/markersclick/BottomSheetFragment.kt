@@ -25,6 +25,7 @@ import com.beem.catmap.maps.mapkedi.Kediler
 import com.beem.catmap.ui.commentreply.CommentViewModel
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.R
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu

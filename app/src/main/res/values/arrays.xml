@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Tier 01 · Kurşun -->
+    <string-array name="badge_tier_01_tags">
+        <item>Merak</item>
+        <item>İlk Keşif</item>
+        <item>Başlangıç</item>
+    </string-array>
+
+    <!-- Tier 02 · Bronz -->
+    <string-array name="badge_tier_02_tags">
+        <item>Gözlem</item>
+        <item>Farkındalık</item>
+        <item>İz Sürme</item>
+    </string-array>
+
+    <!-- Tier 03 · Koyu Bronz -->
+    <string-array name="badge_tier_03_tags">
+        <item>Keşif</item>
+        <item>Katkı</item>
+        <item>Mahalle Aidiyeti</item>
+    </string-array>
+
+    <!-- Tier 04 · Gümüş -->
+    <string-array name="badge_tier_04_tags">
+        <item>Deneyim</item>
+        <item>Yol Gösterme</item>
+        <item>Güven</item>
+    </string-array>
+
+    <!-- Tier 05 · Çelik -->
+    <string-array name="badge_tier_05_tags">
+        <item>Bağlılık</item>
+        <item>Süreklilik</item>
+        <item>Dayanıklılık</item>
+    </string-array>
+
+    <!-- Tier 06 · Altın -->
+    <string-array name="badge_tier_06_tags">
+        <item>Liderlik</item>
+        <item>Etki</item>
+        <item>Mahallenin Gelişimi</item>
+    </string-array>
+
+    <!-- Tier 07 · Kehribar -->
+    <string-array name="badge_tier_07_tags">
+        <item>Koruyuculuk</item>
+        <item>Bağlılık</item>
+        <item>CatMap Ruhu</item>
+    </string-array>
+
+    <!-- Tier 08 · Gecealtın -->
+    <string-array name="badge_tier_08_tags">
+        <item>Prestij</item>
+        <item>Gece Nöbeti</item>
+        <item>Mahalle Hafızası</item>
+    </string-array>
+
+</resources>

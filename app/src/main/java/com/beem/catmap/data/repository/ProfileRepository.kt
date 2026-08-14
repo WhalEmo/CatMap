@@ -3,6 +3,7 @@ package com.beem.catmap.data.repository
 import android.net.Uri
 import android.util.Log
 import android.util.LruCache
+import com.beem.catmap.data.model.EquippedBadgeModel
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.model.ProfileUpdateResult
 import com.beem.catmap.data.model.PublicUser
@@ -92,6 +93,10 @@ class ProfileRepository private constructor() {
                     followersCount = snapshot.getLong("takipciSayisi") ?: 0L
                     followingCount = snapshot.getLong("TakipEdilenSayisi") ?: 0L
                     postCount = snapshot.getLong("gonderiSayisi") ?: 0L
+                    equippedBadge = snapshot.get(
+                        "equippedBadge",
+                        EquippedBadgeModel::class.java
+                    )
                 }
 
                 // RAM Cache'e kaydet

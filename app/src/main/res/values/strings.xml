@@ -27,4 +27,187 @@
 
     <string name="at_symbol">\@</string>
 
+
+    <!-- ====================================================== -->
+    <!-- CATMAP BADGES                                          -->
+    <!-- ====================================================== -->
+
+
+    <!-- TIER 01 - PATİ KAŞİFİ -->
+
+    <string name="badge_tier_01_title">Pati Kaşifi</string>
+
+    <string name="badge_tier_01_short_description">
+    Her CatMap yolculuğu, fark edilen ilk pati iziyle başlar.
+</string>
+
+    <string name="badge_tier_01_story">
+    Bir mahalleyi gerçekten tanımak için yalnızca sokak isimlerini bilmek yetmez.\n\nBazen bir apartman girişinde uyuyan kediyi, bazen her gün aynı köşede karşına çıkan tanıdık bir yüzü fark etmek gerekir.\n\nPati Kaşifi, CatMap dünyasına attığın ilk adımı temsil eder. Artık harita yalnızca yollar ve binalardan oluşmuyor; mahallendeki küçük dostların izlerini de görmeye başlıyorsun.\n\nHer keşif, CatMap\'in yaşayan mahalle haritasına bırakılmış yeni bir pati izidir.
+</string>
+
+
+    <!-- TIER 02 - MAHALLE İZCİSİ -->
+
+    <string name="badge_tier_02_title">Mahalle İzcisi</string>
+
+    <string name="badge_tier_02_short_description">
+    Bir kez fark etmeye başladığında, mahallen artık eskisi gibi görünmez.
+</string>
+
+    <string name="badge_tier_02_story">
+    Pati Kaşifi ilk izleri fark eder. Mahalle İzcisi ise artık bu izleri takip etmeye başlar.\n\nHangi kedinin hangi köşede vakit geçirdiğini, hangisinin belirli noktalarda karşına çıktığını ve mahallenin küçük pati duraklarını fark etmeye başlarsın.\n\nCatMap artık yalnızca açtığın bir uygulama değildir. Çevrene başka bir gözle bakmanı sağlayan yaşayan bir haritaya dönüşür.\n\nHaritadaki işaretlerin arkasında artık tanıdığın yüzler ve küçük mahalle hikâyeleri vardır.
+</string>
+
+
+    <!-- TIER 03 - MAHALLE KAŞİFİ -->
+
+    <string name="badge_tier_03_title">Mahalle Kaşifi</string>
+
+    <string name="badge_tier_03_short_description">
+    Artık yalnızca izleri takip etmiyorsun; haritada yeni izler bırakıyorsun.
+</string>
+
+    <string name="badge_tier_03_story">
+    Bir mahallede her köşe aynı hikâyeyi anlatmaz.\n\nBazen daha önce CatMap\'e eklenmemiş bir kedi, bazen kimsenin keşfetmediği küçük bir mahalle noktası yeni bir hikâyenin başlangıcı olur.\n\nMahalle Kaşifi olarak artık yalnızca haritadan yararlanan biri değilsin. Haritanın oluşmasına yardım eden kişilerden birisin.\n\nEklediğin her yeni pati, CatMap\'te yalnızca bir nokta değil; mahallenin yaşayan hikâyesine eklenen yeni bir parçadır.
+</string>
+
+
+    <!-- TIER 04 - PATİ REHBERİ -->
+
+    <string name="badge_tier_04_title">Pati Rehberi</string>
+
+    <string name="badge_tier_04_short_description">
+    Senin bıraktığın izler, başkalarının keşiflerine yol göstermeye başladı.
+</string>
+
+    <string name="badge_tier_04_story">
+    Bir haritanın değerini yalnızca ne kadar büyük olduğu belirlemez. Onu değerli yapan, doğru yerlerde bırakılmış anlamlı izlerdir.\n\nPati Rehberi olarak CatMap\'te artık deneyim kazandın. Yaptığın katkılar, diğer kullanıcıların da mahallendeki kedileri keşfetmesine yardım ediyor.\n\nYeni bir kedi eklemek kadar, var olan bir hikâyeye yeni bir fotoğraf veya güncel bir katkı bırakmak da değerlidir.\n\nÇünkü CatMap yalnızca kedileri gösteren bir harita değil; birlikte oluşturulan yaşayan bir mahalle hafızasıdır.
+</string>
+
+
+    <!-- TIER 05 - MAHALLE GÖZCÜSÜ -->
+
+    <string name="badge_tier_05_title">Mahalle Gözcüsü</string>
+
+    <string name="badge_tier_05_short_description">
+    Mahallendeki patiler artık sana yabancı değil.
+</string>
+
+    <string name="badge_tier_05_story">
+    Zamanla bazı kediler haritadaki işaretlerden daha fazlasına dönüşür.\n\nBirini tekrar gördüğünde tanırsın. Başka bir kedinin yeni fotoğrafını fark edersin. Uzun süredir görünmeyen bir pati tekrar ortaya çıktığında bu küçük bir mahalle haberi gibi gelir.\n\nMahalle Gözcüsü, CatMap\'e düzenli katkı sağlayan ve mahallesindeki kedi hikâyelerinin canlı kalmasına yardımcı olan kullanıcıyı temsil eder.\n\nBu rozet yalnızca keşfetmenin değil, keşfettiklerine yeniden dönmenin de simgesidir.
+</string>
+
+
+    <!-- TIER 06 - MAHALLE ÖNCÜSÜ -->
+
+    <string name="badge_tier_06_title">Mahalle Öncüsü</string>
+
+    <string name="badge_tier_06_short_description">
+    Artık haritayı takip edenlerden değil, onu büyütenlerden birisin.
+</string>
+
+    <string name="badge_tier_06_story">
+    Her mahallede birileri ilk adımı atar.\n\nYeni kedileri keşfeden, boş kalan bölgeleri CatMap\'e kazandıran ve eski profillere yeni izler bırakan kullanıcılar zamanla mahallenin haritadaki yüzünü oluşturur.\n\nMahalle Öncüsü olarak yaptığın katkılar artık tek tek keşiflerin ötesine geçiyor.\n\nBir zamanlar boş görünen harita yaşayan bir mahalle albümüne dönüşüyorsa, bunun arkasında senin gibi öncülerin bıraktığı pati izleri vardır.
+</string>
+
+
+    <!-- TIER 07 - PATİ KORUYUCUSU -->
+
+    <string name="badge_tier_07_title">Pati Koruyucusu</string>
+
+    <string name="badge_tier_07_short_description">
+    Keşfetmenin ötesine geçtin. Artık bıraktığın izleri koruyorsun.
+</string>
+
+    <string name="badge_tier_07_story">
+    CatMap yolculuğunun başında amaç yeni kediler keşfetmektir. Fakat zamanla haritadaki her profil küçük bir hikâyeye dönüşür.\n\nFotoğraflar birikir, kediler tanıdık hale gelir ve bazı noktalar mahallenin CatMap hafızasının önemli parçalarına dönüşür.\n\nPati Koruyucusu olarak katkın artık yalnızca yeni bir işaret bırakmak değildir. Var olan hikâyelerin devam etmesine ve mahallenin CatMap hafızasının kaybolmamasına yardım ediyorsun.\n\nKalkanın anlamı da tam olarak budur: keşfedilen patilerin artık korunmaya değer hikâyelere dönüşmesi.
+</string>
+
+
+    <!-- TIER 08 - MAHALLE MUHAFIZI -->
+
+    <string name="badge_tier_08_title">Mahalle Muhafızı</string>
+
+    <string name="badge_tier_08_short_description">
+    Bir mahallenin CatMap hikâyesi, senin bıraktığın izlerle ayakta duruyor.
+</string>
+
+    <string name="badge_tier_08_story">
+    Bir mahalleyi CatMap üzerinde gerçekten canlı hale getirmek kolay değildir.\n\nYeni kediler keşfedilir, eski profiller güncellenir, yeni fotoğraflar eklenir ve zamanla yüzlerce küçük katkı aynı haritada birleşir.\n\nMahalle Muhafızı olarak artık yalnızca birkaç pati hikâyesinde değil, mahallenin genel CatMap hafızasında güçlü bir iz bıraktın.\n\nÜç yıldızlı kalkanın yalnızca yüksek seviyeyi değil; uzun süre boyunca gösterdiğin bağlılığı, katkıyı ve güveni temsil ediyor.
+</string>
+
+    <!-- Badge Elements -->
+    <string name="badge_tier_01_element">Kurşun</string>
+    <string name="badge_tier_02_element">Bronz</string>
+    <string name="badge_tier_03_element">Koyu Bronz</string>
+    <string name="badge_tier_04_element">Gümüş</string>
+    <string name="badge_tier_05_element">Çelik</string>
+    <string name="badge_tier_06_element">Altın</string>
+    <string name="badge_tier_07_element">Kehribar</string>
+    <string name="badge_tier_08_element">Gece Altını</string>
+
+
+    <!-- ====================================================== -->
+    <!-- BADGE DETAIL BOTTOM SHEET                              -->
+    <!-- ====================================================== -->
+
+    <string name="badge_element_format">%1$s Rozeti</string>
+
+    <string name="badge_level_format">
+        Seviye %1$d
+    </string>
+
+    <string name="badge_progress_title">
+        Rozet İlerlemesi
+    </string>
+
+    <string name="badge_progress_count_format">
+        %1$d / %2$d
+    </string>
+
+    <string name="badge_progress_locked_format">
+        %1$s rozetini açmak için %2$d kedi daha keşfet.
+    </string>
+
+    <string name="badge_progress_unlocked">
+        Bu rozetin kilidini açtın.
+    </string>
+
+    <string name="badge_unlocked_description_format">
+        Bu rozet %1$s Mahallesi\'ndeki katkılarınla kazanıldı.
+    </string>
+
+    <string name="badge_use_action">Rozeti Kullan</string>
+    <string name="badge_using_action">Kullanılıyor</string>
+
+    <string name="badge_district_neighborhood_count">
+        • %1$d mahalle
+    </string>
+
+    <string name="badge_neighborhood_summary_format">
+        %1$s • %2$d kedi • %3$d/%4$d rozet
+    </string>
+
+    <string name="badge_card_cat_count_format">
+        %1$d / %2$d Kedi
+    </string>
+
+    <string name="badge_card_unlocked_progress">
+        Bu rozetin kilidini açtın.
+    </string>
+
+    <string name="badge_card_locked_progress">
+        Kilidi açmak için %1$d kedi daha gerekli
+    </string>
+
+    <string name="badge_total_unlocked_format">
+        %1$d Açık Rozet
+    </string>
+
+    <string name="badge_use_loading">
+        Kullanılıyor...
+    </string>
+
+    <string name="profile_equipped_badge">Kullanılan rozet</string>
+
 </resources>
