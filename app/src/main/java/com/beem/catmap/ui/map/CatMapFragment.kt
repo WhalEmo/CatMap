@@ -18,6 +18,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -50,6 +51,7 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
 import com.beem.catmap.maps.LocationEngine
 import com.beem.catmap.maps.LocationSettingsHandler
@@ -134,6 +136,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: CatMap Fragment ayağa kalktı!")
 
+        setupFabIcon()
         setupClickListeners()
         observeViewModel()
         observeMotionState()
@@ -207,6 +210,21 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 }
             }
             true
+        }
+    }
+
+
+    private fun setupFabIcon() {
+        val bottomNav = requireActivity().findViewById<View>(R.id.bottom_navigation)
+
+        bottomNav.doOnLayout { navView ->
+            val density = resources.displayMetrics.density
+            val extraMargin16dp = (16 * density).toInt()
+            val totalBottomMargin = navView.height + extraMargin16dp
+
+            binding.fabCurrentLocation.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = totalBottomMargin
+            }
         }
     }
 
