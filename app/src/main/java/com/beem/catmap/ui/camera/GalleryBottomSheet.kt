@@ -38,6 +38,14 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
     private lateinit var adapter: GalleryAdapter
     private val allImagesFromDevice = mutableListOf<String>()
 
+    private val pageSize = 60
+
+    private var isLoading = false
+    private var hasMoreImages = true
+
+    private var lastDateAdded: Long? = null
+    private var lastImageId: Long? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = BottomSheetGalleryBinding.inflate(inflater, container, false)
         return binding.root
@@ -70,6 +78,50 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         adapter = GalleryAdapter(allImagesFromDevice)
         binding.recyclerViewGallery.adapter = adapter
 
+        binding.recyclerViewGallery.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+
+                override fun onScrolled(
+                    recyclerView: RecyclerView,
+                    dx: Int,
+                    dy: Int
+                ) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    // Yukarı kaydırıyorsa işlem yapma
+                    if (dy <= 0) return
+
+                    val layoutManager =
+                        recyclerView.layoutManager as? GridLayoutManager
+                            ?: return
+
+                    val totalItemCount =
+                        layoutManager.itemCount
+
+                    val lastVisibleItem =
+                        layoutManager.findLastVisibleItemPosition()
+
+                    /*
+                     * Kullanıcı son 9 fotoğrafa yaklaştığında
+                     * yeni sayfayı önceden yükle.
+                     *
+                     * 3 kolon olduğundan yaklaşık
+                     * son 3 satır demek.
+                     */
+                    val shouldLoadMore =
+                        lastVisibleItem >= totalItemCount - 9
+
+                    if (
+                        shouldLoadMore &&
+                        !isLoading &&
+                        hasMoreImages
+                    ) {
+                        loadGalleryImages(reset = false)
+                    }
+                }
+            }
+        )
+
         if (hasGalleryPermission()) {
             loadGalleryImages()
         } else {
@@ -90,7 +142,7 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
     }
 
 
-    private fun loadImagesFromDevice(): List<String> {
+    private fun loadImagesFromDevice2(): List<String> {
         val tempImageList = mutableListOf<String>()
         val projection = arrayOf(MediaStore.Images.Media._ID)
         val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
@@ -108,6 +160,143 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
         return tempImageList
     }
+
+
+    private fun loadImagesFromDevice(): GalleryPage {
+
+        val tempImageList = mutableListOf<String>()
+
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATE_ADDED
+        )
+
+        val selection: String?
+        val selectionArgs: Array<String>?
+
+        val currentLastDateAdded = lastDateAdded
+        val currentLastImageId = lastImageId
+
+        if (currentLastDateAdded != null && currentLastImageId != null) {
+
+            selection = """
+            ${MediaStore.Images.Media.DATE_ADDED} < ?
+            OR (
+                ${MediaStore.Images.Media.DATE_ADDED} = ?
+                AND ${MediaStore.Images.Media._ID} < ?
+            )
+        """.trimIndent()
+
+            selectionArgs = arrayOf(
+                currentLastDateAdded.toString(),
+                currentLastDateAdded.toString(),
+                currentLastImageId.toString()
+            )
+
+        } else {
+            selection = null
+            selectionArgs = null
+        }
+
+        val sortOrder = """
+        ${MediaStore.Images.Media.DATE_ADDED} DESC,
+        ${MediaStore.Images.Media._ID} DESC
+    """.trimIndent()
+
+        var pageLastDateAdded: Long? = null
+        var pageLastImageId: Long? = null
+        var hasMore = false
+
+        requireContext().contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            sortOrder
+        )?.use { cursor ->
+
+            val idColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+
+            val dateAddedColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+            while (
+                cursor.moveToNext() &&
+                tempImageList.size < pageSize
+            ) {
+
+                val id = cursor.getLong(idColumn)
+                val dateAdded = cursor.getLong(dateAddedColumn)
+
+                val contentUri =
+                    android.content.ContentUris.withAppendedId(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        id
+                    )
+
+                tempImageList.add(contentUri.toString())
+
+                pageLastImageId = id
+                pageLastDateAdded = dateAdded
+            }
+
+            // 60 kayıttan sonra en az bir kayıt daha varsa
+            // sonraki sayfa var demektir.
+            if (tempImageList.size == pageSize) {
+                hasMore = cursor.moveToNext()
+            }
+        }
+
+        return GalleryPage(
+            images = tempImageList,
+            lastDateAdded = pageLastDateAdded,
+            lastImageId = pageLastImageId,
+            hasMore = hasMore
+        )
+    }
+
+    private fun loadGalleryImages(reset: Boolean = true) {
+
+        if (isLoading) return
+
+        if (!reset && !hasMoreImages) return
+
+        if (reset) {
+            lastDateAdded = null
+            lastImageId = null
+            hasMoreImages = true
+        }
+
+        isLoading = true
+
+        lifecycleScope.launch {
+
+            try {
+
+                val page = withContext(Dispatchers.IO) {
+                    loadImagesFromDevice()
+                }
+
+                if (_binding == null) return@launch
+
+                if (reset) {
+                    adapter.updateMainImages(page.images)
+                } else {
+                    adapter.appendImages(page.images)
+                }
+
+                lastDateAdded = page.lastDateAdded
+                lastImageId = page.lastImageId
+                hasMoreImages = page.hasMore
+
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+
 
     private fun updateConfirmButton(count: Int) {
         if (count > 0) {
@@ -140,6 +329,7 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
+    /*
     private fun loadGalleryImages() {
         lifecycleScope.launch(Dispatchers.IO) {
             val deviceImages = loadImagesFromDevice()
@@ -150,6 +340,8 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
             }
         }
     }
+
+     */
 
     private fun requestGalleryPermissions() {
         val permissions = mutableListOf<String>()
@@ -248,6 +440,20 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
                     }
                 }
             }
+        }
+
+        fun appendImages(newImages: List<String>) {
+
+            if (newImages.isEmpty()) return
+
+            val startPosition = images.size
+
+            images = images + newImages
+
+            notifyItemRangeInserted(
+                startPosition,
+                newImages.size
+            )
         }
 
         override fun getItemCount(): Int = images.size
