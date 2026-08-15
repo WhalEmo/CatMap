@@ -17,14 +17,14 @@ plugins {
 
 android {
     namespace = "com.beem.catmap"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.beem.catmap"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,6 +54,13 @@ android {
     }
 
 
+}
+
+
+configurations.all {
+    resolutionStrategy {
+        force("com.google.android.recaptcha:recaptcha:18.4.0")
+    }
 }
 
 dependencies {
@@ -110,7 +117,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.picasso)
 
-    implementation(libs.google.play.core)
+
 
 
     implementation(libs.camera.core)
