@@ -186,25 +186,31 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <LinearLayout
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/begeniAlani"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="10dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/fotoSliderContainer">
 
-                <!-- 1. KONUM CHIP (SOLDA) -->
+                <!-- 1. KONUM CHIP -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/konumChip"
                     android:layout_width="wrap_content"
                     android:layout_height="34dp"
+                    android:layout_marginEnd="8dp"
                     app:cardBackgroundColor="@color/catmap_accent_alpha_15"
                     app:cardCornerRadius="17dp"
                     app:cardElevation="0dp"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/begeniGrubu"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:strokeWidth="0dp">
 
                     <LinearLayout
@@ -227,7 +233,10 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
+                            android:ellipsize="end"
                             android:fontFamily="sans-serif-medium"
+                            android:maxLines="1"
+                            android:singleLine="true"
                             android:text="Konya · Selçuklu · Yazır"
                             android:textColor="#616161"
                             android:textSize="12sp" />
@@ -236,44 +245,50 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- 2. ARAYA BOŞLUK -->
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <!-- 3. BEĞENİ ALANI (SAĞDA) -->
-                <ImageView
-                    android:id="@+id/kalpImageView"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:contentDescription="Beğen"
-                    android:focusable="true"
-                    android:src="@drawable/baseline_favorite_border_24"
-                    app:tint="#E53935" />
-
-                <TextView
-                    android:id="@+id/begeniSayisiTextView"
+                <!-- 2. BEĞENİ ALANI -->
+                <LinearLayout
+                    android:id="@+id/begeniGrubu"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif"
-                    android:text="0"
-                    android:textSize="15sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
-                <TextView
-                    android:id="@+id/begeniYazisi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:fontFamily="sans-serif"
-                    android:text="beğeni"
-                    android:textColor="#616161"
-                    android:textSize="14sp" />
+                    <ImageView
+                        android:id="@+id/kalpImageView"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="Beğen"
+                        android:focusable="true"
+                        android:src="@drawable/baseline_favorite_border_24"
+                        app:tint="#E53935" />
 
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/begeniSayisiTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif"
+                        android:text="0"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/begeniYazisi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif"
+                        android:text="beğeni"
+                        android:textColor="#616161"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/isimKart"
@@ -406,6 +421,7 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
+
 
     <!-- YÜKLENİYOR ALANI -->
     <FrameLayout

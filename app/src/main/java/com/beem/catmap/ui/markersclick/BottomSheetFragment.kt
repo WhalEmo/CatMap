@@ -91,6 +91,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         observeViewModel()
         setupCommentCountObserver()
 
+
         @Suppress("DEPRECATION")
         val cat = arguments?.getSerializable(ARG_CAT) as? Kediler
 
@@ -132,6 +133,39 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         binding.GonderiEkleButton.setOnClickListener { anchorView ->
             showOptionMenu(anchorView)
         }
+        binding.konumChip.setOnClickListener {
+            val layout = binding.konumText.layout
+            if (layout != null) {
+                val lineCount = layout.lineCount
+                if (lineCount > 0) {
+                    val ellipsisCount = layout.getEllipsisCount(lineCount - 1)
+                    if (ellipsisCount > 0) {
+                        showLocationDetailDialog()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showLocationDetailDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_konum_detay, null)
+
+        val dialogKonumText = dialogView.findViewById<android.widget.TextView>(R.id.dialogKonumText)
+        val btnKapat = dialogView.findViewById<android.widget.TextView>(R.id.btnKapat)
+
+        dialogKonumText.text = binding.konumText.text
+
+        val alertDialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        alertDialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        btnKapat.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
     }
 
     private fun initViews() {
