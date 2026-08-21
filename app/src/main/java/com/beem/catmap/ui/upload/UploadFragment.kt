@@ -127,6 +127,10 @@ class UploadFragment : Fragment() {
             }
             false
         }
+
+        binding.btnBack.setOnClickListener {
+            SmartNavigationEngine.navigateBack()
+        }
     }
 
 

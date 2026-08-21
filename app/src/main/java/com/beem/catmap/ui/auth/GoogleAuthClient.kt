@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.auth
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -29,9 +30,20 @@ class GoogleAuthClient(
             "default_web_client_id boş olamaz."
         }
 
+        Log.i(
+            "GoogleAuth",
+            """
+        [AUTH-CONFIG]
+        option=GetSignInWithGoogleOption
+        package=${appContext.packageName}
+        serverClientId=$serverClientId
+        """.trimIndent()
+        )
+
         val googleOption = GetSignInWithGoogleOption.Builder(
             serverClientId = serverClientId
         ).build()
+
 
         return GetCredentialRequest.Builder()
             .addCredentialOption(googleOption)

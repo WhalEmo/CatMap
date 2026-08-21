@@ -18,6 +18,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -138,7 +139,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("ActivityLifecycle", "📌 onCreate: Activity oluşturuldu.");
-
         currentUserManager = CurrentUserManager.Companion.getInstance(getApplicationContext());
         networkObserver = new NetworkObserver(this);
 
@@ -198,6 +198,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         ViewCompat.setOnApplyWindowInsetsListener(
                 binding.getRoot(),
                 (v, insets) -> {
+
+                    Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+                    v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
 
                     Insets imeInsets = insets.getInsets(
                             WindowInsetsCompat.Type.ime()

@@ -99,7 +99,7 @@ class RecentChatsRepository(
             // 1. KADEME: 'users' ana koleksiyonundan çekmeyi dene
             val doc = firestore.collection("users").document(userId).get().await()
             if (doc.exists()) {
-                val name = "${doc.getString("Ad") ?: ""} ${doc.getString("Soyad") ?: ""}".trim()
+                val name = (doc.getString("Ad") ?: "").trim()
                 val photoUrl = doc.getString("profilFotoUrl") ?: ""
 
                 // İsim boşsa fallback'e gitmesin diye kontrol

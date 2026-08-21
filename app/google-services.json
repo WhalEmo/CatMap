@@ -15,40 +15,43 @@
       },
       "oauth_client": [
         {
-          "client_id": "138771325418-hria6cl8o3648bshb7u64b6hqahsh27m.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAYFb4TL4UkePhmclts-NpKU5Vuz1kAAVg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "138771325418-hria6cl8o3648bshb7u64b6hqahsh27m.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:138771325418:android:3f71d0991887130ad35293",
-        "android_client_info": {
-          "package_name": "com.emrullah.CatMap"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "138771325418-56md8rh2ptjmei6flicblr1ci7rebf3c.apps.googleusercontent.com",
+          "client_id": "138771325418-17ruhv7a38j3k0mkn15hdubv8qvllc86.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.emrullah.CatMap",
+            "package_name": "com.beem.catmap",
+            "certificate_hash": "1f8ded680a32eec6ea3d360109b19055242f30ea"
+          }
+        },
+        {
+          "client_id": "138771325418-59utaqhnarp99edjvt4qh7lii1epphu5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beem.catmap",
+            "certificate_hash": "ddc8db981ce1d1dc6115721938119fe625979b07"
+          }
+        },
+        {
+          "client_id": "138771325418-9adufpqmvrje6udpkk4re4n4r33tsp3n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beem.catmap",
             "certificate_hash": "8c8efaeb9adbc97ed191b465449db89dbbb36cb6"
+          }
+        },
+        {
+          "client_id": "138771325418-b6r1kq5uv3igsn9oer2u96c3vpo183ea.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beem.catmap",
+            "certificate_hash": "7a2adcd96a49e676d0ed4554d0b4488ba5f93e76"
+          }
+        },
+        {
+          "client_id": "138771325418-eldjman40pdhipvlk00g5ovfqp33mcm2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beem.catmap",
+            "certificate_hash": "d3d10eb35123ebc1dd9482732e57c5cdf4c17e6c"
           }
         },
         {

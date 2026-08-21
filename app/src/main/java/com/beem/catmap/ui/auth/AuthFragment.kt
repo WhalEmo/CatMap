@@ -91,7 +91,7 @@ class AuthFragment : Fragment() {
         }
 
         binding.btnGoogleGiris.setOnClickListener {
-            launchGoogleSignIn_v2()
+            launchGoogleSignIn_v3()
         }
     }
 
@@ -318,6 +318,278 @@ class AuthFragment : Fragment() {
                     binding.btnGoogleGiris.isEnabled = true
                 }
             }
+        }
+    }
+
+
+    private fun launchGoogleSignIn_v3() {
+        if (!binding.btnGoogleGiris.isEnabled) {
+            return
+        }
+
+        logGoogleAuthEnvironment()
+
+        binding.btnGoogleGiris.isEnabled = false
+        showLoadingPill("Google hesapları yükleniyor...")
+
+        viewLifecycleOwner.lifecycleScope.launch {
+
+            val startTime = android.os.SystemClock.elapsedRealtime()
+
+            try {
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "[CM-01] Credential request hazırlanıyor."
+                )
+
+                val request = googleAuthClient.buildGetCredentialRequest()
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "[CM-02] getCredential() ÇAĞRISI BAŞLIYOR."
+                )
+
+                val result = googleAuthClient
+                    .getCredentialManager()
+                    .getCredential(
+                        request = request,
+                        context = requireActivity()
+                    )
+
+                val elapsed =
+                    android.os.SystemClock.elapsedRealtime() - startTime
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    """
+                [CM-03] getCredential() BAŞARILI.
+                elapsedMs=$elapsed
+                credentialClass=${result.credential.javaClass.name}
+                credentialType=${result.credential.type}
+                """.trimIndent()
+                )
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "[TOKEN-01] Credential parse başlıyor."
+                )
+
+                val idToken = googleAuthClient.extractIdToken(
+                    result.credential
+                )
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "[TOKEN-02] ID token alındı. tokenPresent=${idToken.isNotBlank()}"
+                )
+
+                Log.i(
+                    TAG_GOOGLE_AUTH,
+                    "[FIREBASE-01] Firebase auth'a geçiliyor."
+                )
+
+                viewModel.firebaseAuthWithGoogle(idToken)
+
+            } catch (e: GetCredentialCancellationException) {
+
+                val elapsed =
+                    android.os.SystemClock.elapsedRealtime() - startTime
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    """
+                ===== GET CREDENTIAL CANCELLATION =====
+                stage=getCredential
+                elapsedMs=$elapsed
+                exceptionClass=${e.javaClass.name}
+                message=${e.message}
+                localizedMessage=${e.localizedMessage}
+                causeClass=${e.cause?.javaClass?.name}
+                causeMessage=${e.cause?.message}
+                suppressedCount=${e.suppressed.size}
+                =======================================
+                """.trimIndent(),
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
+                )
+
+            } catch (e: NoCredentialException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "[CM-ERROR] NoCredentialException: ${e.message}",
+                    e
+                )
+
+                showErrorPill(
+                    "Kullanılabilir Google hesabı bulunamadı."
+                )
+
+            } catch (e: GetCredentialUnsupportedException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "[CM-ERROR] Credential Manager unsupported: ${e.message}",
+                    e
+                )
+
+                showErrorPill(
+                    "Bu cihaz Google ile girişi desteklemiyor."
+                )
+
+            } catch (e: GoogleAuthException.UnsupportedCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "[TOKEN-ERROR] Unsupported credential=${e.credentialType}",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı."
+                )
+
+            } catch (e: GoogleAuthException.InvalidGoogleCredential) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "[TOKEN-ERROR] Credential parse başarısız.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
+                )
+
+            } catch (e: GoogleAuthException.EmptyIdToken) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    "[TOKEN-ERROR] ID token boş.",
+                    e
+                )
+
+                showErrorPill(
+                    "Google doğrulaması tamamlanamadı."
+                )
+
+            } catch (e: CancellationException) {
+
+                throw e
+
+            } catch (e: GetCredentialException) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    """
+                [CM-UNKNOWN-ERROR]
+                class=${e.javaClass.name}
+                message=${e.message}
+                cause=${e.cause?.javaClass?.name}
+                causeMessage=${e.cause?.message}
+                """.trimIndent(),
+                    e
+                )
+
+                showErrorPill(
+                    "Google ile giriş şu anda tamamlanamadı."
+                )
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    TAG_GOOGLE_AUTH,
+                    """
+                [AUTH-UNKNOWN-ERROR]
+                class=${e.javaClass.name}
+                message=${e.message}
+                cause=${e.cause?.javaClass?.name}
+                causeMessage=${e.cause?.message}
+                """.trimIndent(),
+                    e
+                )
+
+                showErrorPill(
+                    "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."
+                )
+
+            } finally {
+
+                if (isAdded && view != null) {
+                    binding.btnGoogleGiris.isEnabled = true
+                }
+            }
+        }
+    }
+
+
+    private fun logGoogleAuthEnvironment() {
+        try {
+            val context = requireContext()
+            val packageManager = context.packageManager
+
+            val packageInfo =
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    packageManager.getPackageInfo(
+                        context.packageName,
+                        android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.getPackageInfo(
+                        context.packageName,
+                        android.content.pm.PackageManager.GET_SIGNATURES
+                    )
+                }
+
+            val signatures =
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    packageInfo.signingInfo?.apkContentsSigners.orEmpty()
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageInfo.signatures.orEmpty()
+                }
+
+            val sha1List = signatures.map { signature ->
+                val digest = java.security.MessageDigest
+                    .getInstance("SHA-1")
+                    .digest(signature.toByteArray())
+
+                digest.joinToString(":") {
+                    "%02X".format(it.toInt() and 0xFF)
+                }
+            }
+
+            val playServicesInfo = runCatching {
+                packageManager.getPackageInfo(
+                    "com.google.android.gms",
+                    0
+                )
+            }.getOrNull()
+
+            Log.i(
+                TAG_GOOGLE_AUTH,
+                """
+            ===== GOOGLE AUTH ENVIRONMENT =====
+            package=${context.packageName}
+            androidSdk=${android.os.Build.VERSION.SDK_INT}
+            device=${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}
+            googlePlayServices=${playServicesInfo?.versionName}
+            installedSignerCount=${sha1List.size}
+            installedSignerSha1=${sha1List.joinToString(" | ")}
+            ===================================
+            """.trimIndent()
+            )
+
+        } catch (e: Exception) {
+            Log.e(
+                TAG_GOOGLE_AUTH,
+                "Google Auth environment okunamadı.",
+                e
+            )
         }
     }
 
