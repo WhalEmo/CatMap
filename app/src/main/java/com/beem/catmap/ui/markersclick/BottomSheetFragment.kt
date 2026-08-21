@@ -41,6 +41,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.stfalcon.imageviewer.StfalconImageViewer;
 
 class BottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -134,13 +135,28 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun initViews() {
-        fotoAdapter = FotoGeciciAdapter(requireContext(), null)
+        fotoAdapter = FotoGeciciAdapter(requireContext(), null) { position ->
+            val currentCat = viewModel.selectedCat.value
+            val photoUrls = currentCat?.urLler
+            if (!photoUrls.isNullOrEmpty()) {
+                openFullScreenViewer(photoUrls, position)
+            }
+        }
         binding.fotoPager.adapter = fotoAdapter
         binding.fotoPager.offscreenPageLimit = 1
 
         binding.fotoPager.registerOnPageChangeCallback(photoPageChangeCallback)
     }
-
+    private fun openFullScreenViewer(urls: List<String>, startPosition: Int) {
+        StfalconImageViewer.Builder<String>(requireContext(), urls) { imageView, url ->
+            Glide.with(requireContext())
+                .load(url)
+                .into(imageView)
+        }
+            .withStartPosition(startPosition)
+            .withHiddenStatusBar(false)
+            .show()
+    }
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.selectedCat.collectLatest { cat ->

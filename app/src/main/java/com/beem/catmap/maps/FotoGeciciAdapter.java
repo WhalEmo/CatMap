@@ -20,8 +20,13 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHolder> {
 
+    public interface OnPhotoClickListener {
+        void onPhotoClick(int position);
+    }
+
     private final Context baglanti;
     private final FotografYukleyiciYonetici yukleyici;
+    private final OnPhotoClickListener onPhotoClickListener;
 
     private static class FotoDiffCallback extends DiffUtil.ItemCallback<Uri> {
         @Override
@@ -35,10 +40,11 @@ public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHo
         }
     }
 
-    public FotoGeciciAdapter(Context baglanti, FotografYukleyiciYonetici yukleyici) {
+    public FotoGeciciAdapter(Context baglanti, FotografYukleyiciYonetici yukleyici, OnPhotoClickListener listener) {
         super(new FotoDiffCallback());
         this.baglanti = baglanti;
         this.yukleyici = yukleyici;
+        this.onPhotoClickListener = listener;
     }
 
     @NonNull
@@ -66,35 +72,22 @@ public class FotoGeciciAdapter extends ListAdapter<Uri, FotoGeciciAdapter.FotoHo
             yukleyici.Yukleyici(fotoUri, holder.foto, holder.yukleniyorOverlay, holder.yukleniyorProgressBar);
         }
 
-        holder.foto.setOnLongClickListener(v -> {
-            if (yukleyici == null) {
-                int vis = (holder.sil.getVisibility() == View.GONE) ? View.VISIBLE : View.GONE;
-                holder.sil.setVisibility(vis);
-            }
-            return true;
-        });
-
-        holder.sil.setOnClickListener(v -> {
-            int adapterPosition = holder.getBindingAdapterPosition();
-            if (adapterPosition != RecyclerView.NO_POSITION) {
-                // Silme işleminde mevcut listenin kopyasını gönderiyoruz
-                java.util.List<Uri> currentList = new java.util.ArrayList<>(getCurrentList());
-                currentList.remove(adapterPosition);
-                submitList(currentList);
+        holder.foto.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION && onPhotoClickListener != null) {
+                onPhotoClickListener.onPhotoClick(pos);
             }
         });
     }
 
     public static class FotoHolder extends RecyclerView.ViewHolder {
         ImageView foto;
-        ImageButton sil;
         View yukleniyorOverlay;
         ProgressBar yukleniyorProgressBar;
 
         public FotoHolder(@NonNull View itemView) {
             super(itemView);
             foto = itemView.findViewById(R.id.fotoView);
-            sil = itemView.findViewById(R.id.silButton);
             yukleniyorOverlay = itemView.findViewById(R.id.loadingOverlay);
             yukleniyorProgressBar = itemView.findViewById(R.id.loadingProgressBar);
         }
