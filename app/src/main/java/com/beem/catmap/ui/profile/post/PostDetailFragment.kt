@@ -157,7 +157,7 @@ class PostDetailFragment : Fragment() {
         if (post.bio.isNullOrBlank()) {
             binding.kediAciklama.text = "Bu sevimli dostumuz için henüz bir açıklama eklenmemiş. 🐾"
         } else {
-            binding.kediAciklama.text = post.bio
+            binding.kediAciklama.text = post.bio!!.trim()
         }
         binding.gonderiTarihiText.text = getFormattedTimestamp(post.date) ?: ""
         val begeni = post.likeCount ?: 0L
