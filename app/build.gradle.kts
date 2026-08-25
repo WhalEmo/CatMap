@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
     id("com.google.gms.google-services")
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -23,8 +24,8 @@ android {
         applicationId = "com.beem.catmap"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.1.8"
+        versionCode = 11
+        versionName = "1.1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -115,6 +116,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     implementation(libs.firebase.storage)
     implementation(libs.picasso)

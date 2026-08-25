@@ -10,6 +10,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -30,10 +31,14 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.RepeatOnLifecycleKt;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.beem.catmap.BottomSheetController;
 import com.beem.catmap.data.model.UserModel;
 import com.beem.catmap.ui.badge.BadgeFragment;
+import com.beem.catmap.ui.main.ChatNotificationViewModel;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
 import com.beem.catmap.ui.profile.common.ProfileFragment;
@@ -67,8 +72,10 @@ import com.beem.catmap.utils.NetworkObserver;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.squareup.picasso.Target;
@@ -81,9 +88,11 @@ import java.util.List;
 import java.util.Map;
 
 import kotlin.Unit;
+import kotlinx.coroutines.CoroutineScope;
 
 public class MapsActivity extends AppCompatActivity implements BottomSheetController {
     private ActivityMapsBinding binding;
+    private ChatNotificationViewModel chatNotificationViewModel;
     private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private NetworkObserver networkObserver;
@@ -172,10 +181,19 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         setTheme(R.style.Theme_CatMap);
 
+        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            Log.e("CRASH_DETECTOR", "Hata oluştu: ", throwable);
-            Process.killProcess(Process.myPid());
-            System.exit(10);
+            Log.e("CRASH_DETECTOR", "Hata yakalandı: ", throwable);
+
+            FirebaseCrashlytics.getInstance().recordException(throwable);
+
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
+            } else {
+                Process.killProcess(Process.myPid());
+                System.exit(10);
+            }
         });
 
         super.onCreate(savedInstanceState);
@@ -195,6 +213,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        chatNotificationViewModel = new ViewModelProvider(this).get(ChatNotificationViewModel.class);
+        setupChatNotificationObserver();
+
         ViewCompat.setOnApplyWindowInsetsListener(
                 binding.getRoot(),
                 (v, insets) -> {
@@ -249,6 +271,8 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         );
 
         if (currentUserManager.isUserLoggedIn()) {
+            String userId = currentUserManager.getCurrentUserId();
+            FirebaseCrashlytics.getInstance().setUserId(userId);
             BegenileriCek();
             SmartNavigationEngine.init(navigationEngine, Screen.MAP);
         } else {
@@ -476,4 +500,24 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
         Log.d("ActivityLifecycle", "🔄 onRestart: Activity arka plandan geri döndü.");
     }
 
+    private void setupChatNotificationObserver() {
+        chatNotificationViewModel.observeFromJava(this, hasUnread -> {
+            BadgeDrawable badge = binding.bottomNavigation.getOrCreateBadge(R.id.fragment_chat);
+
+            boolean isVisible = Boolean.TRUE.equals(hasUnread);
+            badge.setVisible(isVisible);
+
+            if (isVisible) {
+                badge.clearNumber(); // Sayıyı temizle, sadece dot moduna zorla
+                badge.setBackgroundColor(ContextCompat.getColor(MapsActivity.this, R.color.catmap_error));
+                badge.setBadgeGravity(BadgeDrawable.TOP_END);
+
+                // İkonun tam sağ üst köşesine oturtma ofsetleri (piksel cinsinden)
+                int offsetPx = (int) (8 * getResources().getDisplayMetrics().density);
+                badge.setHorizontalOffset(offsetPx);
+                badge.setVerticalOffset(offsetPx);
+            }
+            return kotlin.Unit.INSTANCE;
+        });
+    }
 }

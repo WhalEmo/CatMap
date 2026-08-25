@@ -59,6 +59,8 @@
     <style name="Theme.CatMap.BottomNavOverlay" parent="">
         <item name="colorSecondaryContainer">@android:color/transparent</item>
         <item name="colorControlHighlight">#1AF97316</item>
+        <item name="badgeRadius">4dp</item>
+        <item name="badgeWidePadding">4dp</item>
 
         <item name="itemRippleColor">#1AF97316</item>
     </style>

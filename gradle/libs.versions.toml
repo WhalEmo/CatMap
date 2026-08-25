@@ -19,6 +19,8 @@ firebase-database = "20.2.1"
 firebase-auth = "22.1.0"
 firebase-analytics = "21.3.0"
 
+firebase-crashlytics-gradle = "3.0.2"
+
 firebase-storage = "20.2.0"
 picasso = "2.71828"
 
@@ -54,6 +56,8 @@ firebase-database = { module = "com.google.firebase:firebase-database", version.
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebase-auth" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics", version.ref = "firebase-analytics" }
 
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+
 firebase-storage = { module = "com.google.firebase:firebase-storage", version.ref = "firebase-storage" }
 picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
@@ -73,4 +77,5 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-android-libraries-mapsplatform-secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "googleAndroidLibrariesMapsplatformSecretsGradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
 

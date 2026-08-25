@@ -136,7 +136,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: CatMap Fragment ayağa kalktı!")
 
-        setupFabIcon()
         setupClickListeners()
         observeViewModel()
         observeMotionState()
@@ -214,19 +213,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     }
 
 
-    private fun setupFabIcon() {
-        val bottomNav = requireActivity().findViewById<View>(R.id.bottom_navigation)
-
-        bottomNav.doOnLayout { navView ->
-            val density = resources.displayMetrics.density
-            val extraMargin16dp = (16 * density).toInt()
-            val totalBottomMargin = navView.height + extraMargin16dp
-
-            binding.fabCurrentLocation.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = totalBottomMargin
-            }
-        }
-    }
 
     private fun setupClickListeners() {
         binding.fabCurrentLocation.setOnClickListener {
