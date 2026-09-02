@@ -789,7 +789,7 @@ class ProfileFragment : Fragment() {
                         when (event) {
                             is ProfileEvent.ProfileUpdated -> {
                                 val guncelKullanici = event.updatedUserModel
-                                guncelKullanici?.let { bindUserProfileData(it) }
+                                //guncelKullanici?.let { bindUserProfileData(it) }
                             }
                             is ProfileEvent.UnblockedUser -> {
                                 if (event.userId == targetUserId) {

@@ -1,10 +1,12 @@
 package com.beem.catmap.ui.navigation
 
+import android.os.Bundle
 import android.util.Log
 import com.beem.catmap.ui.profile.common.ProfileFragment
 import androidx.fragment.app.FragmentManager
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.ui.message.MessageFragment
+import com.beem.catmap.ui.profile_v2.otherprofile.OtherProfileFragment
 import com.beem.catmap.ui.report.ReportBottomSheetFragment
 import com.beem.catmap.ui.report.ReportType
 
@@ -12,10 +14,15 @@ object NavigationHelper {
     @JvmStatic
     fun navigateToProfile(targetProfileId: String, isFollowed: Boolean = false) {
         Log.d("NAV_BACK_DEDEKTOR", "id: $targetProfileId, isFollowed: $isFollowed")
-        val screen = if (targetProfileId == UserSession.userId) Screen.PROFILE else Screen.OTHER_PROFILE
+        val isSelf = targetProfileId == UserSession.userId
+        val screen = if (isSelf) Screen.PROFILE else Screen.OTHER_PROFILE
 
-        val args = ProfileFragment.newArgs(targetProfileId).apply {
-            putBoolean("IS_FOLLOWED", isFollowed)
+        val args = if (isSelf) {
+            Bundle.EMPTY
+        } else {
+            OtherProfileFragment.newArgs(targetProfileId).apply {
+                putBoolean("IS_FOLLOWED", isFollowed)
+            }
         }
 
         SmartNavigationEngine.navigateTo(

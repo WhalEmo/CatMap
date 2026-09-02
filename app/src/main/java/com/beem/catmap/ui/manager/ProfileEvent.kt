@@ -2,6 +2,7 @@ package com.beem.catmap.ui.manager
 
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.model.Post
+import com.beem.catmap.data.model.UserProfileData
 
 sealed class ProfileEvent {
     data class PostAdded(val post: Post) : ProfileEvent()
@@ -11,7 +12,7 @@ sealed class ProfileEvent {
     ) : ProfileEvent()
 
     data class ProfileUpdated(
-        val updatedUserModel: UserModel? = null
+        val updatedUserModel: UserProfileData
     ) : ProfileEvent()
 
     data class FollowUser(

@@ -64,8 +64,10 @@ import com.beem.catmap.ui.navigation.CatMapNavigationRenderer;
 import com.beem.catmap.ui.navigation.FragmentProvider;
 import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
+import com.beem.catmap.ui.profile_v2.myprofile.MyProfileFragment;
+import com.beem.catmap.ui.profile_v2.otherprofile.OtherProfileFragment;
 import com.beem.catmap.ui.upload.UploadFragment;
-import com.beem.catmap.ui.profile.edit.EditProfileFragment;
+import com.beem.catmap.ui.profile_v2.edit.EditProfileFragment;
 import com.beem.catmap.ui.profile.follow.fragment.FollowFragment;
 import com.beem.catmap.ui.profile.post.PostDetailFragment;
 import com.beem.catmap.utils.NetworkObserver;
@@ -127,10 +129,10 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
             return switch (screen) {
                 case MAP -> new CatMapFragment();
                 case UPLOAD -> new UploadFragment();
-                case OTHER_PROFILE -> new ProfileFragment();
+                case OTHER_PROFILE -> new OtherProfileFragment();
                 case CAMERA -> new CameraFragment();
                 case CHAT -> new ChatFragment();
-                case PROFILE -> new ProfileFragment();
+                case PROFILE -> new MyProfileFragment();
                 case MESSAGE -> new MessageFragment();
                 case EDIT_PROFILE -> new EditProfileFragment();
                 case BLOCKED_USERS -> new UserBlockFragment();

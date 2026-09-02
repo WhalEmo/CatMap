@@ -9,6 +9,11 @@ activity = "1.9.3"
 constraintlayout = "2.2.0"
 firebase-firestore = "24.11.0"
 
+coil = "2.7.0"
+
+composeBom = "2024.12.01"
+activityCompose = "1.9.3"
+lifecycleCompose = "2.8.7"
 
 gms-maps = "18.1.0"
 gms-location = "21.0.1"
@@ -71,11 +76,24 @@ camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = 
 camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayoutVersion" }
 
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleCompose" }
+
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-android-libraries-mapsplatform-secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "googleAndroidLibrariesMapsplatformSecretsGradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
+
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 

@@ -7,7 +7,9 @@ import com.beem.catmap.data.model.EquippedBadgeModel
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.model.ProfileUpdateResult
 import com.beem.catmap.data.model.PublicUser
+import com.beem.catmap.data.model.UserProfileData
 import com.beem.catmap.data.model.UserStats
+import com.beem.catmap.data.model.exception.UserBlockedByException
 import com.beem.catmap.ui.profile.common.UiState
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -24,6 +26,12 @@ class ProfileRepository private constructor() {
     private val storage = FirebaseStorage.getInstance()
 
     private val profileCache = LruCache<String, UserModel>(10)
+
+    /**
+     * bu yeni profile data sınıfımızın yeni cachesi aşkım eskisi nolur nolmaz
+     * diye silmedim
+     */
+    private val userProfileDataCache = LruCache<String, UserProfileData>(15)
 
     companion object {
         @Volatile
@@ -117,6 +125,66 @@ class ProfileRepository private constructor() {
         } catch (e: Exception) {
             Log.d("PROFILEREPO",e.toString())
             UiState.Error(e.localizedMessage ?: "Bilinmeyen bir hata oluştu.")
+        }
+    }
+
+    suspend fun getUserProfileV2(
+        userId: String,
+        forceRefresh: Boolean = false
+    ): Result<UserProfileData> = withContext(Dispatchers.IO) {
+        if (userId.isBlank()) {
+            return@withContext Result.failure(IllegalArgumentException("Geçersiz kullanıcı ID'si."))
+        }
+
+        // 1. Önbellek (LruCache) Kontrolü
+        if (!forceRefresh) {
+            userProfileDataCache.get(userId)?.let { cached ->
+                Log.d("ProfileRepository", "Profil önbellekten getirildi: $userId")
+                return@withContext Result.success(cached)
+            }
+        }
+
+        try {
+            val snapshot = db.collection("users").document(userId).get().await()
+
+            if (!snapshot.exists()) {
+                return@withContext Result.failure(NoSuchElementException("Kullanıcı bulunamadı."))
+            }
+
+            // Firestore toObject mapping (UserProfileData içindeki @PropertyName anotasyonları çalışır)
+            val profileData = snapshot.toObject(UserProfileData::class.java)
+                ?: return@withContext Result.failure(IllegalStateException("Profil verisi ayrıştırılamadı."))
+
+            // Id alanını garantiye al
+            val finalProfile = profileData.copy(id = userId)
+
+            // Belleğe kaydet
+            userProfileDataCache.put(userId, finalProfile)
+
+            Result.success(finalProfile)
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                Log.w("ProfileRepository", "Erişim engellendi (Kullanıcı bizi engellemiş): $userId")
+                Result.failure(UserBlockedByException(cause = e))
+            } else {
+                Log.e("ProfileRepository", "Firestore hatası: ${e.message}")
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileRepository", "Profil yüklenirken bilinmeyen hata: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    fun invalidateProfileCache(userId: String) {
+        if (userId.isNotBlank()) {
+            userProfileDataCache.remove(userId)
+        }
+    }
+
+    fun updateCachedUserProfile(userId: String, updatedProfile: UserProfileData) {
+        if (userId.isNotBlank()) {
+            userProfileDataCache.put(userId, updatedProfile)
         }
     }
 

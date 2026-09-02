@@ -14,6 +14,7 @@ plugins {
     id("com.google.gms.google-services")
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -24,8 +25,8 @@ android {
         applicationId = "com.beem.catmap"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.1.9"
+        versionCode = 12
+        versionName = "1.1.10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -46,6 +47,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        compose = true
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -135,5 +137,18 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.runtime)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.runtime.compose)
+    debugImplementation(libs.compose.ui.tooling)
+
+    implementation(libs.coil.compose)
 
 }

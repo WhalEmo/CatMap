@@ -14,3 +14,13 @@
 .cxx
 local.properties
 /app/build.gradle.kts
+
+
+
+# Kotlin derleyici geçici logları
+.kotlin/
+*.log
+
+# Android Studio / IntelliJ geçici profilleri
+.idea/inspectionProfiles/
+.idea/caches/

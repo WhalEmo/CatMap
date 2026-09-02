@@ -12,6 +12,23 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+
+    <TextView
+        android:id="@+id/tvBrandLogotype"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/montserrat_black"
+        android:letterSpacing="-0.04"
+        android:shadowColor="#33000000"
+        android:shadowDx="0"
+        android:shadowDy="3"
+        android:shadowRadius="6"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabCurrentLocation"
         android:layout_width="wrap_content"
@@ -30,7 +47,7 @@
         android:id="@+id/btnScanArea"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="56dp"
+        android:layout_marginTop="30dp"
         android:text="Bu Alanı Tara"
         android:textColor="@color/catmap_primary"
         android:fontFamily="sans-serif-medium"

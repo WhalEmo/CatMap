@@ -18,6 +18,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.text.HtmlCompat
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -137,6 +138,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: CatMap Fragment ayağa kalktı!")
 
         setupClickListeners()
+        setupCatMapText()
         observeViewModel()
         observeMotionState()
         renderSimpleUi()
@@ -361,23 +363,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
-        /*
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                catDetailViewModel.catDeletedSuccess.collect { isDeleted ->
-                    if (isDeleted) {
-                        val deletedCatId = catDetailViewModel.selectedCat.value?.id
-                        if (deletedCatId != null) {
-                            removeCatMarkerFromMap(deletedCatId)
-
-                            UiMessageManager.emitMessage(UiMessageState.Success("Kedi haritadan silindi."))
-                        }
-                    }
-                }
-            }
-        }
-        */
-
     }
 
     private fun removeCatMarkerFromMap(catId: String) {
@@ -581,6 +566,16 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         } else {
             animateMarker(myLocationMarker!!, latLng)
         }
+    }
+
+    private fun setupCatMapText() {
+        val orangeHex = String.format("#%06X", 0xFFFFFF and ContextCompat.getColor(requireContext(), R.color.catmap_accent))
+        val darkHex = String.format("#%06X", 0xFFFFFF and ContextCompat.getColor(requireContext(), R.color.catmap_text_dark))
+
+        binding.tvBrandLogotype.text = HtmlCompat.fromHtml(
+            "<font color='$orangeHex'>Cat</font><font color='$darkHex'>Map</font>",
+            HtmlCompat.FROM_HTML_MODE_LEGACY
+        )
     }
 
     private fun getBitmapDescriptorFromVector(

@@ -198,7 +198,7 @@ class EditProfileFragment : Fragment() {
                                 }
 
                                 // EventBus veya FragmentResult ile ilet
-                                ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelUserModel))
+                                //ProfileEventBus.emitEvent(ProfileEvent.ProfileUpdated(guncelUserModel))
 
                                 profileViewModel.resetUpdateState()
                                 SmartNavigationEngine.navigateBack()

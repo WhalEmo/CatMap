@@ -9,6 +9,7 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FollowResult
 import com.beem.catmap.data.model.PaginatedResult
 import com.beem.catmap.data.model.RemoveFollowerResult
+import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,6 +37,8 @@ class FollowRepository private constructor(context: Context) {
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val functions: FirebaseFunctions = FirebaseFunctions.getInstance()
+
+    private val userManager = CurrentUserManager.getInstance(context)
 
     // Önbellek Tanımlamaları
     private val isFollowingCache = LruCache<String, Boolean>(100)
@@ -212,6 +215,12 @@ class FollowRepository private constructor(context: Context) {
             val followingCount = (resultMap?.get("currentFollowingCount") as? Number)?.toLong() ?: 0L
             val followerCount = (resultMap?.get("targetFollowerCount") as? Number)?.toLong() ?: 0L
 
+            val currentProfile = userManager.profileState.value
+            userManager.updateFollowCounts(
+                takipciSayisi = currentProfile.followersCount,
+                takipEdilenSayisi = followingCount
+            )
+
             Result.success(FollowResult(followingCount, followerCount))
         } catch (e: FirebaseFunctionsException) {
             isFollowingCache.put(targetUserId, false) // Rollback
@@ -244,6 +253,12 @@ class FollowRepository private constructor(context: Context) {
             val followingCount = (resultMap?.get("currentFollowingCount") as? Number)?.toLong() ?: 0L
             val followerCount = (resultMap?.get("targetFollowerCount") as? Number)?.toLong() ?: 0L
 
+            val currentProfile = userManager.profileState.value
+            userManager.updateFollowCounts(
+                takipciSayisi = currentProfile.followersCount,
+                takipEdilenSayisi = followingCount
+            )
+
             Result.success(FollowResult(followingCount, followerCount))
         } catch (e: Exception) {
             isFollowingCache.put(targetUserId, true) // Rollback
@@ -267,6 +282,12 @@ class FollowRepository private constructor(context: Context) {
             val resultMap = httpsResult.data as? Map<*, *>
             val followerCount = (resultMap?.get("currentFollowerCount") as? Number)?.toLong() ?: 0L
             val followingCount = (resultMap?.get("followerFollowingCount") as? Number)?.toLong() ?: 0L
+
+            val currentProfile = userManager.profileState.value
+            userManager.updateFollowCounts(
+                takipciSayisi = followerCount,
+                takipEdilenSayisi = currentProfile.followingCount
+            )
 
             Result.success(RemoveFollowerResult(followerCount, followingCount))
         } catch (e: Exception) {
