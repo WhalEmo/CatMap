@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,18 +24,21 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.beem.catmap.R
 import com.beem.catmap.data.model.UserModel
+import com.beem.catmap.ui.theme.CatMapColors
+import com.beem.catmap.ui.theme.PlusJakartaSans
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileBlockedStateView(
     user: UserModel?,
     onBackClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(CatMapColors.SurfaceWhite)
     ) {
         TopAppBar(
             title = {
@@ -48,47 +50,65 @@ fun ProfileBlockedStateView(
                         error = painterResource(R.drawable.kullanici),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = user?.username.orEmpty(),
+                        fontFamily = PlusJakartaSans,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = CatMapColors.TextPrimary
                     )
                 }
             },
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
-                    Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Geri", tint = Color.Black)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Geri",
+                        tint = CatMapColors.TextPrimary
+                    )
                 }
             },
             actions = {
                 IconButton(onClick = onMenuClick) {
-                    Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "Menü", tint = Color(0xFF888888))
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "Menü",
+                        tint = CatMapColors.TextMuted
+                    )
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            windowInsets = WindowInsets(0.dp),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = CatMapColors.SurfaceWhite
+            )
         )
 
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
                 Text(
                     text = "Bu kullanıcı sizi engelledi.",
+                    fontFamily = PlusJakartaSans,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF444444)
+                    color = CatMapColors.TextPrimary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Bu profile erişemezsiniz.",
+                    fontFamily = PlusJakartaSans,
                     fontSize = 14.sp,
-                    color = Color(0xFF888888)
+                    fontWeight = FontWeight.Normal,
+                    color = CatMapColors.TextMuted
                 )
             }
         }

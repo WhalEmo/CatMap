@@ -20,6 +20,7 @@ import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.profile.common.ProfileDialogHelper
+import com.beem.catmap.ui.profile.follow.fragment.FollowFragment
 import com.beem.catmap.ui.report.ReportType
 
 class OtherProfileFragment : Fragment() {
@@ -59,20 +60,20 @@ class OtherProfileFragment : Fragment() {
                     onUnblockClick = { viewModel.unblockUser() },
                     onChatClick = { NavigationHelper.navigateToChat(targetUserId) },
                     onFollowersClick = {
-                        val args = bundleOf(
-                            "yukleyenID" to targetUserId,
-                            "startPage" to 0,
-                            "kullaniciAdi" to uiState.user?.username.orEmpty()
+                        val args = FollowFragment.newArgs(
+                            userId = targetUserId,
+                            username = uiState.user?.username.orEmpty(),
+                            startPage = FollowFragment.PAGE_FOLLOWERS
                         )
-                        SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "${targetUserId}_0")
+                        SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "${targetUserId}_${FollowFragment.PAGE_FOLLOWERS}")
                     },
                     onFollowingClick = {
-                        val args = bundleOf(
-                            "yukleyenID" to targetUserId,
-                            "startPage" to 1,
-                            "kullaniciAdi" to uiState.user?.username.orEmpty()
+                        val args = FollowFragment.newArgs(
+                            userId = targetUserId,
+                            username = uiState.user?.username.orEmpty(),
+                            startPage = FollowFragment.PAGE_FOLLOWING
                         )
-                        SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "${targetUserId}_1")
+                        SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "${targetUserId}_${FollowFragment.PAGE_FOLLOWING}")
                     },
                     onBadgeClick = { badge ->
                         BadgeStoryBottomSheet.show(childFragmentManager, badge)

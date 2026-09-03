@@ -23,6 +23,8 @@ import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.profile.follow.fragment.FollowFragment
+import com.beem.catmap.ui.theme.CatMapTypography
 
 class MyProfileFragment : Fragment() {
 
@@ -36,7 +38,7 @@ class MyProfileFragment : Fragment() {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                MaterialTheme {
+                MaterialTheme(typography = CatMapTypography) {
                     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(Unit) {
@@ -79,9 +81,10 @@ class MyProfileFragment : Fragment() {
 
     private fun navigateToFollowList(startPage: Int) {
         val myId = UserSession.userId.orEmpty()
-        val args = bundleOf(
-            "yukleyenID" to myId,
-            "startPage" to startPage
+        val args = FollowFragment.newArgs(
+            userId = myId,
+            username = UserSession.userModel.username,
+            startPage = startPage
         )
         SmartNavigationEngine.navigateTo(Screen.FOLLOWERS, args, "${myId}_$startPage")
     }

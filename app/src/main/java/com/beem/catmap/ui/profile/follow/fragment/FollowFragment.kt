@@ -35,9 +35,9 @@ class FollowFragment : Fragment() {
 
         val currentUserManager = CurrentUserManager.getInstance(requireContext())
 
-        val yukleyenID = arguments?.getString("yukleyenID") ?: currentUserManager.getCurrentUserId()
-         startPage = arguments?.getInt("startPage", 0) ?: 0
-        val kullaniciAdi = arguments?.getString("kullaniciAdi")
+        val yukleyenID = arguments?.getString(ARG_USER_ID) ?: currentUserManager.getCurrentUserId()
+         startPage = arguments?.getInt(ARG_START_PAGE, 0) ?: 0
+        val kullaniciAdi = arguments?.getString(ARG_USERNAME)
 
         // Başlığı ayarla
         if (!kullaniciAdi.isNullOrEmpty()) {
@@ -68,7 +68,7 @@ class FollowFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
-        startPage = arguments?.getInt("startPage", 0) ?: 0
+        startPage = arguments?.getInt(ARG_START_PAGE, 0) ?: 0
         viewPager2.setCurrentItem(startPage, false)
     }
 
@@ -76,4 +76,32 @@ class FollowFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         handleBackPressWithEngine()
     }
+
+    companion object {
+        private const val ARG_USER_ID = "ARG_USER_ID"
+        private const val ARG_USERNAME = "ARG_USERNAME"
+        private const val ARG_START_PAGE = "ARG_START_PAGE"
+
+        const val PAGE_FOLLOWERS = 0
+        const val PAGE_FOLLOWING = 1
+
+        fun newArgs(
+            userId: String? = null,
+            username: String? = null,
+            startPage: Int = PAGE_FOLLOWERS
+        ): Bundle = androidx.core.os.bundleOf(
+            ARG_USER_ID to userId,
+            ARG_USERNAME to username,
+            ARG_START_PAGE to startPage
+        )
+
+        fun newInstance(
+            userId: String? = null,
+            username: String? = null,
+            startPage: Int = PAGE_FOLLOWERS
+        ): FollowFragment = FollowFragment().apply {
+            arguments = newArgs(userId, username, startPage)
+        }
+    }
+
 }

@@ -516,7 +516,7 @@ class OtherProfileViewModel(
             ProfileEventBus.profileEvent.collect { event ->
                 when (event) {
                     is ProfileEvent.UnblockedUser -> {
-                        if (event.userId == targetUserId && event.operatorUserId != currentUserId) {
+                        if (event.userId == targetUserId) {
                             _uiState.update {
                                 it.copy(
                                     isBlockedByMe = false,
@@ -527,7 +527,7 @@ class OtherProfileViewModel(
                         }
                     }
                     is ProfileEvent.BlockedUser -> {
-                        if (event.userId == targetUserId && event.operatorUserId != currentUserId) {
+                        if (event.userId == targetUserId) {
                             _uiState.update {
                                 it.copy(
                                     isBlockedByMe = true,

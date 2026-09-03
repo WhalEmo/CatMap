@@ -16,17 +16,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.beem.catmap.R
 import com.beem.catmap.data.model.Post
+import com.beem.catmap.ui.components.CatMapImage
 import com.beem.catmap.ui.profile.post.PostUiState
+import com.beem.catmap.ui.theme.CatMapColors
+import com.beem.catmap.ui.theme.Montserrat
+import com.beem.catmap.ui.theme.PlusJakartaSans
 
 @Composable
 fun ProfilePostsGrid(
@@ -34,6 +34,7 @@ fun ProfilePostsGrid(
     postUiState: PostUiState,
     onPostClick: (Post) -> Unit,
     onLoadMore: () -> Unit,
+    refreshKey: Any,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
@@ -44,31 +45,34 @@ fun ProfilePostsGrid(
             headerContent()
         }
 
+        // Bölüm Ayırıcı Başlık ("GÖNDERİLER")
         item(span = { GridItemSpan(3) }) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(1.dp)
-                        .background(Color(0xFFE6E6E6))
+                        .background(CatMapColors.Divider)
                 )
                 Text(
                     text = "GÖNDERİLER",
+                    fontFamily = Montserrat,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF666666),
+                    letterSpacing = 0.1.sp,
+                    color = CatMapColors.TextMuted,
                     modifier = Modifier.padding(horizontal = 14.dp)
                 )
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(1.dp)
-                        .background(Color(0xFFE6E6E6))
+                        .background(CatMapColors.Divider)
                 )
             }
         }
@@ -80,44 +84,56 @@ fun ProfilePostsGrid(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(48.dp)
+                            .padding(horizontal = 24.dp, vertical = 48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Lock,
                             contentDescription = null,
-                            tint = Color.Gray,
+                            tint = CatMapColors.TextMuted,
                             modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "🔒 Bu hesap gizli.\nGönderilerini görmek için takip et.",
+                            text = "Bu hesap gizli.",
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = CatMapColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Gönderilerini görmek için takip etmelisiniz.",
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.Normal,
                             textAlign = TextAlign.Center,
-                            fontSize = 14.sp,
-                            color = Color.Gray
+                            fontSize = 13.sp,
+                            color = CatMapColors.TextMuted
                         )
                     }
                 }
             }
+
             postUiState.isEmpty -> {
                 item(span = { GridItemSpan(3) }) {
                     Text(
                         text = "Henüz gönderi yok",
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                        fontSize = 15.sp,
-                        color = Color(0xFF888888),
+                        fontSize = 14.sp,
+                        color = CatMapColors.TextMuted,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(48.dp)
                     )
                 }
             }
+
             else -> {
-                // items yerine itemsIndexed kullanılarak her öğeye garantili benzersiz key verildi
                 itemsIndexed(
                     items = postUiState.posts,
                     key = { index, post -> "${post.catId ?: "cat"}_$index" }
                 ) { index, post ->
-                    // Son 2 öğeye gelindiğinde daha fazla veri yükle
                     if (index >= postUiState.posts.size - 2 && !postUiState.isLastPage && !postUiState.isMoreLoading) {
                         LaunchedEffect(postUiState.posts.size) {
                             onLoadMore()
@@ -125,12 +141,10 @@ fun ProfilePostsGrid(
                     }
 
                     val firstImageUrl = post.photoUrlList.firstOrNull()
-                    AsyncImage(
-                        model = firstImageUrl,
+                    CatMapImage(
+                        data = firstImageUrl,
                         contentDescription = post.catName,
-                        placeholder = painterResource(R.drawable.kullanici),
-                        error = painterResource(R.drawable.kullanici),
-                        contentScale = ContentScale.Crop,
+                        refreshKey = refreshKey,
                         modifier = Modifier
                             .aspectRatio(1f)
                             .padding(1.dp)
@@ -146,7 +160,11 @@ fun ProfilePostsGrid(
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = CatMapColors.Accent,
+                                strokeWidth = 2.dp
+                            )
                         }
                     }
                 }

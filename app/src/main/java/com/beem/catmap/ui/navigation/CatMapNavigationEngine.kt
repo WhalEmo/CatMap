@@ -36,11 +36,7 @@ class CatMapNavigationEngine(
             Log.d("NAV_BRIDGE", "🚀 NAVIGATE TO TETİKLENİYOR -> Hedef Ekran: $targetScreen")
 
             SmartNavigationEngine.navigateTo(
-                targetScreen = targetScreen,
-                args = if (targetScreen == Screen.PROFILE)
-                    ProfileFragment.newArgs(UserSession.userId) else null,
-                key = if (targetScreen == Screen.PROFILE)
-                    UserSession.userId else null
+                targetScreen = targetScreen
             )
             true
         }

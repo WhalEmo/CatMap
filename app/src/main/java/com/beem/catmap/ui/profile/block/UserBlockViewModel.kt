@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.model.UserModel
 
 import com.beem.catmap.data.repository.UserBlockRepository
+import com.beem.catmap.ui.manager.ProfileEvent
+import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.profile.block.BlockActionState
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,6 +37,45 @@ class UserBlockViewModel : ViewModel() {
     private val _blockActionState = MutableSharedFlow<BlockActionState>()
     val blockActionState: SharedFlow<BlockActionState> = _blockActionState.asSharedFlow()
     private var lastDocument: DocumentSnapshot? = null
+
+
+    init {
+        observeProfileEvents()
+    }
+
+    private fun observeProfileEvents() {
+        viewModelScope.launch {
+            ProfileEventBus.profileEvent.collect { event ->
+                when (event) {
+                    is ProfileEvent.BlockedUser -> {
+                        // Bir kullanıcı başka bir ekrandan engellendiğinde listeye ekle
+                        val newBlockedUser = UserModel().apply {
+                            id = event.userId
+                            username = event.kullaniciAdi
+                            photoUrl = event.fotoUrl
+                        }
+                        _benimEngellediklerim.update { current ->
+                            val filtered = current.filterNot { it.id == event.userId }
+                            listOf(newBlockedUser) + filtered
+                        }
+                    }
+
+                    is ProfileEvent.UnblockedUser -> {
+                        // Engeli kaldırıldığında listeden hemen düşür
+                        _benimEngellediklerim.update { current ->
+                            val updated = current.filterNot { it.id == event.userId }
+                            if (updated.isEmpty() && lastDocument == null) {
+                                _isLastPage.value = true
+                            }
+                            updated
+                        }
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
 
     fun benimEngellediklerimiGetir(currentUserId: String) {
         this.targetUserId = currentUserId
@@ -111,6 +152,7 @@ class UserBlockViewModel : ViewModel() {
                 }
 
                 _blockActionState.emit(BlockActionState.Success("Engellendi"))
+
                 onResult(true)
             } catch (e: Exception) {
                 Log.e("UserBlockViewModel", "Engelleme hatası: ${e.message}")
@@ -139,6 +181,8 @@ class UserBlockViewModel : ViewModel() {
                 }
 
                 _blockActionState.emit(BlockActionState.Success("Engel kaldırıldı"))
+
+
                 onResult(true)
             } catch (e: Exception) {
                 Log.e("UserBlockViewModel", "Engel kaldırma hatası: ${e.message}")

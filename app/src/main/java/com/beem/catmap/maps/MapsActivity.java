@@ -10,8 +10,6 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
@@ -19,7 +17,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,8 +28,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.RepeatOnLifecycleKt;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.beem.catmap.BottomSheetController;
@@ -41,7 +36,6 @@ import com.beem.catmap.ui.badge.BadgeFragment;
 import com.beem.catmap.ui.main.ChatNotificationViewModel;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
-import com.beem.catmap.ui.profile.common.ProfileFragment;
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment;
 import com.beem.catmap.data.local.CacheHelperPostLike;
 
@@ -75,49 +69,34 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.badge.BadgeDrawable;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.squareup.picasso.Target;
 
-
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import kotlin.Unit;
-import kotlinx.coroutines.CoroutineScope;
 
-public class MapsActivity extends AppCompatActivity implements BottomSheetController {
+public class MapsActivity extends AppCompatActivity {
     private ActivityMapsBinding binding;
     private ChatNotificationViewModel chatNotificationViewModel;
     private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private NetworkObserver networkObserver;
 
-    private BottomSheetDialog bottomSheetDialog;
     private long sonTiklamaZamani = 0;
-
-    Map<String, Bitmap> fotoCache = new HashMap<>();
-    List<Target> targetListesi = new ArrayList<>();
     public Marker sonTiklananMarker;
 
     private String gosterilecekKediID;
     private FrameLayout rightSlidingPanel;
-    private boolean isPanelVisible = false;
     private ImageButton btnClose;
     private int screenWidth;
 
     private CatMapNavigationEngine navigationEngine;
     private CatMapNavigationRenderer navigationRenderer;
     private CurrentUserManager currentUserManager;
-    private double latitude;
-    private double longitude;
-    private boolean bittimi = true;
 
 
 
@@ -299,7 +278,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
                     .setDuration(300)
                     .withEndAction(() -> {
                         if (tvCatFactSliding != null) tvCatFactSliding.setText("");
-                        isPanelVisible = false;
                     })
                     .start());
         }
@@ -385,15 +363,7 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onDestroy() {
         super.onDestroy();
         Log.d("ActivityLifecycle", "💀 onDestroy: Activity yok ediliyor.");
-        bittimi = false;
 
-        if (currentUserManager != null && currentUserManager.isUserLoggedIn()) {
-            UserModel userModel = currentUserManager.getCurrentUser();
-            if (userModel != null) {
-                userModel.latitude=latitude;
-                userModel.longitude=longitude;
-            }
-        }
         LocationEngine.INSTANCE.stopTracking();
     }
 
@@ -415,20 +385,6 @@ public class MapsActivity extends AppCompatActivity implements BottomSheetContro
     protected void onPause() {
         super.onPause();
         Log.d("ActivityLifecycle", "⏸️ onPause: Activity odak kaybetti.");
-    }
-
-    @Override
-    public void hideBottomSheet() {
-        if (bottomSheetDialog != null && bottomSheetDialog.isShowing()) {
-            bottomSheetDialog.hide();
-        }
-    }
-
-    @Override
-    public void showBottomSheet() {
-        if (bottomSheetDialog != null && !bottomSheetDialog.isShowing()) {
-            bottomSheetDialog.show();
-        }
     }
 
     private void uiMessageManagerObserver() {
