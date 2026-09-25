@@ -1,12 +1,12 @@
 package com.beem.catmap.ui.profile.follow.state
 
-import com.beem.catmap.data.model.UserModel
+import com.beem.catmap.data.model.UserProfileData
 
 sealed interface FollowUiState {
     object Idle : FollowUiState
     object Loading : FollowUiState
     data class Success(
-        val userModels: List<UserModel>,
+        val userModels: List<UserProfileData>,
         val isLastPage: Boolean = false,
         val isLoadingMore: Boolean = false
     ) : FollowUiState

@@ -6,4 +6,5 @@ sealed class AuthEvent {
     data class ShowToast(val message: String) : AuthEvent()
     data class NavigateToMap(val isNewRegister: Boolean = false) : AuthEvent()
     data class NavigateToProfileSetup(val userModel: UserModel) : AuthEvent()
+    object NavigateToBanned: AuthEvent()
 }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent">
+
+    <!-- 1. Sabit Gölge (64x80'den 48x60'a düşürüldü) -->
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_spot_pin_shadow" />
+
+    <!-- 2. Rengi Değişecek Ana Pin (48x60'a düşürüldü) -->
+    <ImageView
+        android:id="@+id/marker_bg"
+        android:layout_width="48dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_spot_pin_body" />
+
+    <!-- 3. Sabit BEYAZ İç Daire (44'ten 32'ye düşürüldü, orantılı hizalandı) -->
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/marker_state_bg"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="8dp"
+        android:src="@android:color/white" />
+
+    <!-- 4. Beyaz Dairenin İçindeki İkon (24'ten 18'e düşürüldü, tam merkeze alındı) -->
+    <ImageView
+        android:id="@+id/marker_state_icon"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="15dp"
+        android:src="@drawable/ic_add" />
+
+</FrameLayout>

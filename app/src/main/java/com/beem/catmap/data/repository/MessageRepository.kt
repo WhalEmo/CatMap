@@ -367,6 +367,15 @@ class MessageRepository(
         return try {
             val document = firestore.collection("users").document(receiverId).get().await()
             if (document.exists()) {
+
+                val isBanned = document.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return MessageProfile(
+                        name = "Askıya Alınmış Hesap",
+                        photoUrl = ""
+                    )
+                }
+
                 val name = document.getString("KullaniciAdi") ?: ""
                 val photoUrl = document.getString("profilFotoUrl") ?: ""
                 MessageProfile(
@@ -403,6 +412,16 @@ class MessageRepository(
         return try {
             val publicDoc = firestore.collection("publicUsers").document(receiverId).get().await()
             if (publicDoc.exists()) {
+
+                val isBanned = publicDoc.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return MessageProfile(
+                        name = "Askıya Alınmış Hesap",
+                        photoUrl = "",
+                        blockState = BlockState.BlockedByUser // Engel durumunu koruyoruz
+                    )
+                }
+
                 val name = publicDoc.getString("KullaniciAdi")
                     ?: publicDoc.getString("kullaniciAdi")
                     ?: publicDoc.getString("Ad")

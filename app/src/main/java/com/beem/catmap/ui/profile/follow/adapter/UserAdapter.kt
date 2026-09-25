@@ -1,8 +1,6 @@
 package com.beem.catmap.ui.profile.follow.adapter
 
 import android.annotation.SuppressLint
-import android.content.res.ColorStateList
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,45 +9,43 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.R
+import com.beem.catmap.data.model.UserProfileData
 import com.bumptech.glide.Glide
 
 class UserAdapter(
+    private val listType: ListType,
     private val onUserClick: (String?) -> Unit
-) : ListAdapter<UserModel, UserAdapter.ViewHolder>(KullaniciDiffCallback()) {
+) : ListAdapter<UserProfileData, UserAdapter.ViewHolder>(KullaniciDiffCallback()) {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val recyclerFotoImageView: ImageView = itemView.findViewById(R.id.recyclerFotoImageView)
         private val recyclerUsername: TextView = itemView.findViewById(R.id.RecyclerkullaniciAdi)
         private val btnFollowing: TextView = itemView.findViewById(R.id.takipediyosa)
 
-        fun bind(userModel: UserModel, onUserClick: (String?) -> Unit) {
-            recyclerUsername.text = userModel.username
+        fun bind(user: UserProfileData, listType: ListType, onUserClick: (String?) -> Unit) {
+            recyclerUsername.text = user.username
 
 
             Glide.with(itemView.context)
-                .load(userModel.photoUrl)
+                .load(user.photoUrl)
                 .centerCrop()
                 .placeholder(R.drawable.kullanici)
                 .error(R.drawable.kullanici)
                 .into(recyclerFotoImageView)
 
-            when {
-                userModel.isFollowing == 2 -> {
+            when (listType) {
+                ListType.FOLLOWING -> {
                     btnFollowing.text = "Takip"
                 }
-                userModel.isFollowers == 2 -> {
+                ListType.FOLLOWERS -> {
                     btnFollowing.text = "Takipçi"
-                }
-                else -> {
-                    btnFollowing.text = "Takip et"
-                    btnFollowing.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FF9800"))
                 }
             }
 
+
             recyclerUsername.setOnClickListener {
-                onUserClick(userModel.id)
+                onUserClick(user.id)
             }
         }
     }
@@ -61,16 +57,16 @@ class UserAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position), onUserClick)
+        holder.bind(getItem(position), listType, onUserClick)
     }
 
-    private class KullaniciDiffCallback : DiffUtil.ItemCallback<UserModel>() {
-        override fun areItemsTheSame(oldItem: UserModel, newItem: UserModel): Boolean {
+    private class KullaniciDiffCallback : DiffUtil.ItemCallback<UserProfileData>() {
+        override fun areItemsTheSame(oldItem: UserProfileData, newItem: UserProfileData): Boolean {
             return oldItem.id == newItem.id
         }
 
         @SuppressLint("DiffUtilEquals")
-        override fun areContentsTheSame(oldItem: UserModel, newItem: UserModel): Boolean {
+        override fun areContentsTheSame(oldItem: UserProfileData, newItem: UserProfileData): Boolean {
             return oldItem == newItem
         }
     }

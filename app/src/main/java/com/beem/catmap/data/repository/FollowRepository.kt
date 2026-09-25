@@ -9,15 +9,18 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FollowResult
 import com.beem.catmap.data.model.PaginatedResult
 import com.beem.catmap.data.model.RemoveFollowerResult
+import com.beem.catmap.data.model.UserProfileData
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.auth.exceptions.IsBlockedByException
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlin.collections.forEach
 
 class FollowRepository private constructor(context: Context) {
 
@@ -43,8 +46,8 @@ class FollowRepository private constructor(context: Context) {
     // Önbellek Tanımlamaları
     private val isFollowingCache = LruCache<String, Boolean>(100)
     private val isFollowedByCache = LruCache<String, Boolean>(100)
-    private val takipcilerCache = LruCache<String, PaginatedResult<UserModel>>(10)
-    private val takipEdilenlerCache = LruCache<String, PaginatedResult<UserModel>>(10)
+    private val takipcilerCache = LruCache<String, PaginatedResult<UserProfileData>>(10)
+    private val takipEdilenlerCache = LruCache<String, PaginatedResult<UserProfileData>>(10)
 
     private val currentUserId: String?
         get() = UserSession.userId
@@ -106,7 +109,7 @@ class FollowRepository private constructor(context: Context) {
         limit: Long = 10,
         lastDocument: DocumentSnapshot? = null,
         forceRefresh: Boolean = false
-    ): Result<PaginatedResult<UserModel>> = runCatching {
+    ): Result<PaginatedResult<UserProfileData>> = runCatching {
         if (forceRefresh) {
             clearUserCache(userId)
         } else if (lastDocument == null) {
@@ -125,14 +128,42 @@ class FollowRepository private constructor(context: Context) {
         }
 
         val snapshot = query.get().await()
-        val items = snapshot.documents.mapNotNull { doc ->
-            UserModel().apply {
-                id = doc.getString("ID") ?: doc.id
-                username = doc.getString("KullaniciAdi") ?: ""
-                photoUrl = doc.getString("profilFotoUrl") ?: ""
-                isFollowers = 2
-            }
+
+        if (snapshot.isEmpty) {
+            val emptyResult = PaginatedResult<UserProfileData>(
+                items = emptyList(),
+                lastDocument = snapshot.documents.lastOrNull(),
+                isLastPage = true
+            )
+            if (lastDocument == null) takipcilerCache.put(userId, emptyResult)
+            return@runCatching emptyResult
         }
+
+        val userIds = snapshot.documents.map { it.id }
+
+        val fetchedUsers = mutableMapOf<String, UserProfileData>()
+
+        userIds.chunked(10).forEach { chunk ->
+            val usersSnapshot = db.collection("users")
+                .whereIn(FieldPath.documentId(), chunk)
+                .get()
+                .await()
+
+            usersSnapshot.documents.forEach { doc ->
+                val isBanned = doc.getBoolean("isBanned") ?: false
+
+                fetchedUsers[doc.id] = UserProfileData(
+                    id = doc.id,
+                    username = if (isBanned) "askiya_alinmis" else (doc.getString("KullaniciAdi") ?: ""),
+                    photoUrl = if (isBanned) "" else (doc.getString("profilFotoUrl") ?: ""),
+                    name = if (isBanned) "Askıya" else (doc.getString("Ad") ?: ""),
+                    surname = if (isBanned) "Alınmış" else (doc.getString("Soyad") ?: ""),
+                    isBanned = isBanned
+                )
+            }
+
+        }
+        val items = userIds.mapNotNull { fetchedUsers[it] }
 
         val result = PaginatedResult(
             items = items,
@@ -152,7 +183,7 @@ class FollowRepository private constructor(context: Context) {
         limit: Long = 10,
         lastDocument: DocumentSnapshot? = null,
         forceRefresh: Boolean = false
-    ): Result<PaginatedResult<UserModel>> = runCatching {
+    ): Result<PaginatedResult<UserProfileData>> = runCatching {
         if (forceRefresh) {
             clearUserCache(userId)
         } else if (lastDocument == null) {
@@ -171,14 +202,40 @@ class FollowRepository private constructor(context: Context) {
         }
 
         val snapshot = query.get().await()
-        val items = snapshot.documents.mapNotNull { doc ->
-            UserModel().apply {
-                username = doc.getString("KullaniciAdi") ?: ""
-                photoUrl = doc.getString("profilFotoUrl") ?: ""
-                id = doc.getString("ID") ?: ""
-                isFollowing = 2
+        if (snapshot.isEmpty) {
+            val emptyResult = PaginatedResult<UserProfileData>(
+                items = emptyList(),
+                lastDocument = snapshot.documents.lastOrNull(),
+                isLastPage = true
+            )
+            if (lastDocument == null) takipEdilenlerCache.put(userId, emptyResult)
+            return@runCatching emptyResult
+        }
+
+        val userIds = snapshot.documents.map { it.id }
+        val fetchedUsers = mutableMapOf<String, UserProfileData>()
+
+        userIds.chunked(10).forEach { chunk ->
+            val usersSnapshot = db.collection("users")
+                .whereIn(FieldPath.documentId(), chunk)
+                .get()
+                .await()
+
+            usersSnapshot.documents.forEach { doc ->
+                val isBanned = doc.getBoolean("isBanned") ?: false
+
+                fetchedUsers[doc.id] = UserProfileData(
+                    id = doc.id,
+                    username = if (isBanned) "askiya_alinmis" else (doc.getString("KullaniciAdi") ?: ""),
+                    photoUrl = if (isBanned) "" else (doc.getString("profilFotoUrl") ?: ""),
+                    name = if (isBanned) "Askıya" else (doc.getString("Ad") ?: ""),
+                    surname = if (isBanned) "Alınmış" else (doc.getString("Soyad") ?: ""),
+                    isBanned = isBanned
+                )
             }
         }
+
+        val items = userIds.mapNotNull { fetchedUsers[it] }
 
         val result = PaginatedResult(
             items = items,

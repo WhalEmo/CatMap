@@ -175,153 +175,6 @@ class AuthFragment : Fragment() {
 
 
 
-    private fun launchGoogleSignIn_v2() {
-        if (!binding.btnGoogleGiris.isEnabled) {
-            return
-        }
-
-        binding.btnGoogleGiris.isEnabled = false
-        showLoadingPill("Google hesapları yükleniyor...")
-
-        viewLifecycleOwner.lifecycleScope.launch {
-
-            try {
-                val request = googleAuthClient.buildGetCredentialRequest()
-
-                val result = googleAuthClient
-                    .getCredentialManager()
-                    .getCredential(
-                        request = request,
-                        context = requireActivity()
-                    )
-
-                val idToken = googleAuthClient.extractIdToken(
-                    result.credential
-                )
-
-                Log.d(
-                    TAG_GOOGLE_AUTH,
-                    "Google credential başarıyla alındı."
-                )
-
-                viewModel.firebaseAuthWithGoogle(idToken)
-
-            } catch (e: GetCredentialCancellationException) {
-
-                Log.d(
-                    TAG_GOOGLE_AUTH,
-                    e.toString(),
-                )
-
-                showErrorPill("Google ile giriş iptal edildi.")
-
-            } catch (e: NoCredentialException) {
-
-                Log.w(
-                    TAG_GOOGLE_AUTH,
-                    "Cihazda kullanılabilir Google credential bulunamadı.",
-                    e
-                )
-
-                showErrorPill(
-                    "Kullanılabilir Google hesabı bulunamadı."
-                )
-
-            } catch (e: GetCredentialUnsupportedException) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    "Credential Manager bu cihazda desteklenmiyor.",
-                    e
-                )
-
-                showErrorPill(
-                    "Bu cihaz Google ile girişi desteklemiyor."
-                )
-
-            } catch (e: GoogleAuthException.UnsupportedCredential) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    "Beklenmeyen credential: ${e.credentialType}",
-                    e
-                )
-
-                showErrorPill(
-                    "Google hesabı doğrulanamadı."
-                )
-
-            } catch (e: GoogleAuthException.InvalidGoogleCredential) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    "Google credential parse edilemedi.",
-                    e
-                )
-
-                showErrorPill(
-                    "Google hesabı doğrulanamadı. Lütfen tekrar deneyin."
-                )
-
-            } catch (e: GoogleAuthException.EmptyIdToken) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    "Google ID token boş döndü.",
-                    e
-                )
-
-                showErrorPill(
-                    "Google doğrulaması tamamlanamadı."
-                )
-
-            } catch (e: CancellationException) {
-
-                // Coroutine lifecycle nedeniyle iptal edildiyse
-                // ASLA normal hata gibi tüketme.
-                throw e
-
-            } catch (e: GetCredentialException) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    """
-                Credential Manager beklenmeyen hata:
-                type=${e.javaClass.simpleName}
-                message=${e.message}
-                """.trimIndent(),
-                    e
-                )
-
-                showErrorPill(
-                    "Google ile giriş şu anda tamamlanamadı."
-                )
-
-            } catch (e: Exception) {
-
-                Log.e(
-                    TAG_GOOGLE_AUTH,
-                    "Google Sign-In beklenmeyen hata.",
-                    e
-                )
-
-                showErrorPill(
-                    "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."
-                )
-
-            } finally {
-
-                if (
-                    isAdded &&
-                    view != null
-                ) {
-                    binding.btnGoogleGiris.isEnabled = true
-                }
-            }
-        }
-    }
-
-
     private fun launchGoogleSignIn_v3() {
         if (!binding.btnGoogleGiris.isEnabled) {
             return
@@ -641,6 +494,12 @@ class AuthFragment : Fragment() {
                                     targetScreen = Screen.PROFILE_SETUP,
                                     args = ProfileSetupFragment.newBundle(event.userModel),
                                     key = event.userModel.id
+                                )
+                            }
+
+                            AuthEvent.NavigateToBanned -> {
+                                SmartNavigationEngine.resetEngineForLogout(
+                                    navScreen = Screen.BANNED
                                 )
                             }
                         }

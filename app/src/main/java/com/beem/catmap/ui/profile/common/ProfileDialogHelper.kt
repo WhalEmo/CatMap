@@ -18,7 +18,7 @@ object ProfileDialogHelper {
             "Bu kullanıcıyı takipçilerinizden çıkarmak istediğinize emin misiniz?"
         }
 
-        CatMapDialog.Companion.build()
+        CatMapDialog.build()
             .setTitle("Takipçiden Çıkar")
             .setMessage(message)
             .setPositiveButton("Evet, Çıkar") {
@@ -41,7 +41,7 @@ object ProfileDialogHelper {
             "Bu kullanıcıyı engellemek istediğinize emin misiniz? Bu kullanıcı artık profilinizi göremeyecek."
         }
 
-        CatMapDialog.Companion.build()
+        CatMapDialog.build()
             .setTitle("Kullanıcıyı Engelle")
             .setMessage(message)
             .setPositiveButton("Engelle") {
@@ -64,7 +64,7 @@ object ProfileDialogHelper {
             "Bu kullanıcının engelini kaldırmak istediğinize emin misiniz?"
         }
 
-        CatMapDialog.Companion.build()
+        CatMapDialog.build()
             .setTitle("Engeli Kaldır")
             .setMessage(message)
             .setPositiveButton("Engeli Kaldır") {

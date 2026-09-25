@@ -218,6 +218,11 @@ class AuthBottomSheetFragment : BottomSheetDialogFragment() {
                                     SmartNavigationEngine.navigateTo(Screen.MAP)
                                 }
                             }
+
+                            AuthEvent.NavigateToBanned -> {
+                                dismiss()
+                            }
+
                             else -> {}
                         }
                     }

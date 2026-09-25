@@ -14,21 +14,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.widget.ImageView
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.text.HtmlCompat
-import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
-import com.beem.catmap.maps.CatFactService
 import com.beem.catmap.maps.mapkedi.Kediler
-import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.maps.MapsActivity
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCatMapBinding
@@ -38,7 +36,6 @@ import com.beem.catmap.ui.manager.UiMessageState
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -52,16 +49,22 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
-import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
-import com.beem.catmap.maps.LocationEngine
+import com.beem.catmap.engine.location.LocationEngine
 import com.beem.catmap.maps.LocationSettingsHandler
 import com.beem.catmap.ui.markersclick.BottomSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
+import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
+import com.beem.catmap.ui.feedingspot.FeedingSpotBottomSheetFragment
+import com.beem.catmap.ui.feedingspot.getCustomSpotMarker
 import com.beem.catmap.ui.markersclick.CatDetailViewModel
+import com.beem.catmap.ui.navigation.Screen
+import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.ui.spotoperation.SpotOperationFragment
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
@@ -86,6 +89,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var screenWidth = 0
     private var isPanelVisible = false
     private var isTrackingUser = true
+
+    private val spotMarkers = ArrayList<Marker>()
 
     private var lastScannedLocation: LatLng? = null
 
@@ -151,6 +156,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         mMap = googleMap
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: İç harita başarıyla ayağa kalktı ve hazır!")
 
+        mMap?.uiSettings?.isMapToolbarEnabled = false
+
         val cachedLocation = LocationCacheManager.getLastLocation()
         val cachedZoom = LocationCacheManager.getLastZoom()
 
@@ -197,6 +204,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 //val cat = findCat(marker.position)
                 val cat = marker.tag as? Kediler
 
+                val spot = marker.tag as? FeedingSpot
+
+                if (spot != null) {
+                    val bottomSheet = FeedingSpotBottomSheetFragment.newInstance(spot)
+                    bottomSheet.show(childFragmentManager, "${FeedingSpotBottomSheetFragment.TAG}_${spot.id}")
+                    return@setOnMarkerClickListener false
+                }
+
                 cat?.let {
                     if (activity is MapsActivity) {
                         (activity as MapsActivity).sonTiklananMarker = marker
@@ -234,23 +249,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
-        binding.btnShowFact.setOnClickListener {
-            if (!isPanelVisible) {
-                CatFactService.getRandomCatFact(requireContext(), object : CatFactService.CatFactCallback {
-                    override fun onSuccess(translatedFact: String) {
-                        binding.tvCatFactSliding.text = translatedFact
-                        binding.adView.loadAd(AdRequest.Builder().build())
-                        showPanel()
-                    }
-                    override fun onError(errorMessage: String) {
-                        binding.tvCatFactSliding.text = "Hata: $errorMessage"
-                        showPanel()
-                    }
-                })
-            } else {
-                hidePanel()
-            }
-        }
+        checkAndShowTooltip()
+
 
         binding.btnScanArea.setOnClickListener {
             mMap?.let { map ->
@@ -262,8 +262,39 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 mapViewModel?.scanCatsInArea(currentCenter.latitude, currentCenter.longitude)
             }
         }
+    }
 
-        binding.btnClosePanel.setOnClickListener { hidePanel() }
+    private fun checkAndShowTooltip() {
+        if (!UserSession.isAddSpotTooltipShown) {
+            binding.tooltipAddSpot.visibility = View.VISIBLE
+
+            // Kullanıcı butona VEYA baloncuğa tıkladığında baloncuğu sonsuza dek yok et
+            val hideTooltip = {
+                binding.tooltipAddSpot.visibility = View.GONE
+                UserSession.isAddSpotTooltipShown = true
+            }
+
+            binding.tooltipAddSpot.setOnClickListener { hideTooltip() }
+            binding.fabAddSpot.setOnClickListener {
+                hideTooltip()
+                openSpotOperationWizard()
+            }
+        } else {
+            // Zaten görmüşse direkt tıklama olayını bağla
+            binding.fabAddSpot.setOnClickListener {
+                openSpotOperationWizard()
+            }
+        }
+    }
+
+    private fun openSpotOperationWizard() {
+        val args = SpotOperationFragment.newArgs(
+            spotId = "",
+        )
+        SmartNavigationEngine.navigateTo(
+            Screen.SPOT_OPERATION,
+            args,
+        )
     }
 
 
@@ -295,6 +326,8 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             if (event != null && mapViewModel != null) {
                 mapViewModel!!.checkAndFetchCatsIfMoved(event.latitude, event.longitude)
 
+                mapViewModel!!.checkAndFetchSpotsIfMoved(event.latitude, event.longitude)
+
                 lastGpsLocation = event
 
                 val currentLatLng = LatLng(event.latitude, event.longitude)
@@ -320,6 +353,15 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                     )
                     buildMarker(cat)
                     focusOnCatOnMap(cat)
+                }
+            }
+        }
+
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mapViewModel?.feedingSpots?.collect { spots ->
+                    renderFeedingSpotMarkers(spots)
                 }
             }
         }
@@ -578,6 +620,56 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         )
     }
 
+    private fun renderFeedingSpotMarkers(spots: List<FeedingSpot>) {
+        if (mMap == null) return
+
+        spotMarkers.forEach { it.remove() }
+        spotMarkers.clear()
+
+        // Yeni gelenleri tek tek haritaya bas
+        for (spot in spots) {
+            val location = spot.coordinates?.let { LatLng(it.latitude, it.longitude) } ?: continue
+
+            // Renk ve ikon verisini senin Mapper'dan çekiyoruz
+            val (colorRes, iconRes) = spot.currentStatus.getCustomSpotMarker()
+            val stateColor = ContextCompat.getColor(requireContext(), colorRes)
+
+            val markerView = LayoutInflater.from(context).inflate(R.layout.layout_spot_marker, null)
+            val markerBg = markerView.findViewById<ImageView>(R.id.marker_bg)
+            val markerStateIcon = markerView.findViewById<ImageView>(R.id.marker_state_icon)
+
+            // 🚀 SİHİRLİ DOKUNUŞ (BOYAMA İŞLEMİ)
+            // A) Dış pini duruma göre boya (Örn: Kırmızı)
+            markerBg.setColorFilter(stateColor, android.graphics.PorterDuff.Mode.SRC_IN)
+
+            // B) İkonu ekle ve onu da pin ile aynı renge boya ki beyazın üstünde patlasın
+            markerStateIcon.setImageResource(iconRes)
+            markerStateIcon.setColorFilter(stateColor, android.graphics.PorterDuff.Mode.SRC_IN)
+
+            // Çizime Çevir (Ölçümleme)
+            markerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            markerView.layout(0, 0, markerView.measuredWidth, markerView.measuredHeight)
+
+            // 🚀 EKSİK KALAN KISIM BUNDAN SONRASIYDI: Bitmap Config'i ekleyip haritaya basıyoruz
+            val bitmap = Bitmap.createBitmap(markerView.measuredWidth, markerView.measuredHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            markerView.draw(canvas)
+
+            // Haritaya Pin Ekleme Operasyonu
+            val marker = mMap!!.addMarker(
+                MarkerOptions()
+                    .position(location)
+                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+                    .anchor(0.5f, 1.0f) // 🚨 ÇOK ÖNEMLİ: Pinin sivri ucu haritadaki tam koordinata değsin!
+                    .zIndex(50.0f)
+            )
+
+            // Objeyi marker'ın içine göm (Tıklayınca BottomSheet açılsın diye)
+            marker?.tag = spot
+            marker?.let { spotMarkers.add(it) }
+        }
+    }
+
     private fun getBitmapDescriptorFromVector(
         context: Context,
         vectorResId: Int
@@ -614,10 +706,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         LocationSettingsHandler.checkLocationSettings(
             activity = requireActivity(),
             onGpsEnabled = {
-                mMap?.let { LocationEngine.startTracking(requireContext(), it) }
+                if (isAdded) {
+                    mMap?.let { LocationEngine.startTracking(requireContext(), it) }
+                }
             },
             onGpsDisabled = { exception ->
-                showCatMapGpsDialog(exception as ResolvableApiException)
+                if (isAdded) {
+                    showCatMapGpsDialog(exception as ResolvableApiException)
+                }
             }
         )
     }
@@ -662,24 +758,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
             ContextCompat.getColor(context, R.color.catmap_text_muted)
         )
-    }
-
-    private fun showPanel() {
-        binding.rightSlidingPanel.animate().translationX(0f).setDuration(300).start()
-        isPanelVisible = true
-    }
-
-    private fun hidePanel() {
-        binding.rightSlidingPanel.animate().translationX(screenWidth.toFloat()).setDuration(300).start()
-        isPanelVisible = false
-    }
-
-    fun handleSlidingPanelBackPress(): Boolean {
-        if (isPanelVisible) {
-            hidePanel()
-            return true
-        }
-        return false
     }
 
     override fun onDestroyView() {

@@ -3,6 +3,7 @@ package com.beem.catmap.ui.profile_v2.otherprofile
 import android.view.View
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -72,8 +73,14 @@ fun OtherProfileScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val displayTitle = if (uiState.user?.isBanned == true) {
+                        "Askıya Alındı"
+                    } else {
+                        uiState.user?.username.orEmpty().ifBlank { "Profil" }
+                    }
+
                     Text(
-                        text = uiState.user?.username.orEmpty().ifBlank { "Profil" },
+                        text = displayTitle,
                         fontFamily = PlusJakartaSans,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -139,6 +146,10 @@ fun OtherProfileScreen(
                 // 1. İLK AÇILIŞ: Shimmer efekti
                 uiState.isLoading && uiState.user == null -> {
                     ProfileShimmerLayout()
+                }
+
+                uiState.user?.isBanned == true -> {
+                    BannedUserContent()
                 }
 
                 // 2. DURUM: Karşı taraf bizi engelledi (Kilitli Ekran)
@@ -535,6 +546,61 @@ private fun BlockedByThemContent(uiState: OtherProfileUiState) {
 
         Text(
             text = "Bu hesap kullanılamıyor veya profile erişim izniniz bulunmuyor.",
+            fontFamily = PlusJakartaSans,
+            fontSize = 14.sp,
+            color = CatMapColors.TextMuted,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
+    }
+}
+
+
+@Composable
+private fun BannedUserContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(top = 60.dp, start = 24.dp, end = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Varsayılan boş avatar (Orijinal fotoğrafı ASLA basmıyoruz)
+        Image(
+            painter = painterResource(R.drawable.kullanici),
+            contentDescription = "Askıya alınmış profil",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .border(2.dp, CatMapColors.Divider, CircleShape)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Sahte/Maskelenmiş İsim
+        Text(
+            text = "Askıya Alınmış Hesap",
+            fontFamily = PlusJakartaSans,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = CatMapColors.TextPrimary
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Text(
+            text = "🚫 Hesap Donduruldu",
+            fontFamily = PlusJakartaSans,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = CatMapColors.TextPrimary
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Bu hesap, topluluk kurallarımızı ihlal ettiği gerekçesiyle yöneticiler tarafından askıya alınmıştır.",
             fontFamily = PlusJakartaSans,
             fontSize = 14.sp,
             color = CatMapColors.TextMuted,

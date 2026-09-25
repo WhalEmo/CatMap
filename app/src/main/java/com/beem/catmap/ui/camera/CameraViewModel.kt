@@ -5,9 +5,11 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.ui.manager.ImageUploadManager
+import com.beem.catmap.ui.manager.image.ImageUploadManager
+import com.beem.catmap.ui.manager.image.UploadSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,72 +30,111 @@ class CameraViewModel : ViewModel() {
     private val _uiEvent = MutableSharedFlow<CameraUiEvent>()
     val uiEvent: SharedFlow<CameraUiEvent> = _uiEvent.asSharedFlow()
 
-    init {
-        viewModelScope.launch {
-            ImageUploadManager.selectedImages.collect { uris ->
-                _uiState.update { it.copy(capturedImages = uris) }
+    private var activeSession = UploadSession.GENERAL
+
+    private var sessionObserveJob: kotlinx.coroutines.Job? = null
+
+    fun initializeSession(session: UploadSession) {
+        this.activeSession = session
+
+        // 🚀 KRİTİK FİX: Eğer önceden başlatılmış bir dinleyici varsa onu iptal et.
+        // Bu sayede Fragment'a kaç kere gir-çık yapılırsa yapılsın ASLA çoklu dinleyici (spam) oluşmaz!
+        sessionObserveJob?.cancel()
+
+        sessionObserveJob = viewModelScope.launch {
+            val session = activeSession.name
+            Log.d("CameraVM_Log", "🟢 [OTURUM BAŞLADI] Dinlenen Session: ${activeSession.name}")
+
+            ImageUploadManager.observeSession(activeSession).collect { uris ->
+                Log.d("CameraVM_Log", "🔥 [FLOW TETİKLENDİ] [$session] Manager'dan gelen güncel liste boyutu: ${uris.size}")
+                uris.forEachIndexed { index, uri ->
+                    Log.d("CameraVM_Log", "   -> Uri[$index]: $uri")
+                }
+
+                val images = uris.map { uri ->
+                    val source = if (uri.toString().contains("CatMap_Temp")) {
+                        ImageSource.TEMP_CACHE
+                    } else {
+                        ImageSource.GALERI
+                    }
+                    CapturedImage(uri = uri, source = source).also {
+                        Log.d("CameraVM_Log", "   -> Dönüştürüldü: Source=${it.source}, ID=${it.id}")
+                    }
+                }
+
+                _uiState.update { state ->
+                    val currentPreview = state.previewedImage
+                    val isPreviewStillExists = currentPreview != null && uris.contains(currentPreview.uri)
+
+                    Log.d("CameraVM_Log", "🧐 [ÖNİZLEME KONTROLÜ] [$session]")
+                    Log.d("CameraVM_Log", "   -> Şu anki Preview: ${currentPreview?.uri}")
+                    Log.d("CameraVM_Log", "   -> Yeni listede var mı?: $isPreviewStillExists")
+
+                    val newState = state.copy(
+                        capturedImages = images,
+                        previewedImage = if (isPreviewStillExists) currentPreview else null
+                    )
+
+                    // Logcat'te state'in son halini açıkça görelim
+                    Log.d("CameraVM_Log", "✅ [STATE GÜNCELLENDİ] [$session]")
+                    Log.d("CameraVM_Log", "   -> isCapturing: ${newState.isCapturing}")
+                    Log.d("CameraVM_Log", "   -> isProcessing: ${newState.isProcessing}")
+                    Log.d("CameraVM_Log", "   -> currentMode: ${newState.currentMode}")
+                    Log.d("CameraVM_Log", "   -> Listedeki Resim Sayısı: ${newState.capturedImages.size}")
+                    Log.d("CameraVM_Log", "---------------------------------------------------")
+
+                    newState // update bloğu yeni state'i döndürmelidir
+                }
             }
         }
     }
 
+    fun setCapturing(isCapturing: Boolean) {
+        _uiState.update { it.copy(isCapturing = isCapturing) }
+    }
+
+    fun selectImageForPreview(image: CapturedImage) {
+        _uiState.update { it.copy(previewedImage = image) }
+    }
 
     fun exitPreviewMode() {
-        _uiState.update {
-            it.copy(activePreviewUri = null, currentMode = CameraMode.LIVE_PREVIEW)
-        }
+        _uiState.update { it.copy(previewedImage = null) }
     }
 
-    fun removeImageFromStrip(uri: Uri) {
-        ImageUploadManager.removeImage(uri)
-        if (_uiState.value.activePreviewUri == uri) {
-            exitPreviewMode()
-        }
+    fun removeImageFromStrip(image: CapturedImage) {
+        ImageUploadManager.removeImage(activeSession, image.uri)
     }
 
-    fun deleteImageFromDevice(contentResolver: ContentResolver, uri: Uri) {
+
+
+    fun deleteImage(contentResolver: ContentResolver, image: CapturedImage) {
+        _uiState.update { it.copy(isProcessing = true) } // Loader'ı aç
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                contentResolver.delete(uri, null, null)
-                withContext(Dispatchers.Main) {
-                    ImageUploadManager.removeImage(uri)
-                    if (_uiState.value.activePreviewUri == uri) {
-                        exitPreviewMode()
-                    }
-                    _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf cihazdan tamamen silindi.", true))
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _uiEvent.emit(CameraUiEvent.ShowToast("Fiziksel silme operasyonu başarısız!", false))
-                }
-            }
-        }
-    }
-
-
-    fun deleteImage(contentResolver: ContentResolver, uri: Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                if (_uiState.value.activeImageSource == ImageSource.TEMP_CACHE) {
-                    File(uri.path ?: "").delete()
+                if (image.source == ImageSource.TEMP_CACHE) {
+                    File(image.uri.path ?: "").delete()
                 } else {
-
-                    contentResolver.delete(uri, null, null)
+                    contentResolver.delete(image.uri, null, null)
                 }
 
                 withContext(Dispatchers.Main) {
-                    ImageUploadManager.removeImage(uri)
-                    exitPreviewMode()
+                    ImageUploadManager.removeImage(activeSession, image.uri)
+                    _uiState.update { it.copy(isProcessing = false, previewedImage = null) }
                     _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf tamamen silindi.", true))
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(isProcessing = false) }
                     _uiEvent.emit(CameraUiEvent.ShowToast("Silme işlemi başarısız!", false))
                 }
             }
         }
     }
 
-    fun saveTempImageToGallery(context: Context, uri: Uri, shouldKeepInStrip: Boolean) {
+    fun saveTempImageToGallery(context: Context, image: CapturedImage, shouldKeepInStrip: Boolean) {
+        _uiState.update { it.copy(isProcessing = true) } // Loader'ı aç
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val contentResolver = context.contentResolver
@@ -109,27 +150,29 @@ class CameraViewModel : ViewModel() {
                 val galleryUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                     ?: throw Exception("MediaStore kaydı başlatılamadı.")
 
-                contentResolver.openInputStream(uri)?.use { inputStream ->
+                contentResolver.openInputStream(image.uri)?.use { inputStream ->
                     contentResolver.openOutputStream(galleryUri)?.use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }
 
                 withContext(Dispatchers.Main) {
-                    ImageUploadManager.removeImage(uri)
+                    // Eski Temp Cache verisini komple çöpe at
+                    ImageUploadManager.removeImage(activeSession, image.uri)
+                    File(image.uri.path ?: "").delete()
 
                     if (shouldKeepInStrip) {
-                        ImageUploadManager.addImage(galleryUri)
-                        _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf CatMap şeridine ve galeriye kaydedildi!", true))
+                        ImageUploadManager.addImage(activeSession, galleryUri)
+                        _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf şeride ve galeriye eklendi!", true))
                     } else {
-                        _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf sadece cihaz galerisine kaydedildi.", true))
+                        _uiEvent.emit(CameraUiEvent.ShowToast("Fotoğraf cihaz galerisine kaydedildi.", true))
                     }
 
-                    File(uri.path ?: "").delete()
-                    exitPreviewMode()
+                    _uiState.update { it.copy(isProcessing = false, previewedImage = null) }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(isProcessing = false) }
                     _uiEvent.emit(CameraUiEvent.ShowToast("Galeriye kaydetme başarısız oldu!", false))
                 }
             }
@@ -137,15 +180,13 @@ class CameraViewModel : ViewModel() {
     }
 
     fun onPhotoCaptured(uri: Uri) {
-        ImageUploadManager.addImage(uri)
-        _uiState.update {
-            it.copy(activePreviewUri = uri, currentMode = CameraMode.IMAGE_PREVIEW, activeImageSource = ImageSource.TEMP_CACHE)
-        }
-    }
+        ImageUploadManager.addImage(activeSession, uri)
 
-    fun selectImageForPreview(uri: Uri, source: ImageSource = ImageSource.GALERI) {
         _uiState.update {
-            it.copy(activePreviewUri = uri, currentMode = CameraMode.IMAGE_PREVIEW, activeImageSource = source)
+            it.copy(
+                previewedImage = CapturedImage(uri = uri, source = ImageSource.TEMP_CACHE),
+                isCapturing = false // Kilidi açıyoruz
+            )
         }
     }
 }

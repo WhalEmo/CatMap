@@ -107,6 +107,14 @@ class CurrentUserManager private constructor(context: Context) {
         return FirebaseAuth.getInstance().currentUser != null && sessionManager.isLoggedIn()
     }
 
+    fun isAddSpotTooltipShown(): Boolean {
+        return sessionManager.isAddSpotTooltipShown()
+    }
+
+    fun setAddSpotTooltipShown(isShown: Boolean) {
+        sessionManager.setAddSpotTooltipShown(isShown)
+    }
+
     /**
      * Kullanıcı nesnesinin belirli alanlarını güvenli bir şekilde güncellemek için yardımcı metot.
      */
@@ -190,6 +198,17 @@ class CurrentUserManager private constructor(context: Context) {
     fun logout() {
         FirebaseAuth.getInstance().signOut()
         clearLocalCache()
+    }
+
+
+    fun setBanStatus(isBanned: Boolean) {
+        updateCurrentUser { user ->
+            user.copy(isBannedLocal = isBanned)
+        }
+    }
+
+    fun isUserBannedLocally(): Boolean {
+        return getCurrentUser().isBannedLocal
     }
 
     fun clearLocalCache() {

@@ -2,7 +2,6 @@ package com.beem.catmap.ui.upload
 
 import android.app.Application
 import android.location.Location
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.local.UserSession
@@ -12,7 +11,8 @@ import com.beem.catmap.data.repository.PostRepository
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UploadProgressState
-import com.beem.catmap.ui.manager.ImageUploadManager
+import com.beem.catmap.ui.manager.image.ImageUploadManager
+import com.beem.catmap.ui.manager.image.UploadSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +31,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         viewModelScope.launch {
-            ImageUploadManager.selectedImages.collect { uris ->
+            ImageUploadManager.observeSession(UploadSession.GENERAL).collect { uris ->
                 _uiState.update { it.copy(selectedImages = uris) }
             }
         }
@@ -70,7 +70,7 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        val selectedPhotos = ImageUploadManager.selectedImages.value
+        val selectedPhotos = ImageUploadManager.getImages(UploadSession.GENERAL)
         if (selectedPhotos.isEmpty()) {
             _uiState.update { it.copy(errorMessage = "En az bir kedi fotoğrafı eklemelisiniz!") }
             return
@@ -166,6 +166,6 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
 
     fun resetState() {
         _uiState.update { UploadUiState() }
-        ImageUploadManager.clearImages()
+        ImageUploadManager.clearSession(UploadSession.GENERAL)
     }
 }

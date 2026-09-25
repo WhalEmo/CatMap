@@ -62,7 +62,21 @@ class CatRepository {
     suspend fun getUserInfo(userId: String): Map<String, Any?>? {
         return try {
             val snapshot = db.collection("users").document(userId).get().await()
-            if (snapshot.exists()) snapshot.data else null
+            if (!snapshot.exists()) return null
+
+            val data = snapshot.data ?: return null
+            val isBanned = (data["isBanned"] as? Boolean) ?: (data["banned"] as? Boolean) ?: false
+
+            if (isBanned) {
+                data.toMutableMap().apply {
+                    this["isBanned"] = true
+                    this["KullaniciAdi"] = "Kısıtlanmış Kullanıcı"
+                    this["profilFotoUrl"] = ""
+                    this["Hakkinda"] = "Bu hesap topluluk kuralları ihlali nedeniyle askıya alınmıştır."
+                }
+            } else {
+                data
+            }
         } catch (e: Exception) {
             null
         }
@@ -74,10 +88,20 @@ class CatRepository {
                 .get()
                 .await()
 
-            if (snapshot.exists()) {
-                snapshot.data
+            if (!snapshot.exists()) return@withContext null
+
+            val data = snapshot.data ?: return@withContext null
+            val isBanned = (data["isBanned"] as? Boolean) ?: (data["banned"] as? Boolean) ?: false
+
+            if (isBanned) {
+                val maskedData = data.toMutableMap()
+                maskedData["isBanned"] = true
+                maskedData["KullaniciAdi"] = "Kısıtlanmış Kullanıcı"
+                maskedData["profilFotoUrl"] = ""
+                maskedData["Hakkinda"] = "Bu hesap topluluk kuralları ihlali nedeniyle askıya alınmıştır."
+                maskedData
             } else {
-                null
+                data
             }
         } catch (e: Exception) {
             null

@@ -49,7 +49,11 @@ data class UserProfileData(
 
     @get:PropertyName("equippedBadge")
     @set:PropertyName("equippedBadge")
-    var equippedBadge: EquippedBadgeModel? = null
+    var equippedBadge: EquippedBadgeModel? = null,
+
+    @get:PropertyName("isBanned")
+    @set:PropertyName("isBanned")
+    var isBanned: Boolean = false
 ) {
     val fullName: String
         get() = "$name $surname".trim()

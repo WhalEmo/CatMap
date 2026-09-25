@@ -1,8 +1,10 @@
 package com.beem.catmap.data.repository
 
 import com.beem.catmap.data.model.ReplyModel
+import com.beem.catmap.data.model.UserProfileInfo
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -51,6 +53,7 @@ class ReplysRepo {
                 val yanit = ReplyModel(
                     doc.id,
                     doc.getString("kullanici_adi"),
+                    null,
                     doc.getString("yaniticerik"),
                     doc.getDate("yanitzaman"),
                     doc.getString("YanitiYukleyenID"),
@@ -58,6 +61,39 @@ class ReplysRepo {
                     false
                 )
                 yanitListesi.add(yanit)
+            }
+
+            val userIds = yanitListesi
+                .mapNotNull { it.replyUserId }
+                .filter { it.isNotEmpty() }
+                .distinct()
+
+            if (userIds.isNotEmpty()) {
+                val usersMap = mutableMapOf<String, UserProfileInfo>()
+
+                userIds.chunked(30).forEach { chunk ->
+                    val usersSnapshot = db.collection("users")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .get()
+                        .await()
+
+                    for (userDoc in usersSnapshot.documents) {
+                        val photoUrl = userDoc.getString("profilFotoUrl")
+                        val isBanned = userDoc.getBoolean("isBanned") ?: (userDoc.getBoolean("banned") ?: false)
+                        usersMap[userDoc.id] = UserProfileInfo(photoUrl, isBanned)
+                    }
+                }
+
+                yanitListesi.forEach { yanit ->
+                    val userInfo = usersMap[yanit.replyUserId]
+                    if (userInfo?.isBanned == true) {
+                        yanit.profileImage = ""
+                        yanit.replyContent = "Bu kullanıcının hesabı askıya alındığı için içerik kısıtlanmıştır."
+                        yanit.name = "Kısıtlanmış Kullanıcı"
+                    } else {
+                        yanit.profileImage = userInfo?.photoUrl
+                    }
+                }
             }
 
             val newLastVisible = if (!snapshots.isEmpty) {

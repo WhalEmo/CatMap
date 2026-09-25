@@ -1,23 +1,20 @@
 package com.beem.catmap.ui.camera
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.databinding.BottomSheetGalleryBinding
 import com.beem.catmap.databinding.ItemGalleryImageBinding
-import com.beem.catmap.ui.manager.ImageUploadManager
+import com.beem.catmap.ui.manager.image.ImageUploadManager
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.core.net.toUri
@@ -26,12 +23,28 @@ import com.beem.catmap.ui.manager.UiMessageState
 import androidx.core.view.isVisible
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
+import com.beem.catmap.ui.manager.image.UploadSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class GalleryBottomSheet : BottomSheetDialogFragment() {
+
+    companion object {
+        const val TAG = "GalleryBottomSheet"
+        private const val ARG_SESSION = "arg_upload_session"
+
+        fun newInstance(session: UploadSession = UploadSession.GENERAL) = GalleryBottomSheet().apply {
+            arguments = newArgs(session)
+        }
+
+        fun newArgs(session: UploadSession = UploadSession.GENERAL): Bundle {
+            return Bundle().apply {
+                putString(ARG_SESSION, session.name)
+            }
+        }
+    }
 
     private var _binding: BottomSheetGalleryBinding? = null
     private val binding get() = _binding!!
@@ -45,6 +58,8 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
 
     private var lastDateAdded: Long? = null
     private var lastImageId: Long? = null
+
+    private var activeSession: UploadSession = UploadSession.GENERAL
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = BottomSheetGalleryBinding.inflate(inflater, container, false)
@@ -69,6 +84,13 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
             UiMessageManager.emitMessage(UiMessageState.Error("Galeriye erişim izni verilmedi."))
             dismiss()
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val sessionKey = arguments?.getString(ARG_SESSION) ?: activeSession.sessionKey
+        activeSession = UploadSession.fromKey(sessionKey)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -101,13 +123,6 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
                     val lastVisibleItem =
                         layoutManager.findLastVisibleItemPosition()
 
-                    /*
-                     * Kullanıcı son 9 fotoğrafa yaklaştığında
-                     * yeni sayfayı önceden yükle.
-                     *
-                     * 3 kolon olduğundan yaklaşık
-                     * son 3 satır demek.
-                     */
                     val shouldLoadMore =
                         lastVisibleItem >= totalItemCount - 9
 
@@ -129,7 +144,7 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
 
         lifecycleScope.launchWhenStarted {
-            ImageUploadManager.selectedImages.collectLatest { centralUris ->
+            ImageUploadManager.observeSession(activeSession).collectLatest { centralUris ->
                 updateConfirmButton(centralUris.size)
 
                 adapter.updateSelectedList(centralUris.map { it.toString() })
@@ -139,26 +154,6 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         binding.btnConfirmSelection.setOnClickListener {
             dismiss()
         }
-    }
-
-
-    private fun loadImagesFromDevice2(): List<String> {
-        val tempImageList = mutableListOf<String>()
-        val projection = arrayOf(MediaStore.Images.Media._ID)
-        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-
-        requireContext().contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            projection, null, null, sortOrder
-        )?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-            while (cursor.moveToNext() && tempImageList.size < 60) {
-                val id = cursor.getLong(idColumn)
-                val contentUri = android.content.ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-                tempImageList.add(contentUri.toString())
-            }
-        }
-        return tempImageList
     }
 
 
@@ -329,19 +324,6 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    /*
-    private fun loadGalleryImages() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val deviceImages = loadImagesFromDevice()
-            withContext(Dispatchers.Main) {
-                if (_binding != null) {
-                    adapter.updateMainImages(deviceImages)
-                }
-            }
-        }
-    }
-
-     */
 
     private fun requestGalleryPermissions() {
         val permissions = mutableListOf<String>()
@@ -422,20 +404,20 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
                     holder.itemBinding.ivCheck.visibility = View.GONE
 
                     isSelected = false
-                    ImageUploadManager.removeImage(uriString.toUri())
+                    ImageUploadManager.removeImage(activeSession, uriString.toUri())
                 } else {
                     // Yeni seçim yapıyorsa
-                    if (selectedUris.size < 5) {
+                    if (selectedUris.size < activeSession.maxImageCount) {
                         holder.itemBinding.viewBorder.alpha = 0f
                         holder.itemBinding.viewBorder.visibility = View.VISIBLE
                         holder.itemBinding.viewBorder.animate().alpha(1f).setDuration(150).start()
                         holder.itemBinding.ivCheck.visibility = View.VISIBLE
 
                         isSelected = true
-                        ImageUploadManager.addImage(uriString.toUri())
+                        ImageUploadManager.addImage(activeSession, uriString.toUri())
                     } else {
                         UiMessageManager.emitMessage(
-                            UiMessageState.Error("En fazla 5 fotoğraf seçebilirsiniz.")
+                            UiMessageState.Error("En fazla ${activeSession.maxImageCount} fotoğraf seçebilirsiniz.")
                         )
                     }
                 }
