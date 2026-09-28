@@ -3,11 +3,14 @@ package com.beem.catmap.ui.feedingspot
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.data.model.SpotReport
 import com.beem.catmap.data.repository.FeedingSpotRepository
+import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.ui.manager.FeedingSpotEventBus
 import com.beem.catmap.ui.manager.FeedingSpotMapEvent
+import com.beem.catmap.ui.navigation.NavigationHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -22,7 +25,7 @@ class FeedingSpotViewModel : ViewModel() {
     private val _feedingSpots = MutableStateFlow<List<FeedingSpot>>(emptyList())
     val feedingSpots = _feedingSpots.asStateFlow()
 
-    private val _spotReports = MutableStateFlow<List<SpotReport>>(emptyList())
+    private val _spotReports = MutableStateFlow<List<SpotReportUiModel>>(emptyList())
     val spotReports = _spotReports.asStateFlow()
 
     // 🚀 Yükleme ve Hata Durumları
@@ -38,6 +41,19 @@ class FeedingSpotViewModel : ViewModel() {
 
     init {
         observeFeedingSpotEventsBus()
+    }
+
+
+    fun onIntent(intent: FeedingSpotIntent) {
+        when (intent) {
+            is FeedingSpotIntent.OpenUserProfile -> openUserProfile(intent.userId)
+        }
+    }
+
+    private fun openUserProfile(userId: String) {
+        viewModelScope.launch {
+            _eventFlow.emit(FeedingSpotEvent.OpenUserProfile(userId))
+        }
     }
 
     fun fetchReportsForSpot(spotId: String) {
@@ -59,8 +75,13 @@ class FeedingSpotViewModel : ViewModel() {
 
     private fun addReport(report: SpotReport) {
         _spotReports.update { currentList ->
-            if (!currentList.any { it.id == report.id }) {
-                (listOf(report) + currentList).take(5)
+            if (!currentList.any { it.report.id == report.id }) {
+                val reportUiModel = SpotReportUiModel(
+                    report = report,
+                    reporterDisplayName = UserSession.userModel.username,
+                    reporterPhotoUrl = UserSession.userModel.photoUrl
+                )
+                (listOf(reportUiModel) + currentList).take(5)
             } else {
                 currentList
             }

@@ -5,6 +5,8 @@ import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import com.beem.catmap.managers.OnlinePresenceManager
+import com.beem.catmap.notification.ActiveChatTracker
+import com.beem.catmap.notification.managers.NotificationChannelManager
 
 class CatMapApp : Application(), Application.ActivityLifecycleCallbacks {
 
@@ -15,6 +17,9 @@ class CatMapApp : Application(), Application.ActivityLifecycleCallbacks {
             private set
     }
 
+    private var activityReferences = 0
+    private var isActivityChangingConfigurations = false
+
     override fun onCreate() {
         registerActivityLifecycleCallbacks(this)
 
@@ -22,6 +27,7 @@ class CatMapApp : Application(), Application.ActivityLifecycleCallbacks {
         Log.d(TAG, "🚀 [Application] onCreate: CatMap süreci (Process) başlatıldı.")
         instance = this
 
+        NotificationChannelManager.createNotificationChannels(this)
         OnlinePresenceManager.initialize()
     }
 
@@ -46,6 +52,9 @@ class CatMapApp : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityStarted(activity: Activity) {
         Log.d(TAG, "👁️ [Activity] Started: ${activity.localClassName}")
+        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
+            ActiveChatTracker.isAppInForeground = true
+        }
     }
 
     override fun onActivityResumed(activity: Activity) {
@@ -58,6 +67,9 @@ class CatMapApp : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityStopped(activity: Activity) {
         Log.d(TAG, "🙈 [Activity] Stopped (Görünmez): ${activity.localClassName}")
+        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
+            ActiveChatTracker.isAppInForeground = false
+        }
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {

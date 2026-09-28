@@ -7,49 +7,32 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.beem.catmap.R
 import com.beem.catmap.data.model.FeedingSpot
-import com.beem.catmap.data.model.ReportAction
-import com.beem.catmap.data.model.SpotReport
-import com.beem.catmap.data.model.SpotState
-import com.beem.catmap.ui.components.SmartSpotImage
 import com.beem.catmap.ui.feedingspot.components.SpotDetailActionButton
 import com.beem.catmap.ui.feedingspot.components.SpotDetailTopBar
 import com.beem.catmap.ui.feedingspot.components.SpotReportAuthorHeader
 import com.beem.catmap.ui.feedingspot.components.SpotReportPhotoPager
 import com.beem.catmap.ui.feedingspot.components.SpotReportStatusCard
+import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.ui.theme.CatMapColors
-import com.beem.catmap.utils.formatExactTime
-import com.beem.catmap.utils.formatTimeAgo
 import java.util.concurrent.TimeUnit
 import kotlin.collections.getOrNull
 
@@ -58,11 +41,12 @@ import kotlin.collections.getOrNull
 fun FeedingSpotDetailScreenHybrid(
     spot: FeedingSpot,
     uiState: FeedingSpotUiState,
-    reports: List<SpotReport>,
-    onUpdateClick: () -> Unit
+    reports: List<SpotReportUiModel>,
+    onUpdateClick: () -> Unit,
+    onIntent: (FeedingSpotIntent) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { reports.size })
-    val currentReport = reports.getOrNull(pagerState.currentPage)
+    val currentReport = reports.getOrNull(pagerState.currentPage)?.report
     val isViewingHistory = pagerState.currentPage > 0
 
     val reportAgeMinutes = remember(currentReport?.reportedAt) {
@@ -157,8 +141,9 @@ fun FeedingSpotDetailScreenHybrid(
                                 val pageReport = reports.getOrNull(targetPage)
                                 if (pageReport != null) {
                                     SpotReportAuthorHeader(
-                                        report = pageReport,
-                                        isViewingHistory = targetPage > 0
+                                        uiModel = pageReport,
+                                        isViewingHistory = targetPage > 0,
+                                        onIntent = onIntent
                                     )
                                 }
                             }
@@ -187,12 +172,12 @@ fun FeedingSpotDetailScreenHybrid(
                                 val pageReport = reports.getOrNull(targetPage)
                                 if (pageReport != null) {
                                     val pageIsHistory = targetPage > 0
-                                    val pageAgeMinutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - pageReport.reportedAt)
+                                    val pageAgeMinutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - pageReport.report.reportedAt)
                                     val pageDecayBadge = getDecayLevel(pageAgeMinutes).toUiBadge()
 
                                     SpotReportStatusCard(
                                         spot = spot,
-                                        report = pageReport,
+                                        uiModel = pageReport,
                                         isViewingHistory = pageIsHistory,
                                         decayBadgeText = pageDecayBadge.text,
                                         decayBadgeContentColor = pageDecayBadge.contentColor,

@@ -7,6 +7,7 @@ import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.data.model.SpotOperationResult
 import com.beem.catmap.data.model.SpotReport
 import com.beem.catmap.data.model.SpotState
+import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.utils.CatLogger
 import com.beem.catmap.utils.cache.CacheEntry
 import com.firebase.geofire.GeoFireUtils
@@ -21,13 +22,18 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.Objects
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
@@ -93,8 +99,10 @@ class FeedingSpotRepository {
     }
 
 
-    suspend fun getReportsForSpot(spotId: String): Result<List<SpotReport>> {
-        return try {
+    suspend fun getReportsForSpot(spotId: String): Result<List<SpotReportUiModel>> = withContext(
+        Dispatchers.IO
+    ) {
+        try {
             val snapshot = spotsCollection.document(spotId)
                 .collection("reports")
                 .orderBy("reportedAt", Query.Direction.DESCENDING)
@@ -105,10 +113,73 @@ class FeedingSpotRepository {
             val reports = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(SpotReport::class.java)
             }
-            Result.success(reports)
+
+            if (reports.isEmpty()) return@withContext Result.success(emptyList())
+
+            val uniqueUserId = reports.map { it.reporterId }.filter { it.isNotBlank() }.distinct()
+
+            val userProfilesMap = coroutineScope {
+                uniqueUserId.map { userId ->
+                    async { userId to fetchReporterProfile(userId) }
+                }.awaitAll().toMap()
+            }
+
+            val finallyList = reports.map { report ->
+                val profile = userProfilesMap[report.reporterId]
+                SpotReportUiModel(
+                    report = report,
+                    reporterPhotoUrl = profile?.second,
+                    reporterDisplayName = profile?.first?.ifEmpty { report.reporterName } ?: report.reporterName.ifEmpty { "Pati Dostu" }
+                )
+            }
+
+            Result.success(finallyList)
         } catch (e: Exception) {
             CatLogger.logError("FeedingSpotRepo", "getReportsForSpot", e)
             Result.failure(e)
+        }
+    }
+
+    private suspend fun fetchReporterProfile(userId: String): Pair<String, String>? = withContext(Dispatchers.IO) {
+        if (userId.isBlank()) return@withContext null
+
+        try {
+            val snapshot = db.collection("users").document(userId).get().await()
+            val data = snapshot.data
+
+            if (snapshot.exists() && data != null) {
+                return@withContext converterUser(data)
+            }
+
+            fetchPublicUser(userId)
+        } catch (_: Exception) {
+            fetchPublicUser(userId)
+        }
+    }
+
+    private suspend fun fetchPublicUser(userId: String): Pair<String, String>? = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("publicUsers").document(userId).get().await()
+            val data = snapshot.data
+            if (snapshot.exists() && data != null) {
+                converterUser(data)
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+
+    private fun converterUser(data: Map<String, Any>): Pair<String, String> {
+        val isBanned = (data["isBanned"] as? Boolean) ?: (data["banned"] as? Boolean) ?: false
+        if (isBanned) {
+            return Pair("Kısıtlanmış Kullanıcı", "")
+        } else {
+            val username = (data["KullaniciAdi"] ?: data["kullaniciAdi"] ?: data["name"]) as? String ?: "Pati Dostu"
+            val photoUrl = (data["profilFotoUrl"] ?: data["FotoUrl"] ?: data["photoUrl"]) as? String ?: ""
+            return Pair(username, photoUrl)
         }
     }
 

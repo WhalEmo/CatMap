@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.sp
 import com.beem.catmap.R
 import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.data.model.ReportAction
-import com.beem.catmap.data.model.SpotReport
 import com.beem.catmap.data.model.SpotState
+import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.ui.feedingspot.toUiBadge
 import com.beem.catmap.ui.theme.CatMapColors
 import com.beem.catmap.utils.formatExactTime
@@ -45,7 +45,7 @@ import kotlin.text.ifEmpty
 @Composable
 fun SpotReportStatusCard(
     spot: FeedingSpot,
-    report: SpotReport,
+    uiModel: SpotReportUiModel,
     isViewingHistory: Boolean,
     decayBadgeText: String,
     decayBadgeContentColor: androidx.compose.ui.graphics.Color,
@@ -53,6 +53,7 @@ fun SpotReportStatusCard(
     decayBadgeBorderColor: androidx.compose.ui.graphics.Color,
     modifier: Modifier = Modifier
 ) {
+    val report = uiModel.report
     Card(
         modifier = modifier
             .fillMaxWidth()

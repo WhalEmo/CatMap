@@ -10,6 +10,7 @@ import com.beem.catmap.data.local.location.LocationHelper
 import com.beem.catmap.data.model.CatAddressModel
 import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.data.model.ReportAction
+import com.beem.catmap.data.model.SpotState
 import com.beem.catmap.data.repository.FeedingSpotRepository
 import com.beem.catmap.engine.location.LocationAccessState
 import com.beem.catmap.ui.manager.FeedingSpotEventBus
@@ -772,15 +773,20 @@ class SpotOperationViewModel : ViewModel() {
         }
     }
 
-    private fun determineNewSpotState(actions: List<ReportAction>): com.beem.catmap.data.model.SpotState {
+    private fun determineNewSpotState(actions: List<ReportAction>): SpotState {
 
-        // 🚀 1. KURAL: FİZİKSEL ÇEVRE (ÖNCELİKLİ DURUM)
-        // Eğer kaplar kırık veya aşırı kirliyse, mama dolu olsa bile bakıma ihtiyaç vardır!
-        val needsMaintenance = actions.contains(ReportAction.OBSERVED_DIRTY) ||
-                actions.contains(ReportAction.OBSERVED_DAMAGED)
+        val isDamaged = actions.contains(ReportAction.OBSERVED_DAMAGED)
+        val isRepaired = actions.contains(ReportAction.ACTION_REPAIRED)
 
-        if (needsMaintenance) {
-            return com.beem.catmap.data.model.SpotState.NEEDS_MAINTENANCE
+        if (isDamaged && !isRepaired) {
+            return SpotState.DAMAGED
+        }
+
+        val isDirty = actions.contains(ReportAction.OBSERVED_DIRTY)
+        val isCleaned = actions.contains(ReportAction.ACTION_CLEANED)
+
+        if (isDirty && !isCleaned) {
+            return SpotState.NEEDS_MAINTENANCE
         }
 
         // 🚀 2. KURAL: MAMA VE SU HESAPLAMASI
@@ -797,10 +803,10 @@ class SpotOperationViewModel : ViewModel() {
 
         // Senin Enum (SpotState) karşılıklarıyla birebir eşleştirme:
         return when {
-            isFoodFull && isWaterFull -> com.beem.catmap.data.model.SpotState.FULL
-            isFoodFull && !isWaterFull -> com.beem.catmap.data.model.SpotState.NEEDS_WATER
-            !isFoodFull && isWaterFull -> com.beem.catmap.data.model.SpotState.NEEDS_FOOD
-            else -> com.beem.catmap.data.model.SpotState.NEEDS_BOTH
+            isFoodFull && isWaterFull -> SpotState.FULL
+            isFoodFull && !isWaterFull -> SpotState.NEEDS_WATER
+            !isFoodFull && isWaterFull -> SpotState.NEEDS_FOOD
+            else -> SpotState.NEEDS_BOTH
         }
     }
 

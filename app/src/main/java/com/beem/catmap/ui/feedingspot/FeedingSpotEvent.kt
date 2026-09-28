@@ -6,4 +6,5 @@ sealed class FeedingSpotEvent {
     data class OpenUpdateForm(val spot: FeedingSpot) : FeedingSpotEvent()
     data class OpenCreateForm(val lat: Double, val lng: Double) : FeedingSpotEvent()
     data class ShowToast(val message: String) : FeedingSpotEvent()
+    data class OpenUserProfile(val userId: String): FeedingSpotEvent()
 }

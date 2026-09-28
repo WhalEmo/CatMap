@@ -1,9 +1,12 @@
 package com.beem.catmap.maps;
 import android.Manifest;
+import android.app.ComponentCaller;
 import android.app.Dialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -35,6 +38,7 @@ import com.beem.catmap.ui.badge.BadgeFragment;
 import com.beem.catmap.ui.banned.BannedFragment;
 import com.beem.catmap.ui.main.ChatNotificationViewModel;
 import com.beem.catmap.ui.main.BanSniperViewModel;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment;
@@ -305,6 +309,11 @@ public class MapsActivity extends AppCompatActivity {
             AdRequest adRequest = new AdRequest.Builder().build();
             adView.loadAd(adRequest);
         }
+
+        binding.getRoot().post(() -> {
+            handleChatNotificationIntent(getIntent());
+        });
+
     }
 
 
@@ -322,12 +331,6 @@ public class MapsActivity extends AppCompatActivity {
         bottomSheet.show(getSupportFragmentManager(), CommentsBottomSheetFragment.TAG);
     }
 
-    public void sonTiklananMarkeriSil() {
-        if (sonTiklananMarker != null) {
-            sonTiklananMarker.remove();
-            sonTiklananMarker = null;
-        }
-    }
     private void BegenileriCek() {
         String userId = currentUserManager.getCurrentUserId();
         if (userId == null || userId.isEmpty()) return;
@@ -356,6 +359,31 @@ public class MapsActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     1001);
+        }
+    }
+
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleChatNotificationIntent(intent);
+    }
+
+    private void handleChatNotificationIntent(Intent intent) {
+        if (intent == null) return;
+
+        Uri data = intent.getData();
+        if (data != null) {
+            if ("catmap".equals(data.getScheme()) && "chat".equals(data.getHost())) {
+                String receiverId = data.getLastPathSegment();
+                if (receiverId != null && !receiverId.trim().isEmpty()) {
+                    if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
+                        NavigationHelper.navigateToChat(receiverId);
+                    }
+                    intent.setData(null);
+                }
+            }
         }
     }
 

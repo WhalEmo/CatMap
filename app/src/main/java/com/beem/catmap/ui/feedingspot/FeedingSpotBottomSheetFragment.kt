@@ -11,13 +11,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.data.model.FeedingSpot
+import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.spotoperation.SpotOperationFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.launch
 
 class FeedingSpotBottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -44,6 +49,12 @@ class FeedingSpotBottomSheetFragment : BottomSheetDialogFragment() {
         return dialog
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        observeFeedingSpotEvent()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -65,6 +76,9 @@ class FeedingSpotBottomSheetFragment : BottomSheetDialogFragment() {
                             spot = spot,
                             uiState = uiState, // State'i direkt içeri gönder
                             reports = realReports,
+                            onIntent = { intent ->
+                                onIntent(intent)
+                            },
                             onUpdateClick = {
 
                                 Log.d("SPOT_DEBUG", "-----------------------------------------")
@@ -88,6 +102,32 @@ class FeedingSpotBottomSheetFragment : BottomSheetDialogFragment() {
                         )
                     }
                 }
+            }
+        }
+    }
+
+    private fun observeFeedingSpotEvent() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.eventFlow.collect { event ->
+                    handleEvent(event)
+                }
+            }
+        }
+    }
+
+    private fun onIntent(intent: FeedingSpotIntent) {
+        viewModel.onIntent(intent)
+    }
+
+    private fun handleEvent(event: FeedingSpotEvent) {
+        when (event) {
+            is FeedingSpotEvent.OpenUserProfile -> {
+                dismiss()
+                NavigationHelper.navigateToProfile(event.userId)
+            }
+            else -> {
+
             }
         }
     }

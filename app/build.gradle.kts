@@ -25,15 +25,16 @@ android {
         applicationId = "com.beem.catmap"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.1.11"
+        versionCode = 14
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -126,6 +127,9 @@ dependencies {
     implementation(libs.firebase.crashlytics)
 
     implementation(libs.firebase.storage)
+
+    implementation(libs.firebase.messaging)
+
     implementation(libs.picasso)
 
 

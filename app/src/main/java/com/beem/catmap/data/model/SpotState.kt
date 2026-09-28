@@ -5,6 +5,7 @@ enum class SpotState {
     NEEDS_FOOD,
     NEEDS_WATER,
     NEEDS_BOTH,
+    DAMAGED,
     NEEDS_MAINTENANCE,
     OUT_OF_SERVICE,
     UNKNOWN;

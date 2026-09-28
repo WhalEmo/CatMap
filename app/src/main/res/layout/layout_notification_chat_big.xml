@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="10dp"
+    android:paddingHorizontal="4dp">
+
+    <!-- Üst Başlık & Avatar Alanı -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <FrameLayout
+            android:layout_width="50dp"
+            android:layout_height="50dp">
+
+            <ImageView
+                android:id="@+id/iv_sender_avatar"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_cat" />
+
+            <!-- Minik Marka Rozeti -->
+            <ImageView
+                android:id="@+id/iv_paw_badge"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="bottom|end"
+                android:src="@drawable/patidolu"
+                app:tint="@color/catmap_accent" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Kullanıcı Adı (Daha modern sans-serif-medium) -->
+                <TextView
+                    android:id="@+id/tv_notification_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="\@kullaniciadi"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="14.5sp"
+                    android:textColor="@color/catmap_accent"
+                    android:ellipsize="end"
+                    android:maxLines="1" />
+
+                <!-- Zaman Rozeti -->
+                <TextView
+                    android:id="@+id/tv_notification_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Şimdi"
+                    android:fontFamily="sans-serif"
+                    android:textSize="11sp"
+                    android:textColor="?android:attr/textColorSecondary" />
+            </LinearLayout>
+
+            <!-- İkincil Durum Etiketi -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="Doğrudan Mesaj"
+                android:fontFamily="sans-serif"
+                android:letterSpacing="0.02"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorSecondary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Mesaj Gövdesi -->
+    <TextView
+        android:id="@+id/tv_notification_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="4dp"
+        android:text="Mesaj metninin tamamı burada net ve ferah bir şekilde görüntülenecek..."
+        android:textSize="13.5sp"
+        android:fontFamily="sans-serif"
+        android:lineSpacingExtra="3dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:maxLines="8" />
+
+    <!-- Alt Kısım: Minimalist Aksiyon Barı -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical|end"
+        android:layout_marginTop="8dp"
+        android:paddingEnd="2dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sohbete Git"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="12sp"
+            android:textColor="@color/catmap_accent" />
+    </LinearLayout>
+
+</LinearLayout>

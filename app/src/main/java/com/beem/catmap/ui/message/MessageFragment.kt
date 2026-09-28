@@ -36,6 +36,7 @@ import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.DialogMessageDeleteBinding
 import com.beem.catmap.databinding.MesajlasmaBinding
 import com.beem.catmap.data.model.ChatMessage
+import com.beem.catmap.notification.ActiveChatTracker
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
@@ -341,6 +342,9 @@ class MessageFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         Log.d("LifecycleDebug", "⏸️ Fragment onPause() - Ekran arka plana gidiyor veya kapandı!")
+        viewModel.getChatId()?.let { id ->
+            ActiveChatTracker.exitChat(id)
+        }
     }
 
     override fun onStop() {
@@ -351,7 +355,11 @@ class MessageFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         Log.d("LifecycleDebug", "▶️ Fragment onResume() - Ekran tam ön planda!")
+        viewModel.getChatId()?.let { id ->
+            ActiveChatTracker.enterChat(id)
+        }
     }
+
 
 
     private fun openGallerySafely() {

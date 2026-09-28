@@ -60,6 +60,13 @@ fun SpotState.toUiBadge(): UiBadge {
             containerColor = CatMapColors.TextMuted.copy(alpha = 0.1f),
             iconResId = R.drawable.ic_clipboard
         )
+
+        SpotState.DAMAGED -> UiBadge(
+            text = "Kaplar Hasarlı",
+            contentColor = CatMapColors.Error,
+            containerColor = CatMapColors.Error.copy(alpha = 0.12f),
+            iconResId = R.drawable.ic_broken_bowl
+        )
     }
 }
 
@@ -161,9 +168,10 @@ fun String.getCustomSpotMarker(): Pair<Int, Int> {
     return when (state) {
         SpotState.FULL -> Pair(R.color.catmap_success, R.drawable.ic_cat_food)
         SpotState.NEEDS_FOOD -> Pair(R.color.badge_gold, R.drawable.ic_cat_food)
-        SpotState.NEEDS_WATER -> Pair(R.color.catmap_water, R.drawable.ic_water_drop) // 🚨 XML'e eklenecek
+        SpotState.NEEDS_WATER -> Pair(R.color.catmap_water, R.drawable.ic_water_drop)
         SpotState.NEEDS_BOTH -> Pair(R.color.catmap_error, R.drawable.ic_empty_bowl)
         SpotState.NEEDS_MAINTENANCE -> Pair(R.color.badge_catmap_orange, R.drawable.ic_clean_sparkle)
+        SpotState.DAMAGED -> Pair(R.color.catmap_error, R.drawable.ic_broken_bowl)
         SpotState.OUT_OF_SERVICE -> Pair(R.color.catmap_text_muted, R.drawable.ic_broken_bowl)
         else -> Pair(R.color.catmap_text_muted, R.drawable.ic_clipboard) // UNKNOWN
     }

@@ -15,6 +15,8 @@ import com.beem.catmap.ui.manager.FeedingSpotEventBus
 import com.beem.catmap.ui.manager.FeedingSpotMapEvent
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
+import com.beem.catmap.utils.CatLogger
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,15 +60,15 @@ class MapViewModel : ViewModel() {
         observeFeedingSpotEvents()
     }
 
-    fun checkAndFetchSpotsIfMoved(newLat: Double, newLng: Double) {
-        val newLocation = android.location.Location("GPS").apply {
+    fun checkAndFetchSpotsIfMoved(newLat: Double, newLng: Double, force: Boolean = false) {
+        val newLocation = Location("GPS").apply {
             latitude = newLat
             longitude = newLng
         }
 
         val lastLoc = lastFetchedSpotLocation
 
-        if (lastLoc == null || lastLoc.distanceTo(newLocation) >= SPOT_FETCH_THRESHOLD_METERS) {
+        if (force || lastLoc == null || lastLoc.distanceTo(newLocation) >= SPOT_FETCH_THRESHOLD_METERS) {
             lastFetchedSpotLocation = newLocation
 
             loadFeedingSpots(newLat, newLng, 3000.0)
@@ -111,7 +113,7 @@ class MapViewModel : ViewModel() {
         }
     }
 
-    fun checkAndFetchCatsIfMoved(newLat: Double, newLng: Double) {
+    fun checkAndFetchCatsIfMoved(newLat: Double, newLng: Double, force: Boolean = false) {
         val newLocation = Location("GPS").apply {
             latitude = newLat
             longitude = newLng
@@ -119,7 +121,7 @@ class MapViewModel : ViewModel() {
 
         val lastLoc = lastFetchedLocation
 
-        if (lastLoc == null || lastLoc.distanceTo(newLocation) >= FETCH_THRESHOLD_METERS) {
+        if (force || lastLoc == null || lastLoc.distanceTo(newLocation) >= FETCH_THRESHOLD_METERS) {
             lastFetchedLocation = newLocation
             fetchCatsNearLocation(newLat, newLng)
         }
@@ -141,6 +143,60 @@ class MapViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 UiMessageManager.emitMessage(UiMessageState.Error("Harita yüklenemedi."))
+            } finally {
+                _loadingState.value = LoadingState.Idle
+            }
+        }
+    }
+
+    fun scanArea(latitude: Double, longitude: Double, radius: Double = 3000.0) {
+        viewModelScope.launch {
+            _loadingState.value = LoadingState.Loading(
+                message = "Çevredeki Kediler Taranıyor...",
+                type = LoadingType.MAP_FETCH
+            )
+
+            try {
+                val spotsDeferred = async {
+                    feedingSpotRepository.getActiveSpotsNearLocation(
+                        lat = latitude,
+                        lng = longitude,
+                        radiusInMeters = radius
+                    )
+                }
+                val catsDeferred = async {
+                    repository.fetchCatsInArea(latitude, longitude)
+                }
+
+                val cats = catsDeferred.await()
+                val spotsResult = spotsDeferred.await()
+
+                val spots = if (spotsResult.isSuccess) spotsResult.getOrDefault(emptyList()) else emptyList()
+
+                _feedingSpots.value = spots
+
+                if (cats.isNotEmpty()) {
+                    _catsList.postValue(cats)
+                }
+
+                val totalFound = cats.size + spots.size
+                if (totalFound > 0) {
+                    val message = when {
+                        cats.isNotEmpty() && spots.isNotEmpty() ->
+                            "${cats.size} kedi ve ${spots.size} mama noktası bulundu! 🐾"
+                        cats.isNotEmpty() ->
+                            "${cats.size} sevimli dostumuz bulundu!"
+                        else ->
+                            "${spots.size} mama noktası bulundu! 🥣"
+                    }
+                    UiMessageManager.emitMessage(UiMessageState.Success(message))
+                } else {
+                    UiMessageManager.emitMessage(UiMessageState.Info("Bu alanda henüz kayıtlı kedi veya mama noktası bulunmuyor."))
+                }
+
+            } catch (e: Exception) {
+                CatLogger.logError("MapViewModel", "scanArea", e)
+                UiMessageManager.emitMessage(UiMessageState.Error("Alan taranırken bir hata oluştu."))
             } finally {
                 _loadingState.value = LoadingState.Idle
             }

@@ -1,6 +1,8 @@
 package com.beem.catmap.ui.feedingspot.components
 
+import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -16,23 +18,35 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.beem.catmap.data.model.SpotReport
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.ui.components.SmartSpotImage
+import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.ui.theme.CatMapColors
+import com.bumptech.glide.Glide
+import com.stfalcon.imageviewer.StfalconImageViewer
 
 
 @Composable
 fun SpotReportPhotoPager(
-    reports: List<SpotReport>,
+    reports: List<SpotReportUiModel>,
     pagerState: PagerState,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    val validPhotoUrls = remember(reports) {
+        reports.mapNotNull { it.report.photoUrl.takeIf { url -> url.isNotBlank() } }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -43,9 +57,19 @@ fun SpotReportPhotoPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
+            val currentPhotoUrl = reports.getOrNull(page)?.report?.photoUrl
+
             SmartSpotImage(
-                imageUrl = reports.getOrNull(page)?.photoUrl,
+                imageUrl = reports.getOrNull(page)?.report?.photoUrl,
                 modifier = Modifier.fillMaxSize()
+                    .clickable(enabled = !currentPhotoUrl.isNullOrBlank()) {
+                        val targetIndex = validPhotoUrls.indexOf(currentPhotoUrl).coerceAtLeast(0)
+                        openFullScreenImageViewer(
+                            context = context,
+                            urls = validPhotoUrls,
+                            startPosition = targetIndex
+                        )
+                    }
             )
         }
 
@@ -90,4 +114,24 @@ fun SpotReportPhotoPager(
             }
         }
     }
+}
+
+private fun openFullScreenImageViewer(
+    context: Context,
+    urls: List<String>,
+    startPosition: Int = 0
+) {
+    if (urls.isEmpty()) return
+
+    StfalconImageViewer.Builder<String>(context, urls) { imageView, url ->
+        imageView.load(url) {
+            crossfade(true)
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+        }
+    }
+        .withStartPosition(startPosition)
+        .withHiddenStatusBar(false)
+        .allowSwipeToDismiss(true)
+        .show()
 }
