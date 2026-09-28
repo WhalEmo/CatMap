@@ -1,4 +1,4 @@
-package com.beem.catmap.ui.notification
+package com.beem.catmap.notification
 
 import android.Manifest
 import android.os.Build
@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import com.beem.catmap.notification.managers.FcmTokenManager
+import com.beem.catmap.notification.managers.NotificationChannelManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,6 +25,8 @@ fun RequestNotificationPermission(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
+            NotificationChannelManager.ensureChannelsExist(context)
+
             CoroutineScope(Dispatchers.IO).launch {
                 FcmTokenManager().syncCurrentToken()
             }
@@ -32,6 +35,7 @@ fun RequestNotificationPermission(
     }
 
     LaunchedEffect(Unit) {
+        NotificationChannelManager.ensureChannelsExist(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val hasPermission = ContextCompat.checkSelfPermission(
                 context,

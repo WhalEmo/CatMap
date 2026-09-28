@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
+import com.beem.catmap.notification.models.ParsedNotification.*
 
 class CatMapMessagingService : FirebaseMessagingService() {
 
@@ -60,12 +61,12 @@ class CatMapMessagingService : FirebaseMessagingService() {
         if (data.isEmpty()) return
 
         when (val parsed = parsePayload(data)) {
-            is ParsedNotification.Broadcast -> {
+            is Broadcast -> {
                 serviceScope.launch {
                     showBroadcastNotification(parsed)
                 }
             }
-            is ParsedNotification.Chat -> {
+            is Chat -> {
                 if (ActiveChatTracker.isChatActive(parsed.chatId)) {
                     Log.d(TAG, "Sohbet ekranı açık, bildirim bastırıldı: ${parsed.chatId}")
                     return
@@ -74,32 +75,56 @@ class CatMapMessagingService : FirebaseMessagingService() {
                     showChatNotification(parsed)
                 }
             }
+            is Follow -> {
+                serviceScope.launch { showFollowNotification(parsed) }
+            }
         }
     }
 
     private fun parsePayload(data: Map<String, String>): ParsedNotification {
         val type = NotificationType.fromRaw(data["type"])
 
-        return if (type == NotificationType.CHAT_MESSAGE) {
-            ParsedNotification.Chat(
-                senderId = data["sender_id"] ?: "",
-                chatId = data["chat_id"] ?: "",
-                title = data["title"] ?: "CatMap",
-                body = data["body"] ?: "Yeni bir mesajınız var",
-                photoUrl = data["sender_photo"]
-            )
-        } else {
-            ParsedNotification.Broadcast(
-                title = data["title"] ?: "CatMap Duyuru",
-                body = data["body"] ?: "",
-                targetRoute = data["target_route"],
-                imageUrl = data["image_url"]
-            )
+        return when (type) {
+            NotificationType.FOLLOW -> {
+                Follow(
+                    senderId = data["sender_id"] ?: "",
+                    title = data["title"] ?: "Yeni Takipçi! 🐾",
+                    body = data["body"] ?: "Biri seni takip etmeye başladı.",
+                    photoUrl = data["sender_photo"]
+                )
+            }
+
+            NotificationType.CHAT_MESSAGE -> {
+                Chat(
+                    senderId = data["sender_id"] ?: "",
+                    chatId = data["chat_id"] ?: "",
+                    title = data["title"] ?: "CatMap",
+                    body = data["body"] ?: "Yeni bir mesajınız var",
+                    photoUrl = data["sender_photo"]
+                )
+            }
+            NotificationType.ADMIN_BROADCAST -> {
+                Broadcast(
+                    title = data["title"] ?: "CatMap Duyuru",
+                    body = data["body"] ?: "",
+                    targetRoute = data["target_route"],
+                    imageUrl = data["image_url"]
+                )
+            }
+
+            NotificationType.REMINDER -> {
+                Broadcast(
+                    title = data["title"] ?: "CatMap Duyuru",
+                    body = data["body"] ?: "",
+                    targetRoute = data["target_route"],
+                    imageUrl = data["image_url"]
+                )
+            }
         }
     }
 
 
-    private suspend fun showChatNotification(chat: ParsedNotification.Chat) {
+    private suspend fun showChatNotification(chat: Chat) {
         if (chat.senderId.isEmpty()) return
 
         val avatarBitmap: Bitmap = loadAvatarBitmap(chat.photoUrl, isCircle = true)
@@ -170,12 +195,12 @@ class CatMapMessagingService : FirebaseMessagingService() {
             .setShortcutId(chat.senderId)                  // 🎯 MIUI'a 'Bu bir WhatsApp tarzı sohbettir' diyen anahtar
             .addAction(openChatAction)                // Alttaki profesyonel aksiyon butonu
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setShowWhen(true)
             .setWhen(System.currentTimeMillis())
             .setAutoCancel(true)
-            .setSound(soundUri)
-            .setVibrate(longArrayOf(0, 250, 150, 250))
+            .setOnlyAlertOnce(false)
             .setContentIntent(pendingIntent)
 
         dispatchNotification(chat.senderId.hashCode(), builder)
@@ -228,6 +253,51 @@ class CatMapMessagingService : FirebaseMessagingService() {
                 NotificationCompat.BigTextStyle()
                     .bigText(broadcast.body)
             )
+        }
+
+        dispatchNotification(notificationId, builder)
+    }
+
+
+    private suspend fun showFollowNotification(follow: Follow) {
+        if (follow.senderId.isEmpty()) return
+
+        val notificationId = follow.senderId.hashCode()
+
+        // Tıklanınca MapsActivity açılır ve catmap://profile/{uid} rotasına yönlenir
+        val intent = Intent(this, MapsActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = "catmap://profile/${follow.senderId}".toUri()
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Takip edenin yuvarlak avatarını yükle, yoksa kedi ikonu
+        val avatarBitmap: Bitmap? = loadAvatarBitmap(follow.photoUrl, isCircle = true)
+            ?: ContextCompat.getDrawable(this, R.drawable.ic_cat)?.toBitmap(96, 96)
+
+        val builder = NotificationCompat.Builder(this, NotificationChannelManager.CHANNEL_ID_SOCIAL)
+            .setSmallIcon(R.drawable.ic_cat)
+            .setColor(ContextCompat.getColor(this, R.color.catmap_accent))
+            .setContentTitle(follow.title)
+            .setContentText(follow.body)
+            .setAutoCancel(true)
+            .setShowWhen(true)
+            .setWhen(System.currentTimeMillis())
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(false)
+            .setContentIntent(pendingIntent)
+
+        if (avatarBitmap != null) {
+            builder.setLargeIcon(avatarBitmap)
         }
 
         dispatchNotification(notificationId, builder)

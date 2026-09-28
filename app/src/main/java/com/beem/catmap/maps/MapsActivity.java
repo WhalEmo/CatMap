@@ -375,13 +375,23 @@ public class MapsActivity extends AppCompatActivity {
 
         Uri data = intent.getData();
         if (data != null) {
-            if ("catmap".equals(data.getScheme()) && "chat".equals(data.getHost())) {
-                String receiverId = data.getLastPathSegment();
-                if (receiverId != null && !receiverId.trim().isEmpty()) {
-                    if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
-                        NavigationHelper.navigateToChat(receiverId);
+            if ("catmap".equals(data.getScheme())) {
+                if ("chat".equals(data.getHost())) {
+                    String receiverId = data.getLastPathSegment();
+                    if (receiverId != null && !receiverId.trim().isEmpty()) {
+                        if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
+                            NavigationHelper.navigateToChat(receiverId);
+                        }
+                        intent.setData(null);
                     }
-                    intent.setData(null);
+                } else if ("profile".equals(data.getHost())) {
+                    String targetId = data.getLastPathSegment();
+                    if (targetId != null && !targetId.trim().isEmpty()) {
+                        if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
+                            NavigationHelper.navigateToProfile(targetId, false);
+                        }
+                        intent.setData(null);
+                    }
                 }
             }
         }

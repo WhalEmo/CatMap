@@ -7,7 +7,7 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -97,6 +97,16 @@
                     android:scheme="catmap"
                     android:host="route" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="catmap"
+                    android:host="profile" />
+            </intent-filter>
+
         </activity>
 
         <meta-data

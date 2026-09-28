@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.beem.catmap.R
 import com.beem.catmap.ui.map.model.MapFilterType
-import com.beem.catmap.ui.notification.RequestNotificationPermission
+import com.beem.catmap.notification.RequestNotificationPermission
 import com.beem.catmap.ui.theme.CatMapColors
 
 // Orijinal XML'deki Montserrat-Black fontu

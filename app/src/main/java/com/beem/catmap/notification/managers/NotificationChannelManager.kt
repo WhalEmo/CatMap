@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 object NotificationChannelManager {
 
-    const val CHANNEL_VERSION = "v3"
+    const val CHANNEL_VERSION = "v4"
     const val CHANNEL_ID_CHAT = "catmap_chat_messages_$CHANNEL_VERSION"
     const val CHANNEL_ID_REMINDERS = "catmap_reminders_broadcast_$CHANNEL_VERSION"
+    const val CHANNEL_ID_SOCIAL = "catmap_social_interactions_$CHANNEL_VERSION"
 
     private val isInitialized = AtomicBoolean(false)
 
@@ -53,6 +54,20 @@ object NotificationChannelManager {
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
+            val socialChannel = NotificationChannel(
+                CHANNEL_ID_SOCIAL,
+                "Takip ve Etkileşim Bildirimleri",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Yeni takipçiler ve profil etkileşimleri"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 150, 100, 150)
+                enableLights(true)
+                lightColor = 0xFFFF8C00.toInt()
+                setSound(soundUri, audioAttributes)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            }
+
             val reminderChannel = NotificationChannel(
                 CHANNEL_ID_REMINDERS,
                 "Hatırlatmalar ve Etkinlikler",
@@ -62,7 +77,7 @@ object NotificationChannelManager {
                 setSound(soundUri, audioAttributes)
             }
 
-            notificationManager.createNotificationChannels(listOf(chatChannel, reminderChannel))
+            notificationManager.createNotificationChannels(listOf(chatChannel, socialChannel, reminderChannel))
 
             isInitialized.set(true)
         }

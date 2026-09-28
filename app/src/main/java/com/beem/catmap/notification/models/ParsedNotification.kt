@@ -15,4 +15,11 @@ sealed class ParsedNotification {
         val targetRoute: String?,
         val imageUrl: String? = null
     ) : ParsedNotification()
+
+    data class Follow(
+        val senderId: String,
+        val title: String,
+        val body: String,
+        val photoUrl: String?
+    ) : ParsedNotification()
 }
