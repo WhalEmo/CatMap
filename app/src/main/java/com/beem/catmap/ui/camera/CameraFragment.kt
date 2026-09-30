@@ -25,7 +25,9 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -100,6 +102,8 @@ class CameraFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupSystemBarPadding()
+
         handleBackPressWithEngine()
 
         dialog?.setCanceledOnTouchOutside(false)
@@ -131,6 +135,18 @@ class CameraFragment : DialogFragment() {
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
             window.setWindowAnimations(android.R.style.Animation_Activity)
+        }
+    }
+
+    private fun setupSystemBarPadding() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+            )
+
+            view.setPadding(0, insets.top, 0, insets.bottom)
+
+            windowInsets
         }
     }
 

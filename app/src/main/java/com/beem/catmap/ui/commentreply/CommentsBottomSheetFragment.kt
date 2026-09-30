@@ -26,7 +26,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.beem.catmap.data.model.UserModel
-import com.beem.catmap.ui.markersclick.BottomSheetFragment
+import com.beem.catmap.ui.markersclick.CatDetailSheetFragment
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.ReplyModel
@@ -213,7 +213,7 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
 
             override fun onUsernameClicked(userId: String) {
                 dismiss()
-                val parentBottomSheet = parentFragmentManager.findFragmentByTag(BottomSheetFragment.TAG)
+                val parentBottomSheet = parentFragmentManager.findFragmentByTag(CatDetailSheetFragment.TAG)
                 if (parentBottomSheet is BottomSheetDialogFragment) {
                     parentBottomSheet.dismiss()
                 }

@@ -71,6 +71,8 @@ fun SpotOperationScreen(
     val isNextEnabled = !state.isUploading
 
     Scaffold(
+        modifier = Modifier
+            .navigationBarsPadding(),
         topBar = {
             OperationTopBar(onBackClick = { onIntent(SpotOperationIntent.NavigateBack) })
         },

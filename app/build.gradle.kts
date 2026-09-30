@@ -9,12 +9,13 @@ if (localPropertiesFile.exists()) {
 }
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
-    id("com.google.gms.google-services")
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.compose.compiler)
+
+    alias(libs.plugins.android.application)
+
+    id("com.google.gms.google-services")
+    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -55,14 +56,11 @@ android {
         viewBinding = true
         compose = true
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    tasks.withType<JavaCompile> {
-        options.compilerArgs.add("-Xlint:deprecation")
-    }
 
+}
 
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-Xlint:deprecation")
 }
 
 
@@ -146,6 +144,8 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    implementation("com.google.maps.android:android-maps-utils:3.9.0")
 
 
     implementation(platform(libs.compose.bom))

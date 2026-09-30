@@ -19,6 +19,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -186,9 +187,9 @@ public class MapsActivity extends AppCompatActivity {
             }
         });
 
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         Window window = getWindow();
-        WindowCompat.setDecorFitsSystemWindows(window, true);
         window.setStatusBarColor(ContextCompat.getColor(this, R.color.catmap_background));
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());

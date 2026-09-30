@@ -1,11 +1,10 @@
 package com.beem.catmap.ui.map
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
 import android.util.DisplayMetrics
@@ -21,23 +20,18 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
-import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
-import com.beem.catmap.maps.mapkedi.Kediler
-import com.beem.catmap.maps.MapsActivity
+import com.beem.catmap.data.model.Kediler
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCatMapBinding
 import com.beem.catmap.data.model.CatModel
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -46,24 +40,25 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.coroutines.launch
 import java.util.ArrayList
-import java.util.HashMap
-import androidx.core.view.isGone
-import androidx.fragment.app.activityViewModels
 import com.beem.catmap.engine.location.LocationEngine
 import com.beem.catmap.maps.LocationSettingsHandler
-import com.beem.catmap.ui.markersclick.BottomSheetFragment
+import com.beem.catmap.ui.markersclick.CatDetailSheetFragment
 import com.beem.catmap.data.local.LocationCacheManager
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.mapper.toClusterItem
+import com.beem.catmap.data.mapper.toLegacyKediler
 import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
 import com.beem.catmap.ui.feedingspot.FeedingSpotBottomSheetFragment
 import com.beem.catmap.ui.feedingspot.getCustomSpotMarker
+import com.beem.catmap.ui.map.components.CatZoneRadialDialog
 import com.beem.catmap.ui.map.components.MapTopHeaderBar
+import com.beem.catmap.ui.map.model.CatClusterItem
 import com.beem.catmap.ui.map.model.MapFilterType
+import com.beem.catmap.ui.map.privacy.CatClusterRenderer
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
@@ -71,9 +66,10 @@ import com.beem.catmap.ui.spotoperation.SpotOperationFragment
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.maps.android.clustering.ClusterManager
+import com.google.maps.android.clustering.algo.NonHierarchicalDistanceBasedAlgorithm
+import com.google.maps.android.collections.MarkerManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
 
 class CatMapFragment : Fragment(), OnMapReadyCallback {
 
@@ -85,12 +81,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var bottomSheetController: BottomSheetController? = null
 
 
-    private val activeCatMarkers = ConcurrentHashMap<String, Marker>()
-    private val activeGlideTargets = ConcurrentHashMap<String, CustomTarget<Bitmap>>()
-
-    private var cachedDefaultCatDescriptor: BitmapDescriptor? = null
-
     private val kediler = ArrayList<Kediler>()
+    private lateinit var catClusterManager: ClusterManager<CatClusterItem>
+    private lateinit var catRenderer: CatClusterRenderer
+    private val catClusterItems = ArrayList<CatClusterItem>()
+
+    private val selectedClusterCats = mutableStateOf<List<CatClusterItem>?>(null)
+
+    private lateinit var spotMarkerCollection: MarkerManager.Collection
 
     private var lastGpsLocation: Location? = null
     private var isTrackingUser = true
@@ -162,11 +160,71 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         mapFragment?.getMapAsync(this)
     }
 
+    @SuppressLint("PotentialBehaviorOverride")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         Log.d("CAT_MAP_FRAGMENT", "Kaptan: İç harita başarıyla ayağa kalktı ve hazır!")
 
         mMap?.uiSettings?.isMapToolbarEnabled = false
+
+        val markerManager = MarkerManager(googleMap)
+
+        googleMap.setOnMarkerClickListener(markerManager)
+        googleMap.setOnInfoWindowClickListener(markerManager)
+
+        catClusterManager = ClusterManager(requireContext(), googleMap, markerManager)
+        val algorithm = NonHierarchicalDistanceBasedAlgorithm<CatClusterItem>()
+        algorithm.maxDistanceBetweenClusteredItems = 120
+        catClusterManager.algorithm = algorithm
+        catRenderer = CatClusterRenderer(requireContext(), googleMap, catClusterManager)
+        catClusterManager.renderer = catRenderer
+
+        spotMarkerCollection = catClusterManager.markerManager.newCollection()
+
+        googleMap.setOnCameraIdleListener {
+            catClusterManager.onCameraIdle()
+
+            val clusters = catClusterManager.algorithm.getClusters(googleMap.cameraPosition.zoom)
+            catRenderer.updateSafetyCircles(clusters)
+
+            val currentCenter = googleMap.cameraPosition.target
+            lastScannedLocation?.let { sonMerkez ->
+                val results = FloatArray(1)
+                Location.distanceBetween(
+                    sonMerkez.latitude, sonMerkez.longitude,
+                    currentCenter.latitude, currentCenter.longitude,
+                    results
+                )
+                if (results[0] > 500f && !isScanAreaVisible.value) {
+                    isScanAreaVisible.value = true
+                }
+            }
+        }
+
+        spotMarkerCollection.setOnMarkerClickListener { marker ->
+            val spot = marker.tag as? FeedingSpot
+            if (spot != null) {
+                val tag = "${FeedingSpotBottomSheetFragment.TAG}_${spot.id}"
+                val existing = childFragmentManager.findFragmentByTag(tag)
+                if (existing == null || !existing.isAdded) {
+                    FeedingSpotBottomSheetFragment.newInstance(spot).show(childFragmentManager, tag)
+                }
+                return@setOnMarkerClickListener true
+            }
+            false
+        }
+
+
+        catClusterManager.setOnClusterClickListener { cluster ->
+            selectedClusterCats.value = cluster.items.toList()
+            true // Kameranın içeri dalmasını engeller
+        }
+
+        // 5. Tekil Kediye Tıklama
+        catClusterManager.setOnClusterItemClickListener { item ->
+            openSingleCatDetails(item)
+            true
+        }
 
         val cachedLocation = LocationCacheManager.getLastLocation()
         val cachedZoom = LocationCacheManager.getLastZoom()
@@ -188,63 +246,19 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
-
-        mMap!!.setOnCameraIdleListener {
-            val currentCenter = googleMap.cameraPosition.target
-
-            lastScannedLocation?.let { sonMerkez ->
-                val results = FloatArray(1)
-                Location.distanceBetween(
-                    sonMerkez.latitude, sonMerkez.longitude,
-                    currentCenter.latitude, currentCenter.longitude,
-                    results
-                )
-
-                if (results[0] > 500f) {
-                    if (!isScanAreaVisible.value) {
-                        isScanAreaVisible.value = true
-                    }
-                }
-            }
-        }
-
-
-        mMap!!.setOnMarkerClickListener { marker ->
-            if (marker == myLocationMarker || marker.title == "konum") {
-                return@setOnMarkerClickListener true
-            }
-
-            val spot = marker.tag as? FeedingSpot
-            if (spot != null) {
-                val tag = "${FeedingSpotBottomSheetFragment.TAG}_${spot.id}"
-                val existing = childFragmentManager.findFragmentByTag(tag)
-                if (existing == null || !existing.isAdded) {
-                    val bottomSheet = FeedingSpotBottomSheetFragment.newInstance(spot)
-                    bottomSheet.show(childFragmentManager, tag)
-                }
-                return@setOnMarkerClickListener true
-            }
-
-            val cat = marker.tag as? Kediler
-            if (cat != null) {
-                if (activity is MapsActivity) {
-                    (activity as MapsActivity).sonTiklananMarker = marker
-
-                    val existingFragment = childFragmentManager.findFragmentByTag(BottomSheetFragment.TAG)
-                    if (existingFragment == null || !existingFragment.isAdded) {
-                        val bottomSheet = BottomSheetFragment.newInstance(cat)
-                        bottomSheet.show(childFragmentManager, BottomSheetFragment.TAG)
-                    }
-                }
-                return@setOnMarkerClickListener true
-            }
-            true
-        }
-
         val currentSpots = mapViewModel?.feedingSpots?.value
         if (!currentSpots.isNullOrEmpty()) {
             renderFeedingSpotMarkers(currentSpots)
             spotCountState.intValue = currentSpots.size
+        }
+    }
+
+    private fun openSingleCatDetails(item: CatClusterItem) {
+        val cat = item.toLegacyKediler()
+        val existing = childFragmentManager.findFragmentByTag(CatDetailSheetFragment.TAG)
+        if (existing == null || !existing.isAdded) {
+            val catDetailSheetFragment = CatDetailSheetFragment.newInstance(cat)
+            catDetailSheetFragment.show(childFragmentManager, CatDetailSheetFragment.TAG)
         }
     }
 
@@ -265,6 +279,17 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                     applyMarkerVisibilityFilter(filter)
                 }
             )
+
+            selectedClusterCats.value?.let { catsInZone ->
+                CatZoneRadialDialog(
+                    cats = catsInZone,
+                    onDismiss = { selectedClusterCats.value = null },
+                    onCatClick = { clickedCat ->
+                        selectedClusterCats.value = null
+                        openSingleCatDetails(clickedCat)
+                    }
+                )
+            }
         }
     }
 
@@ -272,7 +297,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         val showCats = filter == MapFilterType.ALL || filter == MapFilterType.CATS
         val showSpots = filter == MapFilterType.ALL || filter == MapFilterType.SPOTS
 
-        activeCatMarkers.values.forEach { it.isVisible = showCats }
+        if (::catClusterManager.isInitialized) {
+            catClusterManager.markerCollection.markers.forEach { it.isVisible = showCats }
+            catClusterManager.clusterMarkerCollection.markers.forEach { it.isVisible = showCats }
+        }
         spotMarkers.forEach { it.isVisible = showSpots }
     }
 
@@ -357,13 +385,14 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private fun observeViewModel() {
         mapViewModel?.catsList?.observe(viewLifecycleOwner) { catModels ->
             if (catModels != null && catModels.isNotEmpty()) {
-                kediler.clear()
-                kediler.addAll(catModels.map { modelToKediler(it) })
-                syncCatMarkersWithMap(kediler)
+                catClusterItems.clear()
+                catClusterItems.addAll(catModels.map { it.toClusterItem() })
+                syncCatMarkersWithMap(catClusterItems)
                 catCountState.intValue = kediler.size
                 applyMarkerVisibilityFilter(currentFilter.value)
             } else {
                 catCountState.intValue = 0
+                syncCatMarkersWithMap(emptyList())
             }
         }
 
@@ -393,12 +422,12 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mapViewModel?.zoomToCatEvent?.collect { cat ->
                     stopTrackingMode()
-                    val catModel = modelToKediler(cat)
-                    if (!kediler.any { it.id == catModel.id }) {
-                        kediler.add(catModel)
+                    val clusterItem = cat.toClusterItem()
+                    if (!catClusterItems.any { it.id == clusterItem.id }) {
+                        catClusterItems.add(clusterItem)
+                        syncCatMarkersWithMap(catClusterItems)
                     }
-                    mMap?.let { renderSingleCatMarker(it, catModel) }
-                    focusOnCatOnMap(cat)
+                    focusOnCatOnMap(clusterItem)
                 }
             }
         }
@@ -449,9 +478,9 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
                 launch {
                     mapViewModel?.deleteCatEvent?.collect { deletedCatId ->
-                        cancelMarkerImageLoading(deletedCatId)
-                        activeCatMarkers.remove(deletedCatId)?.remove()
-                        kediler.removeAll { it.id == deletedCatId }
+                        catClusterItems.removeAll { it.id == deletedCatId }
+                        syncCatMarkersWithMap(catClusterItems)
+                        catCountState.intValue = catClusterItems.size
                     }
                 }
             }
@@ -466,29 +495,13 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     }
 
 
-    private fun focusOnCatOnMap(cat: CatModel) {
+    private fun focusOnCatOnMap(item: CatClusterItem) {
         if (mMap == null) return
-        val location = LatLng(cat.latitude, cat.longitude)
+        val location = item.position
         mMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 17f))
 
     }
 
-    private fun modelToKediler(model: CatModel): Kediler {
-        return Kediler(
-            model.id,
-            model.kediAdi,
-            model.kediHakkinda,
-            model.latitude,
-            model.longitude,
-            model.mainPhotoUrl,
-            ArrayList(model.photoUri),
-            model.YukleyenKullaniciID,
-            model.createdAt,
-            model.city,
-            model.district,
-            model.neighborhood
-        )
-    }
 
     private fun startTrackingMode() {
         isTrackingUser = true
@@ -559,163 +572,26 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun getOrCreateDefaultCatMarkerDescriptor(context: Context): BitmapDescriptor {
-        cachedDefaultCatDescriptor?.let { return it }
-
-        val markerView = LayoutInflater.from(context).inflate(R.layout.marker_tasarim, null)
-        val markerImage = markerView.findViewById<CircleImageView>(R.id.marker_cat_image)
-        markerImage.setImageResource(R.drawable.ic_cat)
-        markerImage.circleBackgroundColor = ContextCompat.getColor(context, R.color.catmap_surface_translucent)
-
-        val bitmap = createBitmapFromMeasuredView(markerView)
-        val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
-        cachedDefaultCatDescriptor = descriptor
-        return descriptor
-    }
-
-    private fun createBitmapFromMeasuredView(view: View): Bitmap {
-        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        view.layout(0, 0, view.measuredWidth, view.measuredHeight)
-
-        val bitmap =
-            createBitmap(view.measuredWidth.coerceAtLeast(1), view.measuredHeight.coerceAtLeast(1))
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-        return bitmap
-    }
-
-
-    private fun syncCatMarkersWithMap(cats: List<Kediler>) {
-        val map = mMap ?: return
+    private fun syncCatMarkersWithMap(cats: List<CatClusterItem>) {
+        if (!::catClusterManager.isInitialized) return
         if (!isAdded || context == null) return
 
-        val currentCatIds = cats.map { it.id }.toSet()
+        catClusterManager.clearItems()
+        catClusterManager.addItems(cats)
+        catClusterManager.cluster()
 
-        // Haritada olup yeni listede olmayan silinmiş kedi marker'larını temizle
-        val iterator = activeCatMarkers.entries.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            if (!currentCatIds.contains(entry.key)) {
-                cancelMarkerImageLoading(entry.key)
-                entry.value.remove()
-                iterator.remove()
-            }
+        mMap?.let { map ->
+            val clusters = catClusterManager.algorithm.getClusters(map.cameraPosition.zoom)
+            catRenderer.updateSafetyCircles(clusters)
         }
-
-        // Yeni veya güncellenen kedileri haritada göster
-        for (cat in cats) {
-            if (!activeCatMarkers.containsKey(cat.id)) {
-                renderSingleCatMarker(map, cat)
-            }
-        }
-    }
-
-    private fun renderSingleCatMarker(map: GoogleMap, cat: Kediler) {
-        val context = context ?: return
-        val position = LatLng(cat.latitude, cat.longitude)
-
-        val shouldBeVisible = currentFilter.value == MapFilterType.ALL || currentFilter.value == MapFilterType.CATS
-
-        val marker = map.addMarker(
-            MarkerOptions()
-                .position(position)
-                .icon(getOrCreateDefaultCatMarkerDescriptor(context))
-                .title(cat.isim)
-                .zIndex(50.0f)
-                .anchor(0.5f, 1.0f)
-                .visible(shouldBeVisible)
-        ) ?: return
-
-        marker.tag = cat
-        activeCatMarkers[cat.id] = marker
-
-        // URL yoksa varsayılan pati ikonuyla kalmaya devam eder
-        if (cat.url.isBlank()) return
-
-        val markerPixelSize = 90
-
-        val target = object : CustomTarget<Bitmap>(markerPixelSize, markerPixelSize) {
-            override fun onLoadCleared(placeholder: Drawable?) {
-                activeGlideTargets.remove(cat.id)
-            }
-
-            override fun onLoadFailed(errorDrawable: Drawable?) {
-                activeGlideTargets.remove(cat.id)
-            }
-
-            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                activeGlideTargets.remove(cat.id)
-
-                // Fragment görünürlüğü ve marker canlılığı kontrolü
-                if (!isAdded || viewLifecycleOwner.lifecycle.currentState < Lifecycle.State.STARTED) return
-                val activeMarker = activeCatMarkers[cat.id] ?: return
-
-                // UI Thread'i kitlememek için layout ölçümleme ve çizimini Coroutine'e devret
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-                    val customBitmap = composeCircularMarkerBitmap(resource)
-
-                    withContext(Dispatchers.Main) {
-                        try {
-                            activeMarker.setIcon(BitmapDescriptorFactory.fromBitmap(customBitmap))
-
-                            val currentShouldBeVisible = currentFilter.value == MapFilterType.ALL || currentFilter.value == MapFilterType.CATS
-                            activeMarker.isVisible = currentShouldBeVisible
-                        } catch (e: Exception) {
-                            Log.w("CatMapFragment", "Marker güncellenirken iptal edildi: ${e.message}")
-                        }
-                    }
-                }
-            }
-        }
-
-        activeGlideTargets[cat.id] = target
-
-        Glide.with(this)
-            .asBitmap()
-            .load(cat.url)
-            .override( markerPixelSize, markerPixelSize)
-            .centerCrop()
-            .into(target)
-    }
-
-    private fun composeCircularMarkerBitmap(imageBitmap: Bitmap): Bitmap {
-        val context = context ?: return imageBitmap
-        val markerView = LayoutInflater.from(context).inflate(R.layout.marker_tasarim, null)
-        val markerImage = markerView.findViewById<CircleImageView>(R.id.marker_cat_image)
-        markerImage.setImageBitmap(imageBitmap)
-
-        return createBitmapFromMeasuredView(markerView)
-    }
-
-    /**
-     * 6. Adım: Aktif Görsel İsteklerini İptal Etme (Memory Leak Kalkanı)
-     */
-    private fun cancelMarkerImageLoading(catId: String) {
-        activeGlideTargets.remove(catId)?.let { target ->
-            Glide.with(this).clear(target)
-        }
-    }
-
-    /**
-     * 7. Adım: Tüm Kedi Marker Sistemini Güvenli Sıfırlama
-     */
-    private fun clearAllCatMarkers() {
-        activeGlideTargets.forEach { (_, target) ->
-            Glide.with(this).clear(target)
-        }
-        activeGlideTargets.clear()
-
-        activeCatMarkers.forEach { (_, marker) ->
-            marker.remove()
-        }
-        activeCatMarkers.clear()
     }
 
 
     private fun renderFeedingSpotMarkers(spots: List<FeedingSpot>) {
         if (mMap == null) return
 
-        spotMarkers.forEach { it.remove() }
+        //spotMarkers.forEach { it.remove() }
+        spotMarkerCollection.clear()
         spotMarkers.clear()
 
         val shouldShowSpots = currentFilter.value == MapFilterType.ALL || currentFilter.value == MapFilterType.SPOTS
@@ -739,11 +615,11 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
             markerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
             markerView.layout(0, 0, markerView.measuredWidth, markerView.measuredHeight)
 
-            val bitmap = Bitmap.createBitmap(markerView.measuredWidth, markerView.measuredHeight, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(markerView.measuredWidth, markerView.measuredHeight)
             val canvas = Canvas(bitmap)
             markerView.draw(canvas)
 
-            val marker = mMap!!.addMarker(
+            val marker = spotMarkerCollection.addMarker(
                 MarkerOptions()
                     .position(location)
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
@@ -850,7 +726,16 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        clearAllCatMarkers()
+        if (::catRenderer.isInitialized) {
+            catRenderer.clear()
+        }
+        if (::catClusterManager.isInitialized) {
+            catClusterManager.clearItems()
+        }
+        if (::spotMarkerCollection.isInitialized) {
+            spotMarkerCollection.clear()
+        }
+        spotMarkers.clear()
         LocationEngine.stopTracking()
         _binding = null
     }

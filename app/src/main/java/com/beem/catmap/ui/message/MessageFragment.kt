@@ -486,17 +486,34 @@ class MessageFragment : Fragment() {
         dialog.show(childFragmentManager, "MessagePhotoPreviewDialog")
     }
 
-    private fun setupKeyboardAdjustments() {
+    private fun setupKeyboardAdjustments2() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 
             val bottomPadding = if (imeInsets.bottom > 0) {
-                imeInsets.bottom - systemInsets.bottom
-            } else 0
+                imeInsets.bottom
+            } else systemInsets.bottom
 
             binding.mesajGonderLayout.setPadding(0, 0, 0, bottomPadding)
             insets
+        }
+    }
+
+    private fun setupKeyboardAdjustments() {
+        // Ekranın ana root (en dış) görünümüne insets veriyoruz
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            // "systemBars" (alt/üst çubuklar) ve "ime" (klavye) insets'lerini BİRLEŞTİRİYORUZ.
+            // Bu sayede klavye açılınca otomatik klavye boyu, kapanınca alt çizgi boyu gelir.
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+            )
+
+            // MapsActivity üst (top) padding'i zaten hallettiği için burada sadece alt (bottom) padding veriyoruz.
+            view.setPadding(0, 0, 0, insets.bottom)
+
+            // Insets'leri geri döndürüyoruz ki diğer görünümler de faydalansın
+            windowInsets
         }
     }
 

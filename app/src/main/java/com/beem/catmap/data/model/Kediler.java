@@ -1,4 +1,4 @@
-package com.beem.catmap.maps.mapkedi;
+package com.beem.catmap.data.model;
 
 import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;

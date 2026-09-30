@@ -69,8 +69,8 @@
 
         <activity
             android:name=".maps.MapsActivity"
-            android:screenOrientation="portrait"
             android:theme="@style/Theme.CatMap.Splash"
+            android:configChanges="orientation|screenSize|screenLayout"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
