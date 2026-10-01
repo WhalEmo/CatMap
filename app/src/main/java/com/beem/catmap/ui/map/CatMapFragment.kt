@@ -52,6 +52,7 @@ import com.beem.catmap.data.mapper.toLegacyKediler
 import com.beem.catmap.data.model.FeedingSpot
 import com.beem.catmap.engine.speedengine.MotionState
 import com.beem.catmap.engine.speedengine.SpeedEngine
+import com.beem.catmap.ui.extensions.navigateBottomSheetSafely
 import com.beem.catmap.ui.feedingspot.FeedingSpotBottomSheetFragment
 import com.beem.catmap.ui.feedingspot.getCustomSpotMarker
 import com.beem.catmap.ui.map.components.CatZoneRadialDialog
@@ -255,10 +256,10 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
 
     private fun openSingleCatDetails(item: CatClusterItem) {
         val cat = item.toLegacyKediler()
-        val existing = childFragmentManager.findFragmentByTag(CatDetailSheetFragment.TAG)
-        if (existing == null || !existing.isAdded) {
+        val tag = CatDetailSheetFragment.TAG
+        navigateBottomSheetSafely(tag) {
             val catDetailSheetFragment = CatDetailSheetFragment.newInstance(cat)
-            catDetailSheetFragment.show(childFragmentManager, CatDetailSheetFragment.TAG)
+            catDetailSheetFragment.show(childFragmentManager, tag)
         }
     }
 

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.widget.LinearLayout
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -15,6 +16,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.Post
@@ -28,6 +31,7 @@ import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
+import com.beem.catmap.ui.markersclick.components.CatPhotoSlider
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.utils.toFirebaseTimestamp
@@ -44,17 +48,8 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
     private var _binding: MarkerdakiKediyiGostermeBinding? = null
     private val binding get() = _binding!!
 
-    private val photoIndicatorDots = mutableListOf<View>()
+    private val photoListState = mutableStateOf<List<String>>(emptyList())
 
-    private val photoPageChangeCallback =
-        object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                updatePhotoIndicator(position)
-            }
-        }
-
-    private lateinit var photoAdapter: ComposePhotoPagerAdapter
     private val viewModel: CatDetailViewModel by activityViewModels()
     private val commentsViewModel: CommentViewModel by viewModels()
 
@@ -73,8 +68,6 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
     }
 
     override fun onDestroyView() {
-        binding.fotoPager.unregisterOnPageChangeCallback(photoPageChangeCallback)
-        photoIndicatorDots.clear()
         _binding = null
         super.onDestroyView()
     }
@@ -84,8 +77,6 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
 
         initViews()
         loadStart()
-        observeViewModel()
-        setupCommentCountObserver()
 
 
         @Suppress("DEPRECATION")
@@ -109,6 +100,9 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
                 yukleyenProfilineGit(kedi.yukleyenId)
             }
         }
+
+        observeViewModel()
+        setupCommentCountObserver()
 
         val openCommentsAction = View.OnClickListener {
             val currentCatId = viewModel.selectedCat.value?.id
@@ -165,26 +159,30 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun initViews() {
-        photoAdapter = ComposePhotoPagerAdapter { position ->
-            val currentCat = viewModel.selectedCat.value
-            val photoUrls = currentCat?.urLler
-            if (!photoUrls.isNullOrEmpty()) {
-                openFullScreenViewer(photoUrls, position)
-            }
-        }
-        binding.fotoPager.adapter = photoAdapter
-        binding.fotoPager.offscreenPageLimit = 1
 
-        binding.fotoPager.registerOnPageChangeCallback(photoPageChangeCallback)
+        binding.composePhotoPager.setContent {
+            CatPhotoSlider(
+                photos = photoListState.value,
+                onPhotoClick = { position ->
+                    val urls = photoListState.value
+                    if (urls.isNotEmpty()) {
+                        openFullScreenViewer(urls, position)
+                    }
+                }
+            )
+        }
     }
     private fun openFullScreenViewer(urls: List<String>, startPosition: Int) {
         StfalconImageViewer.Builder<String>(requireContext(), urls) { imageView, url ->
-            Glide.with(requireContext())
-                .load(url)
-                .into(imageView)
+            imageView.load(url) {
+                crossfade(true)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         }
             .withStartPosition(startPosition)
             .withHiddenStatusBar(false)
+            .allowSwipeToDismiss(true)
             .show()
     }
     private fun observeViewModel() {
@@ -210,13 +208,7 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
                     }
                     binding.tarihText.text = getFormattedDate(it.createdAt) ?: ""
 
-                    if (!it.urLler.isNullOrEmpty()) {
-                        photoAdapter.submitList(it.urLler)
-                        setupPhotoIndicator(it.urLler.size)
-                    } else {
-                        photoAdapter.submitList(emptyList())
-                        setupPhotoIndicator(0)
-                    }
+                    photoListState.value = it.urLler ?: emptyList()
                 }
             }
         }
@@ -369,6 +361,8 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
             skipCollapsed = true
             isFitToContents = false
             expandedOffset = 0
+
+            halfExpandedRatio = 0.0001f
         }
     }
 
@@ -394,66 +388,6 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
         commentsViewModel.fetchCommentCount()
     }
 
-    private fun setupPhotoIndicator(photoCount: Int) {
-        binding.fotoDotsContainer.removeAllViews()
-        photoIndicatorDots.clear()
-
-        if (photoCount <= 1) {
-            binding.fotoIndicatorCapsule.visibility = View.GONE
-            return
-        }
-
-        binding.fotoIndicatorCapsule.visibility = View.VISIBLE
-
-        repeat(photoCount) { index ->
-            val dot = View(requireContext())
-            val selected = index == 0
-
-            val size = dpToPx(if (selected) 8 else 6)
-            val margin = dpToPx(3)
-
-            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(margin, 0, margin, 0)
-            }
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (selected) {
-                    R.drawable.dot_active
-                } else {
-                    R.drawable.dot_inactive
-                }
-            )
-
-            binding.fotoDotsContainer.addView(dot)
-            photoIndicatorDots.add(dot)
-        }
-    }
-
-    private fun updatePhotoIndicator(selectedPosition: Int) {
-        photoIndicatorDots.forEachIndexed { index, dot ->
-            val selected = index == selectedPosition
-            val size = dpToPx(if (selected) 8 else 6)
-
-            val params = dot.layoutParams as LinearLayout.LayoutParams
-            params.width = size
-            params.height = size
-            dot.layoutParams = params
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (selected) {
-                    R.drawable.dot_active
-                } else {
-                    R.drawable.dot_inactive
-                }
-            )
-        }
-    }
-
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
-    }
 
     private fun loadStart() {
         binding.loadingContainer.isVisible = true
