@@ -31,7 +31,6 @@ import coil.request.CachePolicy
 import com.beem.catmap.ui.components.SmartSpotImage
 import com.beem.catmap.ui.feedingspot.model.SpotReportUiModel
 import com.beem.catmap.ui.theme.CatMapColors
-import com.bumptech.glide.Glide
 import com.stfalcon.imageviewer.StfalconImageViewer
 
 

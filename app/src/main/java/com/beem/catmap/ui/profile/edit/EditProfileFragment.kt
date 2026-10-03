@@ -16,6 +16,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.ui.profile.common.ProfileViewModel
 import com.beem.catmap.R
@@ -23,13 +25,10 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.ProfileUpdateResult
 import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.bounceAndHaptic
-import com.beem.catmap.ui.manager.ProfileEvent
-import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.profile.common.UiState
-import com.bumptech.glide.Glide
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -64,10 +63,12 @@ class EditProfileFragment : Fragment() {
     private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             selectedImageUri = uri
-            Glide.with(this)
-                .load(uri)
-                .placeholder(R.drawable.kullanici)
-                .into(profilePhotoImageView)
+            profilePhotoImageView.load(uri) {
+                crossfade(true)
+                crossfade(150)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+            }
         }
     }
 
@@ -147,10 +148,14 @@ class EditProfileFragment : Fragment() {
                             val data = state.data.profile
 
                             if (selectedImageUri == null && !data.photoUrl.isNullOrBlank()) {
-                                Glide.with(this@EditProfileFragment)
-                                    .load(data.photoUrl)
-                                    .placeholder(R.drawable.kullanici)
-                                    .into(profilePhotoImageView)
+                                profilePhotoImageView.load(data.photoUrl) {
+                                    crossfade(true)
+                                    crossfade(200)
+                                    placeholder(R.drawable.kullanici)
+                                    error(R.drawable.kullanici)
+                                    memoryCachePolicy(CachePolicy.ENABLED)
+                                    diskCachePolicy(CachePolicy.ENABLED)
+                                }
                             }
 
                             if (editUsername.text.isNullOrBlank()) {
@@ -226,10 +231,14 @@ class EditProfileFragment : Fragment() {
         selectedImageUri = null
         val currentState = profileViewModel.fullProfileState.value
         if (currentState is UiState.Success && !currentState.data.profile.photoUrl.isNullOrBlank()) {
-            Glide.with(this)
-                .load(currentState.data.profile.photoUrl)
-                .placeholder(R.drawable.kullanici)
-                .into(profilePhotoImageView)
+            profilePhotoImageView.load(currentState.data.profile.photoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         } else {
             profilePhotoImageView.setImageResource(R.drawable.kullanici)
         }

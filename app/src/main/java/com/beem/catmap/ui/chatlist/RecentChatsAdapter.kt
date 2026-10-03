@@ -7,11 +7,12 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
 import com.beem.catmap.data.model.RecentChat
 import com.beem.catmap.databinding.SohbetKutusuBinding
 import com.beem.catmap.utils.toFormattedMessageTime
-import com.bumptech.glide.Glide
 
 class RecentChatsAdapter(
     private val onChatClick: (RecentChat) -> Unit
@@ -42,12 +43,14 @@ class RecentChatsAdapter(
                 binding.okunmamisSayac.isVisible = false
             }
 
-            // Profil Resmi Yükleme (Glide)
-            Glide.with(binding.root.context)
-                .load(chat.otherUserPhotoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(binding.kisiFoto)
+            binding.kisiFoto.load(chat.otherUserPhotoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
 
             binding.root.setOnClickListener {
                 Log.d("RecentChatDebug", "binding.root.setOnClickListener {")

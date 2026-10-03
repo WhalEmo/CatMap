@@ -6,8 +6,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.request.CachePolicy
+import coil.size.Scale
+import coil.size.Size
 import com.beem.catmap.R
-import com.bumptech.glide.Glide
 
 class MessagePhotoAdapter(
     private val photoList: List<String>
@@ -24,16 +27,16 @@ class MessagePhotoAdapter(
 
         holder.fotoSayaci.text = "${position + 1} / ${photoList.size}"
 
-        // 🚀 Yüksek Çözünürlüklü ve Pürüzsüz Yükleme
-        Glide.with(holder.itemView.context)
-            .asBitmap()
-            .load(url)
-            .override(com.bumptech.glide.request.target.Target.SIZE_ORIGINAL)
-            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
-            .fitCenter()
-            .placeholder(R.drawable.placeholder)
-            .error(R.drawable.placeholder)
-            .into(holder.imageView)
+        holder.imageView.load(url) {
+            crossfade(true)
+            crossfade(250)
+            size(Size.ORIGINAL)
+            scale(Scale.FIT)
+            placeholder(R.drawable.placeholder)
+            error(R.drawable.placeholder)
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+        }
     }
 
     override fun getItemCount(): Int = photoList.size

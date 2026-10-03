@@ -12,11 +12,12 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.request.CachePolicy
+import coil.transform.RoundedCornersTransformation
 import com.beem.catmap.R
 import com.beem.catmap.databinding.MesajBinding
 import com.beem.catmap.data.model.ChatMessage
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -186,6 +187,7 @@ class MessageAdapter(
             val sizeInDp = 140
             val density = context.resources.displayMetrics.density
             val sizeInPx = (sizeInDp * density).toInt()
+            val cornerRadiusPx = 12 * density
 
             photoUrls.forEach { url ->
                 val imageView = ImageView(context).apply {
@@ -198,12 +200,15 @@ class MessageAdapter(
                     setBackgroundResource(R.drawable.foto_background_ortak)
                 }
 
-                Glide.with(context)
-                    .load(url)
-                    .transform(RoundedCorners((12 * density).toInt()))
-                    .placeholder(R.drawable.placeholder)
-                    .error(R.drawable.placeholder)
-                    .into(imageView)
+                imageView.load(url) {
+                    crossfade(true)
+                    crossfade(200)
+                    transformations(RoundedCornersTransformation(cornerRadiusPx))
+                    placeholder(R.drawable.placeholder)
+                    error(R.drawable.placeholder)
+                    memoryCachePolicy(CachePolicy.ENABLED)
+                    diskCachePolicy(CachePolicy.ENABLED)
+                }
 
                 gridLayout.addView(imageView)
             }

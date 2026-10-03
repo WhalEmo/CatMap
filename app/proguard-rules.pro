@@ -47,16 +47,6 @@
 -keep class coil.** { *; }
 -dontwarn coil.**
 
-# Glide
--keep public class * implements com.bumptech.glide.module.GlideModule
--keep class * extends com.bumptech.glide.module.AppGlideModule { <init>(...); }
--keep class com.bumptech.glide.** { *; }
--dontwarn com.bumptech.glide.**
-
-# Picasso
--keep class com.squareup.picasso.** { *; }
--dontwarn com.squareup.picasso.**
-
 # ==========================================
 # 5. AĞ & ASYNC (OKHTTP, OKIO, COROUTINES)
 # ==========================================

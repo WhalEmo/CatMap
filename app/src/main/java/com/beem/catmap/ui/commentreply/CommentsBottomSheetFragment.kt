@@ -25,6 +25,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.ui.markersclick.CatDetailSheetFragment
 import com.beem.catmap.R
@@ -38,7 +40,6 @@ import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.report.ReportType
-import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -154,17 +155,23 @@ class CommentsBottomSheetFragment : BottomSheetDialogFragment() {
         val photoUrl = currentUserModel.photoUrl
 
         if (!photoUrl.isNullOrBlank()) {
-            Glide.with(this)
-                .load(photoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(sendCommentUserPp)
+            sendCommentUserPp.load(photoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
 
-            Glide.with(this)
-                .load(photoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(sendReplyUserPp)
+            sendReplyUserPp.load(photoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         } else {
             sendCommentUserPp.setImageResource(R.drawable.kullanici)
             sendReplyUserPp.setImageResource(R.drawable.kullanici)

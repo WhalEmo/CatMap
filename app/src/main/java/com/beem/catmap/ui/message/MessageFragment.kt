@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,7 +28,9 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
-import com.beem.catmap.maps.MapsActivity
+import coil.load
+import coil.request.CachePolicy
+import com.beem.catmap.main.MainActivity
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
@@ -112,7 +113,7 @@ class MessageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (requireActivity() is MapsActivity) {
+        if (requireActivity() is MainActivity) {
             requireActivity().findViewById<View>(R.id.bottom_navigation)?.fadeOut()
         }
 
@@ -403,11 +404,14 @@ class MessageFragment : Fragment() {
         }
 
         if (state.receiverPhotoUrl.isNotEmpty()) {
-            com.squareup.picasso.Picasso.get()
-                .load(state.receiverPhotoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(binding.kisiProfilFoto)
+            binding.kisiProfilFoto.load(state.receiverPhotoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         }
 
         binding.kisiDurumText.text = if (state.isOtherUserTyping) "Yazıyor..." else state.receiverStatus

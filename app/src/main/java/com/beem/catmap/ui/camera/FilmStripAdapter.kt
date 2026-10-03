@@ -5,8 +5,9 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.size.Scale
 import com.beem.catmap.databinding.ItemFilmStripBinding
-import com.bumptech.glide.Glide
 
 class FilmStripAdapter(
     private val onImageClick: (Uri) -> Unit,
@@ -50,10 +51,11 @@ class FilmStripAdapter(
     override fun onBindViewHolder(holder: StripViewHolder, position: Int) {
         val uri = imageUris[position]
 
-        Glide.with(holder.itemView.context)
-            .load(uri)
-            .centerCrop()
-            .into(holder.binding.ivThumb)
+        holder.binding.ivThumb.load(uri) {
+            crossfade(true)
+            crossfade(150)
+            scale(Scale.FILL)
+        }
 
         // Fotoğrafa tıklanınca tam ekran önizleme tetikle
         holder.binding.ivThumb.setOnClickListener { onImageClick(uri) }

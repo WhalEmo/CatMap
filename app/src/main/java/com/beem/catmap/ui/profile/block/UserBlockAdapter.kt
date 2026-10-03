@@ -8,9 +8,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.R
-import com.bumptech.glide.Glide
 import de.hdodenhof.circleimageview.CircleImageView
 import java.util.Objects
 class UserBlockAdapter(
@@ -48,13 +48,11 @@ class UserBlockAdapter(
         fun bind(userModel: UserModel, onUserClick: (String?) -> Unit) {
             username.text = userModel.username
 
-
-            Glide.with(itemView)
-                .load(userModel.photoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .centerCrop()
-                .into(photo)
+            photo.load(userModel.photoUrl) {
+                crossfade(true)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+            }
 
 
 

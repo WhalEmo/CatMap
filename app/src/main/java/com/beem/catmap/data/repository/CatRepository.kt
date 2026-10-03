@@ -1,6 +1,6 @@
 package com.beem.catmap.data.repository
 
-import com.beem.catmap.data.local.CacheHelperPostLike
+import com.beem.catmap.data.local.CacheHelperPostLikeV2
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +30,7 @@ class CatRepository {
 
             userRef.update("begendigiGonderiler", FieldValue.arrayUnion(catId)).await()
             catRef.update("begeniSayisi", FieldValue.increment(1)).await()
-            CacheHelperPostLike.getInstance().begen(catId)
+            CacheHelperPostLikeV2.like(catId)
             true
         } catch (e: Exception) {
             false
@@ -44,7 +44,7 @@ class CatRepository {
 
             userRef.update("begendigiGonderiler", FieldValue.arrayRemove(catId)).await()
             catRef.update("begeniSayisi", FieldValue.increment(-1)).await()
-            CacheHelperPostLike.getInstance().begeniKaldir(catId)
+            CacheHelperPostLikeV2.unLike(catId)
             true
         } catch (e: Exception) {
             false

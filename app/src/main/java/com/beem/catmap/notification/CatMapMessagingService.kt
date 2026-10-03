@@ -20,7 +20,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.transform.CircleCropTransformation
 import com.beem.catmap.R
-import com.beem.catmap.maps.MapsActivity
+import com.beem.catmap.main.MainActivity
 import com.beem.catmap.notification.managers.FcmTokenManager
 import com.beem.catmap.notification.managers.NotificationChannelManager
 import com.beem.catmap.notification.models.NotificationType
@@ -131,7 +131,7 @@ class CatMapMessagingService : FirebaseMessagingService() {
             ?: ContextCompat.getDrawable(this, R.drawable.ic_cat)?.toBitmap(96, 96)
             ?: createBitmap(96, 96)
 
-        val intent = Intent(this, MapsActivity::class.java).apply {
+        val intent = Intent(this, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = "catmap://chat/${chat.senderId}".toUri()
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -211,7 +211,7 @@ class CatMapMessagingService : FirebaseMessagingService() {
 
         // Derin link rotası varsa MapsActivity'ye yönlendir, yoksa varsayılan başlatıcıyı aç
         val intent = if (!broadcast.targetRoute.isNullOrEmpty()) {
-            Intent(this, MapsActivity::class.java).apply {
+            Intent(this, MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 data = "catmap://route/${broadcast.targetRoute}".toUri()
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -219,7 +219,7 @@ class CatMapMessagingService : FirebaseMessagingService() {
         } else {
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            } ?: Intent(this, MapsActivity::class.java)
+            } ?: Intent(this, MainActivity::class.java)
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -265,7 +265,7 @@ class CatMapMessagingService : FirebaseMessagingService() {
         val notificationId = follow.senderId.hashCode()
 
         // Tıklanınca MapsActivity açılır ve catmap://profile/{uid} rotasına yönlenir
-        val intent = Intent(this, MapsActivity::class.java).apply {
+        val intent = Intent(this, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = "catmap://profile/${follow.senderId}".toUri()
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP

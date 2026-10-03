@@ -1,6 +1,5 @@
-package com.beem.catmap.maps;
-import android.Manifest;
-import android.app.ComponentCaller;
+package com.beem.catmap.main;
+
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,21 +8,15 @@ import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
-import android.os.SystemClock;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -31,9 +24,11 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LifecycleOwnerKt;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.beem.catmap.data.local.UserSession;
+import com.beem.catmap.data.repository.UserRepository;
 import com.beem.catmap.engine.location.LocationEngine;
 import com.beem.catmap.ui.badge.BadgeFragment;
 import com.beem.catmap.ui.banned.BannedFragment;
@@ -42,8 +37,6 @@ import com.beem.catmap.ui.main.BanSniperViewModel;
 import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
-import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment;
-import com.beem.catmap.data.local.CacheHelperPostLike;
 
 
 import com.beem.catmap.R;
@@ -72,35 +65,23 @@ import com.beem.catmap.ui.profile_v2.edit.EditProfileFragment;
 import com.beem.catmap.ui.profile.follow.fragment.FollowFragment;
 import com.beem.catmap.ui.profile.post.PostDetailFragment;
 import com.beem.catmap.utils.NetworkObserver;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.firestore.PersistentCacheSettings;
 
-import java.util.HashSet;
-import java.util.List;
 
 import kotlin.Unit;
 
-public class MapsActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
     private ActivityMapsBinding binding;
     private ChatNotificationViewModel chatNotificationViewModel;
     private BanSniperViewModel banSniperViewModel;
     private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private NetworkObserver networkObserver;
-
-    private long sonTiklamaZamani = 0;
-    public Marker sonTiklananMarker;
-
-    private String gosterilecekKediID;
-    private FrameLayout rightSlidingPanel;
-    private ImageButton btnClose;
-    private int screenWidth;
 
     private CatMapNavigationEngine navigationEngine;
     private CatMapNavigationRenderer navigationRenderer;
@@ -190,15 +171,11 @@ public class MapsActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         Window window = getWindow();
-        window.setStatusBarColor(ContextCompat.getColor(this, R.color.catmap_background));
-
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
-        if (controller != null) {
-            controller.setAppearanceLightStatusBars(true);
-        }
+        controller.setAppearanceLightStatusBars(true);
 
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
+                .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
                 .build();
         db.setFirestoreSettings(settings);
 
@@ -248,13 +225,6 @@ public class MapsActivity extends AppCompatActivity {
 
         SmartNavigationEngine.registerActivityCallbacks(
                 () -> {
-                    if (rightSlidingPanel != null && rightSlidingPanel.getTranslationX() == 0) {
-                        rightSlidingPanel.animate()
-                                .translationX(screenWidth)
-                                .setDuration(300)
-                                .start();
-                        return true;
-                    }
                     return false;
                 },
                 () -> {
@@ -266,7 +236,8 @@ public class MapsActivity extends AppCompatActivity {
         if (currentUserManager.isUserLoggedIn()) {
             String userId = currentUserManager.getCurrentUserId();
             FirebaseCrashlytics.getInstance().setUserId(userId);
-            BegenileriCek();
+
+            UserRepository.getInstance().syncUserLikesAsync(userId, LifecycleOwnerKt.getLifecycleScope(this));
 
             if (UserSession.INSTANCE.isBanned()) {
                 SmartNavigationEngine.init(navigationEngine, Screen.BANNED);
@@ -279,93 +250,14 @@ public class MapsActivity extends AppCompatActivity {
 
         uiMessageManagerObserver();
 
-        rightSlidingPanel = findViewById(R.id.rightSlidingPanel);
-        btnClose = findViewById(R.id.btnClosePanel);
-        TextView tvCatFactSliding = findViewById(R.id.tvCatFactSliding);
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenWidth = displayMetrics.widthPixels;
-
-        AdView adView = findViewById(R.id.adView);
-
-        if (btnClose != null) {
-            btnClose.setOnClickListener(v -> rightSlidingPanel.animate()
-                    .translationX(screenWidth)
-                    .setDuration(300)
-                    .withEndAction(() -> {
-                        if (tvCatFactSliding != null) tvCatFactSliding.setText("");
-                    })
-                    .start());
-        }
-
-        konumizni();
-
-        gosterilecekKediID = getIntent().getStringExtra("kediId");
-        if (gosterilecekKediID != null && !gosterilecekKediID.isEmpty()) {
-            yorumlarBottomSheetGoster(gosterilecekKediID);
-        }
-
-        if (adView != null) {
-            AdRequest adRequest = new AdRequest.Builder().build();
-            adView.loadAd(adRequest);
-        }
-
         binding.getRoot().post(() -> {
             handleChatNotificationIntent(getIntent());
         });
 
     }
 
-
-    public void yorumlarBottomSheetGoster(String catId) {
-        if (SystemClock.elapsedRealtime() - sonTiklamaZamani < 600) {
-            return;
-        }
-        sonTiklamaZamani = SystemClock.elapsedRealtime();
-        Fragment existing = getSupportFragmentManager().findFragmentByTag(CommentsBottomSheetFragment.TAG);
-        if (existing != null && (existing.isAdded() || existing.isVisible())) {
-            return;
-        }
-
-        CommentsBottomSheetFragment bottomSheet = CommentsBottomSheetFragment.newInstance(catId);
-        bottomSheet.show(getSupportFragmentManager(), CommentsBottomSheetFragment.TAG);
-    }
-
-    private void BegenileriCek() {
-        String userId = currentUserManager.getCurrentUserId();
-        if (userId == null || userId.isEmpty()) return;
-
-        db.collection("users")
-                .document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (isFinishing() || isDestroyed()) return;
-
-                    if (documentSnapshot.exists()) {
-                        List<String> liste = (List<String>) documentSnapshot.get("begendigiGonderiler");
-                        if (liste != null) {
-                            CacheHelperPostLike.getInstance().setBegeniList(new HashSet<>(liste));
-                        } else {
-                            CacheHelperPostLike.getInstance().setBegeniList(new HashSet<>());
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("BegeniYukleme", "Beğeniler çekilemedi: " + e.getMessage()));
-    }
-
-    private void konumizni() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    1001);
-        }
-    }
-
-
     @Override
-    protected void onNewIntent(Intent intent) {
+    protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
         handleChatNotificationIntent(intent);
@@ -422,8 +314,6 @@ public class MapsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d("ActivityLifecycle", "⚡ onResume: Activity etkileşime açık, ön planda!");
-        if (currentUserManager.isUserLoggedIn()) {
-        }
     }
 
     @Override
@@ -443,24 +333,24 @@ public class MapsActivity extends AppCompatActivity {
             if (message != null) {
                 String msgText = "";
                 int iconRes = R.drawable.ic_check;
-                int strokeColor = getResources().getColor(R.color.catmap_success);
+                int strokeColor = ContextCompat.getColor(this, R.color.catmap_success);
                 int durationMs = 3500;
 
                 if (message instanceof UiMessageState.Success) {
                     msgText = ((UiMessageState.Success) message).getMessage();
                     durationMs = ((UiMessageState.Success) message).getDurationMs();
                     iconRes = R.drawable.ic_check;
-                    strokeColor = getResources().getColor(R.color.catmap_success);
+                    strokeColor = ContextCompat.getColor(this, R.color.catmap_success);
                 } else if (message instanceof UiMessageState.Error) {
                     msgText = ((UiMessageState.Error) message).getMessage();
                     durationMs = 5000;
                     iconRes = R.drawable.ic_close;
-                    strokeColor = getResources().getColor(R.color.catmap_error);
+                    strokeColor = ContextCompat.getColor(this, R.color.catmap_error);
                 } else if (message instanceof UiMessageState.Info) {
                     msgText = ((UiMessageState.Info) message).getMessage();
                     durationMs = 4000;
                     iconRes = R.drawable.ic_gallery;
-                    strokeColor = getResources().getColor(R.color.catmap_text_muted);
+                    strokeColor = ContextCompat.getColor(this, R.color.catmap_text_muted);
                 }
 
                 CatMapToastEngine.show(this, msgText, iconRes, strokeColor, durationMs);
@@ -518,7 +408,7 @@ public class MapsActivity extends AppCompatActivity {
 
             if (isVisible) {
                 badge.clearNumber(); // Sayıyı temizle, sadece dot moduna zorla
-                badge.setBackgroundColor(ContextCompat.getColor(MapsActivity.this, R.color.catmap_error));
+                badge.setBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.catmap_error));
                 badge.setBadgeGravity(BadgeDrawable.TOP_END);
 
                 // İkonun tam sağ üst köşesine oturtma ofsetleri (piksel cinsinden)
@@ -527,24 +417,6 @@ public class MapsActivity extends AppCompatActivity {
                 badge.setVerticalOffset(offsetPx);
             }
             return Unit.INSTANCE;
-        });
-    }
-
-    private void setupBanSniperObserverv1() {
-        banSniperViewModel.isBanned().observe(this, isBanned -> {
-            if (isBanned) {
-                if (!UserSession.INSTANCE.isBanned()) {
-                    UserSession.INSTANCE.setBanStatus(true);
-
-                    SmartNavigationEngine.resetEngineForLogout(Screen.BANNED, null, null);
-                }
-            } else {
-                if (UserSession.INSTANCE.isBanned()) {
-                    UserSession.INSTANCE.setBanStatus(false);
-
-                    SmartNavigationEngine.resetEngineForLogout(Screen.MAP, null, null);
-                }
-            }
         });
     }
 

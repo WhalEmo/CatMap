@@ -25,6 +25,8 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.ui.profile.post.PostAdapter
 import com.beem.catmap.R
@@ -56,7 +58,6 @@ import com.beem.catmap.ui.navigation.handleBackPressWithEngine
 import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.ui.viewmodel.UserBlockViewModel
 import com.beem.catmap.utils.withPossessiveSuffix
-import com.bumptech.glide.Glide
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.imageview.ShapeableImageView
@@ -653,12 +654,14 @@ class ProfileFragment : Fragment() {
         swipeRefreshLayout.isRefreshing = false
         usernameBlock.text = userModel?.username
 
-        Glide.with(requireContext())
-            .load(userModel?.photoUrl)
-            .placeholder(R.drawable.kullanici)
-            .error(R.drawable.kullanici)
-            .into(profilePhotoBlock)
-
+        profilePhotoBlock.load(userModel?.photoUrl) {
+            crossfade(true)
+            crossfade(200)
+            placeholder(R.drawable.kullanici)
+            error(R.drawable.kullanici)
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+        }
 
     }
     private fun setupBlockedByMeUi(userModel: UserModel?) {
@@ -675,11 +678,14 @@ class ProfileFragment : Fragment() {
             tvAd.text = it.name.orEmpty().trim()
             bioTextView.text = it.bio.orEmpty()
 
-            Glide.with(requireContext())
-                .load(it.photoUrl)
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(profilePhotoImageView)
+            profilePhotoImageView.load(it.photoUrl) {
+                crossfade(true)
+                crossfade(200)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         }
 
         recyclerView.visibility = View.GONE
@@ -883,11 +889,14 @@ class ProfileFragment : Fragment() {
 
         postCountTextView.text = (userModel.postCount ?: 0L).toString()
 
-        Glide.with(requireContext())
-            .load(userModel.photoUrl)
-            .placeholder(R.drawable.kullanici)
-            .error(R.drawable.kullanici)
-            .into(profilePhotoImageView)
+        profilePhotoImageView.load(userModel.photoUrl) {
+            crossfade(true)
+            crossfade(200)
+            placeholder(R.drawable.kullanici)
+            error(R.drawable.kullanici)
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+        }
             
         bindEquippedBadge(
             userModel.equippedBadge

@@ -1,6 +1,7 @@
 package com.beem.catmap.data.repository
 
 import android.util.Log
+import com.beem.catmap.data.local.CacheHelperPostLikeV2
 import com.beem.catmap.data.model.PresenceAndBlockResult
 import com.beem.catmap.data.model.PresenceState
 import com.beem.catmap.ui.message.models.BlockState
@@ -10,6 +11,10 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -17,10 +22,26 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class UserRepository(
     private val realDb: FirebaseDatabase = FirebaseDatabase.getInstance()
 ) {
+
+    companion object {
+        @Volatile
+        private var INSTANCE: UserRepository? = null
+
+        @JvmStatic
+        fun getInstance(): UserRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: UserRepository().also { INSTANCE = it }
+            }
+        }
+    }
+
     private val durumlarRef = realDb.getReference("durumlar")
     private val blockRelationsRef = realDb.getReference("block_relations")
 
@@ -104,6 +125,32 @@ class UserRepository(
                     )
                 }
             }
+        }
+    }
+
+    suspend fun syncUserLikes(userId: String) = withContext(Dispatchers.IO) {
+        if (userId.isBlank()) return@withContext
+
+        try {
+            val documentSnapshot = Firebase.firestore
+                .collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (documentSnapshot.exists()) {
+                val rawList = documentSnapshot.get("begendigiGonderiler") as? List<*>
+                val stringSet = rawList?.filterIsInstance<String>()?.toSet() ?: emptySet()
+                CacheHelperPostLikeV2.setLikesList(stringSet)
+            }
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Kullanıcı beğenileri senkronize edilemedi: ${e.message}", e)
+        }
+    }
+
+    fun syncUserLikesAsync(userId: String, scope: CoroutineScope) {
+        scope.launch(Dispatchers.IO) {
+            syncUserLikes(userId)
         }
     }
 }

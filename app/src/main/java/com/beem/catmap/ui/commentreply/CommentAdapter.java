@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,11 +20,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.beem.catmap.R;
 import com.beem.catmap.data.model.CommentModel;
 import com.beem.catmap.data.model.ReplyModel;
-import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import coil.Coil;
+import coil.request.CachePolicy;
+import coil.request.ImageRequest;
 
 public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, RecyclerView.ViewHolder> {
     public static final int TYPE_COMMENT = 0;
@@ -202,14 +204,18 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
 
 
         if (yorum.getProfileImage() != null && !yorum.getProfileImage().isEmpty()) {
-            Glide.with(context)
-                    .load(yorum.getProfileImage())
-                    .centerCrop()
+            ImageRequest request = new ImageRequest.Builder(context)
+                    .data(yorum.getProfileImage())
+                    .target(holder.YorumFotoImageView)
+                    .crossfade(true)
+                    .crossfade(200)
                     .placeholder(R.drawable.kullanici)
                     .error(R.drawable.kullanici)
-                    .into(holder.YorumFotoImageView);
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build();
+            Coil.imageLoader(context).enqueue(request);
         } else {
-            Glide.with(context).clear(holder.YorumFotoImageView);
             holder.YorumFotoImageView.setImageResource(R.drawable.kullanici);
         }
 
@@ -280,14 +286,18 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
         holder.yanitTarihiText.setText( getFormattedDate(yanit.getDate()));
 
         if (yanit.getProfileImage() != null && !yanit.getProfileImage().isEmpty()) {
-            Glide.with(context)
-                    .load(yanit.getProfileImage())
-                    .centerCrop()
+            ImageRequest request = new ImageRequest.Builder(context)
+                    .data(yanit.getProfileImage())
+                    .target(holder.YorumFotoImageViewYnt)
+                    .crossfade(true)
+                    .crossfade(200)
                     .placeholder(R.drawable.kullanici)
                     .error(R.drawable.kullanici)
-                    .into(holder.YorumFotoImageViewYnt);
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build();
+            Coil.imageLoader(context).enqueue(request);
         } else {
-            Glide.with(context).clear(holder.YorumFotoImageViewYnt);
             holder.YorumFotoImageViewYnt.setImageResource(R.drawable.kullanici);
         }
 

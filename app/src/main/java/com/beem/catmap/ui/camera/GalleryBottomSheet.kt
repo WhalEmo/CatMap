@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.databinding.BottomSheetGalleryBinding
 import com.beem.catmap.databinding.ItemGalleryImageBinding
 import com.beem.catmap.ui.manager.image.ImageUploadManager
-import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.core.net.toUri
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -23,6 +22,9 @@ import com.beem.catmap.ui.manager.UiMessageState
 import androidx.core.view.isVisible
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
+import coil.load
+import coil.request.CachePolicy
+import coil.size.Scale
 import com.beem.catmap.ui.manager.image.UploadSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -376,10 +378,14 @@ class GalleryBottomSheet : BottomSheetDialogFragment() {
 
             var isSelected = selectedUris.contains(uriString)
 
-            Glide.with(holder.itemView.context)
-                .load(uriString.toUri())
-                .centerCrop()
-                .into(holder.itemBinding.imageViewItem)
+
+            holder.itemBinding.imageViewItem.load(uriString.toUri()) {
+                crossfade(true)
+                crossfade(100)
+                scale(Scale.FILL)
+                diskCachePolicy(CachePolicy.DISABLED)
+                memoryCachePolicy(CachePolicy.ENABLED)
+            }
 
             val visibilityState = if (isSelected) View.VISIBLE else View.GONE
             holder.itemBinding.viewBorder.visibility = visibilityState

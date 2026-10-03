@@ -35,11 +35,12 @@ import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCameraBinding
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
-import com.bumptech.glide.Glide
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.fragment.app.DialogFragment
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.ui.manager.image.UploadSession
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
@@ -326,7 +327,12 @@ class CameraFragment : DialogFragment() {
 
                 if (state.previewedImage != null) {
                     binding.ivInFragmentPreview.visibility = View.VISIBLE
-                    Glide.with(this).load(state.previewedImage.uri).into(binding.ivInFragmentPreview)
+                    binding.ivInFragmentPreview.load(state.previewedImage.uri) {
+                        crossfade(true)
+                        crossfade(150)
+                        diskCachePolicy(CachePolicy.DISABLED)
+                        memoryCachePolicy(CachePolicy.ENABLED)
+                    }
                     binding.ivInFragmentPreview.alpha = 1f
 
                     binding.layoutPreviewMenu.visibility = View.VISIBLE

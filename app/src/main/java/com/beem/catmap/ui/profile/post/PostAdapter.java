@@ -12,7 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.R;
 import com.beem.catmap.data.model.Post;
-import com.squareup.picasso.Picasso;
+
+import coil.Coil;
+import coil.request.CachePolicy;
+import coil.request.ImageRequest;
+import coil.size.Scale;
 
 public class PostAdapter extends ListAdapter<Post, PostAdapter.PostViewHolder> {
     private final OnPostClickListener listener;
@@ -65,14 +69,18 @@ public class PostAdapter extends ListAdapter<Post, PostAdapter.PostViewHolder> {
                 firstPhotoUrl = post.getPhotoUrlList().get(0);
             }
             if(firstPhotoUrl != null && !firstPhotoUrl.isEmpty()){
-                Picasso.get()
-                        .load(firstPhotoUrl)
-                        .fit()
-                        .centerCrop()
+                ImageRequest request = new ImageRequest.Builder(itemView.getContext())
+                        .data(firstPhotoUrl)
+                        .target(postImage)
+                        .scale(Scale.FILL)
+                        .crossfade(true)
+                        .crossfade(150)
                         .placeholder(R.drawable.kullanici)
                         .error(R.drawable.kullanici)
-                        .into(postImage);
-
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build();
+                Coil.imageLoader(itemView.getContext()).enqueue(request);
             }else{
                 postImage.setImageResource(R.drawable.kullanici);
             }

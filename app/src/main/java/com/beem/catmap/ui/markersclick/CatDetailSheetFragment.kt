@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.widget.LinearLayout
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -15,7 +14,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.viewpager2.widget.ViewPager2
 import coil.load
 import coil.request.CachePolicy
 import com.beem.catmap.R
@@ -35,7 +33,6 @@ import com.beem.catmap.ui.markersclick.components.CatPhotoSlider
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.utils.toFirebaseTimestamp
-import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -217,12 +214,11 @@ class CatDetailSheetFragment : BottomSheetDialogFragment() {
             viewModel.ownerInfo.collectLatest { ownerData ->
                 ownerData?.let { (username, photoUrl) ->
                     binding.yukleyenAdiText.text = "@$username"
-                    Glide.with(this@CatDetailSheetFragment)
-                        .load(photoUrl)
-                        .placeholder(R.drawable.kullanici)
-                        .dontAnimate()
-                        .into(binding.YukprofilFotoImageView)
-
+                    binding.YukprofilFotoImageView.load(photoUrl) {
+                        crossfade(true)
+                        placeholder(R.drawable.kullanici)
+                        error(R.drawable.kullanici)
+                    }
                     contentShow()
                 }
             }

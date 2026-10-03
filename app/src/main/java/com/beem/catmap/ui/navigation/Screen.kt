@@ -1,6 +1,6 @@
 package com.beem.catmap.ui.navigation
 
-import android.support.annotation.IdRes
+import androidx.annotation.IdRes
 import com.beem.catmap.R
 
 enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, val isNode: Boolean = false, val isExit: Boolean = false) {

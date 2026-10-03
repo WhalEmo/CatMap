@@ -128,10 +128,6 @@ dependencies {
 
     implementation(libs.firebase.messaging)
 
-    implementation(libs.picasso)
-
-
-
 
     implementation(libs.camera.core)
     implementation(libs.camera.camera2)
@@ -140,8 +136,6 @@ dependencies {
 
     implementation("com.firebase:geofire-android-common:3.2.0")
 
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
 

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
@@ -17,7 +16,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
 import com.beem.catmap.WarningMessage
 import com.beem.catmap.data.local.UserSession
@@ -34,7 +34,9 @@ import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
+import com.beem.catmap.ui.profile.post.components.PostPhotoSlider
 import com.beem.catmap.ui.report.ReportType
+import com.stfalcon.imageviewer.StfalconImageViewer
 import kotlinx.coroutines.launch
 
 class PostDetailFragment : Fragment() {
@@ -52,8 +54,6 @@ class PostDetailFragment : Fragment() {
     private var catId: String? = null
     private var loaderId: String? = null
 
-    private val photoIndicatorDots: MutableList<View?> = ArrayList()
-    private var photoPageChangeCallback: OnPageChangeCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,6 +151,7 @@ class PostDetailFragment : Fragment() {
         binding.GonderiMenu.setOnClickListener { v ->
             showPostOptionMenu(v)
         }
+
     }
 
 
@@ -190,22 +191,30 @@ class PostDetailFragment : Fragment() {
         }
 
         val fotoListesi = ArrayList(post.photoUrlList ?: emptyList())
-        binding.fotoPager.adapter = PhotoAdapter(fotoListesi)
 
-        setupPhotoIndicator(fotoListesi.size)
-
-        // DÜZELTİLDİ: Eski callback varsa temizlenir
-        if (photoPageChangeCallback != null) {
-            binding.fotoPager.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
+        binding.postPhotoPagerCompose.setContent {
+            PostPhotoSlider(
+                photos = fotoListesi,
+                onPhotoClick = { position ->
+                    openFullScreenViewer(fotoListesi, position)
+                }
+            )
         }
+    }
 
-        photoPageChangeCallback = object : OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                updatePhotoIndicator(position)
+    private fun openFullScreenViewer(urls: List<String>, startPosition: Int) {
+        if (urls.isEmpty()) return
+        StfalconImageViewer.Builder<String>(requireContext(), urls) { imageView, url ->
+            imageView.load(url) {
+                crossfade(true)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
             }
         }
-        binding.fotoPager.registerOnPageChangeCallback(photoPageChangeCallback!!)
+            .withStartPosition(startPosition)
+            .withHiddenStatusBar(false)
+            .allowSwipeToDismiss(true)
+            .show()
     }
 
     private fun showPostOptionMenu(anchorView: View) {
@@ -298,67 +307,8 @@ class PostDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (photoPageChangeCallback != null) {
-            _binding?.fotoPager?.unregisterOnPageChangeCallback(photoPageChangeCallback!!)
-        }
-
-        photoPageChangeCallback = null
-        photoIndicatorDots.clear()
         _binding = null
 
         super.onDestroyView()
-    }
-
-    private fun setupPhotoIndicator(photoCount: Int) {
-        binding.fotoDotsContainer.removeAllViews()
-        photoIndicatorDots.clear()
-
-        if (photoCount <= 1) {
-            binding.fotoIndicatorCapsule.visibility = View.GONE
-            return
-        }
-
-        binding.fotoIndicatorCapsule.visibility = View.VISIBLE
-
-        for (i in 0 until photoCount) {
-            val dot = View(requireContext())
-            val isSelected = i == 0
-            val dotSize = dpToPx(if (isSelected) 8 else 6)
-            val dotMargin = dpToPx(3)
-
-            val layoutParams = LinearLayout.LayoutParams(dotSize, dotSize)
-            layoutParams.setMargins(dotMargin, 0, dotMargin, 0)
-            dot.layoutParams = layoutParams
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (isSelected) R.drawable.dot_active else R.drawable.dot_inactive
-            )
-
-            binding.fotoDotsContainer.addView(dot)
-            photoIndicatorDots.add(dot)
-        }
-    }
-
-    private fun updatePhotoIndicator(selectedPosition: Int) {
-        for (i in photoIndicatorDots.indices) {
-            val dot: View = photoIndicatorDots[i] ?: continue
-            val isSelected = i == selectedPosition
-            val dotSize = dpToPx(if (isSelected) 8 else 6)
-
-            val layoutParams = dot.layoutParams as LinearLayout.LayoutParams
-            layoutParams.width = dotSize
-            layoutParams.height = dotSize
-            dot.layoutParams = layoutParams
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (isSelected) R.drawable.dot_active else R.drawable.dot_inactive
-            )
-        }
-    }
-
-    private fun dpToPx(dp: Int): Int {
-        return Math.round(dp * resources.displayMetrics.density)
     }
 }

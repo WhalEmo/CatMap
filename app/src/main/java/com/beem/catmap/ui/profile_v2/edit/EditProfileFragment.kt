@@ -17,13 +17,14 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
 import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.bounceAndHaptic
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
-import com.bumptech.glide.Glide
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -57,10 +58,12 @@ class EditProfileFragment : Fragment() {
     private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             viewModel.onImageSelected(uri)
-            Glide.with(this)
-                .load(uri)
-                .placeholder(R.drawable.kullanici)
-                .into(profilePhotoImageView)
+            profilePhotoImageView.load(uri) {
+                crossfade(true)
+                crossfade(150)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+            }
         }
     }
 
@@ -149,10 +152,14 @@ class EditProfileFragment : Fragment() {
                             editBio.setText(state.bio)
 
                             if (state.currentPhotoUrl.isNotBlank()) {
-                                Glide.with(this@EditProfileFragment)
-                                    .load(state.currentPhotoUrl)
-                                    .placeholder(R.drawable.kullanici)
-                                    .into(profilePhotoImageView)
+                                profilePhotoImageView.load(state.currentPhotoUrl) {
+                                    crossfade(true)
+                                    crossfade(200)
+                                    placeholder(R.drawable.kullanici)
+                                    error(R.drawable.kullanici)
+                                    memoryCachePolicy(CachePolicy.ENABLED)
+                                    diskCachePolicy(CachePolicy.ENABLED)
+                                }
                             }
                         }
 

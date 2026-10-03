@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.model.Kediler
-import com.beem.catmap.data.local.CacheHelperPostLike
+import com.beem.catmap.data.local.CacheHelperPostLikeV2
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
 import com.beem.catmap.data.repository.PostRepository
@@ -56,7 +56,7 @@ class CatDetailViewModel(application: Application) : AndroidViewModel(applicatio
     fun setCatData(cat: Kediler) {
         _selectedCat.value = cat
 
-        val liked = CacheHelperPostLike.getInstance().begenmisMi(cat.id)
+        val liked = CacheHelperPostLikeV2.isLiked(cat.id)
         _isLiked.value = liked
 
         fetchLikeCount(cat.id)

@@ -5,10 +5,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.request.CachePolicy
+import coil.size.Scale
 import com.beem.catmap.databinding.ItemUploadCatPhotoBinding
 import com.beem.catmap.ui.manager.image.ImageUploadManager
 import com.beem.catmap.ui.manager.image.UploadSession
-import com.bumptech.glide.Glide
 
 class UploadPhotosAdapter : RecyclerView.Adapter<UploadPhotosAdapter.PhotoViewHolder>() {
 
@@ -41,12 +43,13 @@ class UploadPhotosAdapter : RecyclerView.Adapter<UploadPhotosAdapter.PhotoViewHo
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(uri: Uri) {
-            Glide.with(binding.ivCapturedPhoto.context)
-                .load(uri)
-                .centerCrop()
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
-                .skipMemoryCache(false)
-                .into(binding.ivCapturedPhoto)
+            binding.ivCapturedPhoto.load(uri) {
+                crossfade(true)
+                crossfade(150)
+                scale(Scale.FILL)
+                diskCachePolicy(CachePolicy.DISABLED)
+                memoryCachePolicy(CachePolicy.ENABLED)
+            }
 
             binding.btnRemovePhoto.setOnClickListener {
                 ImageUploadManager.removeImage(UploadSession.GENERAL, uri)

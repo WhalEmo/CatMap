@@ -2,16 +2,13 @@ package com.beem.catmap.ui.profile.common
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.drawable.Drawable
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 
 object ProfilePreviewHelper {
 
@@ -36,23 +33,14 @@ object ProfilePreviewHelper {
         val imgExpanded = previewDialog.findViewById<ImageView>(R.id.imgExpandedProfile)
         val container = previewDialog.findViewById<View>(R.id.previewContainer)
 
-        Glide.with(context)
-            .load(photoUrl)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .placeholder(R.drawable.kullanici)
-            .error(R.drawable.kullanici)
-            .into(object : CustomTarget<Drawable>() {
-                override fun onResourceReady(
-                    resource: Drawable,
-                    transition: Transition<in Drawable>?
-                ) {
-                    imgExpanded?.setImageDrawable(resource)
-                }
-
-                override fun onLoadCleared(placeholder: Drawable?) {
-                    imgExpanded?.setImageDrawable(placeholder)
-                }
-            })
+        imgExpanded?.load(photoUrl) {
+            crossfade(true)
+            crossfade(200)
+            placeholder(R.drawable.kullanici)
+            error(R.drawable.kullanici)
+            memoryCachePolicy(CachePolicy.ENABLED)
+            diskCachePolicy(CachePolicy.ENABLED)
+        }
 
         container?.setOnClickListener {
             previewDialog.dismiss()

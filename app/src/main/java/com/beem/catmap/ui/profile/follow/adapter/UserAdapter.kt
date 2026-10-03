@@ -9,9 +9,11 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
+import coil.request.CachePolicy
+import coil.size.Scale
 import com.beem.catmap.R
 import com.beem.catmap.data.model.UserProfileData
-import com.bumptech.glide.Glide
 
 class UserAdapter(
     private val listType: ListType,
@@ -26,13 +28,15 @@ class UserAdapter(
         fun bind(user: UserProfileData, listType: ListType, onUserClick: (String?) -> Unit) {
             recyclerUsername.text = user.username
 
-
-            Glide.with(itemView.context)
-                .load(user.photoUrl)
-                .centerCrop()
-                .placeholder(R.drawable.kullanici)
-                .error(R.drawable.kullanici)
-                .into(recyclerFotoImageView)
+            recyclerFotoImageView.load(user.photoUrl) {
+                crossfade(true)
+                crossfade(200)
+                scale(Scale.FILL)
+                placeholder(R.drawable.kullanici)
+                error(R.drawable.kullanici)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
 
             when (listType) {
                 ListType.FOLLOWING -> {
