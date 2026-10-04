@@ -59,6 +59,7 @@ import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.profile_v2.myprofile.MyProfileFragment;
 import com.beem.catmap.ui.profile_v2.otherprofile.OtherProfileFragment;
+import com.beem.catmap.ui.settings.ProfileSettingsFragment;
 import com.beem.catmap.ui.spotoperation.SpotOperationFragment;
 import com.beem.catmap.ui.upload.UploadFragment;
 import com.beem.catmap.ui.profile_v2.edit.EditProfileFragment;
@@ -116,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 case SPOT_OPERATION -> new SpotOperationFragment();
                 case BADGE -> new BadgeFragment();
                 case BANNED -> new BannedFragment();
+                case SETTINGS -> new ProfileSettingsFragment();
             };
         }
     };

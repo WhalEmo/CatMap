@@ -21,7 +21,8 @@ enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, v
     ONBOARDING("ONBOARDING", -1, null),
     SPOT_OPERATION("OPARETION",-1, null),
     BADGE("BADGE", -1, null),
-    BANNED("BANNED", -1, null, isExit = true);
+    BANNED("BANNED", -1, null, isExit = true),
+    SETTINGS("SETTINGS", -1, null);
 
     companion object {
         fun fromTag(tag: String?): Screen = entries.find { it.tag == tag } ?: MAP

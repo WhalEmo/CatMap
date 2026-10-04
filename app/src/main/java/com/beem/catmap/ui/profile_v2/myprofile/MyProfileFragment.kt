@@ -66,7 +66,7 @@ class MyProfileFragment : Fragment() {
                             viewModel.loadPosts(isRefresh = true)
                         },
                         onBackClick = { SmartNavigationEngine.navigateBack() },
-                        onMenuClick = { showMyProfileOptionMenu(it) },
+                        onMenuClick = { navigateSettings() },
                         onEditProfileClick = { SmartNavigationEngine.navigateTo(Screen.EDIT_PROFILE) },
                         onFollowersClick = { navigateToFollowList(0) },
                         onFollowingClick = { navigateToFollowList(1) },
@@ -110,6 +110,10 @@ class MyProfileFragment : Fragment() {
             "yukleyenId" to UserSession.userId.orEmpty()
         )
         SmartNavigationEngine.navigateTo(Screen.POST, args, post.catId)
+    }
+
+    private fun navigateSettings() {
+        SmartNavigationEngine.navigateTo(Screen.SETTINGS)
     }
 
     private fun showMyProfileOptionMenu(anchorView: View) {
