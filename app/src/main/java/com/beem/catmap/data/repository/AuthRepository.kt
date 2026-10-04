@@ -61,6 +61,7 @@ class AuthRepository {
                 followersCount = doc.getLong("takipciSayisi")
                 postCount = doc.getLong("gonderiSayisi") ?: 0L
                 id = doc.id
+                isBannedLocal = doc.getBoolean("isBanned") ?: false
             }
 
             if (userModel.email.isEmpty()) {
@@ -168,6 +169,7 @@ class AuthRepository {
                     followingCount = doc.getLong("TakipEdilenSayisi")
                     followersCount = doc.getLong("takipciSayisi")
                     postCount = doc.getLong("gonderiSayisi") ?: 0L
+                    isBannedLocal = doc.getBoolean("isBanned") ?: false
                 }
                 Result.success(GoogleAuthResult.ExistingUser(userModel))
             } else {

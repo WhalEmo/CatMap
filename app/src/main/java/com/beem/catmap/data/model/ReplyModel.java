@@ -7,6 +7,7 @@ public class ReplyModel {
     private String replyId;
     private String commentId;
     private String name;
+    private String profileImage;
     private String replyContent;
     private Date date;
     private String replyUserId;
@@ -19,9 +20,19 @@ public class ReplyModel {
         this.replyId = "";
     }
 
-    public ReplyModel(String replyId, String name, String replyContent, Date date, String replyUserId, int likeCountReply, boolean isSending) {
+    public ReplyModel(
+            String replyId,
+            String name,
+            String profileImage,
+            String replyContent,
+            Date date,
+            String replyUserId,
+            int likeCountReply,
+            boolean isSending
+    ) {
         this.replyId = replyId != null ? replyId : "";
         this.name = name;
+        this.profileImage = profileImage;
         this.replyContent = replyContent;
         this.date = date;
         this.replyUserId = replyUserId;
@@ -30,7 +41,7 @@ public class ReplyModel {
     }
 
     public ReplyModel copy() {
-        ReplyModel kopya = new ReplyModel(this.replyId, this.name, this.replyContent, this.date, this.replyUserId, this.likeCountReply, this.isSending);
+        ReplyModel kopya = new ReplyModel(this.replyId, this.name, this.profileImage, this.replyContent, this.date, this.replyUserId, this.likeCountReply, this.isSending);
         kopya.setCommentId(this.commentId);
         kopya.setLiked(this.isLiked);
         kopya.setLocalOnly(this.localOnly);
@@ -66,6 +77,14 @@ public class ReplyModel {
 
     public boolean isLocalOnly() { return localOnly; }
     public void setLocalOnly(boolean localOnly) { this.localOnly = localOnly; }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -8,6 +8,7 @@ import java.util.Objects;
 public class CommentModel {
     private String commentId;
     private String username;
+    private String profileImage;
     private String commentContent;
     private Date date;
     private String loadId;
@@ -27,9 +28,18 @@ public class CommentModel {
 
     public CommentModel() {}
 
-    public CommentModel(String commentId, String username, String commentContent, Date date, ArrayList<ReplyModel> replies, String loadId, boolean isSending) {
+    public CommentModel(
+            String commentId,
+            String username,
+            String profileImage,
+            String commentContent,
+            Date date, ArrayList<ReplyModel> replies,
+            String loadId,
+            boolean isSending
+    ) {
         this.commentId = commentId;
         this.username = username;
+        this.profileImage = profileImage;
         this.commentContent = commentContent;
         this.date = date;
         this.replies = replies != null ? replies : new ArrayList<>();
@@ -45,6 +55,7 @@ public class CommentModel {
         CommentModel newModel = new CommentModel(
                 this.commentId,
                 this.username,
+                this.profileImage,
                 this.commentContent,
                 this.date,
                 yeniListe,
@@ -123,6 +134,14 @@ public class CommentModel {
 
     public void setSending(boolean sending) {
         isSending = sending;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 
     @Override

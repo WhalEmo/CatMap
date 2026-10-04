@@ -30,8 +30,12 @@ class UserSessionManager private constructor(context: Context) {
         private const val KEY_BIYOGRAFI = "Biyografi"
         private const val KEY_POST_COUNT = "PostCount"
 
+        private const val KEY_IS_BANNED = "IsBanned"
+
         // TTL Zaman Damgası Key'i
         private const val KEY_LAST_STATS_FETCH_TIME = "LastStatsFetchTime"
+
+        private const val KEY_TOOLTIP_ADD_SPOT_SHOWN = "TooltipAddSpotShown"
 
         @Volatile
         private var INSTANCE: UserSessionManager? = null
@@ -56,6 +60,7 @@ class UserSessionManager private constructor(context: Context) {
             putString(KEY_PASSWORD, userModel.password)
             putString(KEY_FOTO_URL, userModel.photoUrl)
             putBoolean(KEY_IS_LOGGED_IN, true)
+            putBoolean(KEY_IS_BANNED, userModel.isBannedLocal)
             userModel.postCount?.let { putLong(KEY_POST_COUNT, it) }
             userModel.followersCount?.let { putLong(KEY_TAKIPCI_SAYISI, it) }
             userModel.followingCount?.let { putLong(KEY_TAKIP_EDILEN_SAYISI, it) }
@@ -82,6 +87,7 @@ class UserSessionManager private constructor(context: Context) {
             followersCount = prefs.getLong(KEY_TAKIPCI_SAYISI, 0)
             followingCount = prefs.getLong(KEY_TAKIP_EDILEN_SAYISI, 0)
             postCount = prefs.getLong(KEY_POST_COUNT, 0)
+            isBannedLocal = prefs.getBoolean(KEY_IS_BANNED, false)
         }
     }
 
@@ -111,5 +117,14 @@ class UserSessionManager private constructor(context: Context) {
      */
     fun clearSession() {
         prefs.edit { clear() }
+    }
+
+
+    fun isAddSpotTooltipShown(): Boolean {
+        return prefs.getBoolean(KEY_TOOLTIP_ADD_SPOT_SHOWN, false)
+    }
+
+    fun setAddSpotTooltipShown(isShown: Boolean) {
+        prefs.edit { putBoolean(KEY_TOOLTIP_ADD_SPOT_SHOWN, isShown) }
     }
 }

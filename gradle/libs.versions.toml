@@ -1,5 +1,5 @@
 [versions]
-agp = "8.5.0"
+agp = "8.5.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -88,6 +88,9 @@ activity-compose = { group = "androidx.activity", name = "activity-compose", ver
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleCompose" }
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -15,6 +15,19 @@ object UserSession {
     val isLoggedIn: Boolean
         get() = CurrentUserManager.getInstance(CatMapApp.instance).isUserLoggedIn()
 
+    val isBanned: Boolean
+        get() = CurrentUserManager.getInstance(CatMapApp.instance).isUserBannedLocally()
+
+    var isAddSpotTooltipShown: Boolean
+        get() = CurrentUserManager.getInstance(CatMapApp.instance).isAddSpotTooltipShown()
+        set(value) {
+            CurrentUserManager.getInstance(CatMapApp.instance).setAddSpotTooltipShown(value)
+        }
+
+    fun setBanStatus(isBanned: Boolean) {
+        CurrentUserManager.getInstance(CatMapApp.instance).setBanStatus(isBanned)
+    }
+
     fun update(userModel: UserModel) {
         CurrentUserManager.getInstance(CatMapApp.instance).setCurrentUser(userModel)
     }

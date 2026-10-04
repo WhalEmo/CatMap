@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.beem.catmap.data.model.UserModel
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.data.model.UserProfileData
 import com.beem.catmap.data.repository.FollowRepository
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
@@ -25,7 +26,7 @@ class FollowListViewModel(application: Application) : AndroidViewModel(applicati
     private val _followersState = MutableStateFlow<FollowUiState>(FollowUiState.Idle)//takıpcıler
     val followersState: StateFlow<FollowUiState> = _followersState.asStateFlow()
 
-    private val currentFollowers = mutableListOf<UserModel>()
+    private val currentFollowers = mutableListOf<UserProfileData>()
     private var lastFollowersDoc: DocumentSnapshot? = null
     private var isFollowersLastPage = false
     private var isLoadingFollowers = false
@@ -33,7 +34,7 @@ class FollowListViewModel(application: Application) : AndroidViewModel(applicati
     private val _followingState = MutableStateFlow<FollowUiState>(FollowUiState.Idle)//takp edılenler
     val followingState: StateFlow<FollowUiState> = _followingState.asStateFlow()
 
-    private val currentFollowing = mutableListOf<UserModel>()
+    private val currentFollowing = mutableListOf<UserProfileData>()
     private var lastFollowingDoc: DocumentSnapshot? = null
     private var isFollowingLastPage = false
     private var isLoadingFollowing = false
@@ -87,13 +88,12 @@ class FollowListViewModel(application: Application) : AndroidViewModel(applicati
     }
     fun yeniTakipEdilenEkle(userId: String, kullaniciAdi: String, fotoUrl: String) {
         if (currentFollowing.none { it.id == userId }) {
-            val yeniUserModel = UserModel().apply {
-                id = userId
-                this.username = kullaniciAdi
-                this.photoUrl = fotoUrl
-                isFollowing = 2
-            }
-            currentFollowing.add(0, yeniUserModel)
+            val newUser = UserProfileData(
+                id = userId,
+                username = kullaniciAdi,
+                photoUrl = fotoUrl
+            )
+            currentFollowing.add(0, newUser)
             _followingState.value = FollowUiState.Success(
                 userModels = currentFollowing.toList(),
                 isLastPage = isFollowingLastPage,

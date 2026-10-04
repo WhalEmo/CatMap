@@ -15,7 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.beem.catmap.maps.LocationEngine
+import com.beem.catmap.engine.location.LocationEngine
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.local.location.LocationHelper
@@ -32,8 +32,8 @@ import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
+import com.beem.catmap.ui.manager.image.UploadSession
 import com.beem.catmap.ui.navigation.NavigationHelper
-import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -116,7 +116,7 @@ class UploadFragment : Fragment() {
 
         binding.dosyaId.setOnClickListener {
             if (isAdded && isResumed) {
-                val gallerySheet = GalleryBottomSheet()
+                val gallerySheet = GalleryBottomSheet.newInstance(UploadSession.GENERAL)
                 gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
             }
         }
@@ -262,7 +262,9 @@ class UploadFragment : Fragment() {
     }
 
     private fun openCameraFragment() {
-        SmartNavigationEngine.navigateTo(Screen.CAMERA)
+        NavigationHelper.navigateToCamera(
+            UploadSession.GENERAL
+        )
     }
 
     private fun setupBackPressed() {

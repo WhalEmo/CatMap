@@ -9,6 +9,7 @@ import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
 import java.lang.ref.WeakReference
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.ui.manager.image.UploadSession
 
 class CatMapNavigationEngine(
     activity: AppCompatActivity,
@@ -45,7 +46,7 @@ class CatMapNavigationEngine(
     private fun setupCaptureHub() {
         binding.btnCaptureLayout.setOnClickListener {
             triggerHaptic(HapticFeedbackConstants.CONFIRM)
-            SmartNavigationEngine.navigateTo(Screen.CAMERA)
+            NavigationHelper.navigateToCamera(UploadSession.GENERAL)
         }
     }
 

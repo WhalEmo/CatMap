@@ -13,6 +13,8 @@
     <color name="catmap_accent_alpha_20">#33F97316</color>
     <color name="catmap_background">#F8FAFC</color>
 
+    <color name="catmap_water">#3B82F6</color>
+
     <color name="catmap_surface_white">#FFFFFF</color>
     <color name="catmap_surface_white_trans80">#CCFFFFFF</color>
     <color name="catmap_surface_white_trans70">#B3FFFFFF</color>

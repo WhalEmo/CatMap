@@ -61,6 +61,10 @@ object CatMapColors {
     val Error = Color(0xFFEF4444)            // Kırmızı / Engel / Hata
     val IndicatorCapsule = Color(0x4DFFFFFF)
 
+    val CleanTeal = Color(0xFF0D9488)
+    val MaintenanceOrange = Color(0xFFD97706)
+    val Water = Color(0xFF3B82F6)
+
     // =========================================================================
     // 7. ROZET (BADGE) SİSTEMİ RENKLERİ
     // =========================================================================

@@ -6,7 +6,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.beem.catmap.databinding.ItemUploadCatPhotoBinding
-import com.beem.catmap.ui.manager.ImageUploadManager
+import com.beem.catmap.ui.manager.image.ImageUploadManager
+import com.beem.catmap.ui.manager.image.UploadSession
 import com.bumptech.glide.Glide
 
 class UploadPhotosAdapter : RecyclerView.Adapter<UploadPhotosAdapter.PhotoViewHolder>() {
@@ -48,7 +49,7 @@ class UploadPhotosAdapter : RecyclerView.Adapter<UploadPhotosAdapter.PhotoViewHo
                 .into(binding.ivCapturedPhoto)
 
             binding.btnRemovePhoto.setOnClickListener {
-                ImageUploadManager.removeImage(uri)
+                ImageUploadManager.removeImage(UploadSession.GENERAL, uri)
             }
         }
     }

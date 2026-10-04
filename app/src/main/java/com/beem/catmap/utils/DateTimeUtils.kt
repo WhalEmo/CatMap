@@ -1,5 +1,6 @@
 package com.beem.catmap.utils
 
+import android.text.format.DateUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -99,4 +100,15 @@ fun Long.toFormattedMessageTime(): String {
             fullFormat.format(messageDate)
         }
     }
+}
+
+fun Long.formatExactTime(): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(this))
+}
+
+fun Long.formatTimeAgo(): String {
+    return DateUtils.getRelativeTimeSpanString(
+        this, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS
+    ).toString()
 }

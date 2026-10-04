@@ -5,6 +5,8 @@ import android.util.Log
 import com.beem.catmap.ui.profile.common.ProfileFragment
 import androidx.fragment.app.FragmentManager
 import com.beem.catmap.data.local.UserSession
+import com.beem.catmap.ui.camera.CameraFragment
+import com.beem.catmap.ui.manager.image.UploadSession
 import com.beem.catmap.ui.message.MessageFragment
 import com.beem.catmap.ui.profile_v2.otherprofile.OtherProfileFragment
 import com.beem.catmap.ui.report.ReportBottomSheetFragment
@@ -40,6 +42,18 @@ object NavigationHelper {
             targetScreen = Screen.MESSAGE,
             args,
             key = receiverId
+        )
+    }
+
+    @JvmStatic
+    fun navigateToCamera(uploadSession: UploadSession) {
+        val args = CameraFragment.newArgs(
+            uploadSession = uploadSession
+        )
+        SmartNavigationEngine.navigateTo(
+            targetScreen = Screen.CAMERA,
+            args,
+            key = uploadSession.name
         )
     }
 

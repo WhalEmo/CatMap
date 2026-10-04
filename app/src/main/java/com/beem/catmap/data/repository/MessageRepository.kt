@@ -62,29 +62,11 @@ class MessageRepository(
         })
     }
 
-    /*
-
-    suspend fun fetchReceiverProfileInfo(receiverId: String): Pair<String, String> {
-        return try {
-            val document = firestore.collection("users").document(receiverId).get().await()
-            if (document.exists()) {
-                val name = document.getString("KullaniciAdi") ?: ""
-                val photoUrl = document.getString("profilFotoUrl") ?: ""
-                Pair(name, photoUrl)
-            } else {
-                Pair("", "")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair("", "")
-        }
-    }
-
-    */
-
     suspend fun sendPhotoMessage(
         chatId: String,
         senderId: String,
+        senderUserName: String,
+        senderProfilePhoto: String,
         imageUris: List<android.net.Uri>,
         replyTo: ChatMessage? = null,
         clientTempId: String? = null
@@ -109,6 +91,8 @@ class MessageRepository(
             // 2. Mesaj haritasını oluşturup veritabanına yazıyoruz
             val photoMap = mutableMapOf<String, Any>(
                 "gonderen" to senderId,
+                "senderUserName" to senderUserName,
+                "senderUserProfilePhoto" to senderProfilePhoto,
                 "fotoUrlListesi" to uploadedUrls,
                 "zaman" to System.currentTimeMillis(),
                 "goruldu" to false,
@@ -267,27 +251,18 @@ class MessageRepository(
             emptyList()
         }
     }
-    /***
-    suspend fun deleteMessage(chatId: String, messageId: String): Boolean {
-        return try {
-            messageRef.child(chatId).child("anaMesaj").child(messageId).removeValue().await()
-
-            val silKey = messageRef.child(chatId).child("silMesaj").push().key
-            if (silKey != null) {
-                messageRef.child(chatId).child("silMesaj").child(silKey).setValue(messageId).await()
-            }
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-    */
 
     /**
      * Mesaj Gönderme
      */
-    suspend fun sendMessage(chatId: String, senderId: String, text: String, replyTo: ChatMessage? = null): Boolean {
+    suspend fun sendMessage(
+        chatId: String,
+        senderId: String,
+        senderUserName: String,
+        senderProfilePhoto: String,
+        text: String,
+        replyTo: ChatMessage? = null
+    ): Boolean {
         return try {
             val mesajKey = messageRef.child(chatId).child("anaMesaj").push().key ?: return false
 
@@ -301,6 +276,8 @@ class MessageRepository(
 
                 val yanitMap = mapOf(
                     "gonderen" to senderId,
+                    "senderUserName" to senderUserName,
+                    "senderUserProfilePhoto" to senderProfilePhoto,
                     "mesaj" to text,
                     "zaman" to System.currentTimeMillis(),
                     "goruldu" to false,
@@ -324,6 +301,8 @@ class MessageRepository(
             } else {
                 val map = mapOf(
                     "gonderen" to senderId,
+                    "senderUserName" to senderUserName,
+                    "senderUserProfilePhoto" to senderProfilePhoto,
                     "mesaj" to text,
                     "zaman" to System.currentTimeMillis(),
                     "goruldu" to false,
@@ -367,6 +346,15 @@ class MessageRepository(
         return try {
             val document = firestore.collection("users").document(receiverId).get().await()
             if (document.exists()) {
+
+                val isBanned = document.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return MessageProfile(
+                        name = "Askıya Alınmış Hesap",
+                        photoUrl = ""
+                    )
+                }
+
                 val name = document.getString("KullaniciAdi") ?: ""
                 val photoUrl = document.getString("profilFotoUrl") ?: ""
                 MessageProfile(
@@ -403,6 +391,16 @@ class MessageRepository(
         return try {
             val publicDoc = firestore.collection("publicUsers").document(receiverId).get().await()
             if (publicDoc.exists()) {
+
+                val isBanned = publicDoc.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return MessageProfile(
+                        name = "Askıya Alınmış Hesap",
+                        photoUrl = "",
+                        blockState = BlockState.BlockedByUser // Engel durumunu koruyoruz
+                    )
+                }
+
                 val name = publicDoc.getString("KullaniciAdi")
                     ?: publicDoc.getString("kullaniciAdi")
                     ?: publicDoc.getString("Ad")

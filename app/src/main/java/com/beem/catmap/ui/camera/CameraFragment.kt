@@ -1,25 +1,20 @@
 package com.beem.catmap.ui.camera
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraControl
 import androidx.camera.core.CameraInfo
@@ -31,13 +26,11 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCameraBinding
-import com.beem.catmap.ui.manager.ImageUploadManager
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
 import com.bumptech.glide.Glide
@@ -45,6 +38,7 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.fragment.app.DialogFragment
+import com.beem.catmap.ui.manager.image.UploadSession
 import com.beem.catmap.ui.navigation.Screen
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
 import com.beem.catmap.ui.navigation.handleBackPressWithEngine
@@ -69,11 +63,14 @@ class CameraFragment : DialogFragment() {
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private var cameraControl: CameraControl? = null
     private var cameraInfo: CameraInfo? = null
+    private var cameraProvider: ProcessCameraProvider? = null
 
     private var zoomHideRunnable: Runnable? = null
     private var vibrator: android.os.Vibrator? = null
 
     private val ZOOM_SENSITIVITY = 2.4f
+
+    private var uploadSession = UploadSession.GENERAL
 
 
     private val cameraPermissionLauncher = registerForActivityResult(
@@ -90,6 +87,9 @@ class CameraFragment : DialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+
+        val sessionKey = arguments?.getString(ARG_SESSION) ?: uploadSession.sessionKey
+        uploadSession = UploadSession.fromKey(sessionKey)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -109,7 +109,12 @@ class CameraFragment : DialogFragment() {
 
         vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
 
-        checkPermissionsAndStart()
+        viewModel.initializeSession(uploadSession)
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+
         setupUi()
         observeViewModel()
     }
@@ -133,7 +138,7 @@ class CameraFragment : DialogFragment() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_16_9).build().also {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
@@ -142,15 +147,15 @@ class CameraFragment : DialogFragment() {
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
             try {
-                cameraProvider.unbindAll()
-                val camera = cameraProvider.bindToLifecycle(
+                cameraProvider?.unbindAll()
+                val camera = cameraProvider?.bindToLifecycle(
                     viewLifecycleOwner,
                     lensSelector,
                     preview,
                     imageCapture
                 )
-                cameraControl = camera.cameraControl
-                cameraInfo = camera.cameraInfo
+                cameraControl = camera?.cameraControl
+                cameraInfo = camera?.cameraInfo
 
                 setupZoomMechanics()
             } catch (exc: Exception) {
@@ -160,16 +165,21 @@ class CameraFragment : DialogFragment() {
     }
 
     private fun setupUi() {
+        binding.btnGallery.visibility = if (uploadSession.allowGallery) View.VISIBLE else View.GONE
+
         filmStripAdapter = FilmStripAdapter(
             onImageClick = { uri ->
-                val imageSource = if (uri.path?.contains(requireContext().cacheDir.path) == true) {
-                    ImageSource.TEMP_CACHE
-                } else {
-                    ImageSource.GALERI
+                val image = viewModel.uiState.value.capturedImages.find { it.uri == uri }
+                if (image != null) {
+                    viewModel.selectImageForPreview(image)
                 }
-                viewModel.selectImageForPreview(uri, imageSource)
             },
-            onImageDelete = { uri -> viewModel.removeImageFromStrip(uri) }
+            onImageDelete = { uri ->
+                val image = viewModel.uiState.value.capturedImages.find { it.uri == uri }
+                if (image != null) {
+                    viewModel.removeImageFromStrip(image)
+                }
+            }
         )
 
         binding.recyclerViewFilmStrip.apply {
@@ -183,11 +193,11 @@ class CameraFragment : DialogFragment() {
 
         binding.btnMenuApprove.setOnClickListener {
             val currentState = viewModel.uiState.value
-            val activeUri = currentState.activePreviewUri
+            val previewedImage = currentState.previewedImage
 
-            if (activeUri != null) {
-                if (currentState.activeImageSource == ImageSource.TEMP_CACHE) {
-                    viewModel.saveTempImageToGallery(requireContext(), activeUri, shouldKeepInStrip = true)
+            if (previewedImage != null) {
+                if (previewedImage.source == ImageSource.TEMP_CACHE) {
+                    viewModel.saveTempImageToGallery(requireContext(), previewedImage, shouldKeepInStrip = true)
                 } else {
                     viewModel.exitPreviewMode()
                 }
@@ -200,7 +210,12 @@ class CameraFragment : DialogFragment() {
 
 
         binding.btnCaptureLayout.setOnClickListener {
+            val currentState = viewModel.uiState.value
+            if (currentState.isCapturing || currentState.isProcessing) return@setOnClickListener
+
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                viewModel.setCapturing(true)
+
                 binding.btnCaptureLayout.animate().scaleX(0.86f).scaleY(0.86f).setDuration(70).withEndAction {
                     binding.btnCaptureLayout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
                     capturePhoto()
@@ -227,7 +242,11 @@ class CameraFragment : DialogFragment() {
         binding.btnConfirmAll.setOnClickListener {
             val currentState = viewModel.uiState.value
             if (currentState.capturedImages.isNotEmpty()) {
-                SmartNavigationEngine.navigateTo(Screen.UPLOAD)
+                when (uploadSession) {
+                    UploadSession.REPORT -> SmartNavigationEngine.navigateBack()
+                    UploadSession.GENERAL -> SmartNavigationEngine.navigateTo(Screen.UPLOAD)
+                    else -> SmartNavigationEngine.navigateTo(Screen.MAP)
+                }
             } else {
                 UiMessageManager.emitMessage(
                     UiMessageState.Error("Lütfen önce en az bir fotoğraf çekin!")
@@ -256,9 +275,9 @@ class CameraFragment : DialogFragment() {
     }
 
     private fun renderUiState(state: CameraUiState) {
-        filmStripAdapter.updateList(state.capturedImages)
+        filmStripAdapter.updateList(state.capturedImages.map { it.uri })
 
-        binding.btnCaptureLayout.isEnabled = state.capturedImages.size < 5
+        binding.btnCaptureLayout.isEnabled = !state.isCapturing && !state.isProcessing && (state.capturedImages.size < uploadSession.maxImageCount)
 
         val hasImages =  state.capturedImages.isNotEmpty()
 
@@ -289,9 +308,9 @@ class CameraFragment : DialogFragment() {
                 binding.tvZoomRatio.visibility = View.GONE
                 binding.tvZoomRatio.alpha = 0f
 
-                if (state.activePreviewUri != null) {
+                if (state.previewedImage != null) {
                     binding.ivInFragmentPreview.visibility = View.VISIBLE
-                    Glide.with(this).load(state.activePreviewUri).into(binding.ivInFragmentPreview)
+                    Glide.with(this).load(state.previewedImage.uri).into(binding.ivInFragmentPreview)
                     binding.ivInFragmentPreview.alpha = 1f
 
                     binding.layoutPreviewMenu.visibility = View.VISIBLE
@@ -330,6 +349,7 @@ class CameraFragment : DialogFragment() {
                     viewModel.onPhotoCaptured(savedUri)
                 }
                 override fun onError(exception: ImageCaptureException) {
+                    viewModel.setCapturing(false)
                     UiMessageManager.emitMessage(UiMessageState.Error("Fotoğraf çekilemedi."))
                 }
             }
@@ -344,9 +364,9 @@ class CameraFragment : DialogFragment() {
             .create()
 
         val currentState = viewModel.uiState.value
-        val activeUri = currentState.activePreviewUri ?: return
+        val previewedImage = currentState.previewedImage ?: return
 
-        when(currentState.activeImageSource){
+        when(previewedImage.source){
             ImageSource.TEMP_CACHE -> {
                 dialogBinding.btnDialogSave.text = "Sadece Galeriye Kaydet"
                 dialogBinding.btnDialogSave.visibility = View.VISIBLE
@@ -357,17 +377,17 @@ class CameraFragment : DialogFragment() {
         }
 
         dialogBinding.btnDialogDelete.setOnClickListener {
-            viewModel.deleteImage(requireContext().contentResolver, activeUri)
+            viewModel.deleteImage(requireContext().contentResolver, previewedImage)
             actionDialog.dismiss()
         }
 
         dialogBinding.btnDialogSave.setOnClickListener {
-            viewModel.saveTempImageToGallery(requireContext(), activeUri, shouldKeepInStrip = false)
+            viewModel.saveTempImageToGallery(requireContext(), previewedImage, shouldKeepInStrip = false)
             actionDialog.dismiss()
         }
 
         dialogBinding.btnDialogRemoveFromStrip.setOnClickListener {
-            viewModel.removeImageFromStrip(activeUri)
+            viewModel.removeImageFromStrip(previewedImage)
             actionDialog.dismiss()
         }
 
@@ -461,25 +481,15 @@ class CameraFragment : DialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
         _binding = null
     }
 
 
-
-    private fun checkPermissionsAndStart() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera()
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
-
-
     private fun openGalleryBottomSheet() {
         if (isAdded && isResumed) {
-            val gallerySheet = GalleryBottomSheet()
+            val gallerySheet = GalleryBottomSheet.newInstance(uploadSession)
             gallerySheet.show(childFragmentManager, "GalleryBottomSheet")
         }
     }
@@ -487,11 +497,16 @@ class CameraFragment : DialogFragment() {
     override fun onResume() {
         super.onResume()
         setSystemBarsTheme(isCameraMode = true)
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        }
     }
 
     override fun onPause() {
         super.onPause()
         setSystemBarsTheme(isCameraMode = false)
+        cameraProvider?.unbindAll()
     }
 
     override fun onStop() {
@@ -518,6 +533,21 @@ class CameraFragment : DialogFragment() {
             WindowCompat.getInsetsController(window, window.decorView).apply {
                 isAppearanceLightStatusBars = true // true = Yazılar ve ikonlar KOYU olur
                 isAppearanceLightNavigationBars = true
+            }
+        }
+    }
+
+    companion object {
+        const val TAG = "CameraFragment"
+        private const val ARG_SESSION = "arg_camera_session"
+
+        fun newInstance(uploadSession: UploadSession = UploadSession.GENERAL) = CameraFragment().apply {
+            arguments = newArgs(uploadSession)
+        }
+
+        fun newArgs(uploadSession: UploadSession = UploadSession.GENERAL): Bundle {
+            return Bundle().apply {
+                putString(ARG_SESSION, uploadSession.sessionKey)
             }
         }
     }

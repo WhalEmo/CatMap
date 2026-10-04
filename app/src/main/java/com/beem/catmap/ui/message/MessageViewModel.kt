@@ -11,6 +11,7 @@ import com.beem.catmap.data.repository.UserBlockRepository
 import com.beem.catmap.data.repository.UserRepository
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.data.model.ChatMessage
+import com.beem.catmap.notification.ActiveChatTracker
 import com.beem.catmap.ui.manager.ProfileEvent
 import com.beem.catmap.ui.manager.ProfileEventBus
 import com.beem.catmap.ui.manager.UiMessageManager
@@ -39,6 +40,8 @@ class MessageViewModel(
     private val blockRepository: UserBlockRepository = UserBlockRepository.getInstance()
 
     private var chatId: String? = null
+    fun getChatId(): String? = chatId
+
     private var typingTimer: Timer? = null
     private var messagesJob: Job? = null
 
@@ -64,6 +67,8 @@ class MessageViewModel(
             // 1. Sohbet ID'sini Al
             val generatedChatId = repository.getOrCreateChatId(senderId, receiverId)
             chatId = generatedChatId
+
+            ActiveChatTracker.enterChat(generatedChatId)
 
             val messageProfile = repository.fetchReceiverProfileInfo(receiverId)
 
@@ -247,7 +252,9 @@ class MessageViewModel(
                 senderId = senderId,
                 imageUris = uris,
                 replyTo = replyMessage,
-                clientTempId = tempId
+                clientTempId = tempId,
+                senderProfilePhoto = UserSession.userModel.photoUrl,
+                senderUserName = UserSession.userModel.username
             )
 
             if (!success) {
@@ -379,7 +386,14 @@ class MessageViewModel(
 
         viewModelScope.launch {
             val replyMessage = _uiState.value.replyMessage
-            val success = repository.sendMessage(activeChatId, senderId, text, replyMessage)
+            val success = repository.sendMessage(
+                activeChatId,
+                senderId,
+                senderUserName = UserSession.userModel.username,
+                senderProfilePhoto = UserSession.userModel.photoUrl,
+                text,
+                replyMessage
+            )
             if (success) {
                 _uiState.update { it.copy(replyMessage = null) }
             }
@@ -437,9 +451,10 @@ class MessageViewModel(
         super.onCleared()
         typingTimer?.cancel()
         chatId?.let { id ->
-            currentUserId?.let { sender ->
+            currentUserId.let { sender ->
                 repository.setTypingStatus(id, sender, false)
             }
+            ActiveChatTracker.exitChat(id)
         }
     }
 }

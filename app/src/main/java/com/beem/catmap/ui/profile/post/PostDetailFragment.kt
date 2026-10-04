@@ -22,10 +22,9 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.databinding.HerbiGonderiIcinBinding
-import com.beem.catmap.maps.MapViewModel
+import com.beem.catmap.ui.map.MapViewModel
 import com.beem.catmap.ui.components.CatMapDialog
 import com.beem.catmap.ui.components.CatMapPopupMenu
-import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.getFormattedTimestamp
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent

@@ -22,10 +22,6 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val mAuth = FirebaseAuth.getInstance()
-    private val authYonetici = VerifyAuth()
-
     private val repository = AuthRepository.getInstance()
 
     private val _currentMode = MutableStateFlow(AuthMode.LOGIN)
@@ -161,9 +157,14 @@ class AuthViewModel : ViewModel() {
 
     private fun saveUserLocallyAndNavigate(userModel: UserModel, isNewRegister: Boolean) {
         viewModelScope.launch {
-            UserSession.update(userModel)
-            OnlinePresenceManager.setUserOnline()
-            _event.emit(AuthEvent.NavigateToMap(isNewRegister = isNewRegister))
+            if (userModel.isBannedLocal) {
+                UserSession.update(userModel)
+                _event.emit(AuthEvent.NavigateToBanned)
+            } else {
+                UserSession.update(userModel)
+                OnlinePresenceManager.setUserOnline()
+                _event.emit(AuthEvent.NavigateToMap(isNewRegister = isNewRegister))
+            }
         }
     }
 

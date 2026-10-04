@@ -99,6 +99,12 @@ class RecentChatsRepository(
             // 1. KADEME: 'users' ana koleksiyonundan çekmeyi dene
             val doc = firestore.collection("users").document(userId).get().await()
             if (doc.exists()) {
+
+                val isBanned = doc.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return Pair("Askıya Alınmış Hesap", "")
+                }
+
                 val name = (doc.getString("Ad") ?: "").trim()
                 val photoUrl = doc.getString("profilFotoUrl") ?: ""
 
@@ -123,6 +129,12 @@ class RecentChatsRepository(
         return try {
             val publicDoc = firestore.collection("publicUsers").document(userId).get().await()
             if (publicDoc.exists()) {
+
+                val isBanned = publicDoc.getBoolean("isBanned") ?: false
+                if (isBanned) {
+                    return Pair("Askıya Alınmış Hesap", "")
+                }
+
                 val name = publicDoc.getString("KullaniciAdi")
                     ?: publicDoc.getString("kullaniciAdi")
                     ?: publicDoc.getString("Ad")

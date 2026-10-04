@@ -1,12 +1,15 @@
 package com.beem.catmap.data.repository
 
 import com.beem.catmap.data.model.CommentModel
+import com.beem.catmap.data.model.UserProfileInfo
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import kotlin.collections.forEach
 
 class CommentsRepo {
     private val db = FirebaseFirestore.getInstance()
@@ -24,7 +27,7 @@ class CommentsRepo {
     }
     suspend fun getInitialComments(
         catId: String,
-        limit: Long
+        limit: Long  = 10L
     ): Pair<List<CommentModel>, DocumentSnapshot?> {
         return try {
             val querySnapshot = db.collection("cats")
@@ -45,11 +48,43 @@ class CommentsRepo {
                 val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
 
 
-                CommentModel(id, username, content, date, null, uploaderId, false).apply {
+                CommentModel(id, username, null, content, date, null, uploaderId, false).apply {
                     this.likeCount = begeniSayisi
                     this.sumRepliesCount = yanitSayisi
                 }
 
+            }
+
+            val userIds = comments.map { it.loadId }.filter { it.isNotEmpty() }.distinct()
+
+            if (userIds.isNotEmpty()) {
+                val usersMap = mutableMapOf<String, UserProfileInfo>()
+
+                userIds.chunked(10).forEach { chunk ->
+                    val usersSnapshot = db.collection("users")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .get()
+                        .await()
+
+                    for (userDoc in usersSnapshot.documents) {
+                        val photoUrl = userDoc.getString("profilFotoUrl")
+                        val isBanned = userDoc.getBoolean("isBanned") ?: (userDoc.getBoolean("banned") ?: false)
+
+                        usersMap[userDoc.id] = UserProfileInfo(photoUrl, isBanned)
+                    }
+                }
+
+                // Yorumları güncelle: Banlıysa içeriği ve resmi sınırla
+                comments.forEach { comment ->
+                    val userInfo = usersMap[comment.loadId]
+                    if (userInfo?.isBanned == true) {
+                        comment.profileImage = ""
+                        comment.commentContent = "Bu kullanıcının hesabı askıya alındığı için içerik kısıtlanmıştır."
+                        comment.username = "Kısıtlanmış Kullanıcı"
+                    } else {
+                        comment.profileImage = userInfo?.photoUrl
+                    }
+                }
             }
 
             val lastDoc = querySnapshot.documents.lastOrNull()
@@ -84,9 +119,40 @@ class CommentsRepo {
                 val begeniSayisi = doc.getLong("begeniSayisi")?.toInt() ?: 0
                 val yanitSayisi = doc.getLong("yanitSayisi")?.toInt() ?: 0
 
-                CommentModel(id, username, content, date, null, uploaderId, false).apply {
+                CommentModel(id, username, null, content, date, null, uploaderId, false).apply {
                     this.likeCount = begeniSayisi
                     this.sumRepliesCount = yanitSayisi
+                }
+            }
+
+            val userIds = comments.map { it.loadId }.filter { it.isNotEmpty() }.distinct()
+
+            if (userIds.isNotEmpty()) {
+                val usersMap = mutableMapOf<String, UserProfileInfo>()
+
+                userIds.chunked(10).forEach { chunk ->
+                    val usersSnapshot = db.collection("users")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .get()
+                        .await()
+
+                    for (userDoc in usersSnapshot.documents) {
+                        val photoUrl = userDoc.getString("profilFotoUrl")
+                        val isBanned = userDoc.getBoolean("isBanned") ?: (userDoc.getBoolean("banned") ?: false)
+
+                        usersMap[userDoc.id] = UserProfileInfo(photoUrl, isBanned)
+                    }
+                }
+
+                comments.forEach { comment ->
+                    val userInfo = usersMap[comment.loadId]
+                    if (userInfo?.isBanned == true) {
+                        comment.profileImage = ""
+                        comment.commentContent = "Bu kullanıcının hesabı askıya alındığı için içerik kısıtlanmıştır."
+                        comment.username = "Kısıtlanmış Kullanıcı"
+                    } else {
+                        comment.profileImage = userInfo?.photoUrl
+                    }
                 }
             }
 

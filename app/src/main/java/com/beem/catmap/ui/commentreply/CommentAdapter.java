@@ -19,9 +19,9 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beem.catmap.R;
-import com.beem.catmap.GetPhotoUrl;
 import com.beem.catmap.data.model.CommentModel;
 import com.beem.catmap.data.model.ReplyModel;
+import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -201,7 +201,17 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
         holder.yorumTarihiText.setText(getFormattedDate(yorum.getDate()));
 
 
-        new GetPhotoUrl().getUrl(yorum.getLoadId(), holder.YorumFotoImageView);
+        if (yorum.getProfileImage() != null && !yorum.getProfileImage().isEmpty()) {
+            Glide.with(context)
+                    .load(yorum.getProfileImage())
+                    .centerCrop()
+                    .placeholder(R.drawable.kullanici)
+                    .error(R.drawable.kullanici)
+                    .into(holder.YorumFotoImageView);
+        } else {
+            Glide.with(context).clear(holder.YorumFotoImageView);
+            holder.YorumFotoImageView.setImageResource(R.drawable.kullanici);
+        }
 
         holder.kullaniciAditext.setOnClickListener(v -> {
             if (listener != null) listener.onUsernameClicked(yorum.getLoadId());
@@ -269,8 +279,17 @@ public class CommentAdapter extends ListAdapter<CommentAdapter.CommentItem, Recy
         holder.yanitText.setText(yanit.getReplyContent());
         holder.yanitTarihiText.setText( getFormattedDate(yanit.getDate()));
 
-        new GetPhotoUrl().getUrl(yanit.getReplyUserId(), holder.YorumFotoImageViewYnt);
-
+        if (yanit.getProfileImage() != null && !yanit.getProfileImage().isEmpty()) {
+            Glide.with(context)
+                    .load(yanit.getProfileImage())
+                    .centerCrop()
+                    .placeholder(R.drawable.kullanici)
+                    .error(R.drawable.kullanici)
+                    .into(holder.YorumFotoImageViewYnt);
+        } else {
+            Glide.with(context).clear(holder.YorumFotoImageViewYnt);
+            holder.YorumFotoImageViewYnt.setImageResource(R.drawable.kullanici);
+        }
 
         int begeniSayisi = yanit.getLikeCountReply();
         if (begeniSayisi >= 1_000_000) {

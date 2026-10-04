@@ -3,8 +3,8 @@ package com.beem.catmap.ui.navigation
 import android.support.annotation.IdRes
 import com.beem.catmap.R
 
-enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, val isNode: Boolean = false) {
-    MAP("MAP_FRAGMENT_TAG", 0, R.id.fragment_map, true),
+enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, val isNode: Boolean = false, val isExit: Boolean = false) {
+    MAP("MAP_FRAGMENT_TAG", 0, R.id.fragment_map, true, isExit = true),
     UPLOAD("YUKLE", 1, R.id.fragment_yukle, true),
     CHAT("CHAT", 2, R.id.fragment_chat, true),
     PROFILE("PROFILE", 3, R.id.fragment_profile, true),
@@ -16,10 +16,12 @@ enum class Screen(val tag: String, val tabIndex: Int, @IdRes val menuId: Int?, v
     FOLLOWERS("FOLLOWERS", -1, null),
     POST("POST", -1, null),
     MESSAGE_PHOTO_PREVIEW("MESSAGE_PHOTO_PREVIEW", -1, null),
-    AUTH("AUTH", -1, null, true),
+    AUTH("AUTH", -1, null, true, isExit = true),
     PROFILE_SETUP("PROFILE_SETUP", -1, null),
     ONBOARDING("ONBOARDING", -1, null),
-    BADGE("BADGE", -1, null);
+    SPOT_OPERATION("OPARETION",-1, null),
+    BADGE("BADGE", -1, null),
+    BANNED("BANNED", -1, null, isExit = true);
 
     companion object {
         fun fromTag(tag: String?): Screen = entries.find { it.tag == tag } ?: MAP

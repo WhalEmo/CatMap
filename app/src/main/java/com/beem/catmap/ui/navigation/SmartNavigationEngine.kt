@@ -121,8 +121,8 @@ object SmartNavigationEngine {
             emitCurrentState(previousEntry)
         } else {
 
-            if (currentScreen == Screen.MAP) {
-                Log.d("NAV_ENGINE", "Kaptan: Haritadayız ve yığın boş. Çıkış diyalogu tetiklenebilir.")
+            if (currentScreen.isExit) {
+                Log.d("NAV_ENGINE", "Kaptan: Yığın boş. Çıkış diyalogu tetiklenebilir.")
                 onSystemExit?.invoke()
 
             } else {

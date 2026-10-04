@@ -18,6 +18,7 @@ import com.beem.catmap.R
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.profile.follow.adapter.FooterAdapter
+import com.beem.catmap.ui.profile.follow.adapter.ListType
 import com.beem.catmap.ui.profile.follow.adapter.UserAdapter
 import com.beem.catmap.ui.profile.follow.state.FollowUiState
 import com.beem.catmap.ui.profile.follow.viewmodel.FollowListViewModel
@@ -67,7 +68,7 @@ class FollowingFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        userAdapter = UserAdapter { kullaniciId ->
+        userAdapter = UserAdapter(ListType.FOLLOWING) { kullaniciId ->
             kullaniciId?.let {
                 NavigationHelper.navigateToProfile(kullaniciId)
             }

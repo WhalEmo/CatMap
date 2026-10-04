@@ -66,6 +66,22 @@ class OtherProfileViewModel(
                 val profileResult = profileRepository.getUserProfileV2(targetUserId, forceRefresh = forceRefresh)
 
                 profileResult.onSuccess { userProfile ->
+                    if (userProfile.isBanned) {
+                        _uiState.update {
+                            it.copy(
+                                user = userProfile,
+                                followStatus = OtherFollowStatus.NOT_FOLLOWING,
+                                isMyFollower = false,
+                                isBlockedByMe = false,
+                                isBlockedByThem = false,
+                                isAccessDenied = true,
+                                isLoading = false,
+                                posts = emptyList()
+                            )
+                        }
+                        return@launch
+                    }
+
                     coroutineScope {
                         val isFollowingDeferred = async {
                             followRepository.isFollowing(targetUserId, forceRefresh).getOrDefault(false)

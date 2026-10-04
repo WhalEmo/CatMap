@@ -20,6 +20,7 @@ import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.session.CurrentUserManager
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.profile.follow.adapter.FooterAdapter
+import com.beem.catmap.ui.profile.follow.adapter.ListType
 import com.beem.catmap.ui.profile.follow.adapter.UserAdapter
 import com.beem.catmap.ui.profile.follow.state.FollowUiState
 import com.beem.catmap.ui.profile.follow.viewmodel.FollowListViewModel
@@ -70,7 +71,7 @@ class FollowersFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        userAdapter = UserAdapter { kullaniciId ->
+        userAdapter = UserAdapter(ListType.FOLLOWERS) { kullaniciId ->
             kullaniciId?.let {
                 val myUserId = UserSession.userId
                 val isMyFollower = (targetId == myUserId)

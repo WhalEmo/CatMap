@@ -1,10 +1,12 @@
 package com.beem.catmap.maps;
 import android.Manifest;
+import android.app.ComponentCaller;
 import android.app.Dialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -30,10 +32,13 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.beem.catmap.BottomSheetController;
-import com.beem.catmap.data.model.UserModel;
+import com.beem.catmap.data.local.UserSession;
+import com.beem.catmap.engine.location.LocationEngine;
 import com.beem.catmap.ui.badge.BadgeFragment;
+import com.beem.catmap.ui.banned.BannedFragment;
 import com.beem.catmap.ui.main.ChatNotificationViewModel;
+import com.beem.catmap.ui.main.BanSniperViewModel;
+import com.beem.catmap.ui.navigation.NavigationHelper;
 import com.beem.catmap.ui.onboarding.OnboardingFragment;
 import com.beem.catmap.ui.profile.block.UserBlockFragment;
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment;
@@ -60,6 +65,7 @@ import com.beem.catmap.ui.navigation.Screen;
 import com.beem.catmap.ui.navigation.SmartNavigationEngine;
 import com.beem.catmap.ui.profile_v2.myprofile.MyProfileFragment;
 import com.beem.catmap.ui.profile_v2.otherprofile.OtherProfileFragment;
+import com.beem.catmap.ui.spotoperation.SpotOperationFragment;
 import com.beem.catmap.ui.upload.UploadFragment;
 import com.beem.catmap.ui.profile_v2.edit.EditProfileFragment;
 import com.beem.catmap.ui.profile.follow.fragment.FollowFragment;
@@ -82,6 +88,7 @@ import kotlin.Unit;
 public class MapsActivity extends AppCompatActivity {
     private ActivityMapsBinding binding;
     private ChatNotificationViewModel chatNotificationViewModel;
+    private BanSniperViewModel banSniperViewModel;
     private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private NetworkObserver networkObserver;
@@ -121,7 +128,9 @@ public class MapsActivity extends AppCompatActivity {
                 case AUTH -> new AuthFragment();
                 case PROFILE_SETUP -> new ProfileSetupFragment();
                 case ONBOARDING -> new OnboardingFragment();
+                case SPOT_OPERATION -> new SpotOperationFragment();
                 case BADGE -> new BadgeFragment();
+                case BANNED -> new BannedFragment();
             };
         }
     };
@@ -196,7 +205,9 @@ public class MapsActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         chatNotificationViewModel = new ViewModelProvider(this).get(ChatNotificationViewModel.class);
+        banSniperViewModel = new ViewModelProvider(this).get(BanSniperViewModel.class);
         setupChatNotificationObserver();
+        setupBanSniperObserver();
 
         ViewCompat.setOnApplyWindowInsetsListener(
                 binding.getRoot(),
@@ -255,7 +266,12 @@ public class MapsActivity extends AppCompatActivity {
             String userId = currentUserManager.getCurrentUserId();
             FirebaseCrashlytics.getInstance().setUserId(userId);
             BegenileriCek();
-            SmartNavigationEngine.init(navigationEngine, Screen.MAP);
+
+            if (UserSession.INSTANCE.isBanned()) {
+                SmartNavigationEngine.init(navigationEngine, Screen.BANNED);
+            } else {
+                SmartNavigationEngine.init(navigationEngine, Screen.MAP);
+            }
         } else {
             SmartNavigationEngine.init(navigationEngine, Screen.AUTH);
         }
@@ -293,6 +309,11 @@ public class MapsActivity extends AppCompatActivity {
             AdRequest adRequest = new AdRequest.Builder().build();
             adView.loadAd(adRequest);
         }
+
+        binding.getRoot().post(() -> {
+            handleChatNotificationIntent(getIntent());
+        });
+
     }
 
 
@@ -310,12 +331,6 @@ public class MapsActivity extends AppCompatActivity {
         bottomSheet.show(getSupportFragmentManager(), CommentsBottomSheetFragment.TAG);
     }
 
-    public void sonTiklananMarkeriSil() {
-        if (sonTiklananMarker != null) {
-            sonTiklananMarker.remove();
-            sonTiklananMarker = null;
-        }
-    }
     private void BegenileriCek() {
         String userId = currentUserManager.getCurrentUserId();
         if (userId == null || userId.isEmpty()) return;
@@ -344,6 +359,41 @@ public class MapsActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     1001);
+        }
+    }
+
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleChatNotificationIntent(intent);
+    }
+
+    private void handleChatNotificationIntent(Intent intent) {
+        if (intent == null) return;
+
+        Uri data = intent.getData();
+        if (data != null) {
+            if ("catmap".equals(data.getScheme())) {
+                if ("chat".equals(data.getHost())) {
+                    String receiverId = data.getLastPathSegment();
+                    if (receiverId != null && !receiverId.trim().isEmpty()) {
+                        if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
+                            NavigationHelper.navigateToChat(receiverId);
+                        }
+                        intent.setData(null);
+                    }
+                } else if ("profile".equals(data.getHost())) {
+                    String targetId = data.getLastPathSegment();
+                    if (targetId != null && !targetId.trim().isEmpty()) {
+                        if (currentUserManager != null && currentUserManager.isUserLoggedIn() && !UserSession.INSTANCE.isBanned()) {
+                            NavigationHelper.navigateToProfile(targetId, false);
+                        }
+                        intent.setData(null);
+                    }
+                }
+            }
         }
     }
 
@@ -475,7 +525,55 @@ public class MapsActivity extends AppCompatActivity {
                 badge.setHorizontalOffset(offsetPx);
                 badge.setVerticalOffset(offsetPx);
             }
-            return kotlin.Unit.INSTANCE;
+            return Unit.INSTANCE;
+        });
+    }
+
+    private void setupBanSniperObserverv1() {
+        banSniperViewModel.isBanned().observe(this, isBanned -> {
+            if (isBanned) {
+                if (!UserSession.INSTANCE.isBanned()) {
+                    UserSession.INSTANCE.setBanStatus(true);
+
+                    SmartNavigationEngine.resetEngineForLogout(Screen.BANNED, null, null);
+                }
+            } else {
+                if (UserSession.INSTANCE.isBanned()) {
+                    UserSession.INSTANCE.setBanStatus(false);
+
+                    SmartNavigationEngine.resetEngineForLogout(Screen.MAP, null, null);
+                }
+            }
+        });
+    }
+
+    private void setupBanSniperObserver() {
+        banSniperViewModel.isBanned().observe(this, isBanned -> {
+            // 1. Gözlemciye veri geldiği an
+            Log.d("BanSniper", "📡 Gözlemci tetiklendi. Sunucudan gelen isBanned durumu: " + isBanned);
+
+            if (isBanned != null && isBanned) {
+                Log.d("BanSniper", "🎯 Durum: Sunucu hedefin BANLI olduğunu söylüyor.");
+
+                if (!UserSession.INSTANCE.isBanned()) {
+                    Log.d("BanSniper", "🔒 Eylem: Adamın yerel mührü yoktu. Mühür vurulup hücreye (BANNED) atılıyor!");
+                    UserSession.INSTANCE.setBanStatus(true);
+                    SmartNavigationEngine.resetEngineForLogout(Screen.BANNED, null, null);
+                } else {
+                    Log.d("BanSniper", "🛑 Eylem: Adam zaten hücrede (Yerel mühürlü). Tekrar yönlendirme yapılmadı.");
+                }
+
+            } else {
+                Log.d("BanSniper", "🕊️ Durum: Sunucu hedefin TEMİZ (Banı yok) olduğunu söylüyor.");
+
+                if (UserSession.INSTANCE.isBanned()) {
+                    Log.d("BanSniper", "🔓 Eylem: Adam hücredeydi (Yerel mühürlü). Mühür kırılıp haritaya (MAP) salınıyor!");
+                    UserSession.INSTANCE.setBanStatus(false);
+                    SmartNavigationEngine.resetEngineForLogout(Screen.MAP, null, null);
+                } else {
+                    Log.d("BanSniper", "✅ Eylem: Adam zaten temiz ve haritada. İşlem atlandı.");
+                }
+            }
         });
     }
 }

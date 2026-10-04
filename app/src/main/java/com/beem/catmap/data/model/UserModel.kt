@@ -24,7 +24,8 @@ data class UserModel(
     @JvmField var postCount: Long? = 0L,
     @JvmField var bio: String = "",
     @JvmField var isProfileLoaded: Boolean = false,
-    @Transient @JvmField var equippedBadge: EquippedBadgeModel? = null
+    @Transient @JvmField var equippedBadge: EquippedBadgeModel? = null,
+    @JvmField var isBannedLocal: Boolean = false
 ): Serializable {
     fun KullaniciData(): Map<String, Any?> {
         return mapOf(
