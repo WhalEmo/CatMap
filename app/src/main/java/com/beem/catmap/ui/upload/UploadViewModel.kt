@@ -13,10 +13,13 @@ import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.ui.manager.image.ImageUploadManager
 import com.beem.catmap.ui.manager.image.UploadSession
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,16 +32,14 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()
 
+    private var uploadJob: Job? = null
+
     init {
         viewModelScope.launch {
             ImageUploadManager.observeSession(UploadSession.GENERAL).collect { uris ->
                 _uiState.update { it.copy(selectedImages = uris) }
             }
         }
-    }
-
-    fun onProgressDialogDismissed() {
-        _uiState.update { it.copy(isAllDone = true) }
     }
 
     fun addCatPostMyProfile(catId: String, onComplete: (Boolean) -> Unit) {
@@ -65,7 +66,8 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
         userId: String,
         locationHelper: LocationHelper
     ) {
-        if (catName.isBlank()) {
+        val trimmedName = catName.trim()
+        if (trimmedName.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Lütfen kediye bir isim veriniz!") }
             return
         }
@@ -76,7 +78,9 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        viewModelScope.launch {
+        uploadJob?.cancel()
+
+        uploadJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -101,66 +105,113 @@ class UploadViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
 
-            // 📍 Adres çözümleme (Geocoder) işlemini IO thread'e alıyoruz (Performans için)
-            val addressModel = withContext(Dispatchers.IO) {
-                locationHelper.getFormattedAddress(
+            try {
+
+                // 📍 Adres çözümleme (Geocoder) işlemini IO thread'e alıyoruz (Performans için)
+                val addressModel = withContext(Dispatchers.IO) {
+                    locationHelper.getFormattedAddress(
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                }
+
+                val city = addressModel?.city ?: ""
+                val district = addressModel?.district ?: ""
+                val neighborhood = addressModel?.neighborhood ?: ""
+
+                _uiState.update { it.copy(uploadStage = UploadStage.UPLOADING_ASSETS) }
+
+                repository.uploadCatPostWithProgress(
+                    catName = trimmedName,
+                    catAbout = catAbout.trim(),
                     latitude = location.latitude,
-                    longitude = location.longitude
-                )
-            }
-
-            val city = addressModel?.city ?: ""
-            val district = addressModel?.district ?: ""
-            val neighborhood = addressModel?.neighborhood ?: ""
-
-            _uiState.update { it.copy(uploadStage = UploadStage.UPLOADING_ASSETS) }
-
-            repository.uploadCatPostWithProgress(
-                catName = catName,
-                catAbout = catAbout,
-                latitude = location.latitude,
-                longitude = location.longitude,
-                userId = userId,
-                imageUris = selectedPhotos,
-                city = city,
-                district = district,
-                neighborhood = neighborhood
-            ).collect { progressState ->
-
-                when (progressState) {
-                    is UploadProgressState.Loading -> {
-                        _uiState.update {
-                            it.copy(uploadProgress = progressState.progress)
-                        }
-                    }
-                    is UploadProgressState.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                uploadProgress = 100,
-                                isUploadComplete = true,
-                                isSuccess = true,
-                                createdDocument = progressState.catModel,
-                                uploadedPhotoUrls = progressState.catModel.photoUri,
-                                uploadStage = UploadStage.SUCCESS
-                            )
-                        }
-
-                        CatEventBus.emitEvent(
-                            CatMapEvent.Created(progressState.catModel)
+                    longitude = location.longitude,
+                    userId = userId,
+                    imageUris = selectedPhotos,
+                    city = city,
+                    district = district,
+                    neighborhood = neighborhood
+                ).catch { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            uploadStage = UploadStage.ERROR,
+                            errorMessage = throwable.message ?: "Beklenmedik bir hata oluştu."
                         )
                     }
-                    is UploadProgressState.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                uploadStage = UploadStage.ERROR,
-                                errorMessage = progressState.exception.message ?: "Bilinmeyen bir hata oluştu!"
+                }.collect { progressState ->
+
+                    when (progressState) {
+                        is UploadProgressState.Loading -> {
+                            _uiState.update {
+                                it.copy(uploadProgress = progressState.progress)
+                            }
+                        }
+
+                        is UploadProgressState.Success -> {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    uploadProgress = 100,
+                                    isUploadComplete = true,
+                                    isSuccess = true,
+                                    createdDocument = progressState.catModel,
+                                    uploadedPhotoUrls = progressState.catModel.photoUri,
+                                    uploadStage = UploadStage.SUCCESS
+                                )
+                            }
+
+                            CatEventBus.emitEvent(
+                                CatMapEvent.Created(progressState.catModel)
                             )
+                        }
+
+                        is UploadProgressState.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    uploadStage = UploadStage.ERROR,
+                                    errorMessage = progressState.exception.message
+                                        ?: "Bilinmeyen bir hata oluştu!"
+                                )
+                            }
                         }
                     }
                 }
+            }catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        uploadStage = UploadStage.ERROR,
+                        errorMessage = e.message ?: "İşlem sırasında bir hata meydana geldi."
+                    )
+                }
             }
+        }
+    }
+
+    fun cancelUpload() {
+        uploadJob?.cancel()
+        uploadJob = null
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                uploadStage = UploadStage.IDLE,
+                uploadProgress = 0,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun dismissStatus() {
+        _uiState.update {
+            it.copy(
+                uploadStage = UploadStage.IDLE,
+                errorMessage = null,
+                isSuccess = false
+            )
         }
     }
 

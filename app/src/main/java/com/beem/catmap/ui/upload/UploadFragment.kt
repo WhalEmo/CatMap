@@ -8,10 +8,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +29,7 @@ import com.beem.catmap.ui.camera.GalleryBottomSheet
 import com.beem.catmap.ui.extensions.applyInputLimits
 import com.beem.catmap.ui.extensions.fadeIn
 import com.beem.catmap.ui.extensions.fadeOut
+import com.beem.catmap.ui.manager.BadgeUnlockBus
 import com.beem.catmap.ui.manager.CatEventBus
 import com.beem.catmap.ui.manager.CatMapEvent
 import com.beem.catmap.ui.manager.ProfileEvent
@@ -35,6 +39,7 @@ import com.beem.catmap.ui.manager.UiMessageState
 import com.beem.catmap.ui.manager.image.UploadSession
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.navigation.SmartNavigationEngine
+import com.beem.catmap.ui.upload.components.UploadStatusBar
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.MobileAds
@@ -57,8 +62,6 @@ class UploadFragment : Fragment() {
 
     private lateinit var photoAdapter: UploadPhotosAdapter
 
-    private var interstitialAd: InterstitialAd? = null
-
     private var premiumDialog: PremiumUploadDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -76,7 +79,7 @@ class UploadFragment : Fragment() {
         setupListeners()
         observeUiState()
         setupBackPressed()
-        loadInterstitialAd()
+        setupComposeBanner()
 
         binding.hakkindaText.applyInputLimits(maxLength = 280, maxLines = 10)
         binding.isimText.applyInputLimits(maxLength = 20, maxLines = 2)
@@ -99,6 +102,24 @@ class UploadFragment : Fragment() {
             itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator().apply {
                 addDuration = 250
                 removeDuration = 250
+            }
+        }
+    }
+
+
+    private fun setupComposeBanner() {
+        binding.composeUploadBanner.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+                UploadStatusBar(
+                    stage = state.uploadStage,
+                    progress = state.uploadProgress,
+                    errorMessage = state.errorMessage,
+                    onCancel = { viewModel.cancelUpload() },
+                    onDismissError = { viewModel.dismissStatus() }
+                )
             }
         }
     }
@@ -133,44 +154,32 @@ class UploadFragment : Fragment() {
         }
     }
 
-
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collectLatest { state ->
+                    // 1. Seçili fotoğraf listesi animasyonu
+                    handlePhotoListVisibility(state.selectedImages)
 
-                launch {
-                    viewModel.uiState.collectLatest { state ->
-                        handlePhotoListVisibility(state.selectedImages)
+                    // 2. Yükleme devam ederken kaydet butonunu kilitle (çift basımı engelle)
+                    binding.kaydetmeButonu.isEnabled = !state.isLoading
 
-                        if (state.isLoading || state.isUploadComplete || state.uploadStage == UploadStage.ERROR) {
-                            if (premiumDialog == null) {
-                                premiumDialog = PremiumUploadDialog(
-                                    context = requireContext(),
-                                    onAnimationEnd = {
-                                        viewModel.onProgressDialogDismissed()
-                                    }
-                                )
-                                premiumDialog?.show()
+                    // 3. Başarıyla tamamlandığında profil sorusu popup'ını aç
+                    if (state.isSuccess && state.createdDocument != null) {
+                        val cat = state.createdDocument
+                        viewModel.resetState()
+                        clearFormFields()
+                        BadgeUnlockBus.setOnDismissAction {
+                            if (isAdded && context != null) {
+                                showPostSaveDialog(cat)
                             }
-                            premiumDialog?.renderState(state.uploadStage, state.uploadProgress, state.errorMessage)
-                        } else {
-                            premiumDialog = null
-                        }
-
-                        if (state.isAllDone && state.createdDocument != null) {
-                            CatEventBus.emitEvent(
-                                event = CatMapEvent.Created(state.createdDocument)
-                            )
-                            showPostSaveDialog(state.createdDocument)
-                            viewModel.resetState()
-                            clearFormFields()
                         }
                     }
                 }
-
             }
         }
     }
+
     fun Fragment.hideKeyboard() {
         view?.let { activity?.hideKeyboard(it) }
     }
@@ -276,35 +285,9 @@ class UploadFragment : Fragment() {
         })
     }
 
-    // --- REKLAM MOTORU ALANI ---
-    private fun loadInterstitialAd() {
-        MobileAds.initialize(requireContext()) {}
-        InterstitialAd.load(requireContext(), "ca-app-pub-3940256099942544/1033173712", AdRequest.Builder().build(),
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
-            })
-    }
-
-    private fun showAdIfAvailable() {
-        interstitialAd?.apply {
-            fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() { interstitialAd = null }
-                override fun onAdShowedFullScreenContent() { interstitialAd = null }
-            }
-            show(requireActivity())
-        }
-    }
-
-    // --- YAŞAM DÖNGÜSÜ KONTROLLERİ (ÇEVRİMİÇİ TAKİBİ) ---
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-    }
-
     override fun onDestroyView() {
+        premiumDialog?.dismiss()
+        premiumDialog = null
         super.onDestroyView()
         _binding = null
     }

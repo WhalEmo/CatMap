@@ -235,4 +235,11 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/composeUploadBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_margin="16dp" />
+
 </FrameLayout>

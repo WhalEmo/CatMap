@@ -24,7 +24,7 @@ import androidx.core.graphics.createBitmap
 class CatClusterRenderer(
     context: Context,
     private val map: GoogleMap,
-    clusterManager: ClusterManager<CatClusterItem>
+    private val clusterManager: ClusterManager<CatClusterItem>
 ) : DefaultClusterRenderer<CatClusterItem>(context, map, clusterManager) {
 
     private val iconCache = mutableMapOf<Int, BitmapDescriptor>()
@@ -33,6 +33,9 @@ class CatClusterRenderer(
     private val brandColor = ContextCompat.getColor(context, R.color.catmap_accent)
     // %22 opaklıkta koruma alanı rengi 55
     private val zoneFillColor = Color.argb(40, Color.red(brandColor), Color.green(brandColor), Color.blue(brandColor))
+
+    var areCatsVisible: Boolean = true
+        private set
 
     init {
         minClusterSize = 2
@@ -46,10 +49,12 @@ class CatClusterRenderer(
         markerOptions.icon(getClusterBadge(cluster.size))
         markerOptions.anchor(0.5f, 0.5f)
         markerOptions.zIndex(60.0f)
+        markerOptions.visible(areCatsVisible)
     }
 
     override fun onClusterUpdated(cluster: Cluster<CatClusterItem>, marker: Marker) {
         marker.setIcon(getClusterBadge(cluster.size))
+        marker.isVisible = areCatsVisible
     }
 
     override fun onBeforeClusterItemRendered(item: CatClusterItem, markerOptions: MarkerOptions) {
@@ -58,12 +63,37 @@ class CatClusterRenderer(
         markerOptions.anchor(0.5f, 0.5f)
         markerOptions.title(item.name)
         markerOptions.zIndex(55.0f)
+        markerOptions.visible(areCatsVisible)
+    }
+
+    override fun onClusterItemUpdated(item: CatClusterItem, marker: Marker) {
+        marker.isVisible = areCatsVisible
+    }
+
+
+
+    fun setCatsVisibility(visible: Boolean, clusters: Set<Cluster<CatClusterItem>>) {
+        if (areCatsVisible == visible) return
+        areCatsVisible = visible
+
+        clusterManager.markerCollection.markers.forEach { it.isVisible = visible }
+        clusterManager.clusterMarkerCollection.markers.forEach { it.isVisible = visible }
+
+        if (visible) {
+            updateSafetyCircles(clusters)
+        } else {
+            clearSafetyCircles()
+        }
     }
 
     /**
      * Kümelerin kapsadığı alanlara yarı saydam güvenlik çemberlerini çizer.
      */
     fun updateSafetyCircles(clusters: Set<Cluster<CatClusterItem>>) {
+        if (!areCatsVisible) {
+            clearSafetyCircles()
+            return
+        }
         val currentKeys = mutableSetOf<String>()
 
         for (cluster in clusters) {
@@ -96,6 +126,11 @@ class CatClusterRenderer(
                 iterator.remove()
             }
         }
+    }
+
+    fun clearSafetyCircles() {
+        activeZoneCircles.values.forEach { it.remove() }
+        activeZoneCircles.clear()
     }
 
     private fun getClusterBadge(size: Int): BitmapDescriptor {

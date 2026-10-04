@@ -2,7 +2,11 @@ package com.beem.catmap.data.repository
 
 import android.net.Uri
 import android.util.Log
+import com.beem.catmap.data.model.BadgeTier
 import com.beem.catmap.data.model.CatModel
+import com.beem.catmap.data.model.NeighborhoodBadgeModel
+import com.beem.catmap.ui.manager.BadgeCelebrationPayload
+import com.beem.catmap.ui.manager.BadgeUnlockBus
 import com.beem.catmap.ui.manager.UploadProgressState
 import com.beem.catmap.utils.formatBadgeId
 import com.firebase.geofire.GeoFireUtils
@@ -12,15 +16,22 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
 
 class MapRepository {
@@ -63,6 +74,232 @@ class MapRepository {
         }
     }
 
+    fun uploadCatPostWithProgress(
+        catName: String,
+        catAbout: String,
+        latitude: Double,
+        longitude: Double,
+        userId: String,
+        imageUris: List<Uri>,
+        city: String,
+        district: String,
+        neighborhood: String
+    ): Flow<UploadProgressState> = callbackFlow  {
+        if (imageUris.isEmpty()) {
+            trySend(UploadProgressState.Error(Exception("En az bir kedi fotoğrafı yüklemelisiniz!")))
+            close()
+            return@callbackFlow
+        }
+        val job = launch {
+            try {
+                val uploadedUrls = uploadImagesSequentially(userId,imageUris)
+
+                trySend(UploadProgressState.Loading(progress = 85))
+
+                val newCat = saveCatAndBadgeToFirestore(
+                    catName = catName,
+                    catAbout = catAbout,
+                    latitude = latitude,
+                    longitude = longitude,
+                    userId = userId,
+                    uploadedUrls = uploadedUrls,
+                    city = city,
+                    district = district,
+                    neighborhood = neighborhood
+                )
+
+                trySend(UploadProgressState.Loading(progress = 100))
+                trySend(UploadProgressState.Success(catModel = newCat))
+                close()
+            } catch (e: CancellationException) {
+                close(e)
+            } catch (e: Exception) {
+                Log.e("MapRepository", "Kedi yükleme başarısız: ${e.message}", e)
+                val friendlyError = Exception(e.toUserFriendlyMessage())
+                trySend(UploadProgressState.Error(friendlyError))
+                close(friendlyError)
+            }
+        }
+        awaitClose {
+            job.cancel()
+        }
+    }.flowOn(Dispatchers.IO)
+
+    private suspend fun ProducerScope<UploadProgressState>.uploadImagesSequentially(
+        userId: String,
+        imageUris: List<Uri>
+    ): List<String> {
+        val uploadedUrls = mutableListOf<String>()
+        val totalImages = imageUris.size
+
+        imageUris.forEachIndexed { index, uri ->
+            val fileName = "fotoklasoru/${userId}/cats/${UUID.randomUUID()}_$index.jpg"
+            val storageRef = storage.reference.child(fileName)
+
+            val downloadUrl = suspendCancellableCoroutine<String> { continuation ->
+                val uploadTask = storageRef.putFile(uri)
+
+                uploadTask.addOnProgressListener { snapshot ->
+                    if (snapshot.totalByteCount > 0) {
+                        val progress = (100.0 * snapshot.bytesTransferred / snapshot.totalByteCount).toInt()
+                        val globalProgress = ((index * 100) + progress) / totalImages
+                        val safeProgress = if (globalProgress >= 100) 80 else (globalProgress * 0.8).toInt()
+                        trySend(UploadProgressState.Loading(safeProgress))
+                    }
+                }
+
+                uploadTask.continueWithTask { task ->
+                    if (!task.isSuccessful) throw task.exception ?: Exception("Fotoğraf yüklenemedi")
+                    storageRef.downloadUrl
+                }.addOnSuccessListener { uriResult ->
+                    continuation.resume(uriResult.toString())
+                }.addOnFailureListener { error ->
+                    continuation.resumeWithException(error)
+                }
+
+                continuation.invokeOnCancellation {
+                    uploadTask.cancel()
+                }
+            }
+
+            uploadedUrls.add(downloadUrl)
+        }
+
+        return uploadedUrls
+    }
+
+    private suspend fun saveCatAndBadgeToFirestore(
+        catName: String,
+        catAbout: String,
+        latitude: Double,
+        longitude: Double,
+        userId: String,
+        uploadedUrls: List<String>,
+        city: String,
+        district: String,
+        neighborhood: String
+    ): CatModel {
+        val newCatRef = catsCollection.document()
+        val hash = GeoFireUtils.getGeoHashForLocation(GeoLocation(latitude, longitude))
+
+        val batch = db.batch()
+
+        // 1. Kedi Dokümanı
+        val catData = hashMapOf(
+            "kediAdi" to catName,
+            "kediHakkinda" to catAbout,
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "geohash" to hash,
+            "photoUri" to uploadedUrls,
+            "YukleyenKullaniciID" to userId,
+            "city" to city,
+            "district" to district,
+            "neighborhood" to neighborhood,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        batch.set(newCatRef, catData)
+
+        // 2. Rozet Durum Analizi (Varsa)
+        val hasLocationData = city.isNotBlank() && district.isNotBlank() && neighborhood.isNotBlank()
+        var celebrationPayload: BadgeCelebrationPayload? = null
+
+        if (hasLocationData) {
+            val badgeId = formatBadgeId(city, district, neighborhood)
+            val badgeRef = db.collection("users")
+                .document(userId)
+                .collection("neighborhoodBadges")
+                .document(badgeId)
+
+            val badgeUpgradeResult = checkBadgeTierUpgrade(userId, badgeId, city, district, neighborhood)
+
+            val badgeData = hashMapOf(
+                "badgeId" to badgeId,
+                "city" to city,
+                "district" to district,
+                "neighborhood" to neighborhood,
+                "unlockedAt" to FieldValue.serverTimestamp(),
+                "catCount" to FieldValue.increment(1)
+            )
+            batch.set(badgeRef, badgeData, SetOptions.merge())
+
+            celebrationPayload = badgeUpgradeResult
+        }
+
+        // 3. Batch Commit
+        batch.commit().await()
+
+        // 4. Kutlamayı Başarıyla Kaydedildikten Sonra Fırlat
+        celebrationPayload?.let {
+            BadgeUnlockBus.emitCelebration(it)
+        }
+
+        return CatModel(
+            id = newCatRef.id,
+            kediAdi = catName,
+            kediHakkinda = catAbout,
+            latitude = latitude,
+            longitude = longitude,
+            city = city,
+            district = district,
+            neighborhood = neighborhood,
+            photoUri = uploadedUrls,
+            YukleyenKullaniciID = userId,
+            createdAt = Timestamp.now().toDate()
+        )
+    }
+
+    /**
+     * Rozetin mevcut seviyesi ile kedi eklendikten sonraki seviyesini kıyaslar.
+     */
+    private suspend fun checkBadgeTierUpgrade(
+        userId: String,
+        badgeId: String,
+        city: String,
+        district: String,
+        neighborhood: String
+    ): BadgeCelebrationPayload? {
+        return try {
+            val badgeRef = db.collection("users")
+                .document(userId)
+                .collection("neighborhoodBadges")
+                .document(badgeId)
+
+            val snapshot = badgeRef.get().await()
+
+            val oldCount = if (snapshot.exists()) snapshot.getLong("catCount") ?: 0L else 0L
+            val newCount = oldCount + 1L
+            val isFirstUnlock = !snapshot.exists()
+
+            val oldTier = BadgeTier.getTierForCatCount(oldCount)
+            val newTier = BadgeTier.getTierForCatCount(newCount)
+
+            val shouldCelebrate = isFirstUnlock || (newTier.level > oldTier.level)
+
+            if (shouldCelebrate) {
+                BadgeCelebrationPayload(
+                    badge = NeighborhoodBadgeModel(
+                        badgeId = badgeId,
+                        city = city,
+                        district = district,
+                        neighborhood = neighborhood,
+                        catCount = newCount,
+                        unlockedAt = Timestamp.now()
+                    ),
+                    unlockedTier = newTier,
+                    isFirstUnlock = isFirstUnlock
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("MapRepository", "Rozet seviye kontrolü yapılamadı: ${e.message}")
+            null
+        }
+    }
+
+    /*
+
 
     fun uploadCatPostWithProgress(
         catName: String,
@@ -95,6 +332,11 @@ class MapRepository {
 
                 val batch = db.batch()
 
+                var shouldCelebrate = false
+                var newCount = 0L
+                var badgeId = ""
+                var newTier: BadgeTier
+
                 // 🚀 TÜM RESİMLER BİTTİ: Şimdi Firestore'a kayıt zamanı
                 val catData = hashMapOf(
                     "kediAdi" to catName,
@@ -118,6 +360,18 @@ class MapRepository {
                         .document(userId)
                         .collection("neighborhoodBadges")
                         .document(badgeId)
+
+                    badgeRef.get().addOnSuccessListener { snapshot ->
+                        val oldCount = if (snapshot.exists()) snapshot.getLong("catCount") ?: 0L else 0L
+                        newCount = oldCount + 1L
+                        val isFirstUnlock = !snapshot.exists()
+
+                        val oldTier = BadgeTier.getTierForCatCount(oldCount)
+                        newTier = BadgeTier.getTierForCatCount(newCount)
+
+                        shouldCelebrate = isFirstUnlock || (newTier.level > oldTier.level)
+
+                    }
 
                     val badgeData = hashMapOf(
                         "badgeId" to badgeId,
@@ -145,6 +399,26 @@ class MapRepository {
                             YukleyenKullaniciID = userId,
                             createdAt = Timestamp.now().toDate()
                         )
+
+                        if (shouldCelebrate) {
+                            val badgeModel = NeighborhoodBadgeModel(
+                                badgeId = badgeId,
+                                city = city,
+                                district = district,
+                                neighborhood = neighborhood,
+                                catCount = newCount,
+                                unlockedAt = Timestamp.now()
+                            )
+
+                            BadgeUnlockBus.emitCelebration(
+                                BadgeCelebrationPayload(
+                                    badge = badgeModel,
+                                    unlockedTier = newTier,
+                                    isFirstUnlock = isFirstUnlock
+                                )
+                            )
+                        }
+
                         trySend(UploadProgressState.Success(catModel = newCat))
                         close()
                     }
@@ -189,6 +463,8 @@ class MapRepository {
         // Emniyet kilidi: Akış kırılırsa task'ları durdurmak için
         awaitClose { /* İptal gerekirse */ }
     }
+
+     */
 
 
     suspend fun fetchCatsInArea(latitude: Double, longitude: Double, radiusInMeters: Double = 5000.0): List<CatModel> {
@@ -254,6 +530,30 @@ class MapRepository {
         } catch (e: Exception) {
             Log.e("CatRepository", "Kedi detayı çekilirken hata (ID: $catId): ${e.message}")
             null
+        }
+    }
+
+    private fun Throwable.toUserFriendlyMessage(): String {
+        val rawMessage = this.message.orEmpty()
+        return when {
+            rawMessage.contains("does not have permission", ignoreCase = true) -> {
+                "Fotoğraf yükleme izniniz bulunmuyor veya oturumunuz geçersiz."
+            }
+            rawMessage.contains("network", ignoreCase = true) || rawMessage.contains("unable to resolve host", ignoreCase = true) -> {
+                "İnternet bağlantısı kurulamadı. Lütfen ağınızı kontrol edin."
+            }
+            rawMessage.contains("quota exceeded", ignoreCase = true) -> {
+                "Sunucu yükleme kotası aşıldı, lütfen daha sonra tekrar deneyin."
+            }
+            rawMessage.contains("timeout", ignoreCase = true) -> {
+                "Sunucu yanıt vermedi. Yükleme zaman aşımına uğradı."
+            }
+            !this.localizedMessage.isNullOrBlank() && !this.localizedMessage!!.contains("Exception") -> {
+                this.localizedMessage!!
+            }
+            else -> {
+                "Fotoğraf yüklenirken beklenmedik bir sorun oluştu. Lütfen tekrar deneyin."
+            }
         }
     }
 

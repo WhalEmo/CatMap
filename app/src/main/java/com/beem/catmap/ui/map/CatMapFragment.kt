@@ -81,8 +81,6 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
     private var mapViewModel: MapViewModel? = null
     private var bottomSheetController: BottomSheetController? = null
 
-
-    private val kediler = ArrayList<Kediler>()
     private lateinit var catClusterManager: ClusterManager<CatClusterItem>
     private lateinit var catRenderer: CatClusterRenderer
     private val catClusterItems = ArrayList<CatClusterItem>()
@@ -185,8 +183,12 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         googleMap.setOnCameraIdleListener {
             catClusterManager.onCameraIdle()
 
-            val clusters = catClusterManager.algorithm.getClusters(googleMap.cameraPosition.zoom)
-            catRenderer.updateSafetyCircles(clusters)
+            if (::catRenderer.isInitialized && catRenderer.areCatsVisible) {
+                val clusters = catClusterManager.algorithm.getClusters(googleMap.cameraPosition.zoom).toSet()
+                catRenderer.updateSafetyCircles(clusters)
+            } else if (::catRenderer.isInitialized) {
+                catRenderer.clearSafetyCircles()
+            }
 
             val currentCenter = googleMap.cameraPosition.target
             lastScannedLocation?.let { sonMerkez ->
@@ -298,9 +300,13 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         val showCats = filter == MapFilterType.ALL || filter == MapFilterType.CATS
         val showSpots = filter == MapFilterType.ALL || filter == MapFilterType.SPOTS
 
-        if (::catClusterManager.isInitialized) {
-            catClusterManager.markerCollection.markers.forEach { it.isVisible = showCats }
-            catClusterManager.clusterMarkerCollection.markers.forEach { it.isVisible = showCats }
+        if (::catClusterManager.isInitialized && ::catRenderer.isInitialized) {
+            val currentClusters = if (mMap != null) {
+                catClusterManager.algorithm.getClusters(mMap!!.cameraPosition.zoom).toSet()
+            } else {
+                emptySet()
+            }
+            catRenderer.setCatsVisibility(showCats, currentClusters)
         }
         spotMarkers.forEach { it.isVisible = showSpots }
     }
@@ -389,7 +395,7 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
                 catClusterItems.clear()
                 catClusterItems.addAll(catModels.map { it.toClusterItem() })
                 syncCatMarkersWithMap(catClusterItems)
-                catCountState.intValue = kediler.size
+                catCountState.intValue = catClusterItems.size
                 applyMarkerVisibilityFilter(currentFilter.value)
             } else {
                 catCountState.intValue = 0
@@ -582,8 +588,12 @@ class CatMapFragment : Fragment(), OnMapReadyCallback {
         catClusterManager.cluster()
 
         mMap?.let { map ->
-            val clusters = catClusterManager.algorithm.getClusters(map.cameraPosition.zoom)
-            catRenderer.updateSafetyCircles(clusters)
+            if (::catRenderer.isInitialized && catRenderer.areCatsVisible) {
+                val clusters = catClusterManager.algorithm.getClusters(map.cameraPosition.zoom).toSet()
+                catRenderer.updateSafetyCircles(clusters)
+            } else if (::catRenderer.isInitialized) {
+                catRenderer.clearSafetyCircles()
+            }
         }
     }
 

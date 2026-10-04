@@ -77,8 +77,11 @@ import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity {
     private ActivityMapsBinding binding;
+
     private ChatNotificationViewModel chatNotificationViewModel;
     private BanSniperViewModel banSniperViewModel;
+    private AppShellViewModel appShellViewModel;
+
     private Boolean lastNetworkStatus = null;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private NetworkObserver networkObserver;
@@ -184,8 +187,11 @@ public class MainActivity extends AppCompatActivity {
 
         chatNotificationViewModel = new ViewModelProvider(this).get(ChatNotificationViewModel.class);
         banSniperViewModel = new ViewModelProvider(this).get(BanSniperViewModel.class);
+        appShellViewModel = new ViewModelProvider(this).get(AppShellViewModel.class);
+
         setupChatNotificationObserver();
         setupBanSniperObserver();
+        setupGlobalOverlay();
 
         ViewCompat.setOnApplyWindowInsetsListener(
                 binding.getRoot(),
@@ -300,6 +306,16 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Konum izni reddedildi!", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void setupGlobalOverlay() {
+        GlobalOverlayBridge.attachBadgeOverlay(
+                binding.composeGlobalOverlay,
+                intent -> {
+                    appShellViewModel.onIntent(intent);
+                    return Unit.INSTANCE;
+                }
+        );
     }
 
     @Override

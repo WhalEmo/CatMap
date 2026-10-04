@@ -63,12 +63,11 @@
             android:background="@drawable/camera" />
     </FrameLayout>
 
-    <View
-        android:id="@+id/viewDimScrim"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="#80000000"
-        android:visibility="gone"
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/composeGlobalOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="100dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

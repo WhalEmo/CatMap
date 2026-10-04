@@ -13,5 +13,5 @@ data class UploadUiState(
     val createdDocument: CatModel? = null,
     val isUploadComplete: Boolean = false,
     val isAllDone: Boolean = false,
-    val uploadStage: UploadStage = UploadStage.FETCHING_LOCATION,
+    val uploadStage: UploadStage = UploadStage.IDLE,
 )

@@ -1,6 +1,7 @@
 package com.beem.catmap.ui.upload
 
 import android.content.Context
+import android.content.DialogInterface
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
@@ -15,6 +16,8 @@ class PremiumUploadDialog(
     private var dialog: AlertDialog? = null
     private val binding: DialogPremiumUploadBinding =
         DialogPremiumUploadBinding.inflate(LayoutInflater.from(context))
+
+    private var pendingDismissRunnable: Runnable? = null
 
     init {
         dialog = MaterialAlertDialogBuilder(context)
@@ -40,9 +43,20 @@ class PremiumUploadDialog(
         }
     }
 
+    fun setOnDismissListener(listener: DialogInterface.OnDismissListener) {
+        dialog?.setOnDismissListener(listener)
+    }
+
+
 
     fun renderState(stage: UploadStage, progress: Int, errorMsg: String? = null) {
+        cancelPendingAnimations()
+        dialog?.window?.decorView?.alpha = 1f
+
         when (stage) {
+            UploadStage.IDLE -> {
+                dismiss()
+            }
             UploadStage.FETCHING_LOCATION -> {
                 binding.dialogIconProgress.visibility = View.VISIBLE
                 binding.ivDialogSuccessCheck.visibility = View.GONE
@@ -70,16 +84,14 @@ class PremiumUploadDialog(
         binding.tvDialogStatus.text = "Haritaya başarıyla işlendi! 🐾"
         binding.dialogProgressBar.visibility = View.INVISIBLE
 
-        binding.root.postDelayed({
-            dialog?.window?.decorView?.animate()
-                ?.alpha(0f)
-                ?.setDuration(300)
-                ?.withEndAction {
-                    this.dismiss()
-                    onAnimationEnd.invoke()
-                }
-                ?.start()
-        }, 800)
+
+        val runnable = Runnable {
+            dismissWithAnimation()
+        }
+
+        pendingDismissRunnable = runnable
+
+        binding.root.postDelayed(runnable, 800)
     }
 
     private fun performErrorAnimation(message: String) {
@@ -89,9 +101,12 @@ class PremiumUploadDialog(
         binding.tvDialogStatus.text = message
         binding.dialogProgressBar.visibility = View.GONE
 
-        binding.root.postDelayed({
+        val runnable = Runnable {
             dismissWithAnimation()
-        }, 1800)
+        }
+
+        pendingDismissRunnable = runnable
+        binding.root.postDelayed(runnable, 1800)
     }
 
     private fun dismissWithAnimation() {
@@ -103,5 +118,13 @@ class PremiumUploadDialog(
                 onAnimationEnd.invoke()
             }
             ?.start()
+    }
+
+    private fun cancelPendingAnimations() {
+        pendingDismissRunnable?.let {
+            binding.root.removeCallbacks(it)
+            pendingDismissRunnable = null
+        }
+        dialog?.window?.decorView?.animate()?.cancel()
     }
 }
