@@ -28,7 +28,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
-import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.maps.CatFactService
+import com.beem.catmap.data.model.Kediler
+import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.maps.MapsActivity
 import com.beem.catmap.R
 import com.beem.catmap.databinding.FragmentCatMapBinding
