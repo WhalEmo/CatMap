@@ -19,7 +19,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.text.HtmlCompat
-import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -27,7 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.beem.catmap.BottomSheetController
 import com.beem.catmap.maps.CatFactService
-import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.data.model.Kediler
 import com.beem.catmap.maps.MapViewModel
 import com.beem.catmap.maps.MapsActivity
 import com.beem.catmap.R
@@ -52,7 +51,6 @@ import kotlinx.coroutines.launch
 import java.util.ArrayList
 import java.util.HashMap
 import androidx.core.view.isGone
-import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
 import com.beem.catmap.maps.LocationEngine
 import com.beem.catmap.maps.LocationSettingsHandler

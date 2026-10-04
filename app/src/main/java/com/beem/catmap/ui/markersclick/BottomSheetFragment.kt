@@ -6,22 +6,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
-import android.widget.LinearLayout
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.viewpager2.widget.ViewPager2
+import coil.load
+import coil.request.CachePolicy
 import com.beem.catmap.R
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.model.Post
 import com.beem.catmap.databinding.MarkerdakiKediyiGostermeBinding
-import com.beem.catmap.maps.FotoGeciciAdapter
-import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.data.model.Kediler
 import com.beem.catmap.ui.commentreply.CommentViewModel
 import com.beem.catmap.ui.commentreply.CommentsBottomSheetFragment
 import com.beem.catmap.ui.components.CatMapDialog
@@ -30,35 +29,24 @@ import com.beem.catmap.ui.extensions.getFormattedDate
 import com.beem.catmap.ui.extensions.kalpAnimasyonuYap
 import com.beem.catmap.ui.manager.UiMessageManager
 import com.beem.catmap.ui.manager.UiMessageState
+import com.beem.catmap.ui.markersclick.components.CatPhotoSlider
 import com.beem.catmap.ui.navigation.NavigationHelper
 import com.beem.catmap.ui.report.ReportType
 import com.beem.catmap.utils.toFirebaseTimestamp
-import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.stfalcon.imageviewer.StfalconImageViewer;
 
-class BottomSheetFragment : BottomSheetDialogFragment() {
+class CatDetailSheetFragment : BottomSheetDialogFragment() {
 
     private var _binding: MarkerdakiKediyiGostermeBinding? = null
     private val binding get() = _binding!!
 
-    private val photoIndicatorDots = mutableListOf<View>()
+    private val photoListState = mutableStateOf<List<String>>(emptyList())
 
-    private val photoPageChangeCallback =
-        object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                updatePhotoIndicator(position)
-            }
-        }
-
-    private lateinit var fotoAdapter: FotoGeciciAdapter
     private val viewModel: CatDetailViewModel by activityViewModels()
     private val commentsViewModel: CommentViewModel by viewModels()
 
@@ -77,8 +65,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     override fun onDestroyView() {
-        binding.fotoPager.unregisterOnPageChangeCallback(photoPageChangeCallback)
-        photoIndicatorDots.clear()
         _binding = null
         super.onDestroyView()
     }
@@ -88,8 +74,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
 
         initViews()
         loadStart()
-        observeViewModel()
-        setupCommentCountObserver()
 
 
         @Suppress("DEPRECATION")
@@ -113,6 +97,9 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                 yukleyenProfilineGit(kedi.yukleyenId)
             }
         }
+
+        observeViewModel()
+        setupCommentCountObserver()
 
         val openCommentsAction = View.OnClickListener {
             val currentCatId = viewModel.selectedCat.value?.id
@@ -169,26 +156,30 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun initViews() {
-        fotoAdapter = FotoGeciciAdapter(requireContext(), null) { position ->
-            val currentCat = viewModel.selectedCat.value
-            val photoUrls = currentCat?.urLler
-            if (!photoUrls.isNullOrEmpty()) {
-                openFullScreenViewer(photoUrls, position)
-            }
-        }
-        binding.fotoPager.adapter = fotoAdapter
-        binding.fotoPager.offscreenPageLimit = 1
 
-        binding.fotoPager.registerOnPageChangeCallback(photoPageChangeCallback)
+        binding.composePhotoPager.setContent {
+            CatPhotoSlider(
+                photos = photoListState.value,
+                onPhotoClick = { position ->
+                    val urls = photoListState.value
+                    if (urls.isNotEmpty()) {
+                        openFullScreenViewer(urls, position)
+                    }
+                }
+            )
+        }
     }
     private fun openFullScreenViewer(urls: List<String>, startPosition: Int) {
         StfalconImageViewer.Builder<String>(requireContext(), urls) { imageView, url ->
-            Glide.with(requireContext())
-                .load(url)
-                .into(imageView)
+            imageView.load(url) {
+                crossfade(true)
+                memoryCachePolicy(CachePolicy.ENABLED)
+                diskCachePolicy(CachePolicy.ENABLED)
+            }
         }
             .withStartPosition(startPosition)
             .withHiddenStatusBar(false)
+            .allowSwipeToDismiss(true)
             .show()
     }
     private fun observeViewModel() {
@@ -214,16 +205,7 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
                     }
                     binding.tarihText.text = getFormattedDate(it.createdAt) ?: ""
 
-                    if (!it.urLler.isNullOrEmpty()) {
-                        val uriList = withContext(Dispatchers.IO) {
-                            it.urLler.mapNotNull { url -> url.toUri() }
-                        }
-                        fotoAdapter.submitList(uriList)
-                        setupPhotoIndicator(uriList.size)
-                    } else {
-                        fotoAdapter.submitList(emptyList())
-                        setupPhotoIndicator(0)
-                    }
+                    photoListState.value = it.urLler ?: emptyList()
                 }
             }
         }
@@ -232,12 +214,11 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             viewModel.ownerInfo.collectLatest { ownerData ->
                 ownerData?.let { (username, photoUrl) ->
                     binding.yukleyenAdiText.text = "@$username"
-                    Glide.with(this@BottomSheetFragment)
-                        .load(photoUrl)
-                        .placeholder(R.drawable.kullanici)
-                        .dontAnimate()
-                        .into(binding.YukprofilFotoImageView)
-
+                    binding.YukprofilFotoImageView.load(photoUrl) {
+                        crossfade(true)
+                        placeholder(R.drawable.kullanici)
+                        error(R.drawable.kullanici)
+                    }
                     contentShow()
                 }
             }
@@ -376,6 +357,8 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
             skipCollapsed = true
             isFitToContents = false
             expandedOffset = 0
+
+            halfExpandedRatio = 0.0001f
         }
     }
 
@@ -401,66 +384,6 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
         commentsViewModel.fetchCommentCount()
     }
 
-    private fun setupPhotoIndicator(photoCount: Int) {
-        binding.fotoDotsContainer.removeAllViews()
-        photoIndicatorDots.clear()
-
-        if (photoCount <= 1) {
-            binding.fotoIndicatorCapsule.visibility = View.GONE
-            return
-        }
-
-        binding.fotoIndicatorCapsule.visibility = View.VISIBLE
-
-        repeat(photoCount) { index ->
-            val dot = View(requireContext())
-            val selected = index == 0
-
-            val size = dpToPx(if (selected) 8 else 6)
-            val margin = dpToPx(3)
-
-            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(margin, 0, margin, 0)
-            }
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (selected) {
-                    R.drawable.dot_active
-                } else {
-                    R.drawable.dot_inactive
-                }
-            )
-
-            binding.fotoDotsContainer.addView(dot)
-            photoIndicatorDots.add(dot)
-        }
-    }
-
-    private fun updatePhotoIndicator(selectedPosition: Int) {
-        photoIndicatorDots.forEachIndexed { index, dot ->
-            val selected = index == selectedPosition
-            val size = dpToPx(if (selected) 8 else 6)
-
-            val params = dot.layoutParams as LinearLayout.LayoutParams
-            params.width = size
-            params.height = size
-            dot.layoutParams = params
-
-            dot.background = ContextCompat.getDrawable(
-                requireContext(),
-                if (selected) {
-                    R.drawable.dot_active
-                } else {
-                    R.drawable.dot_inactive
-                }
-            )
-        }
-    }
-
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
-    }
 
     private fun loadStart() {
         binding.loadingContainer.isVisible = true
@@ -473,11 +396,11 @@ class BottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     companion object {
-        const val TAG = "BottomSheetFragment"
+        const val TAG = "CatDetailSheetFragment"
         private const val ARG_CAT = "arg_cat"
 
-        fun newInstance(cat: Kediler): BottomSheetFragment {
-            val fragment = BottomSheetFragment()
+        fun newInstance(cat: Kediler): CatDetailSheetFragment {
+            val fragment = CatDetailSheetFragment()
             val args = Bundle().apply {
                 putSerializable(ARG_CAT, cat)
             }

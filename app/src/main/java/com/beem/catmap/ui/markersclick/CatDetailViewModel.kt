@@ -3,7 +3,7 @@ package com.beem.catmap.ui.markersclick
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.beem.catmap.maps.mapkedi.Kediler
+import com.beem.catmap.data.model.Kediler
 import com.beem.catmap.data.local.CacheHelperPostLike
 import com.beem.catmap.data.local.UserSession
 import com.beem.catmap.data.repository.CatRepository
